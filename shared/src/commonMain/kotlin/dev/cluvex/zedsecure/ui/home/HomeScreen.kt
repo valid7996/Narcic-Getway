@@ -1599,7 +1599,12 @@ private fun ConnectButton(
                 .clip(RoundedCornerShape(50))
                 .background(
                     when {
-                        state == ConnectionState.Error -> MaterialTheme.colorScheme.errorContainer
+                        state == ConnectionState.Error -> Brush.horizontalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.errorContainer,
+                                MaterialTheme.colorScheme.errorContainer,
+                            ),
+                        )
                         state.isActive && customActiveColor != null -> Brush.horizontalGradient(
                             listOf(customActiveColor, customActiveColor.copy(alpha = 0.82f)),
                         )
