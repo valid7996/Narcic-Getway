@@ -152,6 +152,8 @@ jobs:
           mkdir -p "$dest" /tmp/nat
           for pair in "xray:xray.exe:xray.exe" \
                       "xray:libcronet.dll:libcronet.dll" \
+                      "hev-windows:hev-socks5-tunnel.exe:hev-socks5-tunnel.exe" \
+                      "hev-windows:msys-2.0.dll:msys-2.0.dll" \
                       "zeptun-windows:zeptun.exe:zeptun.exe" \
                       "zeptun-windows:wintun.dll:wintun.dll" \
                       "zeptun-windows:wintun-LICENSE.txt:wintun-LICENSE.txt" \
@@ -231,6 +233,7 @@ jobs:
           dest=desktop/src/main/resources/bin/macos
           mkdir -p "$dest" /tmp/nat
           for pair in "xray-macos-$ARCH:xray-macos-$ARCH:xray" \
+                      "hev-macos:hev-socks5-tunnel-$ARCH:hev-socks5-tunnel" \
                       "zeptun-macos:zeptun:zeptun" \
                       "dns-tunnels:zeddns-macos-$ARCH:zeddns" \
                       "psiphon:psiphon-macos-$ARCH:psiphon"; do
