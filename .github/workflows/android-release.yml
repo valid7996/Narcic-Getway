@@ -170,13 +170,25 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           python3 tools/universal-apk.py "dist/NarcicGetway-$V-arm64-v8a.apk" /tmp/universal.apk "dist/NarcicGetway-$V-armeabi-v7a.apk"
           "$BT/zipalign" -f -P 16 4 /tmp/universal.apk /tmp/universal-aligned.apk
-          STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
-          KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
-          "$BT/apksigner" sign --ks release.keystore \
-            --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
-            --ks-pass env:STORE_PW --key-pass env:KEY_PW \
-            --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
-            --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
+          if [ -f release.keystore ]; then
+            STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
+            KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
+            "$BT/apksigner" sign --ks release.keystore \
+              --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
+              --ks-pass env:STORE_PW --key-pass env:KEY_PW \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
+              --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
+          else
+            # No signing secrets: sign with the debug keystore committed in the repo
+            KS_FILE="$(grep '^storeFile=' keystore.properties | cut -d= -f2-)"
+            STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-)
+            openssl pkcs12 -in "$KS_FILE" -passin "pass:$STORE_PW" -nocerts -nodes -out /tmp/debug.key
+            openssl pkcs12 -in "$KS_FILE" -passin "pass:$STORE_PW" -nokeys -out /tmp/debug.crt
+            "$BT/apksigner" sign --key /tmp/debug.key --cert /tmp/debug.crt \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
+              --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
+            shred -u /tmp/debug.key /tmp/debug.crt 2>/dev/null || rm -f /tmp/debug.key /tmp/debug.crt
+          fi
           rm -f /tmp/universal.apk /tmp/universal-aligned.apk
           for apk in dist/NarcicGetway-*.apk; do
             "$BT/apksigner" verify "$apk"
@@ -192,7 +204,10 @@ jobs:
 
       - name: Forget the key
         if: always()
-        run: shred -u release.keystore keystore.properties 2>/dev/null || rm -f release.keystore keystore.properties
+        run: |
+          if [ -f release.keystore ]; then
+            shred -u release.keystore keystore.properties 2>/dev/null || rm -f release.keystore keystore.properties
+          fi
 
       - uses: actions/upload-artifact@v4
         with: { name: android-apks, path: dist/*, retention-days: 30 }
