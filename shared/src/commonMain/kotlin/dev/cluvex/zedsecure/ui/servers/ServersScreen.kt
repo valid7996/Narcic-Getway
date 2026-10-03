@@ -1748,31 +1748,53 @@ private fun ServerCard(
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = vPad, bottom = vPad),
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = vPad, bottom = vPad),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Box(
+                Modifier
+                    .padding(end = 12.dp)
+                    .size(width = 4.dp, height = 46.dp)
+                    .background(
+                        if (active) MaterialTheme.colorScheme.primary else onContainer.copy(alpha = 0.25f),
+                        RoundedCornerShape(2.dp),
+                    ),
+            )
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = profile.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = onContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtle = onContainer.copy(alpha = 0.72f)
-
-                val typeLabel = if (profile.isCustom) {
-                    stringResource(Res.string.servers_custom_config)
-                } else {
-                    profile.transportLabel
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = profile.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = onContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = onContainer.copy(alpha = 0.10f),
+                    ) {
+                        Text(
+                            text = if (profile.isCustom) {
+                                stringResource(Res.string.servers_custom_config)
+                            } else {
+                                profile.transportLabel
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = onContainer.copy(alpha = 0.75f),
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                        )
+                    }
                 }
+                val subtle = onContainer.copy(alpha = 0.72f)
 
                 Text(
                     text = buildString {
-                        append(typeLabel)
                         if (profile.address.isNotBlank() && profile.address != "-") {
-                            append("  •  ")
                             append(profile.address)
                             if (profile.port > 0) append(":${profile.port}")
                         }
@@ -1800,14 +1822,18 @@ private fun ServerCard(
                 }
             }
             profile.lastPingMs?.takeIf { personalization.showServerPing }?.let { ping ->
-
-                Text(
-                    text = if (ping < 0) "$ping" else "$ping ms",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-
-                    color = pingColor(ping, container),
-                )
+                Surface(
+                    shape = CircleShape,
+                    color = pingColor(ping, container).copy(alpha = 0.15f),
+                ) {
+                    Text(
+                        text = if (ping < 0) "$ping" else "$ping ms",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = pingColor(ping, container),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
                 Spacer(Modifier.width(4.dp))
             }
             if (active) {

@@ -227,7 +227,7 @@ data class AppSettings(
 
     val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Ring,
 
-    val navBarStyle: NavBarStyle = NavBarStyle.FullBar,
+    val navBarStyle: NavBarStyle = NavBarStyle.Minimal,
 
     val themeProfileId: String? = null,
 
