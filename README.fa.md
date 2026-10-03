@@ -9,7 +9,7 @@
 <p align="center">همهٔ راه‌های عبور، در یک برنامه.</p>
 
 <p align="center">
-  <a href="https://github.com/CluvexStudio/ZedSecure/releases/latest"><img src="https://img.shields.io/github/v/release/CluvexStudio/ZedSecure?style=flat-square&color=C7F24E&labelColor=15170B&label=release" alt="آخرین نسخه"></a>
+  <a href="https://github.com/valid7996/Narcic-Getway/releases/latest"><img src="https://img.shields.io/github/v/release/valid7996/Narcic-Getway?style=flat-square&color=C7F24E&labelColor=15170B&label=release" alt="آخرین نسخه"></a>
   <a href="https://play.google.com/store/apps/details?id=com.zedsecure.vpn"><img src="https://img.shields.io/badge/Google%20Play-install-C7F24E?style=flat-square&labelColor=15170B" alt="گوگل پلی"></a>
   <img src="https://img.shields.io/badge/Android%20%C2%B7%20Linux%20%C2%B7%20Windows%20%C2%B7%20macOS-C7F24E?style=flat-square&labelColor=15170B" alt="اندروید، لینوکس، ویندوز، مک">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-C7F24E?style=flat-square&labelColor=15170B" alt="AGPL-3.0"></a>
@@ -58,11 +58,11 @@ Narcic Getway یک کلاینت VPN و پروکسی برای اندروید، ل
 ## دانلود
 
 **اندروید:** از [گوگل پلی](https://play.google.com/store/apps/details?id=com.zedsecure.vpn)، یا
-APK مخصوص دستگاهتان از [Releases](https://github.com/CluvexStudio/ZedSecure/releases/latest)
+APK مخصوص دستگاهتان از [Releases](https://github.com/valid7996/Narcic-Getway/releases/latest)
 (`arm64-v8a` برای تقریباً همهٔ گوشی‌ها، `armeabi-v7a` برای گوشی‌های قدیمی‌تر).
 
 **لینوکس:** فایل `.deb`، `.rpm`، `.AppImage` یا `.tar.gz` از Releases. روی NixOS:
-`nix run github:CluvexStudio/ZedSecure`
+`nix run github:valid7996/Narcic-Getway`
 
 **ویندوز:** نصب‌کنندهٔ `.msi`، یا نسخهٔ قابل حمل `.zip`.
 

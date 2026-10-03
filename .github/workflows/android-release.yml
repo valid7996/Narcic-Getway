@@ -66,7 +66,7 @@ jobs:
         run: |
           grep -v '^reference/openconnect' tools/core-sources.txt > /tmp/core.txt
           cp /tmp/core.txt tools/core-sources.txt
-          ./tools/fetch-cores.sh
+          bash tools/fetch-cores.sh
 
       - name: gomobile
         run: |
@@ -79,7 +79,7 @@ jobs:
           ZEDCORE_TMPDIR: ${{ runner.temp }}/zedcore
         run: |
           mkdir -p "$ZEDCORE_TMPDIR"
-          ./tools/build-zedcore.sh
+          bash tools/build-zedcore.sh
           ls -l app/libs/zedcore.aar
 
       - uses: actions/upload-artifact@v4
@@ -136,17 +136,26 @@ jobs:
         run: |
           umask 077
           if [ "$USE_PLAY" = "true" ]; then
-            printf '%s' "$PLAY_KEYSTORE_BASE64" | base64 -d > release.keystore
+            B64="$PLAY_KEYSTORE_BASE64"
+          else
+            B64="$KEYSTORE_BASE64"
+          fi
+          if [ -z "$B64" ]; then
+            echo "No signing secrets set; signing with the debug keystore committed in the repo"
+            exit 0
+          fi
+          if [ "$USE_PLAY" = "true" ]; then
+            printf '%s' "$B64" | base64 -d > release.keystore
             STORE_PW="$PLAY_KEYSTORE_PASSWORD"; KEY_PW="$PLAY_KEY_PASSWORD"; ALIAS="$PLAY_KEY_ALIAS"
           else
-            printf '%s' "$KEYSTORE_BASE64" | base64 -d > release.keystore
+            printf '%s' "$B64" | base64 -d > release.keystore
             STORE_PW="$KEYSTORE_PASSWORD"; KEY_PW="$KEY_PASSWORD"; ALIAS="$KEY_ALIAS"
           fi
           { echo "storeFile=release.keystore"; echo "storePassword=$STORE_PW"
             echo "keyPassword=$KEY_PW"; echo "keyAlias=$ALIAS"; } > keystore.properties
 
       - name: Test and build
-        run: ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease
+        run: bash gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease
 
       - name: Name them for people
         run: |
@@ -156,10 +165,10 @@ jobs:
           for abi in arm64-v8a armeabi-v7a x86_64; do
             src="app/build/outputs/apk/release/app-$abi-release.apk"
             [ -f "$src" ] || { echo "::error::$src was not built"; exit 1; }
-            cp "$src" "dist/ZedSecure-$V-$abi.apk"
+            cp "$src" "dist/NarcicGetway-$V-$abi.apk"
           done
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          python3 tools/universal-apk.py "dist/ZedSecure-$V-arm64-v8a.apk" /tmp/universal.apk "dist/ZedSecure-$V-armeabi-v7a.apk"
+          python3 tools/universal-apk.py "dist/NarcicGetway-$V-arm64-v8a.apk" /tmp/universal.apk "dist/NarcicGetway-$V-armeabi-v7a.apk"
           "$BT/zipalign" -f -P 16 4 /tmp/universal.apk /tmp/universal-aligned.apk
           STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
           KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
@@ -167,18 +176,18 @@ jobs:
             --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
             --ks-pass env:STORE_PW --key-pass env:KEY_PW \
             --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
-            --out "dist/ZedSecure-$V-universal.apk" /tmp/universal-aligned.apk
+            --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
           rm -f /tmp/universal.apk /tmp/universal-aligned.apk
-          for apk in dist/ZedSecure-*.apk; do
+          for apk in dist/NarcicGetway-*.apk; do
             "$BT/apksigner" verify "$apk"
             a=$("$BT/apksigner" verify --print-certs "$apk" | grep -m1 'SHA-256' | awk '{print $NF}')
-            b=$("$BT/apksigner" verify --print-certs "dist/ZedSecure-$V-arm64-v8a.apk" | grep -m1 'SHA-256' | awk '{print $NF}')
+            b=$("$BT/apksigner" verify --print-certs "dist/NarcicGetway-$V-arm64-v8a.apk" | grep -m1 'SHA-256' | awk '{print $NF}')
             [ "$a" = "$b" ] || { echo "::error::$apk is signed with a different key"; exit 1; }
           done
-          "$BT/aapt2" dump badging "dist/ZedSecure-$V-universal.apk" | grep -q "native-code: 'arm64-v8a' 'armeabi-v7a'" \
+          "$BT/aapt2" dump badging "dist/NarcicGetway-$V-universal.apk" | grep -q "native-code: 'arm64-v8a' 'armeabi-v7a'" \
             || { echo "::error::the universal APK does not carry both ARM ABIs"; exit 1; }
-          ( cd dist && sha256sum ZedSecure-*.apk > SHA256SUMS-android.txt )
-          "$JAVA_HOME/bin/keytool" -printcert -jarfile "dist/ZedSecure-$V-arm64-v8a.apk" | grep -E 'Owner|SHA-256' | head -2
+          ( cd dist && sha256sum NarcicGetway-*.apk > SHA256SUMS-android.txt )
+          "$JAVA_HOME/bin/keytool" -printcert -jarfile "dist/NarcicGetway-$V-arm64-v8a.apk" | grep -E 'Owner|SHA-256' | head -2
           ls -l dist
 
       - name: Forget the key

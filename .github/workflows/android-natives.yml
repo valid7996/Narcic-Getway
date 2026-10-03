@@ -23,7 +23,7 @@ jobs:
         run: |
           set -e
           NDK=$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)
-          NDK="$NDK" OUT="$PWD/out" WORK="$RUNNER_TEMP/tor-build" ./tools/build-tor-android.sh
+          NDK="$NDK" OUT="$PWD/out" WORK="$RUNNER_TEMP/tor-build" bash tools/build-tor-android.sh
           for abi in arm64-v8a armeabi-v7a x86_64; do
             so="out/$abi/libtor.so"
             grep -aq -- '--fake-hosts' "$so" || { echo "::error::$abi tor was built without the fake SNI patch"; exit 1; }

@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: "1.26.3" }
-      - run: ./tools/fetch-cores.sh vendor/xray-core reference/amneziawg-go reference/sing-openvpn
+      - run: bash tools/fetch-cores.sh vendor/xray-core reference/amneziawg-go reference/sing-openvpn
       - name: Build patched Xray with every protocol and collect cronet
         working-directory: vendor/xray-core
         run: |
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: "1.26.3" }
-      - run: ./tools/fetch-cores.sh vendor/xray-core reference/amneziawg-go reference/sing-openvpn
+      - run: bash tools/fetch-cores.sh vendor/xray-core reference/amneziawg-go reference/sing-openvpn
       - name: Build patched Xray with every protocol, cronet linked in
         working-directory: vendor/xray-core
         env:
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: "1.26.3" }
-      - run: ./tools/fetch-cores.sh vendor/AndroidLibXrayLite reference/vaydns
+      - run: bash tools/fetch-cores.sh vendor/AndroidLibXrayLite reference/vaydns
       - name: Build zeddns
         run: |
           set -e
@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: "1.26.3" }
-      - run: ./tools/fetch-cores.sh reference/psiphon-tunnel-core
+      - run: bash tools/fetch-cores.sh reference/psiphon-tunnel-core
       - name: Build the Psiphon console client
         run: |
           set -e

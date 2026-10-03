@@ -22,7 +22,7 @@ object PlayStore {
 enum class Distribution { PlayStore, GitHub }
 
 object GitHubReleases {
-    const val REPO = "CluvexStudio/ZedSecure"
+    const val REPO = "valid7996/Narcic-Getway"
 
     const val PROJECT_URL = "https://github.com/$REPO"
 
@@ -90,7 +90,7 @@ object UpdateChecker {
             name to url
         }.toMap()
         val apk = if (abis.isEmpty()) null else {
-            (abis.map { "ZedSecure-$version-$it.apk" } + "ZedSecure-$version-universal.apk")
+            (abis.map { "NarcicGetway-$version-$it.apk" } + "NarcicGetway-$version-universal.apk")
                 .firstNotNullOfOrNull { assets[it] }
         }
         return UpdateInfo(
