@@ -100,6 +100,21 @@ fun MainScaffold(
 
     val lockedNote = activeProfile?.takeIf { it.isLocked }?.note
 
+    var activeCountryCode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(activeProfile) {
+        activeCountryCode = null
+        val profile = activeProfile?.takeIf { !it.isLocked && !it.isAutoSelect } ?: return@LaunchedEffect
+        val link = (profile.source as? dev.cluvex.zedsecure.domain.config.ProfileSource.Link)?.link
+        val parsed = link?.let {
+            runCatching { dev.cluvex.zedsecure.domain.config.ConfigParser.parse(it) }.getOrNull()
+        }
+        val host = parsed?.address?.takeIf { it.isNotBlank() }
+            ?: profile.address.takeIf { it.isNotBlank() }
+        if (host != null) {
+            activeCountryCode = dev.cluvex.zedsecure.data.net.GeoLookup.countryOf(host)
+        }
+    }
+
     val mtuHint = androidx.compose.runtime.remember(activeProfile) {
         val link = (activeProfile?.source as? dev.cluvex.zedsecure.domain.config.ProfileSource.Link)?.link
         val parsed = link?.let {
@@ -215,6 +230,7 @@ fun MainScaffold(
                     },
                     lockedNote = lockedNote,
                     activeLocked = activeProfile?.isLocked == true,
+                    activeCountryCode = activeCountryCode,
                     reduceMotion = settings.reduceMotion,
 
                     showConnectionInfo = activeProfile?.isDnsTunnel != true,

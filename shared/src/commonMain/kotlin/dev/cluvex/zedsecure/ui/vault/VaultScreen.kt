@@ -8,11 +8,17 @@ package dev.cluvex.zedsecure.ui.vault
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -251,62 +257,93 @@ private fun LockedCard(
     onDelete: () -> Unit,
 ) {
     Surface(
-        onClick = onUse,
-        shape = RoundedCornerShape(22.dp),
-
-        color = if (active) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(24.dp),
+        color = Color.Transparent,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    if (active) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                painterResource(Res.drawable.ic_encrypted),
-                null,
-                tint = MaterialTheme.colorScheme.primary,
+            // Side rail — the new card signature.
+            Box(
+                Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(
+                        if (active) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                    ),
             )
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    profile.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    stringResource(if (active) Res.string.config_active else Res.string.locked_badge),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                profile.note?.takeIf { it.isNotBlank() }?.let { note ->
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+            Row(
+                Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(Res.drawable.ic_encrypted),
+                        null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(19.dp),
                     )
                 }
-            }
-            if (active) {
-                Icon(
-                    painterResource(Res.drawable.ic_check_circle),
-                    contentDescription = stringResource(Res.string.config_active),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
-                Spacer(Modifier.width(4.dp))
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    painterResource(Res.drawable.ic_delete),
-                    contentDescription = stringResource(Res.string.action_delete),
-                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        profile.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        stringResource(if (active) Res.string.config_active else Res.string.locked_badge),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    profile.note?.takeIf { it.isNotBlank() }?.let { note ->
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            note,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                FilledTonalButton(
+                    onClick = onUse,
+                    enabled = !active,
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(50),
+                ) {
+                    Text(
+                        stringResource(if (active) Res.string.config_active else Res.string.action_connect),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        painterResource(Res.drawable.ic_delete),
+                        contentDescription = stringResource(Res.string.action_delete),
+                    )
+                }
             }
         }
     }

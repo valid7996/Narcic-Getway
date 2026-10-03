@@ -161,6 +161,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     lockedNote: String? = null,
     activeLocked: Boolean = false,
+    activeCountryCode: String? = null,
     reduceMotion: Boolean = false,
 
     showConnectionInfo: Boolean = true,
@@ -309,7 +310,11 @@ fun HomeScreen(
 
                     AnimatedContent(
                         targetState = ui.state,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220)) +
+                                scaleIn(initialScale = 0.92f, animationSpec = tween(220))) togetherWith
+                                fadeOut(animationSpec = tween(140))
+                        },
                         label = "status-text",
                         modifier = Modifier.clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -387,6 +392,7 @@ fun HomeScreen(
                     name = activeConfigName,
                     detail = activeConfigDetail,
                     locked = activeLocked,
+                    countryCode = activeCountryCode,
                     onClick = onBrowseConfigs,
                     personalization = personalization,
                 )
@@ -610,7 +616,14 @@ private fun Hero(
                     maxLines = 1,
                     softWrap = false,
                 )
-                else -> Text(
+                else -> if (s == ConnectionState.Error) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_lock_open),
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.92f),
+                        modifier = Modifier.size(size * 0.32f),
+                    )
+                } else Text(
                     text = "N",
                     fontSize = coreTextSize(size, 0.315f),
                     fontWeight = FontWeight.Bold,
@@ -927,14 +940,7 @@ private fun TrafficTile(
     val activity = if (live) rateFraction(bytesPerSecond) else 0f
     val (value, unit) = formatRate(bytesPerSecond)
 
-    val container by animateColorAsState(
-        targetValue = containerOverride
-            ?: if (live) MaterialTheme.colorScheme.surfaceContainerHigh
-            else MaterialTheme.colorScheme.surfaceContainerLow,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "tile-container",
-    )
-
+    val container = containerOverride ?: MaterialTheme.colorScheme.surfaceContainerHigh
     val onContainer = containerOverride?.readableOn() ?: MaterialTheme.colorScheme.onSurfaceVariant
     val valueColor by animateColorAsState(
         targetValue = if (flowing || alwaysTint) accent else onContainer,
@@ -949,84 +955,106 @@ private fun TrafficTile(
     )
 
     Surface(
-        color = container,
+        color = Color.Transparent,
         shape = MaterialTheme.shapes.large,
         modifier = modifier,
     ) {
-        Column(Modifier.padding(horizontal = size.paddingDp.dp, vertical = (size.paddingDp - 2).dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(badge.toShape())
-                        .background(accent.copy(alpha = if (live || alwaysTint) 0.20f else 0.12f)),
-                    contentAlignment = Alignment.Center,
-                ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.large)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            container.copy(alpha = 0.95f),
+                            container,
+                        ),
+                    ),
+                ),
+        ) {
+            // Vertical glass bar — the new tile signature.
+            Box(
+                Modifier
+                    .width(5.dp)
+                    .heightIn(min = 96.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(accent, accent.copy(alpha = 0.25f + 0.6f * amplitude)),
+                        ),
+                    ),
+            )
+
+            Column(Modifier.padding(horizontal = 14.dp, vertical = (size.paddingDp - 2).dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(icon),
                         contentDescription = null,
                         tint = if (live || alwaysTint) accent else onContainer,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(15.dp),
+                    )
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        text = label.uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        letterSpacing = 1.2.sp,
+                        color = onContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = label.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = onContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
 
-            Spacer(Modifier.height(size.gapDp.dp))
+                Spacer(Modifier.height(size.gapDp.dp))
 
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = value,
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = value,
 
-                    style = if (size == TrafficTileSize.Large) {
-                        MaterialTheme.typography.headlineMediumEmphasized
+                        style = if (size == TrafficTileSize.Large) {
+                            MaterialTheme.typography.headlineMediumEmphasized
+                        } else {
+                            MaterialTheme.typography.headlineSmallEmphasized
+                        },
+                        color = valueColor,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        text = unit,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = onContainer,
+                        maxLines = 1,
+                        modifier = Modifier.padding(bottom = 3.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(size.gapDp.dp))
+
+                val motion = LocalMotionBudget.current
+                LinearWavyProgressIndicator(
+                    progress = { activity },
+                    amplitude = { amplitude },
+                    color = if (flowing) accent else MaterialTheme.colorScheme.outlineVariant,
+                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth(),
+                    waveSpeed = if (motion == MotionBudget.Full || flowing && motion == MotionBudget.Throttled) {
+                        WavyProgressIndicatorDefaults.LinearDeterminateWavelength
                     } else {
-                        MaterialTheme.typography.headlineSmallEmphasized
+                        0.dp
                     },
-                    color = valueColor,
-                    maxLines = 1,
                 )
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    text = unit,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = onContainer,
-                    maxLines = 1,
-                    modifier = Modifier.padding(bottom = 3.dp),
-                )
+
+                Spacer(Modifier.height(6.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = formatBytes(total),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = onContainer,
+                        maxLines = 1,
+                    )
+                }
             }
-
-            Spacer(Modifier.height(size.gapDp.dp))
-
-            val motion = LocalMotionBudget.current
-            LinearWavyProgressIndicator(
-                progress = { activity },
-                amplitude = { amplitude },
-                color = if (flowing) accent else MaterialTheme.colorScheme.outlineVariant,
-                trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                modifier = Modifier.fillMaxWidth(),
-                waveSpeed = if (motion == MotionBudget.Full || flowing && motion == MotionBudget.Throttled) {
-                    WavyProgressIndicatorDefaults.LinearDeterminateWavelength
-                } else {
-                    0.dp
-                },
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            Text(
-                text = formatBytes(total),
-                style = MaterialTheme.typography.labelSmall,
-                color = onContainer,
-                maxLines = 1,
-            )
         }
     }
 }
@@ -1391,6 +1419,7 @@ private fun ActiveConfigCard(
     name: String?,
     detail: String? = null,
     locked: Boolean,
+    countryCode: String? = null,
     onClick: () -> Unit,
     personalization: Personalization = Personalization.Default,
     modifier: Modifier = Modifier,
@@ -1435,15 +1464,24 @@ private fun ActiveConfigCard(
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = name ?: stringResource(Res.string.home_select_config),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = personalization.configCardTextColor
-                        ?: MaterialTheme.colorScheme.onPrimaryContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (countryCode != null && !locked) {
+                        dev.cluvex.zedsecure.ui.components.FlagBadge(
+                            countryCode = countryCode,
+                            size = 18.dp,
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                    }
+                    Text(
+                        text = name ?: stringResource(Res.string.home_select_config),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = personalization.configCardTextColor
+                            ?: MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Text(
                     text = detail ?: stringResource(
                         when {
@@ -1483,38 +1521,26 @@ private fun ConnectButton(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
 
-    val targetRadius = when {
-        pressed -> 44.dp
-        state.isTransitioning -> 36.dp
-        state.isActive -> 20.dp
-        else -> 30.dp
-    }
-    val radius by animateDpAsState(
-        targetValue = targetRadius,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "connect-radius",
-    )
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.96f else 1f,
+        targetValue = if (pressed) 0.95f else 1f,
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "connect-scale",
     )
 
-    val idleContainer = customColor ?: MaterialTheme.colorScheme.primary
-    val activeContainer = customActiveColor ?: MaterialTheme.colorScheme.secondaryContainer
-    val container by animateColorAsState(
-        targetValue = when {
-            state == ConnectionState.Error -> MaterialTheme.colorScheme.errorContainer
-            state.isActive -> activeContainer
-            else -> idleContainer
-        },
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "connect-container",
+    val glowTarget = when {
+        state == ConnectionState.Error -> 0f
+        state.isActive -> 1f
+        else -> 0.45f
+    }
+    val glow by animateFloatAsState(
+        targetValue = if (LocalMotionBudget.current == MotionBudget.Paused) 0f else glowTarget,
+        animationSpec = tween(700, easing = FastOutSlowInEasing),
+        label = "connect-glow",
     )
 
     val idleContent = if (customColor == null) MaterialTheme.colorScheme.onPrimary
     else if (customColor.luminance() > 0.5f) Color(0xFF10131A) else Color.White
-    val activeContent = if (customActiveColor == null) MaterialTheme.colorScheme.onSecondaryContainer
+    val activeContent = if (customActiveColor == null) MaterialTheme.colorScheme.onPrimaryContainer
     else if (customActiveColor.luminance() > 0.5f) Color(0xFF10131A) else Color.White
     val content = when {
         state == ConnectionState.Error -> MaterialTheme.colorScheme.onErrorContainer
@@ -1522,23 +1548,71 @@ private fun ConnectButton(
         else -> idleContent
     }
 
-    Surface(
-        onClick = onToggle,
+    Box(Modifier.fillMaxWidth()) {
+        // Aurora glow behind the button — the signature of the new design.
+        if (glow > 0.01f) {
+            Box(
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .height(if (compact) 56.dp else 72.dp)
+                    .graphicsLayer {
+                        alpha = glow * 0.5f
+                        val spread = 1f + 16.dp.toPx() * glow / size.height.coerceAtLeast(1f)
+                        scaleX = spread
+                        scaleY = spread
+                    }
+                    .clip(RoundedCornerShape(50))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(ZedViolet.copy(alpha = 0.55f), ZedCyan.copy(alpha = 0.55f)),
+                        ),
+                    ),
+            )
+        }
 
-        enabled = state != ConnectionState.Disconnecting,
-        shape = RoundedCornerShape(radius),
-        color = container,
-        contentColor = content,
-        interactionSource = interaction,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(if (compact) 56.dp else 72.dp)
-            .scale(scale),
-    ) {
+        Surface(
+            onClick = onToggle,
+
+            enabled = state != ConnectionState.Disconnecting,
+            shape = RoundedCornerShape(50),
+            color = Color.Transparent,
+            contentColor = content,
+            interactionSource = interaction,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(if (compact) 56.dp else 72.dp)
+                .scale(scale)
+                .clip(RoundedCornerShape(50))
+                .background(
+                    when {
+                        state == ConnectionState.Error -> MaterialTheme.colorScheme.errorContainer
+                        state.isActive && customActiveColor != null -> Brush.horizontalGradient(
+                            listOf(customActiveColor, customActiveColor.copy(alpha = 0.82f)),
+                        )
+                        state.isActive -> Brush.horizontalGradient(
+                            listOf(ZedViolet, ZedCyan),
+                        )
+                        customColor != null -> Brush.horizontalGradient(
+                            listOf(customColor, customColor.copy(alpha = 0.82f)),
+                        )
+                        else -> Brush.horizontalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.78f),
+                            ),
+                        )
+                    },
+                ),
+        ) {
         Box(contentAlignment = Alignment.Center) {
             AnimatedContent(
                 targetState = state.isTransitioning,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(200)) +
+                        scaleIn(initialScale = 0.9f, animationSpec = tween(200))) togetherWith
+                        fadeOut(animationSpec = tween(120))
+                },
                 label = "connect-label",
             ) { busy ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1550,7 +1624,7 @@ private fun ConnectButton(
                     } else {
                         Icon(
                             painterResource(
-                                if (state.isActive) Res.drawable.ic_close else Res.drawable.ic_bolt
+                                if (state.isActive) Res.drawable.ic_lock_open else Res.drawable.ic_bolt
                             ),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
@@ -1577,6 +1651,7 @@ private fun ConnectButton(
                     )
                 }
             }
+        }
         }
     }
 }

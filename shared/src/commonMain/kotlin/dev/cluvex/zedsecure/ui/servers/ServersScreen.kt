@@ -12,6 +12,7 @@ import org.jetbrains.compose.resources.StringResource
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +71,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -1721,165 +1723,200 @@ private fun ServerCard(
     modifier: Modifier = Modifier,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val container = if (active) {
+    val isSelectedCard = selecting && isSelected
+    val container = if (isSelectedCard) {
+        MaterialTheme.colorScheme.secondaryContainer
+    } else if (active) {
         personalization.serverActiveColor ?: MaterialTheme.colorScheme.primaryContainer
     } else {
         personalization.serverCardColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     val onContainer = when {
+        isSelectedCard -> MaterialTheme.colorScheme.onSecondaryContainer
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
         !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
         else -> MaterialTheme.colorScheme.onSurface
     }
     val vPad = personalization.density.cardVerticalDp.dp
     Surface(
-        onClick = onClick,
+        color = Color.Transparent,
         shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),
-        color = if (selecting && isSelected) MaterialTheme.colorScheme.secondaryContainer else container,
-        contentColor = if (selecting && isSelected) MaterialTheme.colorScheme.onSecondaryContainer else onContainer,
-
-        border = if (selecting && isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        } else {
-            null
-        },
-
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = vPad, bottom = vPad),
+            Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .clip(RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
+                .background(container)
+                .clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = profile.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = onContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtle = onContainer.copy(alpha = 0.72f)
-
-                val typeLabel = if (profile.isCustom) {
-                    stringResource(Res.string.servers_custom_config)
-                } else {
-                    profile.transportLabel
-                }
-
-                Text(
-                    text = buildString {
-                        append(typeLabel)
-                        if (profile.address.isNotBlank() && profile.address != "-") {
-                            append("  •  ")
-                            append(profile.address)
-                            if (profile.port > 0) append(":${profile.port}")
+            Box(
+                Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(
+                        when {
+                            active -> MaterialTheme.colorScheme.primary
+                            isSelectedCard -> MaterialTheme.colorScheme.secondary
+                            else -> Color.Transparent
+                        },
+                    ),
+            )
+            Row(
+                Modifier
+                    .weight(1f)
+                    .padding(start = 14.dp, end = 4.dp, top = vPad, bottom = vPad),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (active) {
+                            Box(
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                            )
+                            Spacer(Modifier.width(7.dp))
                         }
-                        if (subscriptionName != null) append("  •  $subscriptionName")
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = if (personalization.monospaceAddress) FontFamily.Monospace else null,
-                    color = subtle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (personalization.showServerUsage && (profile.bytesDown > 0 || profile.bytesUp > 0)) {
-                    Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = profile.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onContainer,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    val subtle = onContainer.copy(alpha = 0.72f)
+
+                    val typeLabel = if (profile.isCustom) {
+                        stringResource(Res.string.servers_custom_config)
+                    } else {
+                        profile.transportLabel
+                    }
+
                     Text(
-                        text = stringResource(
-                            Res.string.servers_usage,
-                            formatBytes(profile.bytesDown),
-                            formatBytes(profile.bytesUp),
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = subtle.copy(alpha = 0.6f),
+                        text = buildString {
+                            append(typeLabel)
+                            if (profile.address.isNotBlank() && profile.address != "-") {
+                                append("  •  ")
+                                append(profile.address)
+                                if (profile.port > 0) append(":${profile.port}")
+                            }
+                            if (subscriptionName != null) append("  •  $subscriptionName")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = if (personalization.monospaceAddress) FontFamily.Monospace else null,
+                        color = subtle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (personalization.showServerUsage && (profile.bytesDown > 0 || profile.bytesUp > 0)) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(
+                                Res.string.servers_usage,
+                                formatBytes(profile.bytesDown),
+                                formatBytes(profile.bytesUp),
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = subtle.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
-            }
-            profile.lastPingMs?.takeIf { personalization.showServerPing }?.let { ping ->
-
-                Text(
-                    text = if (ping < 0) "$ping" else "$ping ms",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-
-                    color = pingColor(ping, container),
-                )
-                Spacer(Modifier.width(4.dp))
-            }
-            if (active) {
-                Icon(
-                    painterResource(Res.drawable.ic_check_circle),
-                    contentDescription = stringResource(Res.string.config_active),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
+                profile.lastPingMs?.takeIf { personalization.showServerPing }?.let { ping ->
+                    Surface(
+                        shape = CircleShape,
+                        color = pingColor(ping, container).copy(alpha = 0.16f),
+                        contentColor = pingColor(ping, container),
+                        modifier = Modifier.padding(end = 4.dp),
+                    ) {
+                        Text(
+                            text = if (ping < 0) "$ping" else "$ping ms",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+                if (active) {
+                    Spacer(Modifier.width(6.dp))
                     Icon(
-                        painterResource(Res.drawable.ic_more_vert),
-                        contentDescription = stringResource(Res.string.servers_actions),
+                        painterResource(Res.drawable.ic_check_circle),
+                        contentDescription = stringResource(Res.string.config_active),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
-                DropdownMenu(
-                    expanded = menuOpen,
-                    onDismissRequest = { menuOpen = false },
-                    shape = MaterialTheme.shapes.largeIncreased,
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.action_share)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null) },
-
-                        enabled = shareLink != null,
-                        onClick = { menuOpen = false; onShare() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.action_share_qr)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null) },
-                        enabled = shareLink != null,
-                        onClick = { menuOpen = false; onShareQr() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.action_edit)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null) },
-                        enabled = profile.isEditable,
-                        onClick = { menuOpen = false; onEdit() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.servers_rename)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_description), null) },
-                        onClick = { menuOpen = false; onRename() },
-                    )
-                    onMoveGroup?.let { move ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.groups_move)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null) },
-                            onClick = { menuOpen = false; move() },
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(
+                            painterResource(Res.drawable.ic_more_vert),
+                            contentDescription = stringResource(Res.string.servers_actions),
                         )
                     }
-
-                    if ((!profile.isManagedTunnel || profile.isSingBoxConfig) && !profile.isDnsBasedTunnel) {
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                        shape = MaterialTheme.shapes.largeIncreased,
+                    ) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.ping_tcp)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_speed), null) },
-                            onClick = { menuOpen = false; onPingTcp() },
+                            text = { Text(stringResource(Res.string.action_share)) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null) },
+
+                            enabled = shareLink != null,
+                            onClick = { menuOpen = false; onShare() },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.ping_real)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_bolt), null) },
-                            onClick = { menuOpen = false; onPingReal() },
+                            text = { Text(stringResource(Res.string.action_share_qr)) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null) },
+                            enabled = shareLink != null,
+                            onClick = { menuOpen = false; onShareQr() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_edit)) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null) },
+                            enabled = profile.isEditable,
+                            onClick = { menuOpen = false; onEdit() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.servers_rename)) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_description), null) },
+                            onClick = { menuOpen = false; onRename() },
+                        )
+                        onMoveGroup?.let { move ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.groups_move)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null) },
+                                onClick = { menuOpen = false; move() },
+                            )
+                        }
+
+                        if ((!profile.isManagedTunnel || profile.isSingBoxConfig) && !profile.isDnsBasedTunnel) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.ping_tcp)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_speed), null) },
+                                onClick = { menuOpen = false; onPingTcp() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.ping_real)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_bolt), null) },
+                                onClick = { menuOpen = false; onPingReal() },
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.action_delete)) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+                            onClick = { menuOpen = false; onDelete() },
                         )
                     }
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.action_delete)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-                        onClick = { menuOpen = false; onDelete() },
-                    )
                 }
             }
         }

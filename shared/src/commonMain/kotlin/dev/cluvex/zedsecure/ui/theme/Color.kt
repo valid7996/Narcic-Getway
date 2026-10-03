@@ -8,75 +8,76 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.expressiveLightColorScheme
 import androidx.compose.ui.graphics.Color
 
-private val Narcis = Color(0xFF0A7B58)
+// Night-Ice palette: deep blue-slate surfaces with an electric ice accent.
+private val IcePrimary = Color(0xFF2E6BE6)
 
 val LightColors: ColorScheme = expressiveLightColorScheme().copy(
-    primary = Narcis,
+    primary = IcePrimary,
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFC4F2DD),
-    onPrimaryContainer = Color(0xFF00251A),
-    inversePrimary = Color(0xFF6FDBA8),
+    primaryContainer = Color(0xFFD8E2FF),
+    onPrimaryContainer = Color(0xFF001945),
+    inversePrimary = Color(0xFFAAC7FF),
 
-    secondary = Color(0xFF9C7A0A),
+    secondary = Color(0xFF00696E),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFFFEDC2),
-    onSecondaryContainer = Color(0xFF2E2000),
+    secondaryContainer = Color(0xFFB4EBEF),
+    onSecondaryContainer = Color(0xFF002022),
 
-    tertiary = Color(0xFF2D5DA9),
+    tertiary = Color(0xFFB4551B),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFD6E2FF),
-    onTertiaryContainer = Color(0xFF001945),
+    tertiaryContainer = Color(0xFFFFDBCB),
+    onTertiaryContainer = Color(0xFF361000),
 )
 
-val ZedLime = Color(0xFFFFD952)
-val ZedOnLime = Color(0xFF241A00)
-val ZedHotPink = Color(0xFFFF9A4D)
-val ZedViolet = Color(0xFF1FC984)
-val ZedDeepViolet = Color(0xFF06382A)
-val ZedCyan = Color(0xFF45D8E6)
+val ZedLime = Color(0xFF7DD8FF)
+val ZedOnLime = Color(0xFF00213A)
+val ZedHotPink = Color(0xFFFF8A5C)
+val ZedViolet = Color(0xFF3D7BFF)
+val ZedDeepViolet = Color(0xFF0A1830)
+val ZedCyan = Color(0xFF4ED9E0)
 
 val DarkColors: ColorScheme = darkColorScheme(
-    primary = Color(0xFF6FDBA8),
-    onPrimary = Color(0xFF003822),
-    primaryContainer = Color(0xFF05523A),
-    onPrimaryContainer = Color(0xFFC4F2DD),
-    inversePrimary = Narcis,
+    primary = Color(0xFFAAC7FF),
+    onPrimary = Color(0xFF002E69),
+    primaryContainer = Color(0xFF1E4A9E),
+    onPrimaryContainer = Color(0xFFD8E2FF),
+    inversePrimary = IcePrimary,
 
-    secondary = Color(0xFFFFCE54),
-    onSecondary = Color(0xFF3A2E00),
-    secondaryContainer = Color(0xFF574300),
-    onSecondaryContainer = Color(0xFFFFEDC2),
+    secondary = Color(0xFF87D5DB),
+    onSecondary = Color(0xFF003739),
+    secondaryContainer = Color(0xFF004F53),
+    onSecondaryContainer = Color(0xFFB4EBEF),
 
-    tertiary = Color(0xFFA9C6F5),
-    onTertiary = Color(0xFF0F3161),
-    tertiaryContainer = Color(0xFF294779),
-    onTertiaryContainer = Color(0xFFD6E2FF),
+    tertiary = Color(0xFFFFB68F),
+    onTertiary = Color(0xFF5A2000),
+    tertiaryContainer = Color(0xFF7E3A0C),
+    onTertiaryContainer = Color(0xFFFFDBCB),
 
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
 
-    background = Color(0xFF0F1412),
-    onBackground = Color(0xFFDFE4E0),
-    surface = Color(0xFF0F1412),
-    onSurface = Color(0xFFDFE4E0),
-    surfaceVariant = Color(0xFF3F4944),
-    onSurfaceVariant = Color(0xFFBFC9C2),
-    surfaceTint = Color(0xFF6FDBA8),
+    background = Color(0xFF0B111E),
+    onBackground = Color(0xFFE1E6F0),
+    surface = Color(0xFF0B111E),
+    onSurface = Color(0xFFE1E6F0),
+    surfaceVariant = Color(0xFF43474E),
+    onSurfaceVariant = Color(0xFFC3C7CF),
+    surfaceTint = Color(0xFFAAC7FF),
 
-    inverseSurface = Color(0xFFDFE4E0),
-    inverseOnSurface = Color(0xFF2C3531),
+    inverseSurface = Color(0xFFE1E6F0),
+    inverseOnSurface = Color(0xFF2C303A),
 
-    outline = Color(0xFF89938C),
-    outlineVariant = Color(0xFF3F4944),
+    outline = Color(0xFF8D9199),
+    outlineVariant = Color(0xFF43474E),
     scrim = Color(0xFF000000),
 
-    surfaceBright = Color(0xFF353F3A),
-    surfaceDim = Color(0xFF0F1412),
-    surfaceContainerLowest = Color(0xFF090D0B),
-    surfaceContainerLow = Color(0xFF161C19),
-    surfaceContainer = Color(0xFF1A201D),
-    surfaceContainerHigh = Color(0xFF242B27),
-    surfaceContainerHighest = Color(0xFF2F3733),
+    surfaceBright = Color(0xFF383D48),
+    surfaceDim = Color(0xFF0B111E),
+    surfaceContainerLowest = Color(0xFF060B14),
+    surfaceContainerLow = Color(0xFF131926),
+    surfaceContainer = Color(0xFF171D2B),
+    surfaceContainerHigh = Color(0xFF222836),
+    surfaceContainerHighest = Color(0xFF2D3342),
 )

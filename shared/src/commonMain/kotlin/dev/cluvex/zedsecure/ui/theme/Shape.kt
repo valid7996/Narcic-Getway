@@ -6,15 +6,15 @@ import androidx.compose.ui.unit.dp
 
 val ZedShapes = Shapes(
 
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
 
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(26.dp),
+    medium = RoundedCornerShape(22.dp),
+    large = RoundedCornerShape(30.dp),
 
-    largeIncreased = RoundedCornerShape(32.dp),
-    extraLarge = RoundedCornerShape(36.dp),
-    extraLargeIncreased = RoundedCornerShape(44.dp),
+    largeIncreased = RoundedCornerShape(36.dp),
+    extraLarge = RoundedCornerShape(40.dp),
+    extraLargeIncreased = RoundedCornerShape(48.dp),
 
-    extraExtraLarge = RoundedCornerShape(52.dp),
+    extraExtraLarge = RoundedCornerShape(56.dp),
 )

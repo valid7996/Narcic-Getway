@@ -1,13 +1,17 @@
 package dev.cluvex.zedsecure.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -97,13 +101,28 @@ fun PageHeader(
 
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
+    Row(
         modifier = modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-    )
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        // Accent bar — the new section marker.
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .padding(end = 8.dp)
+                .width(4.dp)
+                .height(14.dp)
+                .background(
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(2.dp),
+                ),
+        )
+        Text(
+            text = text.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
