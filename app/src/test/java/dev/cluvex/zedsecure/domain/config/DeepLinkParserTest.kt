@@ -95,16 +95,27 @@ class DeepLinkParserTest {
     }
 
     @Test
-    fun `zedsecure import and payload forms`() {
+    fun `narcicgetway import and payload forms`() {
+        assertEquals(
+            DeepLinkRequest.Subscription("https://sub.example/z", "Mine"),
+            DeepLinkParser.parse("narcicgetway://import?url=${enc("https://sub.example/z")}&name=Mine"),
+        )
+        assertEquals(
+            DeepLinkRequest.Subscription("https://sub.example/z2", null),
+            DeepLinkParser.parse("narcicgetway://sub?url=https://sub.example/z2"),
+        )
+        val shared = ZedLink.build("Tor here", ProfileSource.Tor)!!
+        assertEquals(DeepLinkRequest.ConfigText(shared), DeepLinkParser.parse(shared))
+    }
+
+    @Test
+    fun `legacy zedsecure links still open`() {
         assertEquals(
             DeepLinkRequest.Subscription("https://sub.example/z", "Mine"),
             DeepLinkParser.parse("zedsecure://import?url=${enc("https://sub.example/z")}&name=Mine"),
         )
-        assertEquals(
-            DeepLinkRequest.Subscription("https://sub.example/z2", null),
-            DeepLinkParser.parse("zedsecure://sub?url=https://sub.example/z2"),
-        )
         val shared = ZedLink.build("Tor here", ProfileSource.Tor)!!
+            .replaceFirst("narcicgetway://", "zedsecure://")
         assertEquals(DeepLinkRequest.ConfigText(shared), DeepLinkParser.parse(shared))
     }
 
