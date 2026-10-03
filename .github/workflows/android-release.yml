@@ -182,8 +182,10 @@ jobs:
             # No signing secrets: sign with the debug keystore committed in the repo
             KS_FILE="$(grep '^storeFile=' keystore.properties | cut -d= -f2-)"
             STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-)
-            openssl pkcs12 -in "$KS_FILE" -passin "pass:$STORE_PW" -nocerts -nodes -out /tmp/debug.key
-            openssl pkcs12 -in "$KS_FILE" -passin "pass:$STORE_PW" -nokeys -out /tmp/debug.crt
+            openssl pkcs12 -in "$KS_FILE" -passin "pass:$STORE_PW" -nocerts -nodes 2>/dev/null \
+              | sed -n '/BEGIN PRIVATE KEY/,/END PRIVATE KEY/p' > /tmp/debug.key
+            openssl pkcs12 -in "$KS_FILE" -passin "pass:$STORE_PW" -nokeys 2>/dev/null \
+              | sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' > /tmp/debug.crt
             "$BT/apksigner" sign --key /tmp/debug.key --cert /tmp/debug.crt \
               --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
               --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
