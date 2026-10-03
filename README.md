@@ -7,7 +7,7 @@
 <p align="center">Every way through, in one app.</p>
 
 <p align="center">
-  <a href="https://github.com/CluvexStudio/ZedSecure/releases/latest"><img src="https://img.shields.io/github/v/release/CluvexStudio/ZedSecure?style=flat-square&color=C7F24E&labelColor=15170B&label=release" alt="Latest release"></a>
+  <a href="https://github.com/valid7996/Narcic-Getway/releases/latest"><img src="https://img.shields.io/github/v/release/valid7996/Narcic-Getway?style=flat-square&color=C7F24E&labelColor=15170B&label=release" alt="Latest release"></a>
   <a href="https://play.google.com/store/apps/details?id=com.zedsecure.vpn"><img src="https://img.shields.io/badge/Google%20Play-install-C7F24E?style=flat-square&labelColor=15170B" alt="Google Play"></a>
   <img src="https://img.shields.io/badge/Android%20%C2%B7%20Linux%20%C2%B7%20Windows%20%C2%B7%20macOS-C7F24E?style=flat-square&labelColor=15170B" alt="Android, Linux, Windows, macOS">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-C7F24E?style=flat-square&labelColor=15170B" alt="AGPL-3.0"></a>
@@ -56,11 +56,11 @@ Android has all of them. Linux, Windows and macOS carry Xray, sing-box, the DNS 
 ## Download
 
 **Android:** [Google Play](https://play.google.com/store/apps/details?id=com.zedsecure.vpn), or the
-APK for your device from [Releases](https://github.com/CluvexStudio/ZedSecure/releases/latest)
+APK for your device from [Releases](https://github.com/valid7996/Narcic-Getway/releases/latest)
 (`arm64-v8a` for almost every phone, `armeabi-v7a` for older ones).
 
 **Linux:** `.deb`, `.rpm`, `.AppImage` or `.tar.gz` from Releases. On NixOS,
-`nix run github:CluvexStudio/ZedSecure`.
+`nix run github:valid7996/Narcic-Getway`.
 
 **Windows:** the `.msi` installer, or the portable `.zip`.
 

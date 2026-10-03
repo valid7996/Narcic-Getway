@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.zedsecure.vpn"
+        applicationId = "com.narcic.getway"
         minSdk = 24
         targetSdk = 36
         versionCode = (project.property("zedsecure.versionCode") as String).toInt()
@@ -41,6 +41,7 @@ android {
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
+                (keystoreProperties["storeType"] as String?)?.let { storeType = it }
             }
         }
     }

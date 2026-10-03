@@ -37,7 +37,7 @@ class PsiphonShareAndEditTest {
 
         val link = repo.shareLinkOf(added)
         assertNotNull("a Psiphon profile is shareable", link)
-        assertTrue(link!!.startsWith("zedsecure://"))
+        assertTrue(link!!.startsWith("narcicgetway://"))
 
         val other = ConfigRepository(InMemoryKeyValueStore())
         assertEquals(1, other.importText(link).getOrThrow())

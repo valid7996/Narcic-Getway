@@ -27,7 +27,7 @@ jobs:
           cp tools/core-sources.txt /tmp/all-sources.txt
           grep '^reference/openconnect' tools/core-sources.txt > tools/core-sources.txt.oc
           mv tools/core-sources.txt.oc tools/core-sources.txt
-          if ./tools/fetch-cores.sh; then
+          if bash tools/fetch-cores.sh; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"

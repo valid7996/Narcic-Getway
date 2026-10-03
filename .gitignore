@@ -5,6 +5,8 @@
 *.key
 keystore.properties
 key.properties
+!keystore/debug.keystore
+!keystore.properties
 local.properties
 google-services.json
 play-service-account*.json
@@ -46,7 +48,9 @@ ref*.png
 /desktop/src/main/resources/bin/
 /app/libs/*.aar
 /app/libs/*-sources.jar
-/app/src/main/jniLibs/
+/app/src/main/jniLibs/*
+!/app/src/main/jniLibs/*/
+/app/src/main/jniLibs/*/*
 !/app/src/main/jniLibs/*/libopenconnect.so
 
 __pycache__/

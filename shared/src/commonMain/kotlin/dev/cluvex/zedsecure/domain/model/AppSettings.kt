@@ -225,14 +225,14 @@ data class AppSettings(
     val customConfigCardColor: Long? = null,
     val customConfigCardTextColor: Long? = null,
 
-    val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Hero,
+    val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Ring,
 
-    val navBarStyle: NavBarStyle = NavBarStyle.ExpressivePill,
+    val navBarStyle: NavBarStyle = NavBarStyle.Minimal,
 
     val themeProfileId: String? = null,
 
-    val cardCornerStyle: CardCornerStyle = CardCornerStyle.Rounded,
-    val listDensity: ListDensity = ListDensity.Comfortable,
+    val cardCornerStyle: CardCornerStyle = CardCornerStyle.Pill,
+    val listDensity: ListDensity = ListDensity.Compact,
 
     val showServerPing: Boolean = true,
     val showServerUsage: Boolean = true,
@@ -246,18 +246,18 @@ data class AppSettings(
 
     val onboardingVersion: Int = 0,
 
-    val screenTransition: ScreenTransition = ScreenTransition.Push,
+    val screenTransition: ScreenTransition = ScreenTransition.Depth,
     val confirmRemove: Boolean = true,
 
     val homeAfterSelect: Boolean = false,
 
     val showTrafficTiles: Boolean = true,
-    val trafficTilesAboveHero: Boolean = false,
+    val trafficTilesAboveHero: Boolean = true,
     val trafficTileSize: TrafficTileSize = TrafficTileSize.Normal,
 
     val uiFontScale: UiFontScale = UiFontScale.Normal,
-    val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Cards,
-    val doubleColumnDisplay: Boolean = false,
+    val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Duo,
+    val doubleColumnDisplay: Boolean = true,
     val groupAllDisplay: Boolean = true,
     val reduceMotion: Boolean = false,
     val renderingMode: RenderingMode = RenderingMode.Auto,

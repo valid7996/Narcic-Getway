@@ -47,9 +47,9 @@ jobs:
           set -e
           V='${{ needs.version.outputs.name }}'
           ls -l dist
-          for f in "ZedSecure-$V-arm64-v8a.apk" "ZedSecure-$V-universal.apk" "ZedSecure-$V-x86_64.msi" \
-                   "ZedSecure-$V-linux-x86_64.tar.gz" "ZedSecure-$V-macos-arm64.dmg" "ZedSecure-$V-macos-x86_64.dmg"; do
+          for f in "NarcicGetway-$V-arm64-v8a.apk" "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.msi" \
+                   "NarcicGetway-$V-linux-x86_64.tar.gz" "NarcicGetway-$V-macos-arm64.dmg" "NarcicGetway-$V-macos-x86_64.dmg"; do
             [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
           done
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "ZedSecure $V" --notes "" --draft
+            --title "Narcic Getway $V" --notes "" --draft

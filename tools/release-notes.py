@@ -6,7 +6,7 @@ import subprocess
 import sys
 import urllib.parse
 
-REPO = "CluvexStudio/ZedSecure"
+REPO = "valid7996/Narcic-Getway"
 INK = "15170B"
 RAMP = ["C7F24E", "B6E23F", "A3D131", "8FBE24"]
 
@@ -110,7 +110,7 @@ def nix_row(names):
         return []
     return [
         "  <tr>\n    <td><b>NixOS</b></td>\n"
-        "    <td><code>nix run github:CluvexStudio/ZedSecure</code></td>\n  </tr>"
+        "    <td><code>nix run github:valid7996/Narcic-Getway</code></td>\n  </tr>"
     ]
 
 

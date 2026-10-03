@@ -2,6 +2,7 @@ package dev.cluvex.zedsecure.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -88,6 +89,12 @@ fun PageHeader(
                 )
             }
           }
+          Spacer(Modifier.height(8.dp))
+          androidx.compose.foundation.layout.Box(
+              Modifier
+                  .size(width = 34.dp, height = 3.dp)
+                  .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp)),
+          )
         }
         if (subtitle != null) {
             Text(

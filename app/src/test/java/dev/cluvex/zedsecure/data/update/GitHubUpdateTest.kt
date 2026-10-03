@@ -9,13 +9,13 @@ class GitHubUpdateTest {
     private val release = """
         {
           "tag_name": "v3.1.3",
-          "html_url": "https://github.com/CluvexStudio/ZedSecure/releases/tag/v3.1.3",
+          "html_url": "https://github.com/valid7996/Narcic-Getway/releases/tag/v3.1.3",
           "body": "<div align=\"center\">badge</div>\n\n**Download for your system:**\n\n<table></table>\n\n### What's new\n\nFixes from member reports.\n\n- **Installs again:** the [GitHub](https://github.com) APK explains the `Play` signature\n- Windows shows text\n\n<sub>Checksums: [SHA256SUMS.txt](https://x)</sub>\n",
           "assets": [
-            { "name": "ZedSecure-3.1.3-arm64-v8a.apk", "browser_download_url": "https://dl/arm64.apk" },
-            { "name": "ZedSecure-3.1.3-armeabi-v7a.apk", "browser_download_url": "https://dl/v7.apk" },
-            { "name": "ZedSecure-3.1.3-universal.apk", "browser_download_url": "https://dl/universal.apk" },
-            { "name": "ZedSecure-3.1.3-x86_64.msi", "browser_download_url": "https://dl/setup.msi" }
+            { "name": "NarcicGetway-3.1.3-arm64-v8a.apk", "browser_download_url": "https://dl/arm64.apk" },
+            { "name": "NarcicGetway-3.1.3-armeabi-v7a.apk", "browser_download_url": "https://dl/v7.apk" },
+            { "name": "NarcicGetway-3.1.3-universal.apk", "browser_download_url": "https://dl/universal.apk" },
+            { "name": "NarcicGetway-3.1.3-x86_64.msi", "browser_download_url": "https://dl/setup.msi" }
           ]
         }
     """.trimIndent()
@@ -34,7 +34,7 @@ class GitHubUpdateTest {
     fun `an unknown processor falls back to the universal APK, the desktop to the release page`() {
         assertEquals("https://dl/universal.apk", UpdateChecker.parseGitHubRelease(release, listOf("riscv64"))!!.downloadUrl)
         assertEquals(
-            "https://github.com/CluvexStudio/ZedSecure/releases/tag/v3.1.3",
+            "https://github.com/valid7996/Narcic-Getway/releases/tag/v3.1.3",
             UpdateChecker.parseGitHubRelease(release, emptyList())!!.downloadUrl,
         )
     }

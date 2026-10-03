@@ -33,7 +33,7 @@ class ScreenTransitionTest {
 
     @Test
     fun `the default is a directional style, not a cut`() {
-        assertEquals(ScreenTransition.Push, AppSettings().screenTransition)
+        assertEquals(ScreenTransition.Depth, AppSettings().screenTransition)
     }
 
     @Test

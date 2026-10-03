@@ -668,8 +668,8 @@ private fun BrandHeader(
         Text(
             text = stringResource(Res.string.app_name),
 
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
             maxLines = 1,
             softWrap = false,
 
@@ -847,9 +847,22 @@ private fun StatusChip(state: ConnectionState) {
             Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val dotColor = when (state) {
+                ConnectionState.Connected -> MaterialTheme.colorScheme.primary
+                ConnectionState.Connecting, ConnectionState.Reconnecting -> MaterialTheme.colorScheme.tertiary
+                ConnectionState.Error -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.outline
+            }
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .background(dotColor, CircleShape),
+            )
+            Spacer(Modifier.width(7.dp))
             Text(
                 label,
                 style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
 
                 maxLines = 1,
