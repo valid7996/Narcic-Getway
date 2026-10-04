@@ -68,8 +68,14 @@ jobs:
             "BINDGEN_EXTRA_CLANG_ARGS_${under_triple}=--target=$CLANG_TARGET --sysroot=$SYSROOT" \
             "BORING_BSSL_RUST_CPPLIB_${under_triple}=static:-bundle=c++" \
             cargo build --release --locked --features tor --bin aether
-          produced="$CARGO_TARGET_DIR/$TRIPLE/release/aether"
-          test -f "$produced"
+
+          echo "PWD=$PWD"
+          echo "CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-unset}"
+          find target -maxdepth 4 -name aether -type f 2>/dev/null || true
+          find "$GITHUB_WORKSPACE/aether-core" -type f -name aether -path "*release*" 2>/dev/null | head -5 || true
+          produced="$(find "$GITHUB_WORKSPACE/aether-core" -type f -name aether -path "*release*" 2>/dev/null | head -1)"
+          test -n "$produced"
+          echo "using binary: $produced"
           needed="$($TOOLCHAIN/llvm-readelf --dynamic-table "$produced" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')"
           echo "the core for ${{ matrix.abi }} needs:" $needed
           if grep -qx 'libc++_shared.so' <<< "$needed"; then
