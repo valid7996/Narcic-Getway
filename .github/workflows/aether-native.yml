@@ -67,7 +67,7 @@ jobs:
             "AR_${under_triple}=$TOOLCHAIN/llvm-ar" \
             "BINDGEN_EXTRA_CLANG_ARGS_${under_triple}=--target=$CLANG_TARGET --sysroot=$SYSROOT" \
             "BORING_BSSL_RUST_CPPLIB_${under_triple}=static:-bundle=c++" \
-            cargo build --release --locked --features tor --bin aether
+            cargo build --release --locked --features tor --target "$TRIPLE" --bin aether
 
           echo "PWD=$PWD"
           echo "CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-unset}"
@@ -99,15 +99,19 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: libaether-*
-          merge-multiple: true
           path: out
 
       - name: Place the cores into jniLibs and push
         run: |
           for abi in arm64-v8a armeabi-v7a x86_64; do
             mkdir -p "app/src/main/jniLibs/$abi"
-            cp "out/$abi/libaether.so" "app/src/main/jniLibs/$abi/libaether.so"
+            cp "out/libaether-$abi/libaether.so" "app/src/main/jniLibs/$abi/libaether.so"
           done
+          n=$(sha256sum app/src/main/jniLibs/*/libaether.so | awk '{print $1}' | sort -u | wc -l)
+          if [ "$n" != "3" ]; then
+            echo "::error::the three ABIs produced $n distinct binaries, expected 3"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/src/main/jniLibs/*/libaether.so
