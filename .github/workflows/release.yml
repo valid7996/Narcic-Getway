@@ -27,28 +27,21 @@ jobs:
     uses: ./.github/workflows/android-release.yml
     secrets: inherit
 
-  desktop:
-    needs: version
-    uses: ./.github/workflows/desktop-release.yml
-    secrets: inherit
-
   publish:
-    needs: [version, android, desktop]
+    needs: [version, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with: { name: android-apks, path: dist }
-      - uses: actions/download-artifact@v4
-        with: { pattern: "desktop-*", path: dist, merge-multiple: true }
-      - name: One draft with every platform
+      - name: One draft with every APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
           V='${{ needs.version.outputs.name }}'
           ls -l dist
-          for f in "NarcicGetway-$V-arm64-v8a.apk" "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.msi" \
-                   "NarcicGetway-$V-linux-x86_64.tar.gz" "NarcicGetway-$V-macos-arm64.dmg" "NarcicGetway-$V-macos-x86_64.dmg"; do
+          for f in "NarcicGetway-$V-arm64-v8a.apk" "NarcicGetway-$V-armeabi-v7a.apk" \
+                   "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.apk"; do
             [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
           done
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \

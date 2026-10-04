@@ -63,7 +63,6 @@ compose-components-resources = { group = "org.jetbrains.compose.components", nam
 compose-material3-mp = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "material3Multiplatform" }
 lifecycle-viewmodel-compose-mp = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleMultiplatform" }
 lifecycle-runtime-compose-mp = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleMultiplatform" }
-kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "coroutines" }
 reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
 jsch = { group = "com.github.mwiede", name = "jsch", version = "2.27.7" }
 

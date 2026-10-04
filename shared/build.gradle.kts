@@ -18,8 +18,6 @@ kotlin {
         compileSdk = 37
         minSdk = 24
     }
-    jvm("desktop")
-
     sourceSets {
         val jvmMain = create("jvmMain") {
             dependsOn(getByName("commonMain"))
@@ -55,13 +53,6 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.android)
 
                 implementation(libs.androidx.activity.compose)
-            }
-        }
-        getByName("desktopMain") {
-            dependsOn(jvmMain)
-            dependencies {
-                implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutines.swing)
             }
         }
     }

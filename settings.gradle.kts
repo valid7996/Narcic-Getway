@@ -29,4 +29,3 @@ dependencyResolutionManagement {
 rootProject.name = "NarcicGetway"
 include(":app")
 include(":shared")
-include(":desktop")

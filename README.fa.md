@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://github.com/valid7996/Narcic-Getway/releases/latest"><img src="https://img.shields.io/github/v/release/valid7996/Narcic-Getway?style=flat-square&color=C7F24E&labelColor=15170B&label=release" alt="آخرین نسخه"></a>
   <a href="https://play.google.com/store/apps/details?id=com.zedsecure.vpn"><img src="https://img.shields.io/badge/Google%20Play-install-C7F24E?style=flat-square&labelColor=15170B" alt="گوگل پلی"></a>
-  <img src="https://img.shields.io/badge/Android%20%C2%B7%20Linux%20%C2%B7%20Windows%20%C2%B7%20macOS-C7F24E?style=flat-square&labelColor=15170B" alt="اندروید، لینوکس، ویندوز، مک">
+  <img src="https://img.shields.io/badge/Android-C7F24E?style=flat-square&labelColor=15170B" alt="اندروید">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-C7F24E?style=flat-square&labelColor=15170B" alt="AGPL-3.0"></a>
 </p>
 
@@ -19,7 +19,7 @@
 
 ## Narcic Getway چیست؟
 
-Narcic Getway یک کلاینت VPN و پروکسی برای اندروید، لینوکس، ویندوز و مک است که به‌جای یک هسته، چند هسته
+Narcic Getway یک کلاینت VPN و پروکسی برای اندروید، اندروید است که به‌جای یک هسته، چند هسته
 را با هم دارد. وقتی یک مسیر بسته شود، مسیر بعدی از قبل نصب است: Xray و sing-box برای پروتکل‌های
 رایج، سایفون و Tor برای وقتی که هیچ چیز دیگری وصل نمی‌شود، تونل DNS برای شبکه‌هایی که جز DNS
 تقریباً چیزی رد نمی‌کنند، و WireGuard و AmneziaWG و OpenConnect و IKEv2 برای سرورهایی که خودتان
@@ -43,7 +43,6 @@ Narcic Getway یک کلاینت VPN و پروکسی برای اندروید، ل
 | IKEv2 | کلاینت IPsec داخلی خودِ اندروید |
 | SSH | به‌تنهایی، یا از داخل هر کدام از بالایی‌ها |
 
-اندروید همه را دارد. لینوکس و ویندوز و مک، Xray و sing-box و تونل‌های DNS و SSH را دارند.
 
 ## امکانات
 
@@ -61,14 +60,6 @@ Narcic Getway یک کلاینت VPN و پروکسی برای اندروید، ل
 APK مخصوص دستگاهتان از [Releases](https://github.com/valid7996/Narcic-Getway/releases/latest)
 (`arm64-v8a` برای تقریباً همهٔ گوشی‌ها، `armeabi-v7a` برای گوشی‌های قدیمی‌تر).
 
-**لینوکس:** فایل `.deb`، `.rpm`، `.AppImage` یا `.tar.gz` از Releases. روی NixOS:
-`nix run github:valid7996/Narcic-Getway`
-
-**ویندوز:** نصب‌کنندهٔ `.msi`، یا نسخهٔ قابل حمل `.zip`.
-
-**مک:** فایل `.dmg` برای Apple Silicon یا Intel. برنامه notarize نشده، پس بار اول با راست‌کلیک و
-سپس Open بازش کنید.
-
 ## ساخت از سورس
 
 <div dir="ltr">
@@ -77,7 +68,6 @@ APK مخصوص دستگاهتان از [Releases](https://github.com/valid7996/N
 ./tools/fetch-cores.sh           # every engine at its pinned commit
 ./tools/build-zedcore.sh         # the Android core; needs Go 1.26.3 and NDK 28 or newer
 ./gradlew :app:assembleRelease   # three APKs, one per ABI
-./gradlew :desktop:packageDeb    # or packageRpm, packageMsi, packageDmg
 ```
 
 </div>

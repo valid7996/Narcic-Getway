@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/valid7996/Narcic-Getway/releases/latest"><img src="https://img.shields.io/github/v/release/valid7996/Narcic-Getway?style=flat-square&color=C7F24E&labelColor=15170B&label=release" alt="Latest release"></a>
   <a href="https://play.google.com/store/apps/details?id=com.zedsecure.vpn"><img src="https://img.shields.io/badge/Google%20Play-install-C7F24E?style=flat-square&labelColor=15170B" alt="Google Play"></a>
-  <img src="https://img.shields.io/badge/Android%20%C2%B7%20Linux%20%C2%B7%20Windows%20%C2%B7%20macOS-C7F24E?style=flat-square&labelColor=15170B" alt="Android, Linux, Windows, macOS">
+  <img src="https://img.shields.io/badge/Android-C7F24E?style=flat-square&labelColor=15170B" alt="Android">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-C7F24E?style=flat-square&labelColor=15170B" alt="AGPL-3.0"></a>
 </p>
 
@@ -17,7 +17,7 @@
 
 ## What is Narcic Getway?
 
-Narcic Getway is a VPN and proxy client for Android, Linux, Windows and macOS that ships with more than one
+Narcic Getway is a VPN and proxy client for Android that ships with more than one
 engine. When one route is blocked, the next one is already installed: Xray and sing-box for the
 usual protocols, Psiphon and Tor for when nothing else connects, DNS tunnels for networks that let
 little more than DNS through, and WireGuard, AmneziaWG, OpenConnect and IKEv2 for servers you
@@ -41,7 +41,6 @@ the connection to the fastest one.
 | IKEv2 | the IPsec client built into Android |
 | SSH | on its own, or through any of the above |
 
-Android has all of them. Linux, Windows and macOS carry Xray, sing-box, the DNS tunnels and SSH.
 
 ## Features
 
@@ -59,26 +58,17 @@ Android has all of them. Linux, Windows and macOS carry Xray, sing-box, the DNS 
 APK for your device from [Releases](https://github.com/valid7996/Narcic-Getway/releases/latest)
 (`arm64-v8a` for almost every phone, `armeabi-v7a` for older ones).
 
-**Linux:** `.deb`, `.rpm`, `.AppImage` or `.tar.gz` from Releases. On NixOS,
-`nix run github:valid7996/Narcic-Getway`.
-
-**Windows:** the `.msi` installer, or the portable `.zip`.
-
-**macOS:** the `.dmg` for Apple Silicon or for Intel. The app is not notarized, so open it the
-first time with right-click, then Open.
-
 ## Building
 
 ```sh
 ./tools/fetch-cores.sh           # every engine at its pinned commit
 ./tools/build-zedcore.sh         # the Android core; needs Go 1.26.3 and NDK 28 or newer
 ./gradlew :app:assembleRelease   # three APKs, one per ABI
-./gradlew :desktop:packageDeb    # or packageRpm, packageMsi, packageDmg
 ```
 
 The engines we patched are published as forks; [`tools/core-sources.txt`](tools/core-sources.txt)
-lists each one with the exact commit a release is built from. Pushing a `v*` tag builds Android and
-every desktop system in CI and puts them all in one release; Android and desktop share one version.
+lists each one with the exact commit a release is built from. Pushing a `v*` tag builds Android
+in CI and puts the APKs in one release.
 
 ## Credits
 
