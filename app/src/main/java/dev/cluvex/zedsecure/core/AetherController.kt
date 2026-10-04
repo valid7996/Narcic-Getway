@@ -66,15 +66,17 @@ class AetherController(
             // The exit proxy first, so the core's first dials have somewhere to go; direct when it cannot run.
             val upstream = AetherSupport.startExitProxy(profile)
 
-            if (AetherSupport.missingKeys(workDir, profile).isNotEmpty()) {
+            if (AetherIdentityStore.missingKeys(workDir, profile).isNotEmpty()) {
                 LogBus.append("I/aether registering WARP keys for ${profile.protocol}")
-                val registered = AetherIdentityStore.register(
-                    context = context,
-                    protocol = profile.protocol,
-                    upstreamPort = upstream,
-                    workDir = workDir,
-                    onOutput = ::relay,
-                )
+                val registered = kotlinx.coroutines.runBlocking {
+                    AetherIdentityStore.register(
+                        context = context,
+                        protocol = profile.protocol,
+                        upstreamPort = upstream,
+                        workDir = workDir,
+                        onOutput = ::relay,
+                    )
+                }
                 if (!registered) {
                     if (!stopped) fail("Aether key registration failed")
                     AetherSupport.stopExitProxy()
