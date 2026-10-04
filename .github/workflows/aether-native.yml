@@ -52,6 +52,9 @@ jobs:
           SYSROOT="$(cd "$TOOLCHAIN/../sysroot" && pwd)"
           env_triple="$(echo "$TRIPLE" | tr 'a-z-' 'A-Z_')"
           under_triple="$(echo "$TRIPLE" | tr '-' '_')"
+          # A pinned target dir: the crate sits in a workspace, so cargo would
+          # otherwise put the artifacts at the workspace root.
+          export CARGO_TARGET_DIR="$PWD/target"
           env \
             ANDROID_NDK_HOME="$NDK_HOME" \
             ANDROID_NDK_ROOT="$NDK_HOME" \
@@ -65,7 +68,7 @@ jobs:
             "BINDGEN_EXTRA_CLANG_ARGS_${under_triple}=--target=$CLANG_TARGET --sysroot=$SYSROOT" \
             "BORING_BSSL_RUST_CPPLIB_${under_triple}=static:-bundle=c++" \
             cargo build --release --locked --features tor --bin aether
-          produced="target/$TRIPLE/release/aether"
+          produced="$CARGO_TARGET_DIR/$TRIPLE/release/aether"
           test -f "$produced"
           needed="$($TOOLCHAIN/llvm-readelf --dynamic-table "$produced" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')"
           echo "the core for ${{ matrix.abi }} needs:" $needed
