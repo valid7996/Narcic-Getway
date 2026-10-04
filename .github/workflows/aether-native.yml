@@ -90,8 +90,47 @@ jobs:
           name: libaether-${{ matrix.abi }}
           path: out/${{ matrix.abi }}/libaether.so
 
+  helpers:
+    # The carriers' helpers, ported from PattNG's compile-psiphon.sh and compile-pt.sh: Psiphon's
+    # console client and the lyrebird pluggable transport, both Go programs built for Android.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            goarch: arm64
+            goarm: ""
+          - abi: armeabi-v7a
+            goarch: arm
+            goarm: "7"
+          - abi: x86_64
+            goarch: amd64
+            goarm: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+
+      - name: Build the Psiphon client and lyrebird for ${{ matrix.abi }}
+        run: |
+          mkdir -p out/${{ matrix.abi }}
+          curl -fsSL "https://raw.githubusercontent.com/patterniha/Aether/main/psiphon-build.sh" -o psiphon-build.sh
+          curl -fsSL "https://raw.githubusercontent.com/patterniha/Aether/main/pt-build.sh" -o pt-build.sh
+          bash psiphon-build.sh android ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
+          bash pt-build.sh android ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
+          mv "out/${{ matrix.abi }}/psiphon-tunnel-core" "out/${{ matrix.abi }}/libpsiphon-tunnel-core.so"
+          mv "out/${{ matrix.abi }}/lyrebird" "out/${{ matrix.abi }}/liblyrebird.so"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aether-helpers-${{ matrix.abi }}
+          path: out/${{ matrix.abi }}/
+
   commit:
-    needs: aether-android
+    needs: [aether-android, helpers]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,11 +140,18 @@ jobs:
           pattern: libaether-*
           path: out
 
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: aether-helpers-*
+          path: helpers
+
       - name: Place the cores into jniLibs and push
         run: |
           for abi in arm64-v8a armeabi-v7a x86_64; do
             mkdir -p "app/src/main/jniLibs/$abi"
             cp "out/libaether-$abi/libaether.so" "app/src/main/jniLibs/$abi/libaether.so"
+            cp "helpers/aether-helpers-$abi/libpsiphon-tunnel-core.so" "app/src/main/jniLibs/$abi/libpsiphon-tunnel-core.so"
+            cp "helpers/aether-helpers-$abi/liblyrebird.so" "app/src/main/jniLibs/$abi/liblyrebird.so"
           done
           n=$(sha256sum app/src/main/jniLibs/*/libaether.so | awk '{print $1}' | sort -u | wc -l)
           if [ "$n" != "3" ]; then
@@ -114,10 +160,10 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src/main/jniLibs/*/libaether.so
+          git add app/src/main/jniLibs/*/libaether.so app/src/main/jniLibs/*/libpsiphon-tunnel-core.so app/src/main/jniLibs/*/liblyrebird.so
           if git diff --cached --quiet; then
             echo "nothing to commit"
           else
-            git commit -m "Aether core binaries (patterniha/Aether @ $AETHER_REV)"
+            git commit -m "Aether core and carrier helpers (patterniha/Aether @ $AETHER_REV)"
             git push
           fi

@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -26,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,13 +40,14 @@ import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.domain.config.AetherProfile
 import dev.cluvex.zedsecure.ui.components.PickerField
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
  * The manual Aether editor, ported from PattNG's ServerAetherActivity into the app's sheet style:
- * the endpoint the tunnel dials, the shape of the tunnel, and the details the network sees. The
- * endpoint may stay empty, which asks the core to scan for one.
+ * the endpoint the tunnel dials — scanned for when left empty — the shape of the tunnel, the
+ * carriers around and inside it, and the details the network sees.
  */
 @Composable
 fun AetherSheet(
@@ -70,12 +75,33 @@ fun AetherSheet(
     var echDomain by remember { mutableStateOf(initial?.echDomain.orEmpty()) }
     var wiwOuter by remember { mutableStateOf(initial?.wiwOuter.orEmpty()) }
     var wiwInner by remember { mutableStateOf(initial?.wiwInner.orEmpty()) }
+    var tor by remember { mutableStateOf(initial?.tor ?: AetherProfile.CARRIER_OFF) }
+    var torBridges by remember { mutableStateOf(initial?.torBridges ?: AetherProfile.TOR_BRIDGES_AUTO) }
+    var torBridgeLines by remember { mutableStateOf(initial?.torBridgeLines.orEmpty()) }
+    var torRelays by remember { mutableStateOf(initial?.torRelays ?: AetherProfile.TOR_RELAYS_AUTO) }
+    var psiphon by remember { mutableStateOf(initial?.psiphon ?: AetherProfile.CARRIER_OFF) }
+    var psiphonMode by remember { mutableStateOf(initial?.psiphonMode ?: AetherProfile.PSIPHON_MODE_AUTO) }
+    var psiphonRegion by remember { mutableStateOf(initial?.psiphonRegion.orEmpty()) }
+    var psiphonCdnIps by remember { mutableStateOf(initial?.psiphonCdnIps.orEmpty()) }
+    var psiphonCdnSni by remember { mutableStateOf(initial?.psiphonCdnSni.orEmpty()) }
+    var psiphonCdnSets by remember { mutableStateOf(initial?.psiphonCdnSets.orEmpty()) }
+    var finalMask by remember { mutableStateOf(initial?.finalMask.orEmpty()) }
+    var dialMode by remember { mutableStateOf(initial?.dialMode.orEmpty()) }
     var expert by remember { mutableStateOf(initial?.command?.isNotBlank() == true) }
     var command by remember { mutableStateOf(initial?.command.orEmpty()) }
     var saving by remember { mutableStateOf(false) }
 
+    var showIdentity by remember { mutableStateOf(false) }
+    val aether = LocalAetherActions.current
+    val scope = rememberCoroutineScope()
+
+    // The scanner's state: idle, running, or what it ended with.
+    var scanning by remember { mutableStateOf(false) }
+    var scanOutcome by remember { mutableStateOf<ScanOutcome?>(null) }
+
     val twoHops = protocol == AetherProfile.PROTO_GOOL || protocol == AetherProfile.PROTO_MIM
     val overMasque = protocol == AetherProfile.PROTO_MASQUE || protocol == AetherProfile.PROTO_MIM
+    val carriersUsed = tor != AetherProfile.CARRIER_OFF || psiphon != AetherProfile.CARRIER_OFF
 
     fun build(): AetherProfile? {
         val host = server.trim()
@@ -87,7 +113,7 @@ fun AetherSheet(
             val outer = wiwOuter.trim()
             val inner = wiwInner.trim()
             if ((outer.isNotEmpty() || inner.isNotEmpty()) &&
-                (AetherEndpointText.of(outer) == null || AetherEndpointText.of(inner) == null || outer == inner)
+                (!AetherEndpointText.of(outer) || !AetherEndpointText.of(inner) || outer == inner)
             ) {
                 return null
             }
@@ -111,6 +137,18 @@ fun AetherSheet(
             echDomain = echDomain.trim(),
             wiwOuter = wiwOuter.trim(),
             wiwInner = wiwInner.trim(),
+            tor = tor,
+            torBridges = torBridges,
+            torBridgeLines = torBridgeLines.trim(),
+            torRelays = torRelays,
+            psiphon = psiphon,
+            psiphonMode = psiphonMode,
+            psiphonRegion = psiphonRegion.trim(),
+            psiphonCdnIps = psiphonCdnIps.trim(),
+            psiphonCdnSni = psiphonCdnSni.trim(),
+            psiphonCdnSets = psiphonCdnSets.trim(),
+            finalMask = finalMask.trim(),
+            dialMode = dialMode.trim(),
             command = if (expert) command.trim() else "",
         )
     }
@@ -183,6 +221,59 @@ fun AetherSheet(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+
+            if (aether != null) {
+                FilledTonalButton(
+                    onClick = {
+                        val current = build() ?: return@FilledTonalButton
+                        scanning = true
+                        scanOutcome = null
+                        scope.launch {
+                            val result = aether.scan(current)
+                            scanning = false
+                            scanOutcome = if (result == null) ScanOutcome.Failed else {
+                                if (twoHops && result.innerHop != null) {
+                                    wiwOuter = result.endpoint
+                                    wiwInner = result.innerHop
+                                } else {
+                                    val text = result.endpoint
+                                    val separator = text.lastIndexOf(':')
+                                    if (separator > 0) {
+                                        server = text.substring(0, separator).removeSurrounding("[", "]")
+                                        port = text.substring(separator + 1)
+                                    }
+                                }
+                                ScanOutcome.Found
+                            }
+                        }
+                    },
+                    enabled = !scanning,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (scanning) {
+                        CircularProgressIndicator(Modifier.width(18.dp).height(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(Res.string.aether_scanning))
+                    } else {
+                        Text(stringResource(Res.string.aether_scan))
+                    }
+                }
+                when (scanOutcome) {
+                    ScanOutcome.Failed -> Text(
+                        stringResource(Res.string.aether_scan_failed),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    ScanOutcome.Found -> Text(
+                        stringResource(Res.string.aether_scan_found),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
+                    null -> Unit
+                }
             }
 
             PickerField(
@@ -287,6 +378,122 @@ fun AetherSheet(
                 }
             }
 
+            if (carriersUsed || aether != null) {
+                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                Text(
+                    stringResource(Res.string.aether_group_carriers),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            if (tor != AetherProfile.CARRIER_OFF || aether != null) {
+                PickerField(
+                    label = stringResource(Res.string.aether_tor),
+                    options = AetherProfile.carriers.map { it to it.replaceFirstChar(Char::uppercase) },
+                    selected = tor,
+                    onSelect = { tor = it },
+                )
+                if (tor != AetherProfile.CARRIER_OFF) {
+                    PickerField(
+                        label = stringResource(Res.string.aether_tor_bridges),
+                        options = AetherProfile.torBridgeModes.map { it to it.replaceFirstChar(Char::uppercase) },
+                        selected = torBridges,
+                        onSelect = { torBridges = it },
+                    )
+                    if (torBridges == AetherProfile.TOR_BRIDGES_OWN) {
+                        OutlinedTextField(
+                            value = torBridgeLines,
+                            onValueChange = { torBridgeLines = it },
+                            label = { Text(stringResource(Res.string.aether_tor_bridge_lines)) },
+                            minLines = 2,
+                            maxLines = 6,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (torBridges == AetherProfile.TOR_BRIDGES_AUTO || torBridges == AetherProfile.TOR_BRIDGES_FIRST) {
+                        PickerField(
+                            label = stringResource(Res.string.aether_tor_relays),
+                            options = AetherProfile.torRelayModes.map { it to it.replaceFirstChar(Char::uppercase) },
+                            selected = torRelays,
+                            onSelect = { torRelays = it },
+                        )
+                    }
+                }
+            }
+
+            if (psiphon != AetherProfile.CARRIER_OFF || aether != null) {
+                PickerField(
+                    label = stringResource(Res.string.aether_psiphon),
+                    options = AetherProfile.carriers.map { it to it.replaceFirstChar(Char::uppercase) },
+                    selected = psiphon,
+                    onSelect = { psiphon = it },
+                )
+                if (psiphon != AetherProfile.CARRIER_OFF) {
+                    PickerField(
+                        label = stringResource(Res.string.aether_psiphon_connection),
+                        options = AetherProfile.psiphonModes.map { it to it.replaceFirstChar(Char::uppercase) },
+                        selected = psiphonMode,
+                        onSelect = { psiphonMode = it },
+                    )
+                    OutlinedTextField(
+                        value = psiphonRegion,
+                        onValueChange = { psiphonRegion = it },
+                        label = { Text(stringResource(Res.string.aether_psiphon_region)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (psiphonMode != AetherProfile.PSIPHON_MODE_DIRECT) {
+                        OutlinedTextField(
+                            value = psiphonCdnIps,
+                            onValueChange = { psiphonCdnIps = it },
+                            label = { Text(stringResource(Res.string.aether_psiphon_cdn_ips)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = psiphonCdnSni,
+                            onValueChange = { psiphonCdnSni = it },
+                            label = { Text(stringResource(Res.string.aether_psiphon_cdn_sni)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = psiphonCdnSets,
+                            onValueChange = { psiphonCdnSets = it },
+                            label = { Text(stringResource(Res.string.aether_psiphon_cdn_sets)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+
+            OutlinedTextField(
+                value = finalMask,
+                onValueChange = { finalMask = it },
+                label = { Text(stringResource(Res.string.aether_final_mask)) },
+                minLines = 1,
+                maxLines = 4,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = dialMode,
+                onValueChange = { dialMode = it },
+                label = { Text(stringResource(Res.string.aether_dial_mode)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            if (aether != null) {
+                FilledTonalButton(
+                    onClick = { showIdentity = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(Res.string.aether_identity))
+                }
+            }
+
             SettingRow(
                 label = stringResource(Res.string.aether_lab_expert),
                 checked = expert,
@@ -324,7 +531,105 @@ fun AetherSheet(
             }
         }
     }
+
+    if (showIdentity && aether != null) {
+        AetherIdentitySheet(actions = aether, onDismiss = { showIdentity = false })
+    }
 }
+
+/** The WARP keys of the device: the identities they hold, and new keys on request. */
+@Composable
+private fun AetherIdentitySheet(actions: AetherActions, onDismiss: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var entries by remember { mutableStateOf<List<AetherKeyUiEntry>>(emptyList()) }
+    var renewing by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<MessageOutcome?>(null) }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        entries = actions.keys()
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 26.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                stringResource(Res.string.aether_identity),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+
+            if (entries.isEmpty()) {
+                Text(
+                    stringResource(Res.string.aether_identity_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(Modifier.fillMaxWidth().height(220.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(entries, key = { it.file }) { entry ->
+                        Column(Modifier.fillMaxWidth()) {
+                            Text(entry.file, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            if (entry.deviceId != null) {
+                                Text(
+                                    "${entry.ipv4.orEmpty()}  ${entry.ipv6.orEmpty()}".trim(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            when (message) {
+                MessageOutcome.Renewed -> Text(
+                    stringResource(Res.string.aether_identity_renewed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+
+                MessageOutcome.Failed -> Text(
+                    stringResource(Res.string.aether_identity_failed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                null -> Unit
+            }
+
+            FilledTonalButton(
+                onClick = {
+                    renewing = true
+                    message = null
+                    scope.launch {
+                        val ok = actions.registerKeys(AetherProfile.PROTO_WG)
+                        renewing = false
+                        message = if (ok) MessageOutcome.Renewed else MessageOutcome.Failed
+                        if (ok) entries = actions.keys()
+                    }
+                },
+                enabled = !renewing,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (renewing) {
+                    CircularProgressIndicator(Modifier.width(18.dp).height(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(Res.string.aether_identity_renewing))
+                } else {
+                    Text(stringResource(Res.string.aether_identity_renew))
+                }
+            }
+        }
+    }
+}
+
+private enum class ScanOutcome { Failed, Found }
+
+private enum class MessageOutcome { Renewed, Failed }
 
 @Composable
 private fun SettingRow(label: String, checked: Boolean, enabled: Boolean, onChecked: (Boolean) -> Unit) {

@@ -53,6 +53,8 @@ ref*.png
 /app/src/main/jniLibs/*/*
 !/app/src/main/jniLibs/*/libopenconnect.so
 !/app/src/main/jniLibs/*/libaether.so
+!/app/src/main/jniLibs/*/libpsiphon-tunnel-core.so
+!/app/src/main/jniLibs/*/liblyrebird.so
 
 __pycache__/
 *.pyc
