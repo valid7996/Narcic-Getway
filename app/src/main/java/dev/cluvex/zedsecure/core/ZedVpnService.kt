@@ -14,6 +14,7 @@ import dev.amirzr.flutter_v2ray_client.v2ray.core.HevTunCore
 import dev.cluvex.zedsecure.R
 import dev.cluvex.zedsecure.data.settings.SettingsRepository
 import dev.cluvex.zedsecure.domain.config.LocalPorts
+import dev.cluvex.zedsecure.domain.config.AetherProfile
 import dev.cluvex.zedsecure.domain.config.RoutingMigration
 import dev.cluvex.zedsecure.domain.model.AppSettings
 import dev.cluvex.zedsecure.domain.model.RulesetItem
@@ -46,6 +47,7 @@ class ZedVpnService : VpnService() {
     private var notifChip: dev.cluvex.zedsecure.domain.model.NotifChip =
         dev.cluvex.zedsecure.domain.model.NotifChip.Speed
     private var psiphon: PsiphonController? = null
+    private var aether: AetherController? = null
     private var dnsTunnel: DnsTunnelController? = null
     private var masterDns: MasterDnsController? = null
     private var tor: dev.cluvex.zedsecure.core.tor.TorController? = null
@@ -271,6 +273,7 @@ class ZedVpnService : VpnService() {
 
         when (kind) {
             VpnManager.KIND_PSIPHON -> startPsiphon(configJson, descriptor, tunMtu)
+            VpnManager.KIND_AETHER -> startAether(configJson, descriptor, tunMtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, descriptor, tunMtu)
@@ -774,6 +777,35 @@ class ZedVpnService : VpnService() {
         if (!controller.start()) stopEverything()
     }
 
+    private fun startAether(configJson: String, descriptor: ParcelFileDescriptor, tunMtu: Int) {
+        val profile = try {
+            kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                .decodeFromString(AetherProfile.serializer(), configJson)
+        } catch (e: Exception) {
+            Log.e(TAG, "aether config decode failed", e)
+            VpnManager.onError(getString(R.string.config_invalid))
+            stopEverything()
+            return
+        }
+        val bridged = java.util.concurrent.atomic.AtomicBoolean(false)
+        val controller = AetherController(
+            context = this,
+            profile = profile,
+            socksPort = LocalPorts.AETHER_SOCKS,
+            onEstablished = {
+                if (bridged.compareAndSet(false, true) && bridge(descriptor, LocalPorts.AETHER_SOCKS, tunMtu)) {
+                    VpnManager.activeSocksPort = LocalPorts.AETHER_SOCKS
+                    finishConnected()
+                }
+            },
+            onStopped = { reason ->
+                onTunnelFailed(reason)
+            },
+        )
+        aether = controller
+        if (!controller.start()) stopEverything()
+    }
+
     private fun bridge(
         descriptor: ParcelFileDescriptor,
         socksPort: Int,
@@ -866,6 +898,7 @@ class ZedVpnService : VpnService() {
 
     private fun protocolLabel(): String = when (kind) {
         VpnManager.KIND_PSIPHON -> "Psiphon"
+        VpnManager.KIND_AETHER -> "Aether"
         VpnManager.KIND_DNS_TUNNEL -> "DNS"
         VpnManager.KIND_MASTERDNS -> "MasterDNS"
         VpnManager.KIND_TOR -> "Tor"
@@ -1173,6 +1206,7 @@ class ZedVpnService : VpnService() {
         statsJob?.cancel()
         stopAutoSelectSession()
         psiphon?.stop(); psiphon = null
+        aether?.stop(); aether = null
         dnsTunnel?.stop(); dnsTunnel = null
         masterDns?.stop(); masterDns = null
         tor?.stop(); tor = null

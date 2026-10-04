@@ -317,6 +317,7 @@ fun ServersScreen(
     var showDnsTunnel by remember { mutableStateOf(false) }
     var showMasterDns by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
+    var showAether by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
     var showSniSpoof by remember { mutableStateOf(false) }
@@ -1084,6 +1085,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showOpenConnect = true
             },
+            onAether = {
+                showAddSheet = false
+                showAether = true
+            },
             onIkev2 = {
                 showAddSheet = false
                 showIkev2 = true
@@ -1157,6 +1162,17 @@ fun ServersScreen(
             onSave = { name, settings ->
                 showOpenConnect = false
                 repository.addOpenConnect(settings, name)
+                onServerActivated()
+            },
+        )
+    }
+
+    if (showAether) {
+        AetherSheet(
+            onDismiss = { showAether = false },
+            onSave = { name, settings ->
+                showAether = false
+                repository.addAether(settings, name)
                 onServerActivated()
             },
         )
@@ -1985,6 +2001,7 @@ private fun AddServerSheet(
     onDnsTunnel: () -> Unit,
     onMasterDns: () -> Unit,
     onOpenConnect: () -> Unit,
+    onAether: () -> Unit,
     onIkev2: () -> Unit,
     onTor: () -> Unit,
     onSsh: () -> Unit,
@@ -2030,6 +2047,7 @@ private fun AddServerSheet(
 
             OptionGroup(Res.string.add_group_vpn)
             Option(Res.drawable.ic_lock, Res.string.openconnect_add_title, onOpenConnect)
+            Option(Res.drawable.ic_bolt, Res.string.aether_add_title, onAether)
             Option(Res.drawable.ic_lock, Res.string.ikev2_add_title, onIkev2)
 
             OptionGroup(Res.string.add_group_chains)

@@ -119,6 +119,7 @@ class StartPlanner(context: Context) {
         profile.dnsTunnelSettings() != null -> VpnManager.KIND_DNS_TUNNEL
         profile.masterDnsSettings() != null -> VpnManager.KIND_MASTERDNS
         profile.openConnectSettings() != null -> VpnManager.KIND_OPENCONNECT
+        profile.aetherSettings() != null -> VpnManager.KIND_AETHER
         profile.ikev2Settings() != null -> VpnManager.KIND_IKEV2
         profile.isTor -> VpnManager.KIND_TOR
         profile.sshSettings() != null -> VpnManager.KIND_SSH
@@ -177,6 +178,11 @@ class StartPlanner(context: Context) {
         profile.openConnectSettings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
                 dev.cluvex.zedsecure.domain.config.OpenConnectProfile.serializer(), it,
+            )
+        }
+        profile.aetherSettings()?.let {
+            return kotlinx.serialization.json.Json.encodeToString(
+                dev.cluvex.zedsecure.domain.config.AetherProfile.serializer(), it,
             )
         }
         profile.ikev2Settings()?.let {

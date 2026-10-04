@@ -75,6 +75,7 @@ object DesktopVpn {
 
         when {
             profile.ikev2Settings() != null -> startIkev2(profile.name, profile.ikev2Settings()!!)
+            profile.aetherSettings() != null -> { VpnManager.onError("Aether is supported on Android only"); return }
             profile.psiphonSettings() != null -> startPsiphon(profile.name, profile.psiphonSettings()!!)
             profile.isTor -> startTor(profile.name)
             profile.dnsTunnelSettings() != null -> startDns(profile.name, profile.dnsTunnelSettings()!!)

@@ -68,6 +68,7 @@ object ZedLink {
 
         is ProfileSource.Link,
         is ProfileSource.RawJson,
+        is ProfileSource.Aether,
         is ProfileSource.SniSpoof,
         is ProfileSource.Sealed,
 
