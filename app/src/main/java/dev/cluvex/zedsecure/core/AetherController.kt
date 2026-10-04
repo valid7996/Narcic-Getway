@@ -190,12 +190,15 @@ class AetherController(
             Log.e(TAG, "aether register launch failed", e)
             return false
         }
-        try {
-            started.inputStream.bufferedReader().forEachLine { line ->
-                relay(line)
-                if (registered.containsMatchIn(line)) return true
+        val reader = started.inputStream.bufferedReader()
+        while (true) {
+            val line = try {
+                reader.readLine() ?: break
+            } catch (_: IOException) {
+                break
             }
-        } catch (_: IOException) {
+            relay(line)
+            if (registered.containsMatchIn(line)) return true
         }
         runCatching { started.waitFor() }
         return false
