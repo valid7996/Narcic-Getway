@@ -119,8 +119,8 @@ jobs:
           mkdir -p out/${{ matrix.abi }}
           curl -fsSL "https://raw.githubusercontent.com/patterniha/Aether/main/psiphon-build.sh" -o psiphon-build.sh
           curl -fsSL "https://raw.githubusercontent.com/patterniha/Aether/main/pt-build.sh" -o pt-build.sh
-          bash psiphon-build.sh android ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
-          bash pt-build.sh android ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
+          bash psiphon-build.sh linux ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
+          bash pt-build.sh linux ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
           mv "out/${{ matrix.abi }}/psiphon-tunnel-core" "out/${{ matrix.abi }}/libpsiphon-tunnel-core.so"
           mv "out/${{ matrix.abi }}/lyrebird" "out/${{ matrix.abi }}/liblyrebird.so"
 
