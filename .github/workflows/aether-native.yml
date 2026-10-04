@@ -116,13 +116,16 @@ jobs:
 
       - name: Build the Psiphon client and lyrebird for ${{ matrix.abi }}
         run: |
-          mkdir -p out/${{ matrix.abi }}
+          # An absolute out: the build scripts cd into their source tree, where a
+          # relative path would land the binary inside the tree they delete after.
+          OUT="$GITHUB_WORKSPACE/out/${{ matrix.abi }}"
+          mkdir -p "$OUT"
           curl -fsSL "https://raw.githubusercontent.com/patterniha/Aether/main/psiphon-build.sh" -o psiphon-build.sh
           curl -fsSL "https://raw.githubusercontent.com/patterniha/Aether/main/pt-build.sh" -o pt-build.sh
-          bash psiphon-build.sh linux ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
-          bash pt-build.sh linux ${{ matrix.goarch }} out/${{ matrix.abi }} ${{ matrix.goarm }}
-          mv "out/${{ matrix.abi }}/psiphon-tunnel-core" "out/${{ matrix.abi }}/libpsiphon-tunnel-core.so"
-          mv "out/${{ matrix.abi }}/lyrebird" "out/${{ matrix.abi }}/liblyrebird.so"
+          bash psiphon-build.sh linux ${{ matrix.goarch }} "$OUT" ${{ matrix.goarm }}
+          bash pt-build.sh linux ${{ matrix.goarch }} "$OUT" ${{ matrix.goarm }}
+          mv "$OUT/psiphon-tunnel-core" "$OUT/libpsiphon-tunnel-core.so"
+          mv "$OUT/lyrebird" "$OUT/liblyrebird.so"
 
       - uses: actions/upload-artifact@v4
         with:
