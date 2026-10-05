@@ -1314,232 +1314,6 @@ fun ServersScreen(
         )
     }
 
-    editTarget?.let { target ->
-        when {
-            target.isSingBox || target.isSingBoxConfig -> {
-                val source = target.source
-                RawJsonSheet(
-                    title = stringResource(Res.string.singbox_json_title),
-                    initial = when (source) {
-                        is dev.cluvex.zedsecure.domain.config.ProfileSource.SingBox -> source.json
-                        is dev.cluvex.zedsecure.domain.config.ProfileSource.SingBoxConfig -> source.json
-                        else -> ""
-                    },
-                    onDismiss = { editTarget = null },
-                    onSave = { text ->
-                        repository.updateSingBox(target.id, text).fold(
-                            onSuccess = {
-                                toastRes(Res.string.saved)
-                                editTarget = null
-                                null
-                            },
-                            onFailure = { it.message?.take(160)?.ifBlank { null } ?: singBoxJsonInvalid },
-                        )
-                    },
-                    flavour = JsonFlavour.SingBox,
-                )
-            }
-            target.isCustom -> {
-                RawJsonSheet(
-                    title = stringResource(Res.string.custom_json_title),
-                    initial = target.rawPayload().orEmpty(),
-                    onDismiss = { editTarget = null },
-                    onSave = { text ->
-                        repository.updateRawJson(target.id, text).fold(
-                            onSuccess = {
-                                toastRes(Res.string.saved)
-                                editTarget = null
-                                null
-                            },
-                            onFailure = { it.message?.take(160)?.ifBlank { null } ?: customJsonInvalid },
-                        )
-                    },
-                )
-            }
-
-            target.isPsiphon -> {
-                PsiphonSheet(
-                    initial = target.psiphonSettings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-                        repository.addPsiphon(settings, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isDnsTunnel -> {
-                DnsTunnelSheet(
-                    initial = target.dnsTunnelSettings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-
-                        repository.addDnsTunnel(settings, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isMasterDns -> {
-                MasterDnsSheet(
-                    initial = target.masterDnsSettings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-                        repository.addMasterDns(settings, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isOpenConnect -> {
-                OpenConnectSheet(
-                    initial = target.openConnectSettings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-                        repository.addOpenConnect(settings, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isIkev2 -> {
-                Ikev2Sheet(
-                    initial = target.ikev2Settings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-                        repository.addIkev2(settings, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isSniSpoof -> {
-                SniSpoofSheet(
-                    candidates = spoofCandidates,
-                    initial = target.sniSpoofSettings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-                        repository.addSniSpoof(settings, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isProxyChain -> {
-                ProxyChainSheet(
-                    candidates = chainCandidates,
-                    initialName = target.name,
-                    initialMemberIds = target.proxyChainSettings().orEmpty(),
-                    onDismiss = { editTarget = null },
-                    onSave = { name, memberIds ->
-                        repository.addProxyChain(memberIds, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isCrossChain -> {
-                val (inId, outId) = target.crossChainSettings() ?: ("" to "")
-                CrossChainSheet(
-                    exits = crossExits,
-                    carriers = crossCarriers,
-                    pairError = crossPairError,
-                    initialName = target.name,
-                    initialInnerId = inId,
-                    initialOuterId = outId,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, innerId, outerId ->
-                        repository.addCrossChain(innerId, outerId, name, id = target.id)
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            target.isSsh -> {
-                SshSheet(
-                    initial = target.sshSettings(),
-                    initialName = target.name,
-                    onDismiss = { editTarget = null },
-                    onSave = { name, settings ->
-                        repository.update(
-                            VpnProfile.fromSsh(settings = settings, id = target.id, addedAt = target.addedAt, name = name),
-                        )
-                        toastRes(Res.string.saved)
-                        editTarget = null
-                    },
-                )
-            }
-            else -> {
-                val parsed = remember(target.id) {
-                    target.rawPayload()?.let { payload ->
-                        runCatching { ConfigParser.parse(payload) }.getOrNull()
-                    }
-                }
-                if (parsed == null) {
-                    LaunchedEffect(target.id) {
-                        toastRes(Res.string.edit_unsupported)
-                        editTarget = null
-                    }
-                } else {
-                    ManualConfigSheet(
-                        initial = parsed,
-                        onDismiss = { editTarget = null },
-                        onSave = { link ->
-                            val updated = runCatching {
-                                VpnProfile.fromLink(
-                                    link = link,
-                                    id = target.id,
-                                    addedAt = target.addedAt,
-                                    subscriptionId = target.subscriptionId,
-                                )
-                            }.getOrNull()
-                            if (updated == null) {
-                                toastRes(Res.string.config_invalid)
-                            } else {
-                                repository.update(updated.copy(lastPingMs = target.lastPingMs))
-                                toastRes(Res.string.saved)
-                            }
-                            editTarget = null
-                        },
-                    )
-                }
-            }
-        }
-    }
-
-    renameTarget?.let { target ->
-        var name by remember(target.id) { mutableStateOf(target.name) }
-        AlertDialog(
-            onDismissRequest = { renameTarget = null },
-            title = { Text(stringResource(Res.string.servers_rename)) },
-            text = {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    repository.rename(target.id, name.trim().ifBlank { target.name })
-                    renameTarget = null
-                }) { Text(stringResource(Res.string.action_save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { renameTarget = null }) {
-                    Text(stringResource(Res.string.action_cancel))
-                }
-            },
-        )
-    }
-
     confirmDeleteInvalid?.let { count ->
         AlertDialog(
             onDismissRequest = { confirmDeleteInvalid = null },
@@ -1642,37 +1416,6 @@ fun ServersScreen(
         )
     }
 
-    moveTarget?.let { target ->
-        AlertDialog(
-            onDismissRequest = { moveTarget = null },
-            title = { Text(stringResource(Res.string.groups_move)) },
-            text = {
-                Column {
-                    listOf("" to stringResource(Res.string.groups_manual)).plus(
-                        subscriptions.map { it.id to it.name },
-                    ).forEach { (id, label) ->
-                        TextButton(
-                            onClick = {
-                                repository.moveToGroup(target.id, id)
-                                moveTarget = null
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                label,
-                                modifier = Modifier.weight(1f),
-                                fontWeight = if (target.subscriptionId == id) FontWeight.Bold else FontWeight.Normal,
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { moveTarget = null }) { Text(stringResource(Res.string.action_cancel)) }
-            },
-        )
-    }
-
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
@@ -1692,6 +1435,16 @@ fun ServersScreen(
             },
         )
     }
+
+    CardActionHosts(
+        repository = repository,
+        editTarget = editTarget,
+        renameTarget = renameTarget,
+        moveTarget = moveTarget,
+        onDismissEdit = { editTarget = null },
+        onDismissRename = { renameTarget = null },
+        onDismissMove = { moveTarget = null },
+    )
 }
 
 @Composable
@@ -1897,7 +1650,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun RawJsonSheet(
+internal fun RawJsonSheet(
     title: String,
     initial: String,
     onDismiss: () -> Unit,
@@ -2014,7 +1767,7 @@ private fun RawJsonSheet(
     }
 }
 
-private enum class JsonFlavour { Xray, SingBox }
+internal enum class JsonFlavour { Xray, SingBox }
 
 private object JsonEditor {
     val json = kotlinx.serialization.json.Json { prettyPrint = false }

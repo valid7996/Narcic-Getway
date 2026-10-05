@@ -225,7 +225,7 @@ data class AppSettings(
     val customConfigCardColor: Long? = null,
     val customConfigCardTextColor: Long? = null,
 
-    val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Ring,
+    val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Pill,
 
     val navBarStyle: NavBarStyle = NavBarStyle.Minimal,
 
@@ -256,7 +256,7 @@ data class AppSettings(
     val trafficTileSize: TrafficTileSize = TrafficTileSize.Normal,
 
     val uiFontScale: UiFontScale = UiFontScale.Normal,
-    val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Duo,
+    val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Minimal,
     val doubleColumnDisplay: Boolean = true,
     val groupAllDisplay: Boolean = true,
     val reduceMotion: Boolean = false,

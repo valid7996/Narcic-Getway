@@ -251,7 +251,7 @@ private fun RootPage(
         contentPadding = contentPadding,
         modifier = modifier,
     ) {
-        SettingsGroup(modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_SUPPORT)) {
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_SUPPORT)) {
             SettingsMenuRow(
                 stringResource(Res.string.support_title),
                 stringResource(Res.string.support_subtitle),
@@ -259,7 +259,7 @@ private fun RootPage(
             ) { onOpen(SettingsPage.Support) }
         }
 
-        SettingsGroup(modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_LOOK)) {
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_LOOK)) {
             SettingsMenuRow(
                 stringResource(Res.string.title_ui_settings),
                 stringResource(Res.string.summary_ui_settings),
@@ -286,7 +286,7 @@ private fun RootPage(
             }
         }
 
-        SettingsGroup(
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(
             stringResource(Res.string.routing_title),
             modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_ROUTING),
         ) {
@@ -308,7 +308,7 @@ private fun RootPage(
             ) { onOpen(SettingsPage.Assets) }
         }
 
-        SettingsGroup(
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(
             stringResource(Res.string.title_tunnels_settings),
             modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_TUNNELS),
         ) {
@@ -338,29 +338,29 @@ private fun RootPage(
                 stringResource(Res.string.title_core_settings),
                 stringResource(Res.string.summary_core_settings),
             ) { onOpen(SettingsPage.Core) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_mux_settings),
                 stringResource(Res.string.summary_mux_settings),
             ) { onOpen(SettingsPage.Mux) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_fragment_settings),
                 stringResource(Res.string.summary_fragment_settings),
             ) { onOpen(SettingsPage.Fragment) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_singbox_settings),
                 stringResource(Res.string.summary_singbox_settings),
             ) { onOpen(SettingsPage.SingBox) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_observatory_settings),
                 stringResource(Res.string.summary_observatory_settings),
             ) { onOpen(SettingsPage.Observatory) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_advanced),
                 stringResource(Res.string.summary_advanced),
             ) { onOpen(SettingsPage.Advanced) }
         }
 
-        SettingsGroup(modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_TOOLS)) {
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_TOOLS)) {
             SettingsMenuRow(
                 stringResource(Res.string.map_title),
                 stringResource(Res.string.map_settings_sub),

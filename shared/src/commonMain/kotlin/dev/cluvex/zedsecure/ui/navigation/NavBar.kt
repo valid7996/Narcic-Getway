@@ -54,7 +54,10 @@ fun ZedNavBar(
     onSelect: (TopDestination) -> Unit,
 ) {
     // Hidden destinations stay in the enum and out of the bar; NavConfig brings them back.
-    val destinations = TopDestination.entries.filter { NavConfig.SHOW_VAULT || it != TopDestination.Vault }
+    val destinations = TopDestination.entries.filter { destination ->
+        (NavConfig.SHOW_VAULT || destination != TopDestination.Vault) &&
+            (NavConfig.SHOW_SERVERS_TAB || destination != TopDestination.Servers)
+    }
     when (style) {
         NavBarStyle.FloatingPill -> FloatingPillBar(destinations, current, onSelect, compact = false)
         NavBarStyle.CompactDock -> FloatingPillBar(destinations, current, onSelect, compact = true)

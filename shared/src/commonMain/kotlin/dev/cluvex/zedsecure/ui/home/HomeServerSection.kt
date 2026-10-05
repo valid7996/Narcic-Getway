@@ -88,6 +88,9 @@ internal fun HomeServerSection(
     var showSubs by remember { mutableStateOf(false) }
     var pingMenu by remember { mutableStateOf(false) }
     var overflowOpen by remember { mutableStateOf(false) }
+    var editTarget by remember { mutableStateOf<VpnProfile?>(null) }
+    var renameTarget by remember { mutableStateOf<VpnProfile?>(null) }
+    var moveTarget by remember { mutableStateOf<VpnProfile?>(null) }
     var updating by remember { mutableStateOf(false) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
 
@@ -279,6 +282,19 @@ internal fun HomeServerSection(
                         subscriptionName = subscriptionNames[profile.subscriptionId],
                         personalization = personalization,
                         onClick = { repository.setActive(profile.id) },
+                        onPingTcp = {
+                            scope.launch(Dispatchers.Default) {
+                                pingOne(repository, profile, delayTestUrl, real = false)
+                            }
+                        },
+                        onPingReal = {
+                            scope.launch(Dispatchers.Default) {
+                                pingOne(repository, profile, delayTestUrl, real = true)
+                            }
+                        },
+                        onRename = { renameTarget = profile },
+                        onEdit = { editTarget = profile },
+                        onMoveGroup = { moveTarget = profile },
                         onDelete = { repository.remove(profile.id) },
                     )
                 }
@@ -326,6 +342,16 @@ internal fun HomeServerSection(
             onSubscription = { showAdd = false; showSubs = true },
         )
     }
+
+    dev.cluvex.zedsecure.ui.servers.CardActionHosts(
+        repository = repository,
+        editTarget = editTarget,
+        renameTarget = renameTarget,
+        moveTarget = moveTarget,
+        onDismissEdit = { editTarget = null },
+        onDismissRename = { renameTarget = null },
+        onDismissMove = { moveTarget = null },
+    )
 
     if (confirmDeleteAll) {
         AlertDialog(

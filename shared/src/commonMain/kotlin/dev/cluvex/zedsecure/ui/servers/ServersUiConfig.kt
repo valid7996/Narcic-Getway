@@ -13,5 +13,5 @@ object ServersUiConfig {
     const val SHOW_ALL_ADD_OPTIONS: Boolean = false
 
     /** The per-card actions menu (edit, rename, move, ping, delete) on the cards of both screens. */
-    const val SHOW_CARD_MENU: Boolean = false
+    const val SHOW_CARD_MENU: Boolean = true
 }
