@@ -1109,7 +1109,7 @@
     <string name="connect_style_bar">长条</string>
     <string name="connect_style_icon">图标</string>
     <string name="connect_style_switch">开关</string>
-    <string name="connect_style_slide">滑动</string>
+    <string name="connect_style_swipe">滑动</string>
     <string name="slide_to_connect">滑动连接</string>
     <string name="slide_to_disconnect">滑动断开</string>
     <string name="connect_style_hero_note">没有独立按钮——直接点 Z 核心即可连接。</string>

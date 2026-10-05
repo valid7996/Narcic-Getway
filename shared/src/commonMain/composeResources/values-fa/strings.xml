@@ -1101,7 +1101,7 @@
     <string name="connect_style_bar">نوار</string>
     <string name="connect_style_icon">آیکون</string>
     <string name="connect_style_switch">کلید</string>
-    <string name="connect_style_slide">کشیدنی</string>
+    <string name="connect_style_swipe">کشیدنی</string>
     <string name="slide_to_connect">برای اتصال بکشید</string>
     <string name="slide_to_disconnect">برای قطع بکشید</string>
     <string name="connect_style_hero_note">دکمهٔ جدا ندارد — خودِ هستهٔ Z وصل می‌کند.</string>

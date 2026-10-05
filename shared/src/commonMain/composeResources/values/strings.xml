@@ -1108,7 +1108,7 @@
     <string name="connect_style_bar">Bar</string>
     <string name="connect_style_icon">Icon</string>
     <string name="connect_style_switch">Switch</string>
-    <string name="connect_style_slide">Swipe</string>
+    <string name="connect_style_swipe">Swipe</string>
     <string name="slide_to_connect">Slide to connect</string>
     <string name="slide_to_disconnect">Slide to disconnect</string>
     <string name="connect_style_hero_note">No separate button — the Z core itself connects.</string>

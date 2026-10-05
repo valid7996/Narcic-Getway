@@ -1109,7 +1109,7 @@
     <string name="connect_style_bar">Полоса</string>
     <string name="connect_style_icon">Значок</string>
     <string name="connect_style_switch">Переключатель</string>
-    <string name="connect_style_slide">Свайп</string>
+    <string name="connect_style_swipe">Свайп</string>
     <string name="slide_to_connect">Проведите для подключения</string>
     <string name="slide_to_disconnect">Проведите для отключения</string>
     <string name="connect_style_hero_note">Отдельной кнопки нет — подключает само ядро Z.</string>
