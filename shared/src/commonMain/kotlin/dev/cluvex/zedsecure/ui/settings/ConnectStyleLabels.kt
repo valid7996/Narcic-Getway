@@ -7,6 +7,7 @@ import dev.cluvex.zedsecure.shared.resources.connect_style_hero
 import dev.cluvex.zedsecure.shared.resources.connect_style_icon
 import dev.cluvex.zedsecure.shared.resources.connect_style_pill
 import dev.cluvex.zedsecure.shared.resources.connect_style_ring
+import dev.cluvex.zedsecure.shared.resources.connect_style_swipe
 import dev.cluvex.zedsecure.shared.resources.connect_style_switch
 import org.jetbrains.compose.resources.StringResource
 
