@@ -54,6 +54,7 @@ import dev.cluvex.zedsecure.data.net.PingService
 import dev.cluvex.zedsecure.domain.model.ConnectButtonStyle
 import dev.cluvex.zedsecure.domain.model.ConnectionState
 import dev.cluvex.zedsecure.domain.config.VpnProfile
+import org.jetbrains.compose.resources.stringResource
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.connection.ConnectionViewModel
@@ -305,14 +306,16 @@ fun HomeScreen(
 
                     TelPanel(title = "THROUGHPUT") {
                         Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                            val downRate = formatRate(ui.downloadBps)
+                            val upRate = formatRate(ui.uploadBps)
                             MetricBlock(
                                 label = "DOWN",
-                                value = formatRate(ui.downloadBps),
+                                value = "${downRate.first} ${downRate.second}",
                                 valueColor = if (ui.downloadBps > 0) Tel.accent else Tel.dim,
                             )
                             MetricBlock(
                                 label = "UP",
-                                value = formatRate(ui.uploadBps),
+                                value = "${upRate.first} ${upRate.second}",
                                 valueColor = if (ui.uploadBps > 0) Tel.info else Tel.dim,
                             )
                             MetricBlock(
