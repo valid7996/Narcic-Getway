@@ -277,5 +277,15 @@ private fun StyleGlyph(style: ConnectButtonStyle) {
                     .background(on.copy(alpha = 0.5f)),
             )
         }
+        ConnectButtonStyle.Slide -> Box(
+            Modifier.size(width = 58.dp, height = 26.dp)
+                .clip(RoundedCornerShape(13.dp)).background(accent),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Box(
+                Modifier.padding(end = 4.dp).size(18.dp).clip(CircleShape)
+                    .background(on),
+            )
+        }
     }
 }
