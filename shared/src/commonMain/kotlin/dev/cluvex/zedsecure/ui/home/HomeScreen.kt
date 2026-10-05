@@ -1079,7 +1079,6 @@ private fun TrafficTile(
     size: TrafficTileSize = TrafficTileSize.Normal,
 ) {
     val flowing = live && bytesPerSecond > 0
-    val activity = if (live) rateFraction(bytesPerSecond) else 0f
     val (value, unit) = formatRate(bytesPerSecond)
 
     val container = containerOverride ?: MaterialTheme.colorScheme.surfaceContainerHigh
@@ -1090,115 +1089,114 @@ private fun TrafficTile(
         label = "tile-value",
     )
 
-    val amplitude by animateFloatAsState(
-        targetValue = activity,
-        animationSpec = MaterialTheme.motionScheme.slowEffectsSpec(),
-        label = "tile-amplitude",
-    )
+    // The sparkline history: the last samples of this direction, drawn as a filled ridge.
+    val history = remember { mutableStateListOf<Float>() }
+    LaunchedEffect(bytesPerSecond, live) {
+        history.add(if (live) rateFraction(bytesPerSecond) else 0f)
+        while (history.size > SPARK_POINTS) history.removeAt(0)
+    }
 
     Surface(
         color = Color.Transparent,
         shape = MaterialTheme.shapes.large,
         modifier = modifier,
     ) {
-        Row(
+        Column(
             Modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.large)
                 .background(
                     Brush.verticalGradient(
-                        listOf(
-                            container.copy(alpha = 0.95f),
-                            container,
-                        ),
+                        listOf(container.copy(alpha = 0.95f), container),
                     ),
-                ),
-        ) {
-            // Vertical glass bar — the new tile signature.
-            Box(
-                Modifier
-                    .width(5.dp)
-                    .heightIn(min = 96.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accent, accent.copy(alpha = 0.25f + 0.6f * amplitude)),
-                        ),
-                    ),
-            )
-
-            Column(Modifier.padding(horizontal = 14.dp, vertical = (size.paddingDp - 2).dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = null,
-                        tint = if (live || alwaysTint) accent else onContainer,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(Modifier.width(7.dp))
-                    Text(
-                        text = label.uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        letterSpacing = 1.2.sp,
-                        color = onContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                Spacer(Modifier.height(size.gapDp.dp))
-
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = value,
-                        style = (if (size == TrafficTileSize.Large) {
-                            MaterialTheme.typography.headlineMediumEmphasized
-                        } else {
-                            MaterialTheme.typography.headlineSmallEmphasized
-                        }).copy(fontFeatureSettings = "tnum"),
-                        color = valueColor,
-                        maxLines = 1,
-                    )
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        text = unit,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = onContainer,
-                        maxLines = 1,
-                        modifier = Modifier.padding(bottom = 3.dp),
-                    )
-                }
-
-                Spacer(Modifier.height(size.gapDp.dp))
-
-                val motion = LocalMotionBudget.current
-                LinearWavyProgressIndicator(
-                    progress = { activity },
-                    amplitude = { amplitude },
-                    color = if (flowing) accent else MaterialTheme.colorScheme.outlineVariant,
-                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    modifier = Modifier.fillMaxWidth(),
-                    waveSpeed = if (motion == MotionBudget.Full || flowing && motion == MotionBudget.Throttled) {
-                        WavyProgressIndicatorDefaults.LinearDeterminateWavelength
-                    } else {
-                        0.dp
-                    },
                 )
-
-                Spacer(Modifier.height(6.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = formatBytes(total),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = onContainer,
-                        maxLines = 1,
-                    )
-                }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    tint = if (flowing || alwaysTint) accent else onContainer,
+                    modifier = Modifier.size(15.dp),
+                )
+                Spacer(Modifier.width(7.dp))
+                Text(
+                    text = label.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    letterSpacing = 1.2.sp,
+                    color = onContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = value,
+                    style = (if (size == TrafficTileSize.Large) {
+                        MaterialTheme.typography.headlineMediumEmphasized
+                    } else {
+                        MaterialTheme.typography.headlineSmallEmphasized
+                    }).copy(fontFeatureSettings = "tnum"),
+                    color = valueColor,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    text = unit,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = onContainer,
+                    maxLines = 1,
+                    modifier = Modifier.padding(bottom = 3.dp),
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // The ridge: a filled sparkline of the recent rate, breathing with the traffic.
+            val motion = LocalMotionBudget.current
+            Canvas(Modifier.fillMaxWidth().height(30.dp)) {
+                if (history.size < 2) return@Canvas
+                val stepX = size.width / (SPARK_POINTS - 1).toFloat()
+                val baseline = size.height
+                fun yAt(i: Int): Float =
+                    baseline - (history[i].coerceIn(0f, 1f) * (size.height - 2.dp.toPx()))
+                val line = Path()
+                val fill = Path()
+                history.forEachIndexed { i, _ ->
+                    val x = i * stepX
+                    val y = yAt(i)
+                    if (i == 0) {
+                        line.moveTo(x, y)
+                        fill.moveTo(x, baseline)
+                        fill.lineTo(x, y)
+                    } else {
+                        line.lineTo(x, y)
+                        fill.lineTo(x, y)
+                    }
+                }
+                fill.lineTo((history.size - 1) * stepX, baseline)
+                fill.close()
+                drawPath(fill, brush = Brush.verticalGradient(listOf(accent.copy(alpha = 0.35f), accent.copy(alpha = 0.05f))))
+                drawPath(line, color = accent, style = Stroke(width = 2.dp.toPx()))
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = formatBytes(total),
+                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                fontWeight = FontWeight.Medium,
+                color = onContainer,
+                maxLines = 1,
+            )
         }
     }
 }
+
+private const val SPARK_POINTS = 24
 
 @Composable
 private fun DirectionReading(
