@@ -661,7 +661,7 @@ private fun Hero(
                     text = formatElapsed(elapsed),
                     fontSize = coreTextSize(size, 0.194f),
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.headlineLarge,
+                    style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
                     color = Color.White,
                     maxLines = 1,
                     softWrap = false,
@@ -1150,12 +1150,11 @@ private fun TrafficTile(
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = value,
-
-                        style = if (size == TrafficTileSize.Large) {
+                        style = (if (size == TrafficTileSize.Large) {
                             MaterialTheme.typography.headlineMediumEmphasized
                         } else {
                             MaterialTheme.typography.headlineSmallEmphasized
-                        },
+                        }).copy(fontFeatureSettings = "tnum"),
                         color = valueColor,
                         maxLines = 1,
                     )

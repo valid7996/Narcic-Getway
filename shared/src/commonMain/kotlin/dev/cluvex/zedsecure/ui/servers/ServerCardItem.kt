@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -114,9 +115,16 @@ internal fun ServerCard(
                     .fillMaxHeight()
                     .background(
                         when {
-                            active -> MaterialTheme.colorScheme.primary
-                            isSelectedCard -> MaterialTheme.colorScheme.secondary
-                            else -> Color.Transparent
+                            active -> Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                ),
+                            )
+                            isSelectedCard -> Brush.verticalGradient(
+                                listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)),
+                            )
+                            else -> Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent))
                         },
                     ),
             )
