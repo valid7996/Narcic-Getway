@@ -243,6 +243,8 @@ fun MainScaffold(
                     repository = configRepository,
                     realPingConcurrency = settings.realPingConcurrency,
                     autoSortAfterTest = settings.autoSortAfterTest,
+                    autoTestAfterUpdate = settings.autoTestAfterUpdate,
+                    autoRemoveInvalidAfterTest = settings.autoRemoveInvalidAfterTest,
                     contentPadding = innerPadding,
                     onToggleConnection = onToggleConnection,
 

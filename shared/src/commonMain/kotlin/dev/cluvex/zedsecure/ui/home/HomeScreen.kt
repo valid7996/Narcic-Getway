@@ -22,6 +22,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -140,6 +141,7 @@ import dev.cluvex.zedsecure.ui.theme.ZedLime
 import dev.cluvex.zedsecure.ui.theme.ZedViolet
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.ln
@@ -167,6 +169,8 @@ fun HomeScreen(
     repository: dev.cluvex.zedsecure.data.config.ConfigRepository? = null,
     realPingConcurrency: Int = 4,
     autoSortAfterTest: Boolean = false,
+    autoTestAfterUpdate: Boolean = false,
+    autoRemoveInvalidAfterTest: Boolean = false,
 
     showConnectionInfo: Boolean = true,
 
@@ -386,15 +390,17 @@ fun HomeScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                 }
-                ActiveConfigCard(
-                    modifier = Modifier.tourTarget(TourTargets.CONFIG_CARD),
-                    name = activeConfigName,
-                    detail = activeConfigDetail,
-                    locked = activeLocked,
-                    countryCode = activeCountryCode,
-                    onClick = onBrowseConfigs,
-                    personalization = personalization,
-                )
+                if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ACTIVE_CONFIG) {
+                    ActiveConfigCard(
+                        modifier = Modifier.tourTarget(TourTargets.CONFIG_CARD),
+                        name = activeConfigName,
+                        detail = activeConfigDetail,
+                        locked = activeLocked,
+                        countryCode = activeCountryCode,
+                        onClick = onBrowseConfigs,
+                        personalization = personalization,
+                    )
+                }
                 Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
                 when (connectStyle) {
                     ConnectButtonStyle.Hero -> Unit
@@ -423,6 +429,8 @@ fun HomeScreen(
                         realPingConcurrency = realPingConcurrency,
                         delayTestUrl = delayTestUrl,
                         autoSortAfterTest = autoSortAfterTest,
+                        autoTestAfterUpdate = autoTestAfterUpdate,
+                        autoRemoveInvalidAfterTest = autoRemoveInvalidAfterTest,
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -558,11 +566,6 @@ private fun Hero(
 
     onTap: (() -> Unit)? = null,
 ) {
-    val morph by animateFloatAsState(
-        targetValue = if (state.isActive) 1f else 0f,
-        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-        label = "morph",
-    )
     val budget = LocalMotionBudget.current
     val transitional = state == ConnectionState.Connecting || state == ConnectionState.Reconnecting
     val breatheState = if (budget == MotionBudget.Full || budget == MotionBudget.Throttled && transitional) {
@@ -576,16 +579,17 @@ private fun Hero(
         remember { mutableFloatStateOf(1f) }
     }
     val breathe by breatheState
-    val brush = when (state) {
-        ConnectionState.Connected -> ZedGradients.forSession(sessionId)
-        ConnectionState.Connecting, ConnectionState.Reconnecting -> ZedGradients.connecting
-        else -> ZedGradients.idle
+    val targetColors = when (state) {
+        ConnectionState.Connected -> listOf(ZedViolet, ZedCyan, ZedLime)
+        ConnectionState.Connecting, ConnectionState.Reconnecting -> listOf(Color(0xFF1E4A9E), ZedCyan, ZedLime)
+        else -> listOf(ZedDeepViolet, Color(0xFF173B7C), ZedViolet)
+    }
+    val liquidColors = targetColors.mapIndexed { index, color ->
+        animateColorAsState(color, tween(900), label = "liquid$index").value
     }
 
-    MorphingBlob(
-        progress = morph,
-        brush = brush,
-        modifier = Modifier
+    Box(
+        Modifier
             .size(size)
             .tourTarget(TourTargets.CORE)
             .then(
@@ -606,7 +610,9 @@ private fun Hero(
                     onTap = onTap?.let { handler -> { _ -> handler() } },
                 )
             },
+        contentAlignment = Alignment.Center,
     ) {
+        LiquidCircle(colors = liquidColors, modifier = Modifier.fillMaxSize())
         AnimatedContent(
             targetState = state,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -634,17 +640,67 @@ private fun Hero(
                         tint = Color.White.copy(alpha = 0.92f),
                         modifier = Modifier.size(size * 0.32f),
                     )
-                } else Text(
-                    text = "N",
-                    fontSize = coreTextSize(size, 0.315f),
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    maxLines = 1,
-                    softWrap = false,
-                )
+                }
             }
         }
+    }
+}
+
+/**
+ * The water circle: a closed loop of points whose radii breathe on two out-of-phase waves, drawn
+ * fresh every frame and filled with the state gradient — a resting droplet that ripples as the
+ * connection state changes.
+ */
+@Composable
+private fun LiquidCircle(colors: List<Color>, modifier: Modifier = Modifier) {
+    val budget = LocalMotionBudget.current
+    val phase = if (budget == MotionBudget.Full) {
+        rememberInfiniteTransition(label = "water").animateFloat(
+            initialValue = 0f,
+            targetValue = (2.0 * PI).toFloat(),
+            animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Restart),
+            label = "water-phase",
+        ).value
+    } else {
+        0.6f
+    }
+    Canvas(modifier) {
+        val points = 30
+        val step = (2.0 * PI).toFloat() / points
+        val radius = size.minDimension / 2f * 0.90f
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        fun wobble(i: Int): Float = radius * (1f +
+            0.05f * sin(phase * 1.6f + i * step * 2f) +
+            0.03f * sin(2.3f * phase - i * step * 3f))
+        val pts = List(points) { i ->
+            val angle = step * i
+            val r = wobble(i)
+            Offset(cx + r * cos(angle), cy + r * sin(angle))
+        }
+        fun mid(a: Offset, b: Offset) = Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f)
+        val path = Path()
+        val first = mid(pts[points - 1], pts[0])
+        path.moveTo(first.x, first.y)
+        for (i in 0 until points) {
+            val m = mid(pts[i], pts[(i + 1) % points])
+            path.quadraticBezierTo(pts[i].x, pts[i].y, m.x, m.y)
+        }
+        path.close()
+        drawPath(
+            path,
+            brush = Brush.linearGradient(
+                colors,
+                start = Offset(cx - radius, cy - radius),
+                end = Offset(cx + radius, cy + radius),
+            ),
+        )
+        // The light patch that makes the fill read as water rather than a flat disc.
+        drawCircle(
+            color = Color.White.copy(alpha = 0.10f),
+            radius = radius * 0.55f,
+            center = Offset(cx - radius * 0.22f, cy - radius * 0.28f),
+        )
     }
 }
 

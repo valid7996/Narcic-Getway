@@ -71,8 +71,8 @@ internal fun ServerCard(
 
     selecting: Boolean = false,
     isSelected: Boolean = false,
-    onPingTcp: () -> Unit,
-    onPingReal: () -> Unit,
+    onPingTcp: () -> Unit = {},
+    onPingReal: () -> Unit = {},
     onDelete: () -> Unit,
     personalization: Personalization = Personalization.Default,
     modifier: Modifier = Modifier,
@@ -209,7 +209,7 @@ internal fun ServerCard(
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                Box {
+                if (ServersUiConfig.SHOW_CARD_MENU) Box {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(
                             painterResource(Res.drawable.ic_more_vert),
