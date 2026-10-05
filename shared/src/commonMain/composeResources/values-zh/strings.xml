@@ -310,6 +310,7 @@
     <string name="about_built_on">基于 Xray 核心构建，并集成 Psiphon、Tor、Snowflake、obfs4、Conjure、DNSTT、VayDNS、MasterDNS、AmneziaWG、OpenConnect 与 IKEv2。</string>
     <string name="about_telegram">Telegram 频道</string>
     <string name="about_github">GitHub</string>
+    <string name="about_thanks_cluvex">特别感谢 CluvexStudio</string>
     <string name="about_source_title">开源核心</string>
     <string name="about_source_body">承载流量的核心基于采用 GPL-3.0、LGPL-3.0 和 MPL-2.0 许可的开源项目构建。我们已按这些许可的要求公开了修改后的源代码。</string>
     <string name="about_source_xray">Xray 核心 — 我们的修改</string>
@@ -1108,6 +1109,9 @@
     <string name="connect_style_bar">长条</string>
     <string name="connect_style_icon">图标</string>
     <string name="connect_style_switch">开关</string>
+    <string name="connect_style_slide">滑动</string>
+    <string name="slide_to_connect">滑动连接</string>
+    <string name="slide_to_disconnect">滑动断开</string>
     <string name="connect_style_hero_note">没有独立按钮——直接点 Z 核心即可连接。</string>
     <string name="theme_profile_title">预设主题</string>
     <string name="theme_profile_sub">现成的配色。应用后每个颜色仍可单独修改。</string>

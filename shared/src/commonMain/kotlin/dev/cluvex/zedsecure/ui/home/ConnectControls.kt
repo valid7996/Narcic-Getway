@@ -69,6 +69,8 @@ fun AltConnectControl(
         ConnectButtonStyle.Icon -> IconConnect(state, onToggle, customColor, customActiveColor, compact, modifier)
         ConnectButtonStyle.Switch -> SwitchConnect(state, onToggle, customColor, customActiveColor, compact, modifier)
 
+        ConnectButtonStyle.Slide -> Unit
+
         ConnectButtonStyle.Pill, ConnectButtonStyle.Hero -> Unit
     }
 }

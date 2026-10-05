@@ -376,23 +376,25 @@ private fun RootPage(
             modifier = Modifier.tourTargetInPage(TourTargets.SETTINGS_ABOUT),
         ) {
             val fromPlay = platform.distribution == Distribution.PlayStore
-            SettingsMenuRow(
-                stringResource(Res.string.update_check_title),
-                when {
-                    checking -> stringResource(Res.string.update_checking)
-                    fromPlay -> stringResource(Res.string.update_check_summary)
-                    else -> stringResource(Res.string.update_check_summary_github)
-                },
-            ) { if (!checking) { checking = true; checkTrigger++ } }
-            SettingsMenuRow(
-                stringResource(if (fromPlay) Res.string.rate_title else Res.string.rate_title_github),
-                stringResource(if (fromPlay) Res.string.rate_summary else Res.string.rate_summary_github),
-            ) { platform.openStorePage() }
-            SettingsMenuRow(
-                stringResource(Res.string.privacy_title),
-                stringResource(Res.string.privacy_settings_sub),
-                leadingIcon = Res.drawable.ic_policy,
-            ) { onOpen(SettingsPage.Privacy) }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
+                SettingsMenuRow(
+                    stringResource(Res.string.update_check_title),
+                    when {
+                        checking -> stringResource(Res.string.update_checking)
+                        fromPlay -> stringResource(Res.string.update_check_summary)
+                        else -> stringResource(Res.string.update_check_summary_github)
+                    },
+                ) { if (!checking) { checking = true; checkTrigger++ } }
+                SettingsMenuRow(
+                    stringResource(if (fromPlay) Res.string.rate_title else Res.string.rate_title_github),
+                    stringResource(if (fromPlay) Res.string.rate_summary else Res.string.rate_summary_github),
+                ) { platform.openStorePage() }
+                SettingsMenuRow(
+                    stringResource(Res.string.privacy_title),
+                    stringResource(Res.string.privacy_settings_sub),
+                    leadingIcon = Res.drawable.ic_policy,
+                ) { onOpen(SettingsPage.Privacy) }
+            }
             SettingsMenuRow(stringResource(Res.string.settings_about), AppInfo.versionName) {
                 onAbout()
             }

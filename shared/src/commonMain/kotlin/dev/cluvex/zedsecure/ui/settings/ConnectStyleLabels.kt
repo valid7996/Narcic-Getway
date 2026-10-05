@@ -17,4 +17,5 @@ fun ConnectButtonStyle.labelRes(): StringResource = when (this) {
     ConnectButtonStyle.Bar -> Res.string.connect_style_bar
     ConnectButtonStyle.Icon -> Res.string.connect_style_icon
     ConnectButtonStyle.Switch -> Res.string.connect_style_switch
+    ConnectButtonStyle.Slide -> Res.string.connect_style_slide
 }

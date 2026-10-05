@@ -310,6 +310,7 @@
     <string name="about_built_on">Построено на ядре Xray, вместе с Psiphon, Tor, Snowflake, obfs4, Conjure, DNSTT, VayDNS, MasterDNS, AmneziaWG, OpenConnect и IKEv2.</string>
     <string name="about_telegram">Канал в Telegram</string>
     <string name="about_github">GitHub</string>
+    <string name="about_thanks_cluvex">Особая благодарность CluvexStudio</string>
     <string name="about_source_title">Открытое ядро</string>
     <string name="about_source_body">Ядро, через которое идёт ваш трафик, построено на проектах с лицензиями GPL-3.0, LGPL-3.0 и MPL-2.0. Наши изменённые исходники опубликованы, как того требуют эти лицензии.</string>
     <string name="about_source_xray">Ядро Xray — наши правки</string>
@@ -1108,6 +1109,9 @@
     <string name="connect_style_bar">Полоса</string>
     <string name="connect_style_icon">Значок</string>
     <string name="connect_style_switch">Переключатель</string>
+    <string name="connect_style_slide">Свайп</string>
+    <string name="slide_to_connect">Проведите для подключения</string>
+    <string name="slide_to_disconnect">Проведите для отключения</string>
     <string name="connect_style_hero_note">Отдельной кнопки нет — подключает само ядро Z.</string>
     <string name="theme_profile_title">Готовые темы</string>
     <string name="theme_profile_sub">Готовый набор цветов. Каждый цвет потом можно изменить.</string>

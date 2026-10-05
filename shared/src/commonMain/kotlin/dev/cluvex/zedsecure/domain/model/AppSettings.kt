@@ -104,6 +104,7 @@ enum class ConnectButtonStyle {
     Bar,
     Icon,
     Switch,
+    Slide,
 }
 
 enum class ListDensity(val cardVerticalDp: Int, val gapDp: Int) {

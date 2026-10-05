@@ -34,8 +34,8 @@ import dev.cluvex.zedsecure.ui.platform.LocalPlatform
 import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.theme.ZedGradients
 
-private const val TELEGRAM_URL = "https://t.me/CluvexStudio"
-private const val GITHUB_URL = "https://github.com/CluvexStudio"
+private const val TELEGRAM_URL = "https://t.me/Narcic_team"
+private const val GITHUB_URL = "https://github.com/valid7996/Narcic-Getway"
 
 private const val XRAY_SOURCE_URL = "https://github.com/CluvexStudio/Xray-core"
 private const val LIB_SOURCE_URL = "https://github.com/CluvexStudio/AndroidLibXrayLite"
@@ -55,12 +55,6 @@ fun AboutSheet(onDismiss: () -> Unit) {
                 brush = ZedGradients.connected,
                 modifier = Modifier.size(96.dp),
             ) {
-                Text(
-                    "N",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
             }
             Text(
                 stringResource(Res.string.app_name),
@@ -72,29 +66,55 @@ fun AboutSheet(onDismiss: () -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(
-                stringResource(Res.string.about_built_on),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-
             Spacer(Modifier.size(4.dp))
 
             LinkRow(
                 iconRes = Res.drawable.ic_add_link,
                 title = stringResource(Res.string.about_telegram),
-                subtitle = "t.me/CluvexStudio",
+                subtitle = "t.me/Narcic_team",
                 onClick = { platform.openUri(TELEGRAM_URL) },
             )
             LinkRow(
                 iconRes = Res.drawable.ic_description,
                 title = stringResource(Res.string.about_github),
-                subtitle = "github.com/CluvexStudio",
+                subtitle = "github.com/valid7996/Narcic-Getway",
                 onClick = { platform.openUri(GITHUB_URL) },
             )
 
             Spacer(Modifier.size(8.dp))
+
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
+                Text(
+                    stringResource(Res.string.about_source_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    stringResource(Res.string.about_source_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                LinkRow(
+                    iconRes = Res.drawable.ic_description,
+                    title = stringResource(Res.string.about_source_xray),
+                    subtitle = "github.com/CluvexStudio/Xray-core",
+                    onClick = { platform.openUri(XRAY_SOURCE_URL) },
+                )
+                LinkRow(
+                    iconRes = Res.drawable.ic_description,
+                    title = stringResource(Res.string.about_source_lib),
+                    subtitle = "github.com/CluvexStudio/AndroidLibXrayLite",
+                    onClick = { platform.openUri(LIB_SOURCE_URL) },
+                )
+            }
+
+            Text(
+                stringResource(Res.string.about_thanks_cluvex),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
 
             Text(
                 stringResource(Res.string.about_source_title),

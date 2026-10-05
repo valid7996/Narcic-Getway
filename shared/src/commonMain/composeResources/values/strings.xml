@@ -309,6 +309,7 @@
     <string name="about_built_on">Built on the Xray core, with Psiphon, Tor, Snowflake, obfs4, Conjure, DNSTT, VayDNS, MasterDNS, AmneziaWG, OpenConnect and IKEv2.</string>
     <string name="about_telegram">Telegram channel</string>
     <string name="about_github">GitHub</string>
+    <string name="about_thanks_cluvex">Special thanks to CluvexStudio</string>
     <string name="about_source_title">Open-source core</string>
     <string name="about_source_body">The core that carries your traffic is built on open-source projects licensed under GPL-3.0, LGPL-3.0 and MPL-2.0. Our patched sources are published, as those licences require.</string>
     <string name="about_source_xray">Xray core — our patches</string>
@@ -1107,6 +1108,9 @@
     <string name="connect_style_bar">Bar</string>
     <string name="connect_style_icon">Icon</string>
     <string name="connect_style_switch">Switch</string>
+    <string name="connect_style_slide">Swipe</string>
+    <string name="slide_to_connect">Slide to connect</string>
+    <string name="slide_to_disconnect">Slide to disconnect</string>
     <string name="connect_style_hero_note">No separate button — the Z core itself connects.</string>
     <string name="theme_profile_title">Theme presets</string>
     <string name="theme_profile_sub">A ready-made colour set. Every colour stays editable afterwards.</string>

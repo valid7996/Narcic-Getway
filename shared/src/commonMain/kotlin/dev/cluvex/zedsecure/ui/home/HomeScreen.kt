@@ -412,6 +412,13 @@ fun HomeScreen(
                         customActiveColor = personalization.connectedColor,
                         compact = compact,
                     )
+                    ConnectButtonStyle.Slide -> SlideToConnect(
+                        state = ui.state,
+                        onToggle = onToggleConnection,
+                        customColor = personalization.connectColor,
+                        customActiveColor = personalization.connectedColor,
+                        compact = compact,
+                    )
                     else -> AltConnectControl(
                         style = connectStyle,
                         state = ui.state,
