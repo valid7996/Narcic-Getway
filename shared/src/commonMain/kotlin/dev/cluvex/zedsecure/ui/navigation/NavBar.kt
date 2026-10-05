@@ -181,7 +181,7 @@ private fun MaterialBar(
         Modifier
             .fillMaxWidth()
             .background(
-                androidx.compose.foundation.Brush.verticalGradient(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
                     listOf(
                         androidx.compose.ui.graphics.Color.Transparent,
                         androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f),
