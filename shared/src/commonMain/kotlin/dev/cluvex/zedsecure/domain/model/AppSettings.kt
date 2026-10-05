@@ -263,7 +263,7 @@ data class AppSettings(
     val renderingMode: RenderingMode = RenderingMode.Auto,
 
     val speedFabAtEnd: Boolean = true,
-    val speedFabY: Float = 0.45f,
+    val speedFabY: Float = 0.9f,
 
     val verifiedOriginCode: String = "",
     val verifiedOriginLabel: String = "",

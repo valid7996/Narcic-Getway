@@ -219,16 +219,13 @@ fun HomeScreen(
             val compact = maxHeight < 620.dp
 
             val upperScroll = rememberScrollState()
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // One scrollable page: header, tiles, the blob, the controls and the server list all
+            // travel together, so nothing is pinned mid-screen or clipped by the status bar.
+            StageColumn(
+                viewport = maxHeight * 0.58f,
+                stageMin = STAGE_MIN,
+                modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
             ) {
-              BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-                StageColumn(
-                    viewport = maxHeight,
-                    stageMin = STAGE_MIN,
-                    modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
-                ) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 BrandHeader(
                     state = ui.state,
@@ -389,8 +386,6 @@ fun HomeScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                 }
-                }
-              }
                 ActiveConfigCard(
                     modifier = Modifier.tourTarget(TourTargets.CONFIG_CARD),
                     name = activeConfigName,
@@ -509,7 +504,8 @@ private fun StageColumn(
         if (stageIndex >= 0) {
             placeables[stageIndex] = measurables[stageIndex].measure(Constraints.fixed(width, stagePx))
         }
-        layout(width, maxOf(viewportPx, fixed + stagePx)) {
+        val total = placeables.fold(0) { sum, placeable -> sum + (placeable?.height ?: 0) }
+        layout(width, maxOf(viewportPx, fixed + stagePx, total)) {
             var y = 0
             placeables.forEach { placeable ->
                 if (placeable == null) return@forEach

@@ -185,7 +185,7 @@ internal fun ServerCard(
                         )
                     }
                 }
-                profile.lastPingMs?.takeIf { personalization.showServerPing }?.let { ping ->
+                profile.lastPingMs?.takeIf { it >= 0 }?.takeIf { personalization.showServerPing }?.let { ping ->
                     Surface(
                         shape = CircleShape,
                         color = pingColor(ping, container).copy(alpha = 0.16f),
