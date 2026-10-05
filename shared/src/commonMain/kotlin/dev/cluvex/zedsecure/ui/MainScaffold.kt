@@ -51,6 +51,7 @@ import dev.cluvex.zedsecure.ui.connection.ConnectionViewModel
 import dev.cluvex.zedsecure.ui.easteregg.SpaceScreen
 import dev.cluvex.zedsecure.ui.home.HomeScreen
 import dev.cluvex.zedsecure.ui.motion.transitionDecoration
+import dev.cluvex.zedsecure.ui.navigation.NavConfig
 import dev.cluvex.zedsecure.ui.navigation.TopDestination
 import dev.cluvex.zedsecure.ui.settings.SettingsScreen
 import dev.cluvex.zedsecure.ui.update.NudgeHost
@@ -239,14 +240,25 @@ fun MainScaffold(
 
                     personalization = settings.toPersonalization(),
                     connectStyle = settings.connectButtonStyle,
+                    repository = configRepository,
+                    realPingConcurrency = settings.realPingConcurrency,
+                    autoSortAfterTest = settings.autoSortAfterTest,
                     contentPadding = innerPadding,
                     onToggleConnection = onToggleConnection,
 
                     onBrowseConfigs = {
-                        current = if (activeProfile?.isLocked == true) TopDestination.Vault
-                        else TopDestination.Servers
+                        current = if (NavConfig.SHOW_VAULT && activeProfile?.isLocked == true) {
+                            TopDestination.Vault
+                        } else {
+                            TopDestination.Servers
+                        }
                     },
                     onSecretUnlocked = { spaceUnlocked = true },
+                )
+                TopDestination.Vault -> VaultScreen(
+                    repository = configRepository,
+                    contentPadding = innerPadding,
+                    onImportRequested = onImportZsx,
                 )
                 TopDestination.Servers -> ServersScreen(
                     repository = configRepository,
@@ -265,11 +277,6 @@ fun MainScaffold(
 
                         onActiveServerChanged()
                     },
-                )
-                TopDestination.Vault -> VaultScreen(
-                    repository = configRepository,
-                    contentPadding = innerPadding,
-                    onImportRequested = onImportZsx,
                 )
                 TopDestination.Settings -> SettingsScreen(
                     settings = settings,

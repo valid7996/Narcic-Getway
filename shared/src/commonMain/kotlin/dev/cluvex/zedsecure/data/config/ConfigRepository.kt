@@ -40,8 +40,11 @@ import dev.cluvex.zedsecure.domain.config.SubscriptionSchedule
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.domain.config.XrayJsonBuilder
 import kotlin.io.encoding.Base64
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -71,11 +74,20 @@ class ConfigRepository(private val store: KeyValueStore) {
     private val _profiles = MutableStateFlow(loadProfiles())
     val profiles: StateFlow<List<VpnProfile>> = _profiles.asStateFlow()
 
-    private val _subscriptions = MutableStateFlow(loadSubscriptions())
+    private val _subscriptions = MutableStateFlow(loadSubscriptions().ifEmpty { defaultSubscriptions() })
     val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
     private val _activeId = MutableStateFlow(store.getString(KEY_ACTIVE))
     val activeId: StateFlow<String?> = _activeId.asStateFlow()
+
+    init {
+        // The shipped subscriptions are written back the moment the store starts empty, so they
+        // behave exactly like subscriptions the user added, and their servers arrive on first fetch.
+        if (loadSubscriptions().isEmpty()) {
+            persistSubscriptions()
+            fetchDefaults()
+        }
+    }
 
     fun activeProfile(): VpnProfile? = _activeId.value?.let { profile(it) }
 
@@ -1446,12 +1458,38 @@ class ConfigRepository(private val store: KeyValueStore) {
         return runCatching { json.decodeFromString<List<Subscription>>(raw) }.getOrDefault(emptyList())
     }
 
+    /** The subscriptions the app ships with, present the first time the store starts. */
+    private fun defaultSubscriptions(): List<Subscription> = listOf(
+        Subscription(id = DEFAULT_SUB_IRANCELL, name = "Narcic irancell", url = DEFAULT_SUB_IRANCELL_URL),
+        Subscription(id = DEFAULT_SUB_MCI, name = "mci", url = DEFAULT_SUB_MCI_URL),
+        Subscription(id = DEFAULT_SUB_WIREGUARD, name = "wireguard", url = DEFAULT_SUB_WIREGUARD_URL),
+    )
+
+    /** Fetches the shipped subscriptions once, quietly; failures leave them for a manual refresh. */
+    private fun fetchDefaults() {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            listOf(DEFAULT_SUB_IRANCELL, DEFAULT_SUB_MCI, DEFAULT_SUB_WIREGUARD).forEach { id ->
+                runCatching { updateSubscription(id) }
+            }
+        }
+    }
+
     companion object {
         private const val PREFS = "zed_configs"
         private const val KEY_PROFILES = "profiles"
         private const val KEY_SUBS = "subscriptions"
         private const val KEY_ACTIVE = "active_id"
         private const val KEY_AUTO_PICK = "auto_pick:"
+
+        const val DEFAULT_SUB_IRANCELL = "default-narcic-irancell"
+        const val DEFAULT_SUB_MCI = "default-mci"
+        const val DEFAULT_SUB_WIREGUARD = "default-wireguard"
+        const val DEFAULT_SUB_IRANCELL_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessirancell.txt"
+        const val DEFAULT_SUB_MCI_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessmci.txt"
+        const val DEFAULT_SUB_WIREGUARD_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/ngwirguard.txt"
 
         val DEFAULT_UA = "v2rayNG/${AppInfo.versionName}"
 

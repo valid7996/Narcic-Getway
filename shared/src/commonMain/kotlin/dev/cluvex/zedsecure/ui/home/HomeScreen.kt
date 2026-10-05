@@ -164,6 +164,10 @@ fun HomeScreen(
     activeCountryCode: String? = null,
     reduceMotion: Boolean = false,
 
+    repository: dev.cluvex.zedsecure.data.config.ConfigRepository? = null,
+    realPingConcurrency: Int = 4,
+    autoSortAfterTest: Boolean = false,
+
     showConnectionInfo: Boolean = true,
 
     ipApiUrl: String = "",
@@ -416,6 +420,17 @@ fun HomeScreen(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
+
+                if (repository != null) {
+                    HomeServerSection(
+                        repository = repository,
+                        personalization = personalization,
+                        realPingConcurrency = realPingConcurrency,
+                        delayTestUrl = delayTestUrl,
+                        autoSortAfterTest = autoSortAfterTest,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
             }
         }
 

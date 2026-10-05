@@ -53,18 +53,21 @@ fun ZedNavBar(
     current: TopDestination,
     onSelect: (TopDestination) -> Unit,
 ) {
+    // Hidden destinations stay in the enum and out of the bar; NavConfig brings them back.
+    val destinations = TopDestination.entries.filter { NavConfig.SHOW_VAULT || it != TopDestination.Vault }
     when (style) {
-        NavBarStyle.FloatingPill -> FloatingPillBar(current, onSelect, compact = false)
-        NavBarStyle.CompactDock -> FloatingPillBar(current, onSelect, compact = true)
-        NavBarStyle.ExpressivePill -> ExpressivePillBar(current, onSelect)
-        NavBarStyle.FullBar -> MaterialBar(current, onSelect, underline = false)
-        NavBarStyle.Underline -> MaterialBar(current, onSelect, underline = true)
-        NavBarStyle.Minimal -> MinimalBar(current, onSelect)
+        NavBarStyle.FloatingPill -> FloatingPillBar(destinations, current, onSelect, compact = false)
+        NavBarStyle.CompactDock -> FloatingPillBar(destinations, current, onSelect, compact = true)
+        NavBarStyle.ExpressivePill -> ExpressivePillBar(destinations, current, onSelect)
+        NavBarStyle.FullBar -> MaterialBar(destinations, current, onSelect, underline = false)
+        NavBarStyle.Underline -> MaterialBar(destinations, current, onSelect, underline = true)
+        NavBarStyle.Minimal -> MinimalBar(destinations, current, onSelect)
     }
 }
 
 @Composable
 private fun FloatingPillBar(
+    destinations: List<TopDestination>,
     current: TopDestination,
     onSelect: (TopDestination) -> Unit,
     compact: Boolean,
@@ -80,7 +83,7 @@ private fun FloatingPillBar(
             expanded = true,
             colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
         ) {
-            TopDestination.entries.forEach { dest ->
+            destinations.forEach { dest ->
                 NavPill(
                     destination = dest,
                     selected = current == dest,
@@ -94,7 +97,7 @@ private fun FloatingPillBar(
 }
 
 @Composable
-private fun ExpressivePillBar(current: TopDestination, onSelect: (TopDestination) -> Unit) {
+private fun ExpressivePillBar(destinations: List<TopDestination>, current: TopDestination, onSelect: (TopDestination) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -112,7 +115,7 @@ private fun ExpressivePillBar(current: TopDestination, onSelect: (TopDestination
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TopDestination.entries.forEach { dest ->
+                destinations.forEach { dest ->
                     val selected = current == dest
                     val bg by animateColorAsState(
                         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
@@ -165,12 +168,13 @@ private fun ExpressivePillBar(current: TopDestination, onSelect: (TopDestination
 
 @Composable
 private fun MaterialBar(
+    destinations: List<TopDestination>,
     current: TopDestination,
     onSelect: (TopDestination) -> Unit,
     underline: Boolean,
 ) {
     NavigationBar {
-        TopDestination.entries.forEach { dest ->
+        destinations.forEach { dest ->
             val selected = current == dest
             NavigationBarItem(
                 modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
@@ -210,7 +214,7 @@ private fun MaterialBar(
 }
 
 @Composable
-private fun MinimalBar(current: TopDestination, onSelect: (TopDestination) -> Unit) {
+private fun MinimalBar(destinations: List<TopDestination>, current: TopDestination, onSelect: (TopDestination) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -219,7 +223,7 @@ private fun MinimalBar(current: TopDestination, onSelect: (TopDestination) -> Un
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TopDestination.entries.forEach { dest ->
+        destinations.forEach { dest ->
             val selected = current == dest
             val tint by animateColorAsState(
                 if (selected) MaterialTheme.colorScheme.primary

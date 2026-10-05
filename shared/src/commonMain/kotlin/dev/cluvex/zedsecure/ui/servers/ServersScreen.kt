@@ -1715,229 +1715,6 @@ private fun GroupTab(label: String, count: Int, selected: Boolean, onClick: () -
     }
 }
 
-@Composable
-private fun ServerCard(
-    profile: VpnProfile,
-    active: Boolean,
-    subscriptionName: String?,
-    onClick: () -> Unit,
-    onShare: () -> Unit,
-    onShareQr: () -> Unit,
-
-    shareLink: String?,
-    onRename: () -> Unit,
-    onEdit: () -> Unit,
-
-    onMoveGroup: (() -> Unit)? = null,
-
-    selecting: Boolean = false,
-    isSelected: Boolean = false,
-    onPingTcp: () -> Unit,
-    onPingReal: () -> Unit,
-    onDelete: () -> Unit,
-    personalization: Personalization = Personalization.Default,
-    modifier: Modifier = Modifier,
-) {
-    var menuOpen by remember { mutableStateOf(false) }
-    val isSelectedCard = selecting && isSelected
-    val container = if (isSelectedCard) {
-        MaterialTheme.colorScheme.secondaryContainer
-    } else if (active) {
-        personalization.serverActiveColor ?: MaterialTheme.colorScheme.primaryContainer
-    } else {
-        personalization.serverCardColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-
-    val onContainer = when {
-        isSelectedCard -> MaterialTheme.colorScheme.onSecondaryContainer
-        active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
-        !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val vPad = personalization.density.cardVerticalDp.dp
-    Surface(
-        color = Color.Transparent,
-        shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .clip(RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
-                .background(container)
-                .clickable(onClick = onClick),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(
-                        when {
-                            active -> MaterialTheme.colorScheme.primary
-                            isSelectedCard -> MaterialTheme.colorScheme.secondary
-                            else -> Color.Transparent
-                        },
-                    ),
-            )
-            Row(
-                Modifier
-                    .weight(1f)
-                    .padding(start = 14.dp, end = 4.dp, top = vPad, bottom = vPad),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (active) {
-                            Box(
-                                Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
-                            )
-                            Spacer(Modifier.width(7.dp))
-                        }
-                        Text(
-                            text = profile.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = onContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    val subtle = onContainer.copy(alpha = 0.72f)
-
-                    val typeLabel = if (profile.isCustom) {
-                        stringResource(Res.string.servers_custom_config)
-                    } else {
-                        profile.transportLabel
-                    }
-
-                    Text(
-                        text = buildString {
-                            append(typeLabel)
-                            if (profile.address.isNotBlank() && profile.address != "-") {
-                                append("  •  ")
-                                append(profile.address)
-                                if (profile.port > 0) append(":${profile.port}")
-                            }
-                            if (subscriptionName != null) append("  •  $subscriptionName")
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = if (personalization.monospaceAddress) FontFamily.Monospace else null,
-                        color = subtle,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (personalization.showServerUsage && (profile.bytesDown > 0 || profile.bytesUp > 0)) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = stringResource(
-                                Res.string.servers_usage,
-                                formatBytes(profile.bytesDown),
-                                formatBytes(profile.bytesUp),
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = subtle.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                profile.lastPingMs?.takeIf { personalization.showServerPing }?.let { ping ->
-                    Surface(
-                        shape = CircleShape,
-                        color = pingColor(ping, container).copy(alpha = 0.16f),
-                        contentColor = pingColor(ping, container),
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
-                        Text(
-                            text = if (ping < 0) "$ping" else "$ping ms",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        )
-                    }
-                }
-                if (active) {
-                    Spacer(Modifier.width(6.dp))
-                    Icon(
-                        painterResource(Res.drawable.ic_check_circle),
-                        contentDescription = stringResource(Res.string.config_active),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                Box {
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(
-                            painterResource(Res.drawable.ic_more_vert),
-                            contentDescription = stringResource(Res.string.servers_actions),
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuOpen,
-                        onDismissRequest = { menuOpen = false },
-                        shape = MaterialTheme.shapes.largeIncreased,
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_share)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null) },
-
-                            enabled = shareLink != null,
-                            onClick = { menuOpen = false; onShare() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_share_qr)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null) },
-                            enabled = shareLink != null,
-                            onClick = { menuOpen = false; onShareQr() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_edit)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null) },
-                            enabled = profile.isEditable,
-                            onClick = { menuOpen = false; onEdit() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.servers_rename)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_description), null) },
-                            onClick = { menuOpen = false; onRename() },
-                        )
-                        onMoveGroup?.let { move ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.groups_move)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null) },
-                                onClick = { menuOpen = false; move() },
-                            )
-                        }
-
-                        if ((!profile.isManagedTunnel || profile.isSingBoxConfig) && !profile.isDnsBasedTunnel) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.ping_tcp)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_speed), null) },
-                                onClick = { menuOpen = false; onPingTcp() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.ping_real)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_bolt), null) },
-                                onClick = { menuOpen = false; onPingReal() },
-                            )
-                        }
-                        HorizontalDivider()
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_delete)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-                            onClick = { menuOpen = false; onDelete() },
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun SpeedDialAction(
@@ -1989,7 +1766,7 @@ private fun SpeedDialAction(
 }
 
 @Composable
-private fun AddServerSheet(
+internal fun AddServerSheet(
     onDismiss: () -> Unit,
     onPasteLink: () -> Unit,
     onImportFile: () -> Unit,
@@ -2026,33 +1803,35 @@ private fun AddServerSheet(
 
             OptionGroup(Res.string.add_group_import)
             Option(Res.drawable.ic_content_paste, Res.string.servers_add_clipboard, onPasteLink)
-            Option(Res.drawable.ic_description, Res.string.servers_add_file, onImportFile)
+            if (ServersUiConfig.SHOW_ALL_ADD_OPTIONS) {
+                Option(Res.drawable.ic_description, Res.string.servers_add_file, onImportFile)
 
-            if (LocalPlatform.current.supportsQrScan) {
-                Option(Res.drawable.ic_qr_code_2, Res.string.servers_add_scan_qr, onScanQr)
+                if (LocalPlatform.current.supportsQrScan) {
+                    Option(Res.drawable.ic_qr_code_2, Res.string.servers_add_scan_qr, onScanQr)
+                }
+                Option(Res.drawable.ic_add_link, Res.string.servers_add_scan_image, onScanQrImage)
+                Option(Res.drawable.ic_edit, Res.string.servers_add_manual, onManual)
+                Option(Res.drawable.ic_description, Res.string.servers_add_custom, onCustom)
+
+                OptionGroup(Res.string.add_group_tunnels)
+                Option(Res.drawable.ic_bolt, Res.string.psiphon_add_title, onPsiphon)
+                Option(Res.drawable.ic_lock, Res.string.tor_add_title, onTor)
+                Option(Res.drawable.ic_speed, Res.string.ssh_add_title, onSsh)
+                Option(Res.drawable.ic_bolt, Res.string.snispoof_add_title, onSniSpoof)
+
+                OptionGroup(Res.string.add_group_dns)
+                Option(Res.drawable.ic_public, Res.string.dns_tunnel_add_title, onDnsTunnel)
+                Option(Res.drawable.ic_public, Res.string.master_dns_add_title, onMasterDns)
+
+                OptionGroup(Res.string.add_group_vpn)
+                Option(Res.drawable.ic_lock, Res.string.openconnect_add_title, onOpenConnect)
+                Option(Res.drawable.ic_bolt, Res.string.aether_add_title, onAether)
+                Option(Res.drawable.ic_lock, Res.string.ikev2_add_title, onIkev2)
+
+                OptionGroup(Res.string.add_group_chains)
+                Option(Res.drawable.ic_add_link, Res.string.proxychain_add_title, onProxyChain)
+                Option(Res.drawable.ic_add_link, Res.string.crosschain_add_title, onCrossChain)
             }
-            Option(Res.drawable.ic_add_link, Res.string.servers_add_scan_image, onScanQrImage)
-            Option(Res.drawable.ic_edit, Res.string.servers_add_manual, onManual)
-            Option(Res.drawable.ic_description, Res.string.servers_add_custom, onCustom)
-
-            OptionGroup(Res.string.add_group_tunnels)
-            Option(Res.drawable.ic_bolt, Res.string.psiphon_add_title, onPsiphon)
-            Option(Res.drawable.ic_lock, Res.string.tor_add_title, onTor)
-            Option(Res.drawable.ic_speed, Res.string.ssh_add_title, onSsh)
-            Option(Res.drawable.ic_bolt, Res.string.snispoof_add_title, onSniSpoof)
-
-            OptionGroup(Res.string.add_group_dns)
-            Option(Res.drawable.ic_public, Res.string.dns_tunnel_add_title, onDnsTunnel)
-            Option(Res.drawable.ic_public, Res.string.master_dns_add_title, onMasterDns)
-
-            OptionGroup(Res.string.add_group_vpn)
-            Option(Res.drawable.ic_lock, Res.string.openconnect_add_title, onOpenConnect)
-            Option(Res.drawable.ic_bolt, Res.string.aether_add_title, onAether)
-            Option(Res.drawable.ic_lock, Res.string.ikev2_add_title, onIkev2)
-
-            OptionGroup(Res.string.add_group_chains)
-            Option(Res.drawable.ic_add_link, Res.string.proxychain_add_title, onProxyChain)
-            Option(Res.drawable.ic_add_link, Res.string.crosschain_add_title, onCrossChain)
 
             OptionGroup(Res.string.add_group_subscription)
             Option(Res.drawable.ic_add_link, Res.string.subs_add, onSubscription)
