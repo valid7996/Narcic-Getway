@@ -74,20 +74,11 @@ class ConfigRepository(private val store: KeyValueStore) {
     private val _profiles = MutableStateFlow(loadProfiles())
     val profiles: StateFlow<List<VpnProfile>> = _profiles.asStateFlow()
 
-    private val _subscriptions = MutableStateFlow(loadSubscriptions().ifEmpty { defaultSubscriptions() })
+    private val _subscriptions = MutableStateFlow(loadSubscriptions())
     val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
     private val _activeId = MutableStateFlow(store.getString(KEY_ACTIVE))
     val activeId: StateFlow<String?> = _activeId.asStateFlow()
-
-    init {
-        // The shipped subscriptions are written back the moment the store starts empty, so they
-        // behave exactly like subscriptions the user added, and their servers arrive on first fetch.
-        if (loadSubscriptions().isEmpty()) {
-            persistSubscriptions()
-            fetchDefaults()
-        }
-    }
 
     fun activeProfile(): VpnProfile? = _activeId.value?.let { profile(it) }
 
@@ -1465,8 +1456,16 @@ class ConfigRepository(private val store: KeyValueStore) {
         Subscription(id = DEFAULT_SUB_WIREGUARD, name = "wireguard", url = DEFAULT_SUB_WIREGUARD_URL),
     )
 
-    /** Fetches the shipped subscriptions once, quietly; failures leave them for a manual refresh. */
-    private fun fetchDefaults() {
+    /**
+     * Writes the shipped subscriptions when the store has none, and with [autoFetch] fetches their
+     * servers once, quietly. The app calls this at startup; tests build repositories alone and see
+     * nothing of the defaults.
+     */
+    fun ensureDefaultSubscriptions(autoFetch: Boolean) {
+        if (loadSubscriptions().isNotEmpty()) return
+        _subscriptions.value = defaultSubscriptions()
+        persistSubscriptions()
+        if (!autoFetch) return
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             listOf(DEFAULT_SUB_IRANCELL, DEFAULT_SUB_MCI, DEFAULT_SUB_WIREGUARD).forEach { id ->
                 runCatching { updateSubscription(id) }

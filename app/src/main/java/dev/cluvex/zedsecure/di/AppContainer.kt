@@ -23,7 +23,10 @@ import libv2ray.Libv2ray
 
 class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository = SettingsRepository(context)
-    val configRepository: ConfigRepository = ConfigRepository(AndroidKeyValueStore(context, "zed_configs"))
+    val configRepository: ConfigRepository = ConfigRepository(AndroidKeyValueStore(context, "zed_configs")).apply {
+        // The shipped subscriptions land on the first start and fetch their servers once.
+        ensureDefaultSubscriptions(autoFetch = true)
+    }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
