@@ -156,7 +156,7 @@ internal fun SlideToConnect(
                 Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .background(if (active) activeGradient else track),
+                    .background(if (active) activeGradient else Brush.horizontalGradient(listOf(track))),
             )
 
             if (!transition) {
