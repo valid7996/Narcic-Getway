@@ -138,6 +138,7 @@ import dev.cluvex.zedsecure.ui.theme.ZedGradients
 import dev.cluvex.zedsecure.ui.theme.ZedCyan
 import dev.cluvex.zedsecure.ui.theme.ZedHotPink
 import dev.cluvex.zedsecure.ui.theme.ZedLime
+import dev.cluvex.zedsecure.ui.theme.ZedDeepViolet
 import dev.cluvex.zedsecure.ui.theme.ZedViolet
 import kotlinx.coroutines.launch
 import kotlin.math.abs
