@@ -42,6 +42,9 @@ import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.TextStyle
 import dev.cluvex.zedsecure.domain.model.NavBarStyle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -175,72 +178,38 @@ private fun MaterialBar(
     onSelect: (TopDestination) -> Unit,
     underline: Boolean,
 ) {
-    // The spec bar: a translucent gradient pinned to the bottom, icons with a Persian label and
-    // an active dot, no filled indicator.
-    Box(
+    // The terminal bar: a thin text rail, the active destination marked with a caret.
+    Row(
         Modifier
             .fillMaxWidth()
-            .background(
-                androidx.compose.ui.graphics.Brush.verticalGradient(
-                    listOf(
-                        androidx.compose.ui.graphics.Color.Transparent,
-                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f),
-                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.94f),
-                    ),
-                ),
-            )
-            .navigationBarsPadding(),
+            .background(Color(0xFF000000))
+            .border(1.dp, Color(0xFF262626))
+            .navigationBarsPadding()
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            destinations.forEach { dest ->
-                val selected = current == dest
-                val tint by animateColorAsState(
-                    if (selected) MaterialTheme.colorScheme.primary
-                    else androidx.compose.ui.graphics.Color(0xFF63756C),
-                    label = "nav-tint",
-                )
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .tourTarget(TourTargets.nav(dest.name))
-                        .clip(CircleShape)
-                        .clickable { onSelect(dest) }
-                        .padding(horizontal = 14.dp, vertical = 2.dp),
-                ) {
-                    Icon(
-                        painterResource(dest.icon),
-                        contentDescription = stringResource(dest.labelRes),
-                        tint = tint,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        stringResource(dest.labelRes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = tint,
-                        maxLines = 1,
-                    )
-                    Spacer(Modifier.height(3.dp))
-                    Box(
-                        Modifier
-                            .size(5.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primary
-                                else androidx.compose.ui.graphics.Color.Transparent,
-                            ),
-                    )
-                }
-            }
+        destinations.forEach { dest ->
+            val selected = current == dest
+            Text(
+                text = (if (selected) "> " else "") + stringResource(dest.labelRes).uppercase(),
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    letterSpacing = 1.5.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    fontFamily = FontFamily.Monospace,
+                ),
+                color = if (selected) Color(0xFF4ADE80) else Color(0xFF585858),
+                maxLines = 1,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(2.dp))
+                    .clickable { onSelect(dest) }
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            )
         }
     }
 }
 
-@Composable
 private fun MinimalBar(destinations: List<TopDestination>, current: TopDestination, onSelect: (TopDestination) -> Unit) {
     Row(
         Modifier
