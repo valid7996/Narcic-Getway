@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.cluvex.zedsecure.core.PingCoordinator
+import dev.cluvex.zedsecure.data.net.PingCoordinator
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.data.net.GeoLookup
 import dev.cluvex.zedsecure.domain.config.VpnProfile
