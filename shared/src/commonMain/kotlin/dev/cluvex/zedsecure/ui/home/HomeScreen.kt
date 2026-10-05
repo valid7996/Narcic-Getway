@@ -76,6 +76,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -125,7 +126,6 @@ import dev.cluvex.zedsecure.ui.onboarding.TourTargets
 import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.components.NoteText
-import dev.cluvex.zedsecure.ui.components.OrganicSurface
 import dev.cluvex.zedsecure.ui.connection.ConnectionViewModel
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.format.formatElapsed
@@ -146,6 +146,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.ln
+import kotlin.math.max
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -196,6 +197,16 @@ fun HomeScreen(
     }
 
     var burst by remember { mutableIntStateOf(0) }
+    val venom = remember { VenomPhysics() }
+    LaunchedEffect(ui.state) {
+        venom.impulse(
+            when (ui.state) {
+                ConnectionState.Connecting, ConnectionState.Reconnecting -> 26f
+                ConnectionState.Connected -> 20f
+                else -> -18f
+            },
+        )
+    }
 
     var laser by remember { mutableIntStateOf(0) }
 
@@ -297,6 +308,8 @@ fun HomeScreen(
                         elapsed = ui.elapsedSeconds,
                         sessionId = ui.sessionId,
                         size = stageHero,
+                        physics = venom,
+                        reduceMotion = reduceMotion,
                         onLongPress = {
                             burst++
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -534,29 +547,39 @@ private fun StageColumn(
 
 @Composable
 private fun DecorativeBackdrop(reduceMotion: Boolean) {
-    val budget = LocalMotionBudget.current
-    if (budget != MotionBudget.Full) {
-        OrganicSurface(
-            brush = ZedGradients.idle,
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = 180.dp, y = (-130).dp),
+    // The aurora: three huge soft blobs behind everything, breathing when motion is allowed.
+    val breathe = if (reduceMotion) {
+        remember { mutableStateOf(1f) }
+    } else {
+        rememberInfiniteTransition(label = "aurora").animateFloat(
+            initialValue = 0.85f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(tween(7000), RepeatMode.Reverse),
+            label = "aurora-breathe",
         )
-        return
     }
-    val spin by rememberInfiniteTransition(label = "backdrop").animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(120_000), RepeatMode.Restart),
-        label = "spin",
-    )
-    OrganicSurface(
-        brush = ZedGradients.idle,
-        modifier = Modifier
-            .size(300.dp)
-            .offset(x = 180.dp, y = (-130).dp)
-            .rotate(if (reduceMotion) 0f else spin),
-    )
+    val b by breathe
+    val a1 = Color(0xFF0E4A33)
+    val a2 = Color(0xFF06382A)
+    val a3 = Color(0xFF0B5C46)
+    Canvas(Modifier.fillMaxSize()) {
+        fun blob(cx: Float, cy: Float, rx: Float, ry: Float, color: Color) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(color, Color.Transparent),
+                    center = Offset(cx, cy),
+                    radius = max(rx, ry),
+                ),
+                radius = max(rx, ry),
+                center = Offset(cx, cy),
+            )
+        }
+        val w = size.width
+        val h = size.height
+        blob(w * -0.18f + w * 0.35f, h * -0.12f + h * 0.17f, w * 0.35f * b, h * 0.17f * b, a1)
+        blob(w * 1.35f - w * 0.425f, h * 0.22f + h * 0.225f, w * 0.425f * b, h * 0.225f * b, a2)
+        blob(w * -0.20f + w * 0.40f, h * 1.15f - h * 0.20f, w * 0.40f * b, h * 0.20f * b, a3)
+    }
 }
 
 @Composable
@@ -570,6 +593,8 @@ private fun Hero(
     elapsed: Int,
     sessionId: Int,
     size: Dp,
+    physics: VenomPhysics,
+    reduceMotion: Boolean,
     onLongPress: () -> Unit,
 
     onTap: (() -> Unit)? = null,
@@ -620,7 +645,7 @@ private fun Hero(
             },
         contentAlignment = Alignment.Center,
     ) {
-        LiquidCircle(colors = liquidColors, modifier = Modifier.fillMaxSize())
+        VenomCore(colors = liquidColors, physics = physics, modifier = Modifier.fillMaxSize())
         AnimatedContent(
             targetState = state,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -655,43 +680,84 @@ private fun Hero(
 }
 
 /**
- * The water circle: a closed loop of points whose radii breathe on two out-of-phase waves, drawn
- * fresh every frame and filled with the state gradient — a resting droplet that ripples as the
- * connection state changes.
+ * The venom core: a living droplet drawn every frame from math. Twenty-six points ride two
+ * out-of-phase waves, a spring-loaded jelly reacts to the impulses the state machine fires, and a
+ * liquid level tilts the whole outline — the blob is never the same shape twice.
  */
+private class VenomPhysics(val points: Int = 26) {
+    val jelly = FloatArray(points)
+    val jellyVel = FloatArray(points)
+    var level = 0f
+    var levelVel = 0f
+
+    /** The state machine pushes these on every transition; the numbers come from the design spec. */
+    fun impulse(strength: Float) {
+        levelVel += strength * 0.14f
+        for (i in 0 until points) {
+            val sign = if (i % 2 == 0) 1f else -0.7f
+            jellyVel[i] += strength * 0.02f * sign * (0.5f + kotlin.random.Random.nextFloat())
+        }
+    }
+
+    fun step(dt: Float) {
+        levelVel -= level * 5.5f * dt
+        levelVel *= 0.94f
+        level += levelVel * dt
+        for (i in 0 until points) {
+            jellyVel[i] -= jelly[i] * 26f * dt
+            jellyVel[i] *= 0.90f
+            jelly[i] = (jelly[i] + jellyVel[i] * dt).coerceIn(-0.16f, 0.16f)
+        }
+    }
+}
+
 @Composable
-private fun LiquidCircle(colors: List<Color>, modifier: Modifier = Modifier) {
+private fun VenomCore(
+    colors: List<Color>,
+    physics: VenomPhysics,
+    modifier: Modifier = Modifier,
+) {
     val budget = LocalMotionBudget.current
-    val phase = if (budget == MotionBudget.Full) {
-        rememberInfiniteTransition(label = "water").animateFloat(
-            initialValue = 0f,
-            targetValue = (2.0 * PI).toFloat(),
-            animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Restart),
-            label = "water-phase",
-        ).value
-    } else {
-        0.6f
+    val running = budget == MotionBudget.Full
+    var frame by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(running) {
+        if (!running) {
+            frame = 1L
+            return@LaunchedEffect
+        }
+        var last = withFrameNanos { it }
+        while (true) {
+            withFrameNanos { now ->
+                val dt = ((now - last) / 1_000_000_000f).coerceIn(1f / 240f, 1f / 30f)
+                last = now
+                physics.step(dt)
+                frame = now
+            }
+        }
     }
     Canvas(modifier) {
-        val points = 30
-        val step = (2.0 * PI).toFloat() / points
-        val radius = size.minDimension / 2f * 0.90f
+        val t = frame / 1_000_000_000f
+        val n = physics.points
+        val step = (2.0 * PI).toFloat() / n
+        val base = size.minDimension / 2f * 0.90f
         val cx = size.width / 2f
         val cy = size.height / 2f
-        fun wobble(i: Int): Float = radius * (1f +
-            0.05f * sin(phase * 1.6f + i * step * 2f) +
-            0.03f * sin(2.3f * phase - i * step * 3f))
-        val pts = List(points) { i ->
+        fun radiusAt(i: Int): Float {
+            val wobble = 0.035f * sin(t * 1.7f + i * 0.85f) + 0.02f * sin(t * 2.6f - i * 1.6f)
+            val tilt = physics.level * 0.010f * sin(i * 0.55f + t * 1.2f)
+            return base * (1f + wobble + tilt + physics.jelly[i])
+        }
+        val pts = List(n) { i ->
             val angle = step * i
-            val r = wobble(i)
+            val r = radiusAt(i)
             Offset(cx + r * cos(angle), cy + r * sin(angle))
         }
         fun mid(a: Offset, b: Offset) = Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f)
         val path = Path()
-        val first = mid(pts[points - 1], pts[0])
-        path.moveTo(first.x, first.y)
-        for (i in 0 until points) {
-            val m = mid(pts[i], pts[(i + 1) % points])
+        val head = mid(pts[n - 1], pts[0])
+        path.moveTo(head.x, head.y)
+        for (i in 0 until n) {
+            val m = mid(pts[i], pts[(i + 1) % n])
             path.quadraticBezierTo(pts[i].x, pts[i].y, m.x, m.y)
         }
         path.close()
@@ -699,15 +765,21 @@ private fun LiquidCircle(colors: List<Color>, modifier: Modifier = Modifier) {
             path,
             brush = Brush.linearGradient(
                 colors,
-                start = Offset(cx - radius, cy - radius),
-                end = Offset(cx + radius, cy + radius),
+                start = Offset(cx - base, cy - base),
+                end = Offset(cx + base, cy + base),
             ),
         )
-        // The light patch that makes the fill read as water rather than a flat disc.
+        // The light patch that makes the fill read as liquid rather than a flat disc.
         drawCircle(
             color = Color.White.copy(alpha = 0.10f),
-            radius = radius * 0.55f,
-            center = Offset(cx - radius * 0.22f, cy - radius * 0.28f),
+            radius = base * 0.52f,
+            center = Offset(cx - base * 0.22f, cy - base * 0.28f),
+        )
+        // A faint outer ring so the droplet glows against the dark.
+        drawCircle(
+            color = colors.first().copy(alpha = 0.20f),
+            radius = base * 1.06f,
+            style = Stroke(width = 2.5f),
         )
     }
 }
@@ -879,69 +951,51 @@ private fun StatusChip(state: ConnectionState) {
         else -> stringResource(Res.string.state_idle)
     }
 
-    val scope = rememberCoroutineScope()
-    val dragX = remember { Animatable(0f) }
-    val dragY = remember { Animatable(0f) }
-    val haptics = LocalHapticFeedback.current
-
-    val stretchX = (abs(dragX.value) / 90f).coerceAtMost(0.30f)
-    val stretchY = (abs(dragY.value) / 90f).coerceAtMost(0.30f)
+    // The spec pill: near-black, hairline stroke, a dot that pulses while connecting and glows
+    // while connected.
+    val accent = when (state) {
+        ConnectionState.Connected -> ZedHotPink
+        ConnectionState.Connecting, ConnectionState.Reconnecting -> ZedCyan
+        ConnectionState.Error -> MaterialTheme.colorScheme.error
+        else -> Color(0xFF5A6B63)
+    }
+    val pulse = if (state == ConnectionState.Connecting || state == ConnectionState.Reconnecting) {
+        rememberInfiniteTransition(label = "chip-pulse").animateFloat(
+            initialValue = 0.35f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(1000), RepeatMode.Reverse),
+            label = "chip-dot",
+        ).value
+    } else {
+        1f
+    }
 
     Surface(
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier
-            .graphicsLayer {
-                translationX = dragX.value
-                translationY = dragY.value
-                scaleX = 1f + stretchX - stretchY * 0.5f
-                scaleY = 1f + stretchY - stretchX * 0.5f
+        color = Color.Black.copy(alpha = 0.55f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+        modifier = Modifier.graphicsLayer {
+            if (state == ConnectionState.Connected) {
+                this.shadowElevation = 8f
             }
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    },
-                    onDrag = { change, drag ->
-                        change.consume()
-                        scope.launch {
-                            val pull = 1f / (1f + hypot(dragX.value, dragY.value) / 240f)
-                            dragX.snapTo(dragX.value + drag.x * pull)
-                            dragY.snapTo(dragY.value + drag.y * pull)
-                        }
-                    },
-                    onDragEnd = {
-                        val spec = spring<Float>(dampingRatio = 0.32f, stiffness = Spring.StiffnessMediumLow)
-                        scope.launch { dragX.animateTo(0f, spec) }
-                        scope.launch { dragY.animateTo(0f, spec) }
-                    },
-                )
-            },
+        },
     ) {
         Row(
-            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val dotColor = when (state) {
-                ConnectionState.Connected -> MaterialTheme.colorScheme.primary
-                ConnectionState.Connecting, ConnectionState.Reconnecting -> MaterialTheme.colorScheme.tertiary
-                ConnectionState.Error -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.outline
-            }
             Box(
                 Modifier
                     .size(8.dp)
-                    .background(dotColor, CircleShape),
+                    .graphicsLayer { alpha = pulse; this.shadowElevation = if (state == ConnectionState.Connected) 12f else 0f }
+                    .background(accent, CircleShape),
             )
-            Spacer(Modifier.width(7.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
             )
         }
     }

@@ -11,6 +11,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,8 +31,6 @@ import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -176,42 +175,67 @@ private fun MaterialBar(
     onSelect: (TopDestination) -> Unit,
     underline: Boolean,
 ) {
-    NavigationBar {
-        destinations.forEach { dest ->
-            val selected = current == dest
-            NavigationBarItem(
-                modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
-                selected = selected,
-                onClick = { onSelect(dest) },
-                icon = {
-                    if (underline) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                Modifier
-                                    .width(24.dp)
-                                    .height(3.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(
-                                        if (selected) MaterialTheme.colorScheme.primary
-                                        else androidx.compose.ui.graphics.Color.Transparent,
-                                    ),
-                            )
-                            Spacer(Modifier.height(6.dp))
-                            Icon(painterResource(dest.icon), contentDescription = null)
-                        }
-                    } else {
-                        Icon(painterResource(dest.icon), contentDescription = null)
-                    }
-                },
-                label = { Text(stringResource(dest.labelRes), maxLines = 1) },
-                colors = if (underline) {
-                    androidx.compose.material3.NavigationBarItemDefaults.colors(
-                        indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    )
-                } else {
-                    androidx.compose.material3.NavigationBarItemDefaults.colors()
-                },
+    // The spec bar: a translucent gradient pinned to the bottom, icons with a Persian label and
+    // an active dot, no filled indicator.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .background(
+                androidx.compose.foundation.Brush.verticalGradient(
+                    listOf(
+                        androidx.compose.ui.graphics.Color.Transparent,
+                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f),
+                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.94f),
+                    ),
+                ),
             )
+            .navigationBarsPadding(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            destinations.forEach { dest ->
+                val selected = current == dest
+                val tint by animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.primary
+                    else androidx.compose.ui.graphics.Color(0xFF63756C),
+                    label = "nav-tint",
+                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .tourTarget(TourTargets.nav(dest.name))
+                        .clip(CircleShape)
+                        .clickable { onSelect(dest) }
+                        .padding(horizontal = 14.dp, vertical = 2.dp),
+                ) {
+                    Icon(
+                        painterResource(dest.icon),
+                        contentDescription = stringResource(dest.labelRes),
+                        tint = tint,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        stringResource(dest.labelRes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tint,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Box(
+                        Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (selected) MaterialTheme.colorScheme.primary
+                                else androidx.compose.ui.graphics.Color.Transparent,
+                            ),
+                    )
+                }
+            }
         }
     }
 }
