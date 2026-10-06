@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -335,17 +336,19 @@ fun <T> TelPicker(
                 .clickable { open = true }
                 .padding(horizontal = 10.dp, vertical = 9.dp),
         ) {
-            Text(
-                text = selectedLabel,
-                style = Tel.mono.copy(fontSize = 13.sp),
-                color = Tel.text,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "▾",
-                style = Tel.mono.copy(fontSize = 12.sp),
-                color = Tel.dim,
-            )
+            Row(Modifier.fillMaxWidth()) {
+                Text(
+                    text = selectedLabel,
+                    style = Tel.mono.copy(fontSize = 13.sp),
+                    color = Tel.text,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "▾",
+                    style = Tel.mono.copy(fontSize = 12.sp),
+                    color = Tel.dim,
+                )
+            }
             DropdownMenu(
                 expanded = open,
                 onDismissRequest = { open = false },
