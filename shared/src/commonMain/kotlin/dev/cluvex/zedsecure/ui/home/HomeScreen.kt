@@ -82,7 +82,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -125,7 +124,6 @@ import dev.cluvex.zedsecure.ui.onboarding.TourTargets
 import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.components.NoteText
-import dev.cluvex.zedsecure.ui.components.OrganicSurface
 import dev.cluvex.zedsecure.ui.connection.ConnectionViewModel
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.format.formatElapsed
@@ -139,6 +137,7 @@ import dev.cluvex.zedsecure.ui.theme.ZedCyan
 import dev.cluvex.zedsecure.ui.theme.ZedHotPink
 import dev.cluvex.zedsecure.ui.theme.ZedLime
 import dev.cluvex.zedsecure.ui.theme.ZedDeepViolet
+import dev.cluvex.zedsecure.ui.theme.ZedMint
 import dev.cluvex.zedsecure.ui.theme.ZedViolet
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -534,29 +533,32 @@ private fun StageColumn(
 
 @Composable
 private fun DecorativeBackdrop(reduceMotion: Boolean) {
+    // Aurora wash — three soft glows behind the content, matching the approved mockup.
     val budget = LocalMotionBudget.current
-    if (budget != MotionBudget.Full) {
-        OrganicSurface(
-            brush = ZedGradients.idle,
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = 180.dp, y = (-130).dp),
+    if (budget == MotionBudget.Paused) return
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .align(Alignment.TopStart)
+                .offset(x = (-90).dp, y = (-110).dp)
+                .size(340.dp)
+                .background(Brush.radialGradient(listOf(ZedViolet.copy(alpha = 0.30f), Color.Transparent))),
         )
-        return
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 100.dp, y = 170.dp)
+                .size(280.dp)
+                .background(Brush.radialGradient(listOf(ZedCyan.copy(alpha = 0.20f), Color.Transparent))),
+        )
+        Box(
+            Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = (-60).dp, y = 90.dp)
+                .size(300.dp)
+                .background(Brush.radialGradient(listOf(ZedMint.copy(alpha = 0.13f), Color.Transparent))),
+        )
     }
-    val spin by rememberInfiniteTransition(label = "backdrop").animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(120_000), RepeatMode.Restart),
-        label = "spin",
-    )
-    OrganicSurface(
-        brush = ZedGradients.idle,
-        modifier = Modifier
-            .size(300.dp)
-            .offset(x = 180.dp, y = (-130).dp)
-            .rotate(if (reduceMotion) 0f else spin),
-    )
 }
 
 @Composable
@@ -620,6 +622,24 @@ private fun Hero(
             },
         contentAlignment = Alignment.Center,
     ) {
+        // Aurora halo behind the liquid core — brighter when the tunnel is up.
+        val heroGlow by animateFloatAsState(
+            targetValue = if (state.isActive) 0.6f else 0.25f,
+            animationSpec = tween(900),
+            label = "hero-glow",
+        )
+        Box(
+            Modifier
+                .size(size * 1.3f)
+                .graphicsLayer { alpha = heroGlow }
+                .background(
+                    Brush.radialGradient(
+                        0f to ZedViolet.copy(alpha = 0.55f),
+                        0.55f to ZedCyan.copy(alpha = 0.28f),
+                        1f to Color.Transparent,
+                    ),
+                ),
+        )
         LiquidCircle(colors = liquidColors, modifier = Modifier.fillMaxSize())
         AnimatedContent(
             targetState = state,
@@ -647,6 +667,13 @@ private fun Hero(
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.92f),
                         modifier = Modifier.size(size * 0.32f),
+                    )
+                } else if (s == ConnectionState.Idle) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_bolt),
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.88f),
+                        modifier = Modifier.size(size * 0.30f),
                     )
                 }
             }
