@@ -213,6 +213,7 @@ private fun MaterialBar(
     }
 }
 
+@Composable
 private fun MinimalBar(destinations: List<TopDestination>, current: TopDestination, onSelect: (TopDestination) -> Unit) {
     Row(
         Modifier

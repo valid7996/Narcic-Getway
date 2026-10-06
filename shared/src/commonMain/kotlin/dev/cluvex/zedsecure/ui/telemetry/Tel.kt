@@ -1,6 +1,12 @@
 package dev.cluvex.zedsecure.ui.telemetry
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -213,27 +219,19 @@ fun TelAction(
 /** The live state line: dot + machine word, pulsing while a handshake runs. */
 @Composable
 fun TelStatusLine(state: ConnectionState, modifier: Modifier = Modifier) {
-    val pulse = remember {
-        androidx.compose.animation.core.infiniteRepeatable(
-            androidx.compose.animation.core.tween(700),
-            androidx.compose.animation.core.RepeatMode.Reverse,
-        )
-    }
-    val alpha = if (state == ConnectionState.Connecting || state == ConnectionState.Reconnecting) {
-        androidx.compose.animation.core.animateFloat(
-            initialValue = 0.3f,
-            targetValue = 1f,
-            animationSpec = pulse,
-            label = "tel-pulse",
-        ).value
-    } else {
-        1f
-    }
+    val transition = rememberInfiniteTransition(label = "tel-pulse")
+    val alpha by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        label = "tel-alpha",
+    )
+    val shown = if (state == ConnectionState.Connecting || state == ConnectionState.Reconnecting) alpha else 1f
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier
                 .size(9.dp)
-                .graphicsLayer { this.alpha = alpha }
+                .graphicsLayer { this.alpha = shown }
                 .background(Tel.stateColor(state), androidx.compose.foundation.shape.CircleShape),
         )
         Spacer(Modifier.width(9.dp))

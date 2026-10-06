@@ -56,6 +56,7 @@ import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.theme.Personalization
 import dev.cluvex.zedsecure.ui.theme.pingColor
+import dev.cluvex.zedsecure.ui.theme.readableOn
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
