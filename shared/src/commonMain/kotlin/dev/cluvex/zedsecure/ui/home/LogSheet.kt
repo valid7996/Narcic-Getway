@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cluvex.zedsecure.core.LogBus
 import dev.cluvex.zedsecure.core.VpnManager
@@ -169,7 +170,10 @@ fun LogSheet(onDismiss: () -> Unit) {
         if (lines.isNotEmpty() && atBottom) listState.scrollToItem(lines.lastIndex)
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = dev.cluvex.zedsecure.ui.telemetry.Tel.bg,
+    ) {
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 20.dp)) {
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -177,9 +181,13 @@ fun LogSheet(onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    stringResource(Res.string.logs_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    text = stringResource(Res.string.logs_title).uppercase(),
+                    style = dev.cluvex.zedsecure.ui.telemetry.Tel.mono.copy(
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                    ),
+                    color = dev.cluvex.zedsecure.ui.telemetry.Tel.text,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
@@ -276,8 +284,12 @@ fun LogSheet(onDismiss: () -> Unit) {
                         )
                     } else {
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            shape = RoundedCornerShape(14.dp),
+                            color = dev.cluvex.zedsecure.ui.telemetry.Tel.panel,
+                            shape = RoundedCornerShape(2.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                dev.cluvex.zedsecure.ui.telemetry.Tel.border,
+                            ),
                             modifier = Modifier.fillMaxWidth().height(420.dp),
                         ) {
                             LazyColumn(

@@ -65,6 +65,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
@@ -97,7 +98,7 @@ fun VaultScreen(
     var sealing by remember { mutableStateOf(false) }
     val sealScope = rememberCoroutineScope()
 
-    Column(modifier.fillMaxSize().padding(contentPadding)) {
+    Column(modifier.fillMaxSize().background(dev.cluvex.zedsecure.ui.telemetry.Tel.bg).padding(contentPadding)) {
         Spacer(Modifier.height(8.dp))
         PageHeader(
             title = stringResource(Res.string.vault_title),
@@ -105,8 +106,9 @@ fun VaultScreen(
         )
 
         Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.tertiaryContainer,
+            shape = RoundedCornerShape(2.dp),
+            color = dev.cluvex.zedsecure.ui.telemetry.Tel.panel,
+            border = androidx.compose.foundation.BorderStroke(1.dp, dev.cluvex.zedsecure.ui.telemetry.Tel.border),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
         ) {
             Row(
@@ -116,21 +118,24 @@ fun VaultScreen(
                 Icon(
                     painterResource(Res.drawable.ic_info),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    tint = dev.cluvex.zedsecure.ui.telemetry.Tel.warn,
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(10.dp))
                 Column {
                     Text(
-                        stringResource(Res.string.vault_experimental_badge),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        stringResource(Res.string.vault_experimental_badge).uppercase(),
+                        style = dev.cluvex.zedsecure.ui.telemetry.Tel.mono.copy(
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                        ),
+                        color = dev.cluvex.zedsecure.ui.telemetry.Tel.warn,
                     )
                     Text(
                         stringResource(Res.string.vault_experimental_note),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
+                        color = dev.cluvex.zedsecure.ui.telemetry.Tel.text2,
                     )
                 }
             }
@@ -257,94 +262,56 @@ private fun LockedCard(
     onDelete: () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = Color.Transparent,
+        shape = RoundedCornerShape(2.dp),
+        color = dev.cluvex.zedsecure.ui.telemetry.Tel.panel,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (active) dev.cluvex.zedsecure.ui.telemetry.Tel.accent.copy(alpha = 0.5f)
+            else dev.cluvex.zedsecure.ui.telemetry.Tel.border,
+        ),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .clip(RoundedCornerShape(24.dp))
-                .background(
-                    if (active) MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                ),
+                .clickable(onClick = onUse)
+                .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Side rail — the new card signature.
-            Box(
-                Modifier
-                    .width(5.dp)
-                    .fillMaxHeight()
-                    .background(
-                        if (active) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+            Column(Modifier.weight(1f)) {
+                Text(
+                    profile.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = dev.cluvex.zedsecure.ui.telemetry.Tel.text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    stringResource(if (active) Res.string.config_active else Res.string.locked_badge).uppercase(),
+                    style = dev.cluvex.zedsecure.ui.telemetry.Tel.mono.copy(
+                        fontSize = 10.sp,
+                        letterSpacing = 1.sp,
                     ),
-            )
-            Row(
-                Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painterResource(Res.drawable.ic_encrypted),
-                        null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(19.dp),
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
+                    color = if (active) dev.cluvex.zedsecure.ui.telemetry.Tel.accent
+                    else dev.cluvex.zedsecure.ui.telemetry.Tel.text2,
+                )
+                profile.note?.takeIf { it.isNotBlank() }?.let { note ->
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        profile.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
+                        note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = dev.cluvex.zedsecure.ui.telemetry.Tel.text2,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        stringResource(if (active) Res.string.config_active else Res.string.locked_badge),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    profile.note?.takeIf { it.isNotBlank() }?.let { note ->
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            note,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                FilledTonalButton(
-                    onClick = onUse,
-                    enabled = !active,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(50),
-                ) {
-                    Text(
-                        stringResource(if (active) Res.string.config_active else Res.string.action_connect),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        painterResource(Res.drawable.ic_delete),
-                        contentDescription = stringResource(Res.string.action_delete),
                     )
                 }
             }
+            dev.cluvex.zedsecure.ui.telemetry.TelAction(
+                text = stringResource(Res.string.action_delete),
+                onClick = onDelete,
+                danger = true,
+            )
         }
     }
 }
@@ -363,7 +330,10 @@ private fun CreateLockedSheet(
     var passwordVisible by remember { mutableStateOf(false) }
     var expiryDays by remember { mutableStateOf("0") }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = dev.cluvex.zedsecure.ui.telemetry.Tel.bg,
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()

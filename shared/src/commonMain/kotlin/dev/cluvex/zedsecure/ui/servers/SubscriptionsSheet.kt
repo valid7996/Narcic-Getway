@@ -43,6 +43,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
@@ -73,6 +74,7 @@ fun SubscriptionsSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        containerColor = dev.cluvex.zedsecure.ui.telemetry.Tel.bg,
 
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
@@ -85,9 +87,13 @@ fun SubscriptionsSheet(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                stringResource(Res.string.subs_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                text = stringResource(Res.string.subs_title).uppercase(),
+                style = dev.cluvex.zedsecure.ui.telemetry.Tel.mono.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                ),
+                color = dev.cluvex.zedsecure.ui.telemetry.Tel.text,
             )
 
             SectionTitle(stringResource(Res.string.subs_add))

@@ -284,9 +284,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val settings by repo.settings.collectAsStateWithLifecycle()
+            // The telemetry console is a dark-only product; the theme switch stays in settings
+            // for a future light variant but the UI no longer renders a light variant.
             val dark = when (settings.themeMode) {
-                ThemeMode.System -> isSystemInDarkTheme()
-                ThemeMode.Light -> false
+                ThemeMode.System -> true
+                ThemeMode.Light -> true
                 ThemeMode.Dark -> true
             }
             val langTag = settings.language.tag ?: resources.configuration.locales[0].language
