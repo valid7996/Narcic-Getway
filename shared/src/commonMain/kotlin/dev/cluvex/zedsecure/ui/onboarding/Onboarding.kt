@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -37,7 +40,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +55,9 @@ import dev.cluvex.zedsecure.domain.model.TrafficTileSize
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.theme.ThemeProfiles
+import dev.cluvex.zedsecure.ui.theme.ZedCyan
+import dev.cluvex.zedsecure.ui.theme.ZedMint
+import dev.cluvex.zedsecure.ui.theme.ZedViolet
 import dev.cluvex.zedsecure.ui.theme.applyThemeProfile
 import org.jetbrains.compose.resources.stringResource
 
@@ -65,72 +75,154 @@ fun OnboardingFlow(
     val last = 4
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .padding(top = 44.dp, bottom = 24.dp),
-        ) {
-            StepDots(step, last + 1)
-            Spacer(Modifier.height(22.dp))
+        Box(Modifier.fillMaxSize()) {
+            OnboardingBackdrop()
 
-            AnimatedContent(
-                targetState = step,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "onboarding-step",
-                modifier = Modifier.weight(1f),
-            ) { current ->
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    when (current) {
-                        0 -> ThemeModeStep(settings, onUpdate)
-                        1 -> ThemeProfileStep(settings, onUpdate)
-                        2 -> LanguageStep(settings, onLanguage)
-                        3 -> TrafficStep(settings, onUpdate)
-                        else -> TourOfferStep()
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 36.dp, bottom = 24.dp),
+            ) {
+                StepDots(step, last + 1)
+                Spacer(Modifier.height(20.dp))
+                BrandMark()
+                Spacer(Modifier.height(6.dp))
+
+                AnimatedContent(
+                    targetState = step,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "onboarding-step",
+                    modifier = Modifier.weight(1f),
+                ) { current ->
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        when (current) {
+                            0 -> ThemeModeStep(settings, onUpdate)
+                            1 -> ThemeProfileStep(settings, onUpdate)
+                            2 -> LanguageStep(settings, onLanguage)
+                            3 -> TrafficStep(settings, onUpdate)
+                            else -> TourOfferStep()
+                        }
                     }
                 }
-            }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (step > 0) {
-                    TextButton(onClick = { step-- }) { Text(stringResource(Res.string.onb_back)) }
-                }
-                Spacer(Modifier.weight(1f))
-                if (step == last) {
-                    TextButton(onClick = onFinish) { Text(stringResource(Res.string.onb_skip_tour)) }
-                    Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = onStartTour,
-                        shape = RoundedCornerShape(18.dp),
-                        modifier = Modifier.height(52.dp),
-                    ) {
-                        Text(stringResource(Res.string.onb_start_tour), fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (step > 0) {
+                        TextButton(onClick = { step-- }) { Text(stringResource(Res.string.onb_back)) }
                     }
-                } else {
-                    Button(
-                        onClick = { step++ },
-                        shape = RoundedCornerShape(18.dp),
-                        modifier = Modifier.height(52.dp),
-                    ) {
-                        Text(stringResource(Res.string.onb_next), fontWeight = FontWeight.SemiBold)
+                    if (step == last) {
+                        TextButton(onClick = onFinish) { Text(stringResource(Res.string.onb_skip_tour)) }
+                        Spacer(Modifier.width(8.dp))
                     }
+                    GradientCta(
+                        label = stringResource(if (step == last) Res.string.onb_start_tour else Res.string.onb_next),
+                        modifier = Modifier.weight(1f),
+                        onClick = { if (step == last) onStartTour() else step++ },
+                    )
                 }
             }
         }
     }
 }
 
+/** Soft aurora wash behind the wizard — radial glows instead of a flat fill. */
+@Composable
+private fun OnboardingBackdrop() {
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .align(Alignment.TopStart)
+                .offset(x = (-70).dp, y = (-90).dp)
+                .size(300.dp)
+                .background(Brush.radialGradient(listOf(ZedViolet.copy(alpha = 0.30f), Color.Transparent))),
+        )
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 80.dp, y = 150.dp)
+                .size(260.dp)
+                .background(Brush.radialGradient(listOf(ZedCyan.copy(alpha = 0.20f), Color.Transparent))),
+        )
+        Box(
+            Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = (-50).dp, y = 80.dp)
+                .size(280.dp)
+                .background(Brush.radialGradient(listOf(ZedMint.copy(alpha = 0.13f), Color.Transparent))),
+        )
+    }
+}
+
+@Composable
+private fun BrandMark() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Brush.linearGradient(listOf(ZedViolet, ZedCyan))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "N",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+            )
+        }
+        Spacer(Modifier.width(11.dp))
+        Text(
+            stringResource(Res.string.app_name),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun GradientCta(
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color.White,
+        ),
+        modifier = modifier
+            .height(52.dp)
+            .background(
+                Brush.linearGradient(listOf(ZedViolet, ZedCyan)),
+                RoundedCornerShape(18.dp),
+            ),
+    ) {
+        Text(label, fontWeight = FontWeight.SemiBold)
+    }
+}
+
 @Composable
 private fun StepDots(current: Int, total: Int) {
+    val activeBrush = Brush.horizontalGradient(listOf(ZedViolet, ZedCyan))
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         repeat(total) { i ->
-            val width by animateDpAsState(if (i == current) 26.dp else 8.dp, label = "onb-dot")
-            val color by animateColorAsState(
-                if (i <= current) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceContainerHighest,
-                label = "onb-dot-color",
-            )
-            Box(Modifier.height(8.dp).width(width).clip(CircleShape).background(color))
+            val width by animateDpAsState(if (i == current) 30.dp else 8.dp, label = "onb-dot")
+            val fill = when {
+                i == current -> activeBrush
+                i < current -> Brush.horizontalGradient(
+                    listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary),
+                )
+                else -> Brush.horizontalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ),
+                )
+            }
+            Box(Modifier.height(8.dp).width(width).clip(CircleShape).background(fill))
         }
     }
 }
@@ -200,6 +292,43 @@ private fun ChoiceCard(
                 }
             }
             trailing?.invoke()
+            if (trailing != null) {
+                Spacer(Modifier.width(12.dp))
+            }
+            CheckBadge(selected)
+        }
+    }
+}
+
+@Composable
+private fun CheckBadge(selected: Boolean) {
+    Box(
+        Modifier
+            .size(22.dp)
+            .then(
+                if (selected) {
+                    Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                } else {
+                    Modifier.border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Canvas(Modifier.size(11.dp)) {
+                val w = size.width
+                val h = size.height
+                val check = Path().apply {
+                    moveTo(w * 0.08f, h * 0.55f)
+                    lineTo(w * 0.38f, h * 0.88f)
+                    lineTo(w * 0.92f, h * 0.12f)
+                }
+                drawPath(
+                    check,
+                    color = Color.White,
+                    style = Stroke(width = w * 0.24f, cap = StrokeCap.Round),
+                )
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 package dev.cluvex.zedsecure.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,7 +23,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +49,8 @@ import dev.cluvex.zedsecure.ui.servers.AddServerSheet
 import dev.cluvex.zedsecure.ui.servers.ServerCard
 import dev.cluvex.zedsecure.ui.servers.SubscriptionsSheet
 import dev.cluvex.zedsecure.ui.theme.Personalization
+import dev.cluvex.zedsecure.ui.theme.ZedCyan
+import dev.cluvex.zedsecure.ui.theme.ZedViolet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -147,20 +150,16 @@ internal fun HomeServerSection(
                 modifier = Modifier.weight(1f),
             )
             if (testing) {
-                IconButton(onClick = { PingCoordinator.cancel() }) {
-                    Icon(
-                        painterResource(Res.drawable.ic_close),
-                        contentDescription = stringResource(Res.string.ping_stop),
-                    )
-                }
+                HeaderActionButton(
+                    icon = Res.drawable.ic_close,
+                    label = stringResource(Res.string.ping_stop),
+                ) { PingCoordinator.cancel() }
             } else {
                 Box {
-                    IconButton(onClick = { pingMenu = true }) {
-                        Icon(
-                            painterResource(Res.drawable.ic_speed),
-                            contentDescription = stringResource(Res.string.ping_test),
-                        )
-                    }
+                    HeaderActionButton(
+                        icon = Res.drawable.ic_speed,
+                        label = stringResource(Res.string.ping_test),
+                    ) { pingMenu = true }
                     DropdownMenu(
                         expanded = pingMenu,
                         onDismissRequest = { pingMenu = false },
@@ -178,12 +177,10 @@ internal fun HomeServerSection(
                 }
             }
             Box {
-                IconButton(onClick = { overflowOpen = true }) {
-                    Icon(
-                        painterResource(Res.drawable.ic_more_vert),
-                        contentDescription = stringResource(Res.string.servers_actions),
-                    )
-                }
+                HeaderActionButton(
+                    icon = Res.drawable.ic_more_vert,
+                    label = stringResource(Res.string.servers_actions),
+                ) { overflowOpen = true }
                 DropdownMenu(
                     expanded = overflowOpen,
                     onDismissRequest = { overflowOpen = false },
@@ -257,12 +254,11 @@ internal fun HomeServerSection(
                     )
                 }
             }
-            IconButton(onClick = { showAdd = true }) {
-                Icon(
-                    painterResource(Res.drawable.ic_add),
-                    contentDescription = stringResource(Res.string.servers_add),
-                )
-            }
+            HeaderActionButton(
+                icon = Res.drawable.ic_add,
+                label = stringResource(Res.string.servers_add),
+                gradient = true,
+            ) { showAdd = true }
         }
 
         if (servers.isNotEmpty()) {
@@ -372,6 +368,50 @@ internal fun HomeServerSection(
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
+        )
+    }
+}
+
+/**
+ * Glassy header action chip; the add button wears the brand gradient. Replaces the plain
+ * IconButtons so the section header matches the approved mockup.
+ */
+@Composable
+private fun HeaderActionButton(
+    icon: org.jetbrains.compose.resources.DrawableResource,
+    label: String,
+    gradient: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(13.dp)
+    Box(
+        Modifier
+            .size(42.dp)
+            .clip(shape)
+            .then(
+                if (gradient) {
+                    Modifier.background(
+                        androidx.compose.ui.graphics.Brush.linearGradient(listOf(ZedViolet, ZedCyan)),
+                    )
+                } else {
+                    Modifier
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                            shape,
+                        )
+                },
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painterResource(icon),
+            contentDescription = label,
+            tint = if (gradient) androidx.compose.ui.graphics.Color.White
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(19.dp),
         )
     }
 }

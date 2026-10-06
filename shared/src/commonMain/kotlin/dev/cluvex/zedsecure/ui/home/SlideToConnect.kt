@@ -118,12 +118,41 @@ internal fun SlideToConnect(
             listOf(customActiveColor ?: ZedViolet, (customActiveColor ?: ZedCyan)),
         )
 
-        Box(
-            modifier
-                .fillMaxWidth()
-                .height(height)
-                .onSizeChanged { trackWidth = it.width.toFloat() }
-                .pointerInput(active, transition) {
+        Box(modifier.fillMaxWidth()) {
+            // Aurora glow behind the slider — the connect control's halo.
+            val glowAlpha by animateFloatAsState(
+                targetValue = when {
+                    state == ConnectionState.Error -> 0f
+                    active -> 0.55f
+                    else -> 0.16f + 0.3f * progress
+                },
+                tween(700),
+                label = "slide-glow",
+            )
+            if (glowAlpha > 0.01f) {
+                val glowStart = if (active) (customActiveColor ?: ZedViolet) else idleColor
+                val glowEnd = if (active) (customActiveColor ?: ZedCyan) else ZedCyan
+                Box(
+                    Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth()
+                        .height(height + 14.dp)
+                        .graphicsLayer { alpha = glowAlpha }
+                        .clip(CircleShape)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(glowStart.copy(alpha = 0.55f), glowEnd.copy(alpha = 0.55f)),
+                            ),
+                        ),
+                )
+            }
+
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(height)
+                    .onSizeChanged { trackWidth = it.width.toFloat() }
+                    .pointerInput(active, transition) {
                     if (active && !transition) {
                         detectTapGestures { _ ->
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -226,6 +255,7 @@ internal fun SlideToConnect(
                     )
                 }
             }
+        }
         }
     }
 }

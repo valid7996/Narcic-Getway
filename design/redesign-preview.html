@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narcic Getway — پیش‌نمایش طراحی جدید</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   پالت تازه‌سازی‌شده «Night-Ice» — همان هویت، پرنورتر و منسجم‌تر
+   ============================================================ */
+:root {
+  /* dark (پیش‌فرض) */
+  --bg: #0A0F1A;
+  --surface: #0E1524;
+  --container: #121A2C;
+  --container-hi: #1A2438;
+  --container-max: #232E47;
+  --on: #E9EEF8;
+  --on-var: #94A0B8;
+  --outline: #7E8AA3;
+  --outline-var: #263149;
+  --primary: #5B7CFA;
+  --primary-soft: rgba(91, 124, 250, 0.16);
+  --on-primary: #FFFFFF;
+  --primary-container: #1C2C63;
+  --on-primary-container: #DCE4FF;
+  --cyan: #38D6E4;
+  --cyan-soft: rgba(56, 214, 228, 0.14);
+  --ice: #7DE8FF;
+  --deep: #0B1533;
+  --mint: #5EEAD4;
+  --danger: #FF7A8A;
+  --ok: #4ADE9C;
+  --amber: #FFC46B;
+  --shadow: 0 18px 44px rgba(2, 6, 16, 0.55);
+  --glow-violet: rgba(91, 124, 250, 0.45);
+  --glow-cyan: rgba(56, 214, 228, 0.35);
+  --card-border: 1px solid rgba(151, 172, 224, 0.10);
+  --chip-bg: rgba(151, 172, 224, 0.08);
+  --aurora-opacity: 0.55;
+}
+body.light {
+  --bg: #F3F6FD;
+  --surface: #FBFCFF;
+  --container: #EDF1FA;
+  --container-hi: #E2E9F6;
+  --container-max: #D5DEF0;
+  --on: #16203B;
+  --on-var: #5C6880;
+  --outline: #7683A0;
+  --outline-var: #CBD5EA;
+  --primary: #2E5FE8;
+  --primary-soft: rgba(46, 95, 232, 0.10);
+  --on-primary: #FFFFFF;
+  --primary-container: #DCE4FF;
+  --on-primary-container: #0E2A6B;
+  --cyan: #0FA8BC;
+  --cyan-soft: rgba(15, 168, 188, 0.12);
+  --ice: #7DE8FF;
+  --deep: #0B1533;
+  --mint: #0CA88F;
+  --danger: #D93A50;
+  --ok: #0E9F6E;
+  --amber: #B97A12;
+  --shadow: 0 18px 44px rgba(23, 43, 90, 0.14);
+  --glow-violet: rgba(91, 124, 250, 0.30);
+  --glow-cyan: rgba(56, 214, 228, 0.25);
+  --card-border: 1px solid rgba(23, 43, 90, 0.07);
+  --chip-bg: rgba(23, 43, 90, 0.05);
+  --aurora-opacity: 0.35;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 85% -10%, var(--primary-soft), transparent 60%),
+    radial-gradient(900px 480px at 5% 110%, var(--cyan-soft), transparent 60%),
+    var(--bg);
+  color: var(--on);
+  padding: 28px 24px 60px;
+  transition: background 0.4s, color 0.4s;
+}
+
+/* ---------- کروم صفحه پیش‌نمایش (بخشی از اپ نیست) ---------- */
+.topbar {
+  max-width: 1780px; margin: 0 auto 8px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.topbar h1 { font-size: 20px; font-weight: 800; }
+.topbar .sub { color: var(--on-var); font-size: 13px; width: 100%; max-width: 720px; line-height: 1.9; }
+.toggle {
+  margin-inline-start: auto;
+  display: flex; gap: 0; border: 1px solid var(--outline-var);
+  border-radius: 999px; overflow: hidden; background: var(--chip-bg);
+}
+.toggle button {
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  padding: 9px 18px; border: 0; cursor: pointer;
+  background: transparent; color: var(--on-var);
+}
+.toggle button.on { background: var(--primary); color: #fff; }
+.palette { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.palette span.lbl { font-size: 12px; color: var(--on-var); }
+.swatch { width: 26px; height: 26px; border-radius: 9px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+
+/* ---------- چیدمان فریم‌ها ---------- */
+.frames {
+  max-width: 1780px; margin: 26px auto 0;
+  display: grid; grid-template-columns: repeat(auto-fit, 372px);
+  gap: 34px; justify-content: center;
+}
+.frame-wrap { display: flex; flex-direction: column; gap: 12px; }
+.frame-label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--on-var); }
+.frame-label .num {
+  width: 22px; height: 22px; border-radius: 7px; font-size: 11.5px;
+  display: grid; place-items: center; font-weight: 800;
+  background: var(--primary); color: #fff;
+}
+.phone {
+  width: 372px; height: 844px; border-radius: 42px; position: relative;
+  background: var(--bg); overflow: hidden; border: 1px solid var(--outline-var);
+  box-shadow: var(--shadow);
+  transition: background 0.4s;
+}
+.phone-scroll { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; }
+.phone-scroll::-webkit-scrollbar { display: none; }
+
+/* ---------- پس‌زمینه آورورا (مشترک بین صفحه‌ها) ---------- */
+.aurora { position: absolute; inset: 0; pointer-events: none; opacity: var(--aurora-opacity); }
+.aurora i { position: absolute; border-radius: 50%; filter: blur(70px); }
+.aurora .a1 { width: 300px; height: 300px; top: -90px; inset-inline-start: -80px;
+  background: radial-gradient(circle, rgba(91,124,250,.55), transparent 70%); }
+.aurora .a2 { width: 260px; height: 260px; top: 22%; inset-inline-end: -110px;
+  background: radial-gradient(circle, rgba(56,214,228,.38), transparent 70%); }
+.aurora .a3 { width: 300px; height: 300px; bottom: -120px; inset-inline-start: 15%;
+  background: radial-gradient(circle, rgba(94,234,212,.20), transparent 70%); }
+
+/* ---------- آنبوردینگ ---------- */
+.onb { position: relative; padding: 30px 24px 22px; min-height: 100%; display: flex; flex-direction: column; }
+.dots { display: flex; gap: 6px; align-items: center; }
+.dots i { height: 8px; width: 8px; border-radius: 99px; background: var(--container-max); transition: all .3s; }
+.dots i.on { width: 30px; background: linear-gradient(90deg, var(--primary), var(--cyan)); }
+.brandrow { display: flex; align-items: center; gap: 11px; margin-top: 22px; }
+.brandmark {
+  width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--primary), var(--cyan));
+  color: #fff; font-weight: 900; font-size: 22px; font-family: Georgia, serif;
+  box-shadow: 0 8px 24px var(--glow-violet);
+}
+.brandname { font-weight: 800; font-size: 16.5px; letter-spacing: .2px; }
+.brandtag { font-size: 11.5px; color: var(--on-var); margin-top: 2px; }
+.onb h2 { font-size: 27px; font-weight: 800; margin-top: 26px; line-height: 1.4; }
+.onb .lead { color: var(--on-var); font-size: 14px; line-height: 2; margin-top: 8px; }
+.cards { display: flex; flex-direction: column; gap: 12px; margin-top: 22px; }
+.choice {
+  display: flex; align-items: center; gap: 13px;
+  background: var(--container-hi); border: 1.5px solid transparent;
+  border-radius: 20px; padding: 15px 17px; cursor: pointer;
+  transition: all .25s;
+}
+.choice.selected {
+  background: var(--primary-soft); border-color: var(--primary);
+  box-shadow: 0 6px 22px rgba(91,124,250,.16);
+}
+.choice .txt { flex: 1; }
+.choice .t { font-weight: 700; font-size: 15px; }
+.choice.selected .t { color: var(--primary); }
+.choice .d { font-size: 12px; color: var(--on-var); margin-top: 3px; line-height: 1.8; }
+.check {
+  width: 22px; height: 22px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--outline); display: grid; place-items: center;
+}
+.choice.selected .check { background: var(--primary); border-color: var(--primary); }
+.choice.selected .check::after {
+  content: ""; width: 9px; height: 5px; border-bottom: 2px solid #fff;
+  border-left: 2px solid #fff; transform: rotate(45deg) translate(1px, -1px);
+}
+.swatchrow { display: flex; gap: 6px; }
+.swatchrow b { width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+/* پیش‌نمایش مینی حالت تم داخل کارت */
+.mini-theme { width: 52px; height: 34px; border-radius: 11px; flex: none; position: relative; overflow: hidden; }
+.mini-theme::after { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%; top: 8px; inset-inline-start: 8px; }
+.mini-theme.dark { background: #0B1222; } .mini-theme.dark::after { background: #2A3A5E; }
+.mini-theme.lt { background: #EAF0FC; } .mini-theme.lt::after { background: #FFC46B; }
+.mini-theme.sys { background: linear-gradient(115deg, #EAF0FC 50%, #0B1222 50%); }
+.mini-theme.sys::after { background: #5B7CFA; top: 10px; inset-inline-start: 10px; width: 12px; height: 12px; }
+.onb-footer { margin-top: auto; padding-top: 20px; display: flex; align-items: center; gap: 10px; }
+.btn-ghost { background: none; border: 0; color: var(--on-var); font-family: inherit; font-size: 14px; font-weight: 600; padding: 8px; }
+.btn-cta {
+  flex: 1; height: 54px; border: 0; border-radius: 18px; cursor: pointer;
+  font-family: inherit; font-size: 16px; font-weight: 800; color: #fff;
+  background: linear-gradient(120deg, var(--primary), #4A6AF5 55%, var(--cyan));
+  box-shadow: 0 10px 28px var(--glow-violet);
+  position: relative; overflow: hidden;
+}
+.btn-cta::after { /* درخشش شیشه‌ای روی دکمه */
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.25) 46%, transparent 60%);
+}
+
+/* ---------- اجزای مشترک صفحه اصلی ---------- */
+.home { position: relative; padding: 22px 22px 20px; min-height: 100%; display: flex; flex-direction: column; }
+.toprow { display: flex; align-items: center; gap: 10px; }
+.status-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--container-hi); border: var(--card-border);
+  border-radius: 999px; padding: 9px 15px; font-size: 12.5px; font-weight: 600; color: var(--on-var);
+  cursor: grab;
+}
+.status-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--outline); }
+.status-chip.connected { color: var(--on); }
+.status-chip.connected .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.iconbtn {
+  width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center;
+  background: var(--container-hi); border: var(--card-border); color: var(--on-var);
+}
+.brandtitle {
+  text-align: center; font-weight: 900; font-size: 21px; margin-top: 16px; letter-spacing: .3px;
+  background: linear-gradient(100deg, var(--on), var(--ice));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* کاشی‌های ترافیک */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 16px; }
+.tile {
+  display: flex; align-items: center; gap: 11px;
+  background: var(--container); border: var(--card-border);
+  border-radius: 18px; padding: 13px 14px;
+}
+.tile .ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+.tile.dl .ic { background: var(--primary-soft); color: var(--primary); }
+.tile.ul .ic { background: var(--cyan-soft); color: var(--cyan); }
+.tile .v { font-size: 15.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tile .l { font-size: 11px; color: var(--on-var); margin-top: 2px; }
+
+/* اورب مایع */
+.orb-zone { display: grid; place-items: center; margin-top: 8px; position: relative; }
+.orb-glow {
+  position: absolute; width: 240px; height: 240px; border-radius: 50%;
+  filter: blur(46px); opacity: .8;
+}
+.orb-zone.idle .orb-glow { background: radial-gradient(circle, rgba(91,124,250,.30), rgba(11,21,51,.1) 65%, transparent 70%); }
+.orb-zone.on .orb-glow { background: radial-gradient(circle at 35% 35%, var(--glow-violet), var(--glow-cyan) 60%, transparent 72%); opacity: .95; }
+.orb {
+  width: 208px; height: 208px; position: relative; display: grid; place-items: center;
+  background: var(--orbgrad);
+  animation: blob 7s ease-in-out infinite, breathe 2.9s ease-in-out infinite;
+}
+.orb-zone.idle .orb { --orbgrad: linear-gradient(135deg, #0B1533 0%, #14285C 55%, rgba(91,124,250,.8) 100%); }
+.orb-zone.on .orb { --orbgrad: linear-gradient(135deg, var(--primary) 0%, var(--cyan) 55%, var(--ice) 100%); }
+@keyframes blob {
+  0%, 100% { border-radius: 44% 56% 58% 42% / 46% 44% 56% 54%; }
+  33%      { border-radius: 56% 44% 42% 58% / 52% 58% 42% 48%; }
+  66%      { border-radius: 48% 52% 56% 44% / 42% 52% 48% 58%; }
+}
+@keyframes breathe { 0%, 100% { transform: scale(.97); } 50% { transform: scale(1.04); } }
+.orb::before { /* هایلایت شیشه‌ای */
+  content: ""; position: absolute; width: 62%; height: 46%; top: 12%; inset-inline-start: 14%;
+  border-radius: 50%; background: radial-gradient(ellipse at center, rgba(255,255,255,.16), transparent 70%);
+}
+.orb .timer { color: #fff; font-weight: 800; font-size: 34px; font-variant-numeric: tabular-nums; text-shadow: 0 2px 14px rgba(0,0,0,.25); }
+.orb .power-ic { color: rgba(255,255,255,.85); }
+.orb .spin { position: absolute; width: 76px; height: 76px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.25); border-top-color: #fff; animation: rot 1s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.status-label { text-align: center; font-size: 25px; font-weight: 800; margin-top: 10px; }
+.orb-zone.idle + .status-label { color: var(--on-var); }
+.status-label.on { color: var(--on); }
+
+/* قرص اطلاعات اتصال */
+.info-pill {
+  display: flex; align-items: center; gap: 9px; margin-top: 14px;
+  background: var(--container-hi); border: var(--card-border);
+  border-radius: 20px; padding: 11px 14px;
+}
+.info-pill .flag { font-size: 19px; }
+.info-pill .ip { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.info-pill .loc { font-size: 11.5px; color: var(--on-var); }
+.ping {
+  margin-inline-start: auto; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+  color: var(--ok); background: rgba(74, 222, 156, 0.13); font-variant-numeric: tabular-nums;
+}
+
+/* دکمه اتصال قرصی */
+.connect-wrap { margin-top: 18px; position: relative; }
+.connect-aura {
+  position: absolute; inset: -14px -8px; border-radius: 999px; filter: blur(26px); opacity: .75;
+}
+.connect-wrap.idle .connect-aura { background: linear-gradient(100deg, rgba(91,124,250,.55), rgba(56,214,228,.35)); }
+.connect-wrap.on .connect-aura { background: linear-gradient(100deg, rgba(91,124,250,.65), rgba(56,214,228,.5)); }
+.connect-btn {
+  position: relative; width: 100%; height: 68px; border: 0; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 18.5px; font-weight: 800; color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  overflow: hidden;
+}
+.connect-btn::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 34%, rgba(255,255,255,.22) 48%, transparent 62%);
+}
+.connect-wrap.idle .connect-btn { background: linear-gradient(120deg, var(--primary), #4067E8 60%, rgba(64,103,232,.78)); box-shadow: 0 12px 30px var(--glow-violet); }
+.connect-wrap.on .connect-btn { background: linear-gradient(120deg, var(--primary), var(--cyan)); box-shadow: 0 12px 30px var(--glow-cyan); }
+
+/* دکمه اتصال اسلایدی (سبک جدید پیش‌فرض) */
+.slide {
+  direction: ltr; position: relative; margin-top: 18px;
+  height: 64px; border-radius: 999px; background: var(--container-hi);
+  border: var(--card-border); display: flex; align-items: center;
+  box-shadow: 0 0 26px var(--glow-violet);
+}
+.slide .hint { width: 100%; text-align: center; font-size: 14.5px; font-weight: 700; color: var(--on-var); }
+.slide .knob {
+  position: absolute; top: 5px; left: 5px; width: 54px; height: 54px; border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff, rgba(255,255,255,.88));
+  display: grid; place-items: center; color: var(--primary);
+  box-shadow: 0 4px 14px rgba(2,6,16,.35);
+}
+.slide.on { background: linear-gradient(120deg, var(--primary), var(--cyan)); border-color: transparent; box-shadow: 0 0 30px var(--glow-cyan); }
+.slide.on .hint { color: #fff; }
+.slide.on .knob { left: calc(100% - 59px); }
+
+/* هدر بخش سرورها + دکمه‌های اکشن */
+.sec-head { display: flex; align-items: center; margin-top: 20px; }
+.sec-head > span { font-size: 15px; font-weight: 800; }
+.sec-head .actions { margin-inline-start: auto; display: flex; gap: 8px; }
+.sec-head .iconbtn { width: 36px; height: 36px; border-radius: 12px; }
+.sec-head .iconbtn.plus {
+  color: #fff; background: linear-gradient(120deg, var(--primary), var(--cyan)); border: 0;
+  box-shadow: 0 4px 14px var(--glow-violet);
+}
+
+/* ---------- داشبورد اتصال ---------- */
+.dash-top { display: flex; align-items: center; gap: 10px; }
+.dash-title { font-size: 17px; font-weight: 800; flex: 1; text-align: center; }
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+  color: var(--ok); background: rgba(74, 222, 156, 0.12); padding: 6px 11px; border-radius: 999px;
+}
+.live-badge b { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: livepulse 1.6s infinite; }
+@keyframes livepulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,156,.45); } 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.dash-srv {
+  display: flex; align-items: center; gap: 12px; margin-top: 14px;
+  background: var(--container); border: var(--card-border); border-radius: 20px; padding: 14px;
+}
+.dash-srv .flag { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 23px; background: var(--chip-bg); flex: none; }
+.dash-srv .t { font-size: 14.5px; font-weight: 800; }
+.dash-srv .s { font-size: 11.5px; color: var(--on-var); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.chart-card { margin-top: 12px; background: var(--container); border: var(--card-border); border-radius: 20px; padding: 15px; }
+.chart-card .hd { display: flex; align-items: center; }
+.chart-card .hd > span { font-size: 12.5px; font-weight: 700; color: var(--on-var); }
+.legend { margin-inline-start: auto; display: flex; gap: 12px; font-size: 11px; color: var(--on-var); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-inline-end: 5px; vertical-align: -1px; }
+.axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--on-var); opacity: .75; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.speeds { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 12px; }
+.speed-card { background: var(--container); border: var(--card-border); border-radius: 20px; padding: 13px 15px; position: relative; overflow: hidden; }
+.speed-card::before { content: ""; position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 4px; }
+.speed-card.dl::before { background: linear-gradient(180deg, var(--primary), transparent); }
+.speed-card.ul::before { background: linear-gradient(180deg, var(--cyan), transparent); }
+.speed-card .l { font-size: 11px; color: var(--on-var); display: flex; align-items: center; gap: 6px; }
+.speed-card .v { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.speed-card.dl .v { color: var(--primary); }
+.speed-card.ul .v { color: var(--cyan); }
+.speed-card .tot { font-size: 11px; color: var(--on-var); margin-top: 4px; }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; margin-top: 12px; }
+.stat { background: var(--container); border: var(--card-border); border-radius: 18px; padding: 13px 8px; text-align: center; }
+.stat .v { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 10.5px; color: var(--on-var); margin-top: 3px; }
+.conn-info { margin-top: 12px; background: var(--container); border: var(--card-border); border-radius: 20px; padding: 3px 15px; }
+.ci-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; font-size: 12.5px; }
+.ci-row + .ci-row { border-top: 1px solid var(--outline-var); }
+.ci-row .k { color: var(--on-var); }
+.ci-row .v2 { margin-inline-start: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* بخش سرورها */
+.group-chips { display: flex; gap: 8px; margin-top: 20px; overflow: hidden; }
+.gchip {
+  font-size: 12.5px; font-weight: 600; padding: 8px 15px; border-radius: 999px;
+  background: var(--chip-bg); color: var(--on-var); white-space: nowrap; cursor: pointer;
+  border: var(--card-border);
+}
+.gchip.on { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+.server-card {
+  display: flex; align-items: center; gap: 12px; margin-top: 11px;
+  background: var(--container); border: var(--card-border);
+  border-radius: 18px; padding: 13px 14px;
+}
+.server-card.active { background: var(--primary-soft); border-color: var(--primary); box-shadow: 0 6px 20px rgba(91,124,250,.14); }
+.server-card .flag { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; font-size: 21px; background: var(--chip-bg); flex: none; }
+.server-card .nm { font-size: 14px; font-weight: 700; }
+.server-card .sb { font-size: 11.5px; color: var(--on-var); margin-top: 2px; }
+.badge { margin-inline-start: auto; display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px; }
+.badge b { width: 6px; height: 6px; border-radius: 50%; }
+.badge.fast { color: var(--ok); background: rgba(74,222,156,.12); } .badge.fast b { background: var(--ok); }
+.badge.mid { color: var(--amber); background: rgba(255,196,107,.12); } .badge.mid b { background: var(--amber); }
+.badge.active { color: var(--primary); background: var(--primary); color: #fff; }
+
+/* FABها */
+.fabs { position: absolute; bottom: 18px; inset-inline-start: 18px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
+.fab {
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--container-hi); border: var(--card-border); color: var(--primary);
+  box-shadow: 0 10px 24px rgba(2,6,16,.35); cursor: pointer;
+}
+
+.svgic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.svgic.lg { width: 34px; height: 34px; stroke-width: 1.8; }
+
+.note { max-width: 1780px; margin: 30px auto 0; color: var(--on-var); font-size: 13px; line-height: 2.1; border: 1px dashed var(--outline-var); border-radius: 16px; padding: 16px 20px; }
+.note b { color: var(--on); }
+@media (prefers-reduced-motion: reduce) { .orb, .orb::before, .spin { animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>بازطراحی Narcic Getway — پیش‌نمایش</h1>
+  <div class="toggle">
+    <button id="btnDark" class="on" onclick="setTheme(false)">تیره</button>
+    <button id="btnLight" onclick="setTheme(true)">روشن</button>
+  </div>
+  <div class="palette">
+    <span class="lbl">پالت جدید:</span>
+    <div class="swatch" style="background:#5B7CFA" title="بنفش برند"></div>
+    <div class="swatch" style="background:#38D6E4" title="فیروزه‌ای"></div>
+    <div class="swatch" style="background:#7DE8FF" title="یخی"></div>
+    <div class="swatch" style="background:#0B1533" title="سرمه‌ای عمیق"></div>
+    <div class="swatch" style="background:#0A0F1A" title="پس‌زمینه تیره"></div>
+    <div class="swatch" style="background:#F3F6FD" title="پس‌زمینه روشن"></div>
+  </div>
+  <div class="sub">
+    جهت طراحی: همون هویت «Night-Ice» ولی تازه‌سازی‌شده — پس‌زمینه‌های عمیق‌تر با ته‌مایه بنفش، کارت‌های شیشه‌ای نرم‌تر،
+    گرادیان‌های برند پرنورتر، درخشش (glow) ظریف پشت اورب و دکمه اتصال، و آنبوردینگ با هدر برند و پس‌زمینه آورورا.
+    منطق برنامه و همهٔ شخصی‌سازی‌ها (۱۲ پروفایل تم، ۳ سبک دکمه، ۵ سبک کاشی) دست‌نخورده می‌مونه.
+  </div>
+</div>
+
+<div class="frames">
+
+  <!-- ═══════════ ۱) آنبوردینگ — انتخاب حالت تم ═══════════ -->
+  <div class="frame-wrap">
+    <div class="frame-label"><span class="num">۱</span> آنبوردینگ — حالت تم (مرحله ۱ از ۵)</div>
+    <div class="phone">
+      <div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+      <div class="phone-scroll">
+        <div class="onb">
+          <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          <div class="brandrow">
+            <div class="brandmark">N</div>
+            <div>
+              <div class="brandname">Narcic Getway</div>
+              <div class="brandtag">Every way through, in one app</div>
+            </div>
+          </div>
+          <h2>روشن یا تیره؟</h2>
+          <div class="lead">انتخاب کن Narcic Getway چطور دیده شود. هر وقت خواستی در تنظیمات عوضش کن.</div>
+          <div class="cards">
+            <div class="choice selected">
+              <div class="txt"><div class="t">تیره</div><div class="d">سرمه‌ای عمیق با اکسنت بنفش یخی</div></div>
+              <div class="mini-theme dark"></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">روشن</div><div class="d">سفید یخی با آبی روشن</div></div>
+              <div class="mini-theme lt"></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">سیستم</div><div class="d">هماهنگ با تنظیمات دستگاه</div></div>
+              <div class="mini-theme sys"></div>
+              <div class="check"></div>
+            </div>
+          </div>
+          <div class="onb-footer">
+            <button class="btn-cta">بعدی</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ۲) آنبوردینگ — انتخاب پوسته ═══════════ -->
+  <div class="frame-wrap">
+    <div class="frame-label"><span class="num">۲</span> آنبوردینگ — پوسته تم (مرحله ۲ از ۵)</div>
+    <div class="phone">
+      <div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+      <div class="phone-scroll">
+        <div class="onb">
+          <div class="dots"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+          <div class="brandrow">
+            <div class="brandmark">N</div>
+            <div>
+              <div class="brandname">Narcic Getway</div>
+              <div class="brandtag">Every way through, in one app</div>
+            </div>
+          </div>
+          <h2>یک پوسته انتخاب کن</h2>
+          <div class="lead">یک ست رنگ آماده. بعداً همهٔ رنگ‌ها قابل تغییرند.</div>
+          <div class="cards">
+            <div class="choice selected">
+              <div class="txt"><div class="t">پیش‌فرض</div></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">Narcis</div></div>
+              <div class="swatchrow"><b style="background:#0A7B58"></b><b style="background:#6FDBA8"></b><b style="background:#0B1533"></b></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">Aurora</div></div>
+              <div class="swatchrow"><b style="background:#5B7CFA"></b><b style="background:#38D6E4"></b><b style="background:#7DE8FF"></b></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">Ember</div></div>
+              <div class="swatchrow"><b style="background:#FF8A5C"></b><b style="background:#FFC46B"></b><b style="background:#2B1A12"></b></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">Midnight</div></div>
+              <div class="swatchrow"><b style="background:#14285C"></b><b style="background:#5B7CFA"></b><b style="background:#0A0F1A"></b></div>
+              <div class="check"></div>
+            </div>
+            <div class="choice">
+              <div class="txt"><div class="t">Sakura</div></div>
+              <div class="swatchrow"><b style="background:#F5A8C0"></b><b style="background:#B4558A"></b><b style="background:#2A1622"></b></div>
+              <div class="check"></div>
+            </div>
+          </div>
+          <div class="onb-footer">
+            <button class="btn-ghost">قبلی</button>
+            <button class="btn-cta">بعدی</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ۳) صفحه اصلی — قطع ═══════════ -->
+  <div class="frame-wrap">
+    <div class="frame-label"><span class="num">۳</span> صفحه اصلی — متصل نیستید</div>
+    <div class="phone">
+      <div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+      <div class="phone-scroll">
+        <div class="home">
+          <div class="toprow">
+            <div class="status-chip"><span class="dot"></span>متصل نیستید</div>
+            <div class="iconbtn" style="margin-inline-start:auto">
+              <svg class="svgic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+          </div>
+          <div class="brandtitle">Narcic Getway</div>
+          <div class="tiles">
+            <div class="tile dl">
+              <div class="ic"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></div>
+              <div><div class="v">۰ KB/s</div><div class="l">دانلود</div></div>
+            </div>
+            <div class="tile ul">
+              <div class="ic"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></div>
+              <div><div class="v">۰ KB/s</div><div class="l">آپلود</div></div>
+            </div>
+          </div>
+          <div class="orb-zone idle">
+            <div class="orb-glow"></div>
+            <div class="orb">
+              <svg class="svgic lg power-ic" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+            </div>
+          </div>
+          <div class="status-label">متصل نیستید</div>
+          <div class="slide">
+            <div class="hint">برای اتصال بکشید</div>
+            <div class="knob">
+              <svg class="svgic" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+            </div>
+          </div>
+          <div class="sec-head">
+            <span>سرورها</span>
+            <div class="actions">
+              <div class="iconbtn" title="تست پینگ"><svg class="svgic" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 7a10 10 0 0 1 17.4 0"/><path d="M6.5 10.5a6 6 0 0 1 11 0"/><circle cx="12" cy="17" r="3"/></svg></div>
+              <div class="iconbtn" title="بیشتر"><svg class="svgic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+              <div class="iconbtn plus" title="افزودن"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></div>
+            </div>
+          </div>
+          <div class="group-chips">
+            <div class="gchip on">همه</div>
+            <div class="gchip">سریع</div>
+            <div class="gchip">ستاره‌دار</div>
+            <div class="gchip">اخیر</div>
+          </div>
+          <div class="server-card">
+            <div class="flag">🇩🇪</div>
+            <div><div class="nm">آلمان — فرانکفورت</div><div class="sb">Vless · CDN</div></div>
+            <div class="badge fast"><b></b>۴۲ ms</div>
+          </div>
+          <div class="server-card">
+            <div class="flag">🇳🇱</div>
+            <div><div class="nm">هلند — آمستردام</div><div class="sb">Vmess · WS</div></div>
+            <div class="badge fast"><b></b>۶۸ ms</div>
+          </div>
+          <div class="fabs">
+            <div class="fab"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+            <div class="fab"><svg class="svgic" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 7a10 10 0 0 1 17.4 0"/><path d="M6.5 10.5a6 6 0 0 1 11 0"/><circle cx="12" cy="17" r="3"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ۴) صفحه اصلی — متصل ═══════════ -->
+  <div class="frame-wrap">
+    <div class="frame-label"><span class="num">۴</span> صفحه اصلی — متصل شد</div>
+    <div class="phone">
+      <div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+      <div class="phone-scroll">
+        <div class="home">
+          <div class="toprow">
+            <div class="status-chip connected"><span class="dot"></span>متصل شد</div>
+            <div class="iconbtn" style="margin-inline-start:auto">
+              <svg class="svgic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+          </div>
+          <div class="brandtitle">Narcic Getway</div>
+          <div class="info-pill">
+            <span class="flag">🇩🇪</span>
+            <div><div class="ip">89.32.117.204</div><div class="loc">آلمان — فرانکفورت</div></div>
+            <div class="ping">۴۲ ms</div>
+          </div>
+          <div class="tiles">
+            <div class="tile dl">
+              <div class="ic"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></div>
+              <div><div class="v">۱۲.۴ MB/s</div><div class="l">دانلود</div></div>
+            </div>
+            <div class="tile ul">
+              <div class="ic"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></div>
+              <div><div class="v">۳.۱ MB/s</div><div class="l">آپلود</div></div>
+            </div>
+          </div>
+          <div class="orb-zone on">
+            <div class="orb-glow"></div>
+            <div class="orb">
+              <div class="timer">۰۰:۴۲:۱۷</div>
+            </div>
+          </div>
+          <div class="status-label on">متصل شد</div>
+          <div class="slide on">
+            <div class="hint">برای قطع بکشید</div>
+            <div class="knob">
+              <svg class="svgic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            </div>
+          </div>
+          <div class="sec-head">
+            <span>سرورها</span>
+            <div class="actions">
+              <div class="iconbtn" title="تست پینگ"><svg class="svgic" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 7a10 10 0 0 1 17.4 0"/><path d="M6.5 10.5a6 6 0 0 1 11 0"/><circle cx="12" cy="17" r="3"/></svg></div>
+              <div class="iconbtn" title="بیشتر"><svg class="svgic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+              <div class="iconbtn plus" title="افزودن"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></div>
+            </div>
+          </div>
+          <div class="group-chips">
+            <div class="gchip on">همه</div>
+            <div class="gchip">سریع</div>
+            <div class="gchip">ستاره‌دار</div>
+            <div class="gchip">اخیر</div>
+          </div>
+          <div class="server-card active">
+            <div class="flag">🇩🇪</div>
+            <div><div class="nm">آلمان — فرانکفورت</div><div class="sb">Vless · CDN</div></div>
+            <div class="badge active">فعال</div>
+          </div>
+          <div class="fabs">
+            <div class="fab"><svg class="svgic" viewBox="0 0 24 24"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+            <div class="fab"><svg class="svgic" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.3 7a10 10 0 0 1 17.4 0"/><path d="M6.5 10.5a6 6 0 0 1 11 0"/><circle cx="12" cy="17" r="3"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ۵) داشبورد اتصال ═══════════ -->
+  <div class="frame-wrap">
+    <div class="frame-label"><span class="num">۵</span> داشبورد اتصال — پیشنهاد طراحی</div>
+    <div class="phone">
+      <div class="aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+      <div class="phone-scroll">
+        <div class="home">
+          <div class="dash-top">
+            <div class="iconbtn"><svg class="svgic" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>
+            <div class="dash-title">داشبورد اتصال</div>
+            <div class="live-badge"><b></b>زنده</div>
+          </div>
+          <div class="dash-srv">
+            <div class="flag">🇩🇪</div>
+            <div>
+              <div class="t">آلمان — فرانکفورت</div>
+              <div class="s">Vless · CDN · ۰۰:۴۲:۱۷</div>
+            </div>
+            <div class="ping">۴۲ ms</div>
+          </div>
+          <div class="chart-card">
+            <div class="hd">
+              <span>ترافیک زنده</span>
+              <div class="legend">
+                <span><i style="background:var(--primary)"></i>دانلود</span>
+                <span><i style="background:var(--cyan)"></i>آپلود</span>
+              </div>
+            </div>
+            <svg viewBox="0 0 320 110" width="100%" height="104" preserveAspectRatio="none" style="display:block; margin-top:10px;">
+              <defs>
+                <linearGradient id="gdl" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#5B7CFA" stop-opacity="0.42"/>
+                  <stop offset="1" stop-color="#5B7CFA" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g stroke="rgba(148,160,184,0.18)" stroke-dasharray="3 4">
+                <line x1="0" y1="28" x2="320" y2="28"/>
+                <line x1="0" y1="56" x2="320" y2="56"/>
+                <line x1="0" y1="84" x2="320" y2="84"/>
+              </g>
+              <path d="M0,88 C18,84 32,58 52,56 C72,54 86,74 106,70 C126,66 140,34 162,38 C184,42 198,54 218,47 C238,40 258,52 278,44 C298,36 312,40 320,37 L320,110 L0,110 Z" fill="url(#gdl)"/>
+              <path d="M0,88 C18,84 32,58 52,56 C72,54 86,74 106,70 C126,66 140,34 162,38 C184,42 198,54 218,47 C238,40 258,52 278,44 C298,36 312,40 320,37" fill="none" stroke="#5B7CFA" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M0,102 C24,99 40,86 62,88 C84,90 98,96 118,90 C138,84 154,74 174,76 C194,78 208,86 228,82 C248,78 268,84 288,80 C306,77 314,79 320,78" fill="none" stroke="#38D6E4" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="162" cy="38" r="3.4" fill="#5B7CFA" stroke="rgba(10,15,26,0.9)" stroke-width="2"/>
+            </svg>
+            <div class="axis"><span>۱۰:۰۰</span><span>۱۰:۱۰</span><span>۱۰:۲۰</span><span>۱۰:۳۰</span><span>۱۰:۴۰</span></div>
+          </div>
+          <div class="speeds">
+            <div class="speed-card dl">
+              <div class="l"><svg class="svgic" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>دانلود</div>
+              <div class="v">۱۲.۴ MB/s</div>
+              <div class="tot">کل جلسه: ۲.۱ GB</div>
+            </div>
+            <div class="speed-card ul">
+              <div class="l"><svg class="svgic" style="width:13px;height:13px" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>آپلود</div>
+              <div class="v">۳.۱ MB/s</div>
+              <div class="tot">کل جلسه: ۶۴۰ MB</div>
+            </div>
+          </div>
+          <div class="stats3">
+            <div class="stat"><div class="v">۲.۷ GB</div><div class="l">مصرف کل</div></div>
+            <div class="stat"><div class="v">۰۰:۴۲:۱۷</div><div class="l">مدت اتصال</div></div>
+            <div class="stat"><div class="v">۴۲ ms</div><div class="l">پینگ</div></div>
+          </div>
+          <div class="conn-info">
+            <div class="ci-row"><span class="k">IP عمومی</span><span class="v2">89.32.117.204</span></div>
+            <div class="ci-row"><span class="k">موقعیت</span><span class="v2">آلمان — فرانکفورت</span></div>
+            <div class="ci-row"><span class="k">اپراتور</span><span class="v2">Hetzner · AS24940</span></div>
+            <div class="ci-row"><span class="k">پروتکل</span><span class="v2">Vless · Reality</span></div>
+          </div>
+          <div class="connect-wrap on" style="margin-top:16px">
+            <div class="connect-aura"></div>
+            <button class="connect-btn" style="height:58px; font-size:16px">
+              <svg class="svgic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              قطع اتصال
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>نکته‌ها:</b>
+  ① فونت این پیش‌نمایش وزیرمتن است؛ خود برنامه از Estedad استفاده می‌کند.
+  ② اورب «مایع» در برنامه واقعی با بوزین بِزیه رسم می‌شود — اینجا با انیمیشن CSS شبیه‌سازی شده.
+  ③ همهٔ رنگ‌ها بعد از تأیید به <b>theme/Color.kt</b> و <b>Gradients.kt</b> منتقل می‌شوند و پس‌زمینه آورورا و استایل کارت‌ها به <b>Onboarding.kt</b> و <b>HomeScreen.kt</b>.
+  ④ سوییچ «تیره/روشن» بالا، همهٔ فریم‌ها را همزمان عوض می‌کند. <b>⑤</b> فریم ۵ (داشبورد اتصال) یک پیشنهاد تازه‌ست — نمودار زنده، سرعت لحظه‌ای، مصرف جلسه و اطلاعات IP؛ تا تأیید نشه در کد اصلی پیاده نمی‌شود.
+</div>
+
+<script>
+function setTheme(light) {
+  document.body.classList.toggle('light', light);
+  document.getElementById('btnDark').classList.toggle('on', !light);
+  document.getElementById('btnLight').classList.toggle('on', light);
+}
+</script>
+</body>
+</html>
