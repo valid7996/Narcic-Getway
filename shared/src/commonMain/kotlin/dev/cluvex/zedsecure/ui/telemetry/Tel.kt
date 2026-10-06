@@ -6,6 +6,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -240,5 +247,159 @@ fun TelStatusLine(state: ConnectionState, modifier: Modifier = Modifier) {
             style = Tel.mono.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
             color = Tel.stateColor(state),
         )
+    }
+}
+
+
+/** The console input: a dark bordered cell with a dim label above and mono values inside. */
+@Composable
+fun TelField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    number: Boolean = false,
+    mono: Boolean = true,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+) {
+    Column(modifier.fillMaxWidth()) {
+        Text(
+            label.uppercase(),
+            style = TextStyle(fontSize = 10.sp, letterSpacing = 1.sp),
+            color = Tel.dim,
+        )
+        Spacer(Modifier.height(3.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(Tel.panel2)
+                .border(1.dp, Tel.border)
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = singleLine,
+                minLines = minLines,
+                textStyle = TextStyle(
+                    fontSize = 13.sp,
+                    fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+                    color = Tel.text,
+                ),
+                cursorBrush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(Tel.accent, Tel.accent),
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = if (number) KeyboardType.Number else KeyboardType.Text,
+                ),
+                visualTransformation = visualTransformation,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (value.isEmpty()) {
+                Text(
+                    text = "—",
+                    style = Tel.mono.copy(fontSize = 13.sp),
+                    color = Tel.dim,
+                )
+            }
+        }
+    }
+}
+
+/** The console selector: a cell that opens a machine dropdown. */
+@Composable
+fun <T> TelPicker(
+    label: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var open by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: ""
+
+    Column(modifier.fillMaxWidth()) {
+        Text(
+            label.uppercase(),
+            style = TextStyle(fontSize = 10.sp, letterSpacing = 1.sp),
+            color = Tel.dim,
+        )
+        Spacer(Modifier.height(3.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .background(Tel.panel2)
+                .border(1.dp, Tel.border)
+                .clickable { open = true }
+                .padding(horizontal = 10.dp, vertical = 9.dp),
+        ) {
+            Text(
+                text = selectedLabel,
+                style = Tel.mono.copy(fontSize = 13.sp),
+                color = Tel.text,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "▾",
+                style = Tel.mono.copy(fontSize = 12.sp),
+                color = Tel.dim,
+            )
+            DropdownMenu(
+                expanded = open,
+                onDismissRequest = { open = false },
+                containerColor = Tel.panel2,
+                modifier = Modifier.heightIn(max = 320.dp),
+            ) {
+                options.forEach { (value, text) ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text,
+                                style = Tel.mono.copy(fontSize = 12.sp),
+                                color = if (value == selected) Tel.accent else Tel.text,
+                            )
+                        },
+                        onClick = {
+                            onSelect(value)
+                            open = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The console switch: a square indicator cell. */
+@Composable
+fun TelToggle(label: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label.uppercase(),
+            style = TextStyle(fontSize = 10.sp, letterSpacing = 1.sp),
+            color = Tel.dim,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            Modifier
+                .width(38.dp)
+                .height(18.dp)
+                .border(1.dp, if (checked) Tel.accent else Tel.border)
+                .background(if (checked) Tel.accent.copy(alpha = 0.15f) else Tel.panel2)
+                .clickable { onChange(!checked) },
+            contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+        ) {
+            Box(
+                Modifier
+                    .padding(horizontal = 2.dp)
+                    .size(12.dp)
+                    .background(if (checked) Tel.accent else Tel.dim),
+            )
+        }
     }
 }

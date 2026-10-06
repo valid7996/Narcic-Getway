@@ -2,27 +2,19 @@
 
 package dev.cluvex.zedsecure.ui.servers
 
-import org.jetbrains.compose.resources.StringResource
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
@@ -41,8 +32,12 @@ import dev.cluvex.zedsecure.domain.config.SecurityConfig
 import dev.cluvex.zedsecure.domain.config.ServerConfig
 import dev.cluvex.zedsecure.domain.config.ShareLink
 import dev.cluvex.zedsecure.domain.config.TransportConfig
-import dev.cluvex.zedsecure.ui.components.PickerField
-import dev.cluvex.zedsecure.ui.components.SectionTitle
+import dev.cluvex.zedsecure.ui.telemetry.Tel
+import dev.cluvex.zedsecure.ui.telemetry.TelAction
+import dev.cluvex.zedsecure.ui.telemetry.TelField
+import dev.cluvex.zedsecure.ui.telemetry.TelPanel
+import dev.cluvex.zedsecure.ui.telemetry.TelPicker
+import dev.cluvex.zedsecure.ui.telemetry.TelToggle
 
 private val NETWORKS = listOf("tcp", "ws", "grpc", "httpupgrade", "xhttp", "kcp")
 private val SECURITIES = listOf("" to "None", "tls" to "TLS", "reality" to "REALITY")
@@ -84,6 +79,7 @@ private val ALPN_OPTIONS = listOf(
     "h3,h2,http/1.1" to "h3,h2,http/1.1", "h3,h2" to "h3,h2", "h2,http/1.1" to "h2,http/1.1",
 )
 
+/** The structured configuration editor: grouped panels instead of a wall of fields. */
 @Composable
 fun ManualConfigSheet(
     initial: ServerConfig? = null,
@@ -155,7 +151,7 @@ fun ManualConfigSheet(
     var bandwidthUp by remember { mutableStateOf(initial?.bandwidthUp ?: "") }
     var bandwidthDown by remember { mutableStateOf(initial?.bandwidthDown ?: "") }
 
-    androidx.compose.runtime.LaunchedEffect(protocol) {
+    LaunchedEffect(protocol) {
         if (initial == null) {
             port = when (protocol) {
                 Protocol.SOCKS -> "1080"
@@ -170,7 +166,7 @@ fun ManualConfigSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-
+        containerColor = Tel.bg,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         Column(
@@ -178,116 +174,144 @@ fun ManualConfigSheet(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .imePadding()
-                .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
+                .padding(start = 14.dp, end = 14.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                stringResource(Res.string.servers_add_manual),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                text = "CONFIG EDITOR",
+                style = Tel.mono.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                color = Tel.text,
+            )
+            Text(
+                text = protocol.label.uppercase(),
+                style = Tel.mono.copy(fontSize = 11.sp, letterSpacing = 1.5.sp),
+                color = Tel.accent,
             )
 
-            PickerField(
-                label = stringResource(Res.string.manual_protocol),
-                options = Protocol.entries.map { it to it.label },
-                selected = protocol,
-                onSelect = { protocol = it },
-            )
+            TelPanel(title = "BASIC") {
+                TelPicker(
+                    label = stringResource(Res.string.manual_protocol),
+                    options = Protocol.entries.map { it to it.label },
+                    selected = protocol,
+                    onSelect = { protocol = it },
+                )
+                TelField(remark, { remark = it }, label = stringResource(Res.string.manual_remark), mono = false)
+            }
 
-            Field(remark, { remark = it }, Res.string.manual_remark)
-            Field(address, { address = it }, Res.string.manual_address)
-            Field(port, { port = it.filter(Char::isDigit).take(5) }, Res.string.manual_port, number = true)
+            TelPanel(title = "ENDPOINT") {
+                TelField(address, { address = it }, label = stringResource(Res.string.manual_address))
+                TelField(
+                    port,
+                    { port = it.filter(Char::isDigit).take(5) },
+                    label = stringResource(Res.string.manual_port),
+                    number = true,
+                )
+            }
 
-            when (protocol) {
-                Protocol.VLESS -> {
-                    Field(userId, { userId = it }, Res.string.manual_uuid)
-
-                    PickerField(
-                        label = stringResource(Res.string.manual_flow),
-                        options = FLOWS,
-                        selected = flow,
-                        onSelect = { flow = it },
-                    )
-                }
-                Protocol.VMESS -> {
-                    Field(userId, { userId = it }, Res.string.manual_uuid)
-                    Field(alterId, { alterId = it.filter(Char::isDigit).take(4) }, Res.string.manual_alter_id, number = true)
-                    PickerField(
-                        label = stringResource(Res.string.manual_encryption),
-                        options = VMESS_SECURITIES.map { it to it },
-                        selected = vmessSecurity,
-                        onSelect = { vmessSecurity = it },
-                    )
-                }
-                Protocol.TROJAN -> Field(userId, { userId = it }, Res.string.manual_password)
-                Protocol.SHADOWSOCKS -> {
-                    Field(userId, { userId = it }, Res.string.manual_password)
-                    PickerField(
-                        label = stringResource(Res.string.manual_ss_method),
-                        options = SS_METHODS.map { it to it },
-                        selected = ssMethod,
-                        onSelect = { ssMethod = it },
-                    )
-                }
-                Protocol.SOCKS, Protocol.HTTP -> {
-                    Field(username, { username = it }, Res.string.manual_username)
-                    Field(userId, { userId = it }, Res.string.manual_password)
-                }
-                Protocol.HYSTERIA -> {
-                    Field(secretKey, { secretKey = it }, Res.string.manual_auth)
-                    Field(obfsPassword, { obfsPassword = it }, Res.string.manual_obfs_password)
-                    Field(portHopping, { portHopping = it }, Res.string.manual_port_hopping)
-                    Field(pinnedCert, { pinnedCert = it }, Res.string.manual_pinned_cert)
-                    Field(bandwidthUp, { bandwidthUp = it.filter(Char::isDigit).take(6) }, Res.string.manual_bandwidth_up, number = true)
-                    Field(bandwidthDown, { bandwidthDown = it.filter(Char::isDigit).take(6) }, Res.string.manual_bandwidth_down, number = true)
-                    Field(sni, { sni = it }, Res.string.manual_sni)
-                    PickerField(
-                        label = stringResource(Res.string.manual_alpn),
-                        options = ALPN_OPTIONS,
-                        selected = alpn,
-                        onSelect = { alpn = it },
-                    )
-                }
-                Protocol.WIREGUARD, Protocol.AMNEZIAWG -> {
-                    Field(secretKey, { secretKey = it }, Res.string.manual_private_key)
-                    Field(peerPublicKey, { peerPublicKey = it }, Res.string.manual_peer_public_key)
-                    Field(wgPsk, { wgPsk = it }, Res.string.manual_preshared_key)
-                    Field(localAddress, { localAddress = it }, Res.string.manual_local_address)
-                    Field(wgAllowedIps, { wgAllowedIps = it }, Res.string.manual_allowed_ips)
-                    Field(wgDns, { wgDns = it }, Res.string.manual_wg_dns)
-                    Field(reserved, { reserved = it }, Res.string.manual_reserved)
-                    Field(wgMtu, { wgMtu = it.filter(Char::isDigit).take(4) }, Res.string.manual_mtu, number = true)
-                    Field(
-                        wgKeepalive,
-                        { wgKeepalive = it.filter(Char::isDigit).take(4) },
-                        Res.string.manual_keepalive,
-                        number = true,
-                    )
-                    if (protocol == Protocol.AMNEZIAWG) {
-                        SectionTitle(stringResource(Res.string.manual_awg_section))
-                        Text(
-                            stringResource(Res.string.manual_awg_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            TelPanel(title = "IDENTITY") {
+                when (protocol) {
+                    Protocol.VLESS -> {
+                        TelField(userId, { userId = it }, label = stringResource(Res.string.manual_uuid))
+                        TelPicker(
+                            label = stringResource(Res.string.manual_flow),
+                            options = FLOWS,
+                            selected = flow,
+                            onSelect = { flow = it },
                         )
-
-                        AwgConfig.CLASSIC_KEYS.forEach { key ->
-                            AwgField(key, awg[key]) { awg = awg.with(key, it) }
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
+                    }
+                    Protocol.VMESS -> {
+                        TelField(userId, { userId = it }, label = stringResource(Res.string.manual_uuid))
+                        TelField(
+                            alterId,
+                            { alterId = it.filter(Char::isDigit).take(4) },
+                            label = stringResource(Res.string.manual_alter_id),
+                            number = true,
+                        )
+                        TelPicker(
+                            label = stringResource(Res.string.manual_encryption),
+                            options = VMESS_SECURITIES.map { it to it },
+                            selected = vmessSecurity,
+                            onSelect = { vmessSecurity = it },
+                        )
+                    }
+                    Protocol.TROJAN -> TelField(userId, { userId = it }, label = stringResource(Res.string.manual_password))
+                    Protocol.SHADOWSOCKS -> {
+                        TelField(userId, { userId = it }, label = stringResource(Res.string.manual_password))
+                        TelPicker(
+                            label = stringResource(Res.string.manual_ss_method),
+                            options = SS_METHODS.map { it to it },
+                            selected = ssMethod,
+                            onSelect = { ssMethod = it },
+                        )
+                    }
+                    Protocol.SOCKS, Protocol.HTTP -> {
+                        TelField(username, { username = it }, label = stringResource(Res.string.manual_username), mono = false)
+                        TelField(userId, { userId = it }, label = stringResource(Res.string.manual_password))
+                    }
+                    Protocol.HYSTERIA -> {
+                        TelField(secretKey, { secretKey = it }, label = stringResource(Res.string.manual_auth))
+                        TelField(obfsPassword, { obfsPassword = it }, label = stringResource(Res.string.manual_obfs_password))
+                        TelField(portHopping, { portHopping = it }, label = stringResource(Res.string.manual_port_hopping))
+                        TelField(pinnedCert, { pinnedCert = it }, label = stringResource(Res.string.manual_pinned_cert))
+                        TelField(
+                            bandwidthUp,
+                            { bandwidthUp = it.filter(Char::isDigit).take(6) },
+                            label = stringResource(Res.string.manual_bandwidth_up),
+                            number = true,
+                        )
+                        TelField(
+                            bandwidthDown,
+                            { bandwidthDown = it.filter(Char::isDigit).take(6) },
+                            label = stringResource(Res.string.manual_bandwidth_down),
+                            number = true,
+                        )
+                        TelField(sni, { sni = it }, label = stringResource(Res.string.manual_sni))
+                        TelPicker(
+                            label = stringResource(Res.string.manual_alpn),
+                            options = ALPN_OPTIONS,
+                            selected = alpn,
+                            onSelect = { alpn = it },
+                        )
+                    }
+                    Protocol.WIREGUARD, Protocol.AMNEZIAWG -> {
+                        TelField(secretKey, { secretKey = it }, label = stringResource(Res.string.manual_private_key))
+                        TelField(peerPublicKey, { peerPublicKey = it }, label = stringResource(Res.string.manual_peer_public_key))
+                        TelField(wgPsk, { wgPsk = it }, label = stringResource(Res.string.manual_preshared_key))
+                        TelField(localAddress, { localAddress = it }, label = stringResource(Res.string.manual_local_address))
+                        TelField(wgAllowedIps, { wgAllowedIps = it }, label = stringResource(Res.string.manual_allowed_ips))
+                        TelField(wgDns, { wgDns = it }, label = stringResource(Res.string.manual_wg_dns))
+                        TelField(reserved, { reserved = it }, label = stringResource(Res.string.manual_reserved))
+                        TelField(
+                            wgMtu,
+                            { wgMtu = it.filter(Char::isDigit).take(4) },
+                            label = stringResource(Res.string.manual_mtu),
+                            number = true,
+                        )
+                        TelField(
+                            wgKeepalive,
+                            { wgKeepalive = it.filter(Char::isDigit).take(4) },
+                            label = stringResource(Res.string.manual_keepalive),
+                            number = true,
+                        )
+                        if (protocol == Protocol.AMNEZIAWG) {
                             Text(
-                                stringResource(Res.string.manual_awg_advanced),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f),
+                                text = stringResource(Res.string.manual_awg_hint),
+                                style = Tel.mono.copy(fontSize = 10.sp),
+                                color = Tel.dim,
                             )
-                            Switch(checked = awgAdvanced, onCheckedChange = { awgAdvanced = it })
-                        }
-                        if (awgAdvanced) {
-                            AwgConfig.KEYS.filterNot { it in AwgConfig.CLASSIC_KEYS }.forEach { key ->
+
+                            AwgConfig.CLASSIC_KEYS.forEach { key ->
                                 AwgField(key, awg[key]) { awg = awg.with(key, it) }
+                            }
+                            TelToggle(
+                                label = stringResource(Res.string.manual_awg_advanced),
+                                checked = awgAdvanced,
+                                onChange = { awgAdvanced = it },
+                            )
+                            if (awgAdvanced) {
+                                AwgConfig.KEYS.filterNot { it in AwgConfig.CLASSIC_KEYS }.forEach { key ->
+                                    AwgField(key, awg[key]) { awg = awg.with(key, it) }
+                                }
                             }
                         }
                     }
@@ -295,123 +319,126 @@ fun ManualConfigSheet(
             }
 
             if (protocol.supportsTransport) {
-                SectionTitle(stringResource(Res.string.manual_transport))
-                PickerField(
-                    label = stringResource(Res.string.manual_transport),
-                    options = NETWORKS.map { it to it.uppercase() },
-                    selected = network,
-                    onSelect = { network = it },
-                )
-                if (network != "tcp" && network != "kcp") {
-                    Field(host, { host = it }, Res.string.manual_host)
-                }
+                TelPanel(title = "TRANSPORT") {
+                    TelPicker(
+                        label = stringResource(Res.string.manual_transport),
+                        options = NETWORKS.map { it to it.uppercase() },
+                        selected = network,
+                        onSelect = { network = it },
+                    )
+                    if (network != "tcp" && network != "kcp") {
+                        TelField(host, { host = it }, label = stringResource(Res.string.manual_host))
+                    }
 
-                when (network) {
-                    "tcp" -> {
-                        PickerField(
-                            label = stringResource(Res.string.manual_header_type),
-                            options = TCP_HEADER_TYPES.map { it to it },
-                            selected = headerType,
-                            onSelect = { headerType = it },
-                        )
+                    when (network) {
+                        "tcp" -> {
+                            TelPicker(
+                                label = stringResource(Res.string.manual_header_type),
+                                options = TCP_HEADER_TYPES.map { it to it },
+                                selected = headerType,
+                                onSelect = { headerType = it },
+                            )
 
-                        if (headerType == "http") {
-                            Field(host, { host = it }, Res.string.manual_host)
-                            Field(path, { path = it }, Res.string.manual_path)
+                            if (headerType == "http") {
+                                TelField(host, { host = it }, label = stringResource(Res.string.manual_host))
+                                TelField(path, { path = it }, label = stringResource(Res.string.manual_path))
+                            }
+                        }
+
+                        "kcp", "mkcp" -> {
+                            TelPicker(
+                                label = stringResource(Res.string.manual_header_type),
+                                options = KCP_HEADER_TYPES.map { it to it },
+                                selected = headerType,
+                                onSelect = { headerType = it },
+                            )
+
+                            if (headerType == "dns") TelField(host, { host = it }, label = stringResource(Res.string.manual_host))
+                            TelField(seed, { seed = it }, label = stringResource(Res.string.manual_seed))
+                            TelField(kcpMtu, { kcpMtu = it }, label = stringResource(Res.string.manual_kcp_mtu))
+                            TelField(kcpTti, { kcpTti = it }, label = stringResource(Res.string.manual_kcp_tti))
+                        }
+                        "ws", "httpupgrade" -> TelField(path, { path = it }, label = stringResource(Res.string.manual_path))
+                        "xhttp" -> {
+                            TelField(path, { path = it }, label = stringResource(Res.string.manual_path))
+                            TelPicker(
+                                label = stringResource(Res.string.manual_mode),
+                                options = XHTTP_MODES.map { it to it },
+                                selected = streamMode.ifBlank { "auto" },
+                                onSelect = { streamMode = it },
+                            )
+                            TelField(xhttpExtra, { xhttpExtra = it }, label = stringResource(Res.string.manual_xhttp_extra))
+                        }
+                        "grpc" -> {
+                            TelField(serviceName, { serviceName = it }, label = stringResource(Res.string.manual_service_name))
+                            TelField(authority, { authority = it }, label = stringResource(Res.string.manual_authority))
+                            TelPicker(
+                                label = stringResource(Res.string.manual_mode),
+                                options = GRPC_MODES.map { it to it },
+                                selected = streamMode.ifBlank { "gun" },
+                                onSelect = { streamMode = it },
+                            )
                         }
                     }
-
-                    "kcp", "mkcp" -> {
-                        PickerField(
-                            label = stringResource(Res.string.manual_header_type),
-                            options = KCP_HEADER_TYPES.map { it to it },
-                            selected = headerType,
-                            onSelect = { headerType = it },
-                        )
-
-                        if (headerType == "dns") Field(host, { host = it }, Res.string.manual_host)
-                        Field(seed, { seed = it }, Res.string.manual_seed)
-                        Field(kcpMtu, { kcpMtu = it }, Res.string.manual_kcp_mtu)
-                        Field(kcpTti, { kcpTti = it }, Res.string.manual_kcp_tti)
-                    }
-                    "ws", "httpupgrade" -> Field(path, { path = it }, Res.string.manual_path)
-                    "xhttp" -> {
-                        Field(path, { path = it }, Res.string.manual_path)
-                        PickerField(
-                            label = stringResource(Res.string.manual_mode),
-                            options = XHTTP_MODES.map { it to it },
-                            selected = streamMode.ifBlank { "auto" },
-                            onSelect = { streamMode = it },
-                        )
-                        Field(xhttpExtra, { xhttpExtra = it }, Res.string.manual_xhttp_extra)
-                    }
-                    "grpc" -> {
-                        Field(serviceName, { serviceName = it }, Res.string.manual_service_name)
-                        Field(authority, { authority = it }, Res.string.manual_authority)
-                        PickerField(
-                            label = stringResource(Res.string.manual_mode),
-                            options = GRPC_MODES.map { it to it },
-                            selected = streamMode.ifBlank { "gun" },
-                            onSelect = { streamMode = it },
-                        )
-                    }
                 }
 
-                SectionTitle(stringResource(Res.string.manual_security))
-                PickerField(
-                    label = stringResource(Res.string.manual_security),
-                    options = SECURITIES,
-                    selected = security,
-                    onSelect = { security = it },
-                )
-            }
-            if (protocol.supportsTransport && security.isNotEmpty()) {
-                Field(sni, { sni = it }, Res.string.manual_sni)
-
-                PickerField(
-                    label = stringResource(Res.string.manual_fingerprint),
-                    options = UTLS_FINGERPRINTS,
-                    selected = fingerprint,
-                    onSelect = { fingerprint = it },
-                )
-                if (security == "tls") {
-                    PickerField(
-                        label = stringResource(Res.string.manual_alpn),
-                        options = ALPN_OPTIONS,
-                        selected = alpn,
-                        onSelect = { alpn = it },
+                TelPanel(title = "SECURITY") {
+                    TelPicker(
+                        label = stringResource(Res.string.manual_security),
+                        options = SECURITIES,
+                        selected = security,
+                        onSelect = { security = it },
                     )
-                    Field(echConfigList, { echConfigList = it }, Res.string.manual_ech)
+                    if (security.isNotEmpty()) {
+                        TelField(sni, { sni = it }, label = stringResource(Res.string.manual_sni))
 
-                    Field(cipherSuites, { cipherSuites = it }, Res.string.manual_cipher_suites)
-
-                    Field(finalMask, { finalMask = it }, Res.string.manual_final_mask)
-
-                    Field(pinnedCert, { pinnedCert = it }, Res.string.manual_pinned_cert)
-                    Field(verifyCertName, { verifyCertName = it }, Res.string.manual_verify_cert_name)
-                    LabeledSwitch(
-                        label = stringResource(Res.string.manual_allow_insecure),
-                        checked = allowInsecure,
-                        onChange = { allowInsecure = it },
-                    )
-
-                    if (allowInsecure && sni.isBlank() && pinnedCert.isBlank()) {
-                        Text(
-                            stringResource(Res.string.manual_allow_insecure_needs_sni),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
+                        TelPicker(
+                            label = stringResource(Res.string.manual_fingerprint),
+                            options = UTLS_FINGERPRINTS,
+                            selected = fingerprint,
+                            onSelect = { fingerprint = it },
                         )
-                    }
-                } else {
-                    Field(publicKey, { publicKey = it }, Res.string.manual_public_key)
-                    Field(shortId, { shortId = it }, Res.string.manual_short_id)
-                    Field(spiderX, { spiderX = it }, Res.string.manual_spider_x)
+                        if (security == "tls") {
+                            TelPicker(
+                                label = stringResource(Res.string.manual_alpn),
+                                options = ALPN_OPTIONS,
+                                selected = alpn,
+                                onSelect = { alpn = it },
+                            )
+                            TelField(echConfigList, { echConfigList = it }, label = stringResource(Res.string.manual_ech))
 
-                    Field(mldsa65Verify, { mldsa65Verify = it }, Res.string.manual_mldsa65_verify)
+                            TelField(cipherSuites, { cipherSuites = it }, label = stringResource(Res.string.manual_cipher_suites))
+
+                            TelField(finalMask, { finalMask = it }, label = stringResource(Res.string.manual_final_mask))
+
+                            TelField(pinnedCert, { pinnedCert = it }, label = stringResource(Res.string.manual_pinned_cert))
+                            TelField(verifyCertName, { verifyCertName = it }, label = stringResource(Res.string.manual_verify_cert_name))
+                            TelToggle(
+                                label = stringResource(Res.string.manual_allow_insecure),
+                                checked = allowInsecure,
+                                onChange = { allowInsecure = it },
+                            )
+
+                            if (allowInsecure && sni.isBlank() && pinnedCert.isBlank()) {
+                                Text(
+                                    text = stringResource(Res.string.manual_allow_insecure_needs_sni),
+                                    style = Tel.mono.copy(fontSize = 10.sp),
+                                    color = Tel.error,
+                                )
+                            }
+                        } else {
+                            TelField(publicKey, { publicKey = it }, label = stringResource(Res.string.manual_public_key))
+                            TelField(shortId, { shortId = it }, label = stringResource(Res.string.manual_short_id))
+                            TelField(spiderX, { spiderX = it }, label = stringResource(Res.string.manual_spider_x))
+
+                            TelField(mldsa65Verify, { mldsa65Verify = it }, label = stringResource(Res.string.manual_mldsa65_verify))
+                        }
+                    }
                 }
             }
 
-            Button(
+            TelAction(
+                text = "SAVE CONFIG",
                 onClick = {
                     val config = ServerConfig(
                         protocol = protocol,
@@ -483,27 +510,10 @@ fun ManualConfigSheet(
                     Protocol.HYSTERIA -> secretKey.isNotBlank()
                     else -> userId.isNotBlank()
                 },
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-            ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
-            }
+                filled = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
-    }
-}
-
-@Composable
-private fun LabeledSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange)
     }
 }
 
@@ -511,29 +521,9 @@ private fun LabeledSwitch(label: String, checked: Boolean, onChange: (Boolean) -
 private fun AwgField(key: String, value: String, onValueChange: (String) -> Unit) {
     val name = AwgConfig.CONF_NAME[key] ?: key
     val desc = AwgConfig.DESCRIPTION[key]
-    OutlinedTextField(
+    TelField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(if (desc == null) name else "$name — $desc") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun Field(
-    value: String,
-    onValueChange: (String) -> Unit,
-    labelRes: StringResource,
-    number: Boolean = false,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(labelRes)) },
-        singleLine = true,
-        keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Number)
-        else KeyboardOptions.Default,
-        modifier = Modifier.fillMaxWidth(),
+        label = if (desc == null) name else "$name — $desc",
     )
 }
