@@ -307,10 +307,18 @@ private fun LockedCard(
                     )
                 }
             }
-            dev.cluvex.zedsecure.ui.telemetry.TelAction(
-                text = stringResource(Res.string.action_delete),
-                onClick = onDelete,
-                danger = true,
+            Text(
+                text = stringResource(Res.string.action_delete).uppercase(),
+                style = dev.cluvex.zedsecure.ui.telemetry.Tel.mono.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                ),
+                color = dev.cluvex.zedsecure.ui.telemetry.Tel.error,
+                modifier = Modifier
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(2.dp))
+                    .clickable(onClick = onDelete)
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
             )
         }
     }

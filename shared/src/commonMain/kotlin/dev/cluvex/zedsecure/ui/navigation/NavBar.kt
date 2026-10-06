@@ -11,8 +11,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +30,8 @@ import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,13 +41,8 @@ import androidx.compose.ui.Modifier
 import dev.cluvex.zedsecure.ui.onboarding.TourTargets
 import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import dev.cluvex.zedsecure.domain.model.NavBarStyle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -181,33 +176,41 @@ private fun MaterialBar(
     onSelect: (TopDestination) -> Unit,
     underline: Boolean,
 ) {
-    // The terminal bar: a thin text rail, the active destination marked with a caret.
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF000000))
-            .border(1.dp, Color(0xFF262626))
-            .navigationBarsPadding()
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    NavigationBar {
         destinations.forEach { dest ->
             val selected = current == dest
-            Text(
-                text = (if (selected) "> " else "") + stringResource(dest.labelRes).uppercase(),
-                style = TextStyle(
-                    fontSize = 11.sp,
-                    letterSpacing = 1.5.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                    fontFamily = FontFamily.Monospace,
-                ),
-                color = if (selected) Color(0xFF4ADE80) else Color(0xFF585858),
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(2.dp))
-                    .clickable { onSelect(dest) }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            NavigationBarItem(
+                modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
+                selected = selected,
+                onClick = { onSelect(dest) },
+                icon = {
+                    if (underline) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                Modifier
+                                    .width(24.dp)
+                                    .height(3.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary
+                                        else androidx.compose.ui.graphics.Color.Transparent,
+                                    ),
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Icon(painterResource(dest.icon), contentDescription = null)
+                        }
+                    } else {
+                        Icon(painterResource(dest.icon), contentDescription = null)
+                    }
+                },
+                label = { Text(stringResource(dest.labelRes), maxLines = 1) },
+                colors = if (underline) {
+                    androidx.compose.material3.NavigationBarItemDefaults.colors(
+                        indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    )
+                } else {
+                    androidx.compose.material3.NavigationBarItemDefaults.colors()
+                },
             )
         }
     }

@@ -1,6 +1,7 @@
 package dev.cluvex.zedsecure.ui
 
 import dev.cluvex.zedsecure.ui.platform.BackHandler
+import dev.cluvex.zedsecure.ui.home.HomeFabCluster
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateDpAsState
@@ -244,16 +245,6 @@ fun MainScaffold(
                     autoSortAfterTest = settings.autoSortAfterTest,
                     autoTestAfterUpdate = settings.autoTestAfterUpdate,
                     autoRemoveInvalidAfterTest = settings.autoRemoveInvalidAfterTest,
-                    onOpenSpeedTest = {
-                        deepLinkOrigin = current
-                        pendingSettingsPage = dev.cluvex.zedsecure.ui.settings.SettingsPage.SpeedTest
-                        current = TopDestination.Settings
-                    },
-                    onOpenMap = {
-                        deepLinkOrigin = current
-                        pendingSettingsPage = dev.cluvex.zedsecure.ui.settings.SettingsPage.Map
-                        current = TopDestination.Settings
-                    },
                     contentPadding = innerPadding,
                     onToggleConnection = onToggleConnection,
 
@@ -334,6 +325,27 @@ fun MainScaffold(
             }
         }
 
+        val vpnStatus by dev.cluvex.zedsecure.core.VpnManager.status.collectAsStateWithLifecycle()
+        HomeFabCluster(
+            visible = current == TopDestination.Home,
+            showSpeedTest = vpnStatus.state == dev.cluvex.zedsecure.domain.model.ConnectionState.Connected &&
+                activeProfile?.isDnsBasedTunnel != true,
+            reduceMotion = settings.reduceMotion,
+            atEnd = settings.speedFabAtEnd,
+            yFraction = settings.speedFabY,
+            onMove = { end, y -> onUpdateSettings { it.copy(speedFabAtEnd = end, speedFabY = y) } },
+            onOpenMap = {
+                deepLinkOrigin = current
+                pendingSettingsPage = dev.cluvex.zedsecure.ui.settings.SettingsPage.Map
+                current = TopDestination.Settings
+            },
+            onOpenSpeedTest = {
+                deepLinkOrigin = current
+                pendingSettingsPage = dev.cluvex.zedsecure.ui.settings.SettingsPage.SpeedTest
+                current = TopDestination.Settings
+            },
+            modifier = Modifier.padding(innerPadding),
+        )
       }
     }
 
