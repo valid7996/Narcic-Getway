@@ -14,10 +14,10 @@ object ZedGradients {
 
     private val sessionPalettes: List<List<Color>> = listOf(
         listOf(ZedViolet, ZedCyan, ZedLime),
-        listOf(Color(0xFF2E6BE6), ZedCyan, Color(0xFF7DD8FF)),
+        listOf(Color(0xFF2E5FE8), ZedCyan, ZedLime),
         listOf(ZedDeepViolet, ZedViolet, ZedCyan),
-        listOf(ZedCyan, ZedLime, Color(0xFF4ED9E0)),
-        listOf(Color(0xFF1B3A8A), ZedViolet, ZedCyan),
+        listOf(ZedCyan, ZedMint, ZedLime),
+        listOf(Color(0xFF1D3A8F), ZedViolet, ZedCyan),
     )
 
     fun forSession(sessionId: Int): Brush = Brush.linearGradient(
@@ -32,18 +32,18 @@ object ZedGradients {
     fun connectedStops(sessionId: Int): List<Color> =
         listOf(ZedDeepViolet) + paletteFor(sessionId)
 
-    val connectingStops: List<Color> = listOf(ZedDeepViolet, Color(0xFF1E4A9E), ZedCyan)
+    val connectingStops: List<Color> = listOf(ZedDeepViolet, Color(0xFF1D3A8F), ZedCyan)
 
     val idle: Brush
         get() = Brush.linearGradient(
-            colors = listOf(ZedDeepViolet, Color(0xFF173B7C), ZedViolet.copy(alpha = 0.75f)),
+            colors = listOf(ZedDeepViolet, Color(0xFF14285C), ZedViolet.copy(alpha = 0.80f)),
             start = Offset(0f, 0f),
             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
         )
 
     val connecting: Brush
         get() = Brush.linearGradient(
-            colors = listOf(Color(0xFF1E4A9E), ZedCyan, ZedLime),
+            colors = listOf(Color(0xFF1D3A8F), ZedCyan, ZedLime),
             start = Offset(0f, 0f),
             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
         )

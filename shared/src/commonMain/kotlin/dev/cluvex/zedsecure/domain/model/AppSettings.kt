@@ -226,7 +226,7 @@ data class AppSettings(
     val customConfigCardColor: Long? = null,
     val customConfigCardTextColor: Long? = null,
 
-    val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Pill,
+    val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Slide,
 
     val navBarStyle: NavBarStyle = NavBarStyle.Minimal,
 

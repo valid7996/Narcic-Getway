@@ -589,8 +589,8 @@ private fun Hero(
     val breathe by breatheState
     val targetColors = when (state) {
         ConnectionState.Connected -> listOf(ZedViolet, ZedCyan, ZedLime)
-        ConnectionState.Connecting, ConnectionState.Reconnecting -> listOf(Color(0xFF1E4A9E), ZedCyan, ZedLime)
-        else -> listOf(ZedDeepViolet, Color(0xFF173B7C), ZedViolet)
+        ConnectionState.Connecting, ConnectionState.Reconnecting -> listOf(Color(0xFF1D3A8F), ZedCyan, ZedLime)
+        else -> listOf(ZedDeepViolet, Color(0xFF14285C), ZedViolet)
     }
     val liquidColors = targetColors.mapIndexed { index, color ->
         animateColorAsState(color, tween(900), label = "liquid$index").value
@@ -1645,7 +1645,7 @@ private fun ConnectButton(
                     .fillMaxWidth()
                     .height(if (compact) 56.dp else 72.dp)
                     .graphicsLayer {
-                        alpha = glow * 0.5f
+                        alpha = glow * 0.58f
                         val spread = 1f + 16.dp.toPx() * glow / size.height.coerceAtLeast(1f)
                         scaleX = spread
                         scaleY = spread
@@ -1653,7 +1653,7 @@ private fun ConnectButton(
                     .clip(RoundedCornerShape(50))
                     .background(
                         Brush.horizontalGradient(
-                            listOf(ZedViolet.copy(alpha = 0.55f), ZedCyan.copy(alpha = 0.55f)),
+                            listOf(ZedViolet.copy(alpha = 0.62f), ZedCyan.copy(alpha = 0.62f)),
                         ),
                     ),
             )
