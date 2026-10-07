@@ -20,7 +20,7 @@ object ServersUiConfig {
     const val SHOW_PSIPHON: Boolean = true
 
     /** The Tor engine option of the add sheet. */
-    const val SHOW_TOR: Boolean = true
+    const val SHOW_TOR: Boolean = false
 
     /** The plain-TCP ping entry of the ping menu; the real-delay entry always stays. */
     const val SHOW_TCP_PING: Boolean = false

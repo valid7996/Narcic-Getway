@@ -169,9 +169,6 @@ fun MainScaffold(
 
                     personalization = settings.toPersonalization(),
                     connectStyle = dev.cluvex.zedsecure.domain.model.ConnectButtonStyle.Slide,
-
-                    autoConnectOnBoot = settings.autoConnectOnBoot,
-                    onToggleAutoConnect = { v -> onUpdateSettings { it.copy(autoConnectOnBoot = v) } },
                     repository = configRepository,
                     realPingConcurrency = settings.realPingConcurrency,
                     autoSortAfterTest = settings.autoSortAfterTest,

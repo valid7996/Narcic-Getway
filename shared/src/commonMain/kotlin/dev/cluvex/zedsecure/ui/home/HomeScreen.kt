@@ -64,7 +64,6 @@ import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -125,7 +124,6 @@ import dev.cluvex.zedsecure.domain.model.ConnectButtonStyle
 import dev.cluvex.zedsecure.domain.model.ConnectionState
 import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.components.NoteText
-import dev.cluvex.zedsecure.ui.components.OrganicSurface
 import dev.cluvex.zedsecure.data.net.NetworkInfo
 import dev.cluvex.zedsecure.ui.components.FlagBadge
 import dev.cluvex.zedsecure.ui.components.LiquidCircle
@@ -185,10 +183,6 @@ fun HomeScreen(
     personalization: Personalization = Personalization.Default,
 
     connectStyle: ConnectButtonStyle = ConnectButtonStyle.Pill,
-
-    autoConnectOnBoot: Boolean = false,
-    onToggleAutoConnect: (Boolean) -> Unit = {},
-
     homeVm: HomeViewModel = viewModel { HomeViewModel() },
 ) {
     val ui by connectionVm.ui.collectAsStateWithLifecycle()
@@ -274,8 +268,6 @@ fun HomeScreen(
                         state = ui.state,
                         sessionId = ui.sessionId,
                         size = stageHero,
-                        downloadBps = ui.downloadBps,
-                        uploadBps = ui.uploadBps,
                         onLongPress = {
                             burst++
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -408,11 +400,6 @@ fun HomeScreen(
                     )
                 }
 
-                AutoConnectRow(
-                    checked = autoConnectOnBoot,
-                    onChecked = onToggleAutoConnect,
-                )
-                Spacer(Modifier.height(10.dp))
 
                 if (repository != null) {
                     HomeServerSection(
@@ -517,28 +504,47 @@ private fun StageColumn(
 @Composable
 private fun DecorativeBackdrop(reduceMotion: Boolean) {
     val budget = LocalMotionBudget.current
-    if (budget != MotionBudget.Full) {
-        OrganicSurface(
-            brush = ZedGradients.idle,
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = 180.dp, y = (-130).dp),
+    val spin by if (budget == MotionBudget.Full) {
+        rememberInfiniteTransition(label = "backdrop").animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(120_000), RepeatMode.Restart),
+            label = "spin",
         )
-        return
+    } else {
+        remember { mutableFloatStateOf(0f) }
     }
-    val spin by rememberInfiniteTransition(label = "backdrop").animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(120_000), RepeatMode.Restart),
-        label = "spin",
-    )
-    OrganicSurface(
-        brush = ZedGradients.idle,
-        modifier = Modifier
-            .size(300.dp)
-            .offset(x = 180.dp, y = (-130).dp)
-            .rotate(if (reduceMotion) 0f else spin),
-    )
+    val rotation = if (reduceMotion || budget != MotionBudget.Full) 0f else spin
+    val splash = listOf(ZedDeepViolet, ZedViolet, ZedCyan)
+    // A quiet splash: one large disc with two droplets thrown off it.
+    Box(
+        Modifier
+            .size(320.dp)
+            .offset(x = 190.dp, y = (-140).dp)
+            .rotate(rotation),
+    ) {
+        Box(
+            Modifier
+                .size(240.dp)
+                .align(Alignment.TopEnd)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(splash)),
+        )
+        Box(
+            Modifier
+                .size(46.dp)
+                .align(Alignment.BottomStart)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(splash.map { it.copy(alpha = 0.75f) })),
+        )
+        Box(
+            Modifier
+                .size(22.dp)
+                .align(Alignment.Center)
+                .clip(CircleShape)
+                .background(Brush.linearGradient(splash.map { it.copy(alpha = 0.5f) })),
+        )
+    }
 }
 
 @Composable
@@ -546,8 +552,6 @@ private fun Hero(
     state: ConnectionState,
     sessionId: Int,
     size: Dp,
-    downloadBps: Long,
-    uploadBps: Long,
     onLongPress: () -> Unit,
 
     onTap: (() -> Unit)? = null,
@@ -609,11 +613,6 @@ private fun Hero(
                     containerColor = Color.Transparent,
                 )
 
-                s == ConnectionState.Connected -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircleReading(Res.drawable.ic_download, stringResource(Res.string.home_download), downloadBps)
-                    Spacer(Modifier.height(8.dp))
-                    CircleReading(Res.drawable.ic_upload, stringResource(Res.string.home_upload), uploadBps)
-                }
                 else -> if (s == ConnectionState.Error) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_lock_open),
@@ -652,8 +651,7 @@ private fun BrandHeader(
             maxLines = 1,
             softWrap = false,
 
-            color = if (state.isActive || state == ConnectionState.Disconnecting) Color.White
-            else MaterialTheme.colorScheme.onSurface,
+            color = ConnectedGreen,
             modifier = Modifier
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -1396,64 +1394,3 @@ private fun DashboardReading(
     }
 }
 
-/** The compact live reading inside the liquid circle. */
-@Composable
-private fun CircleReading(icon: DrawableResource, label: String, bytesPerSecond: Long) {
-    val (value, unit) = formatRate(bytesPerSecond)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painterResource(icon),
-            contentDescription = label,
-            tint = Color.White.copy(alpha = 0.85f),
-            modifier = Modifier.size(14.dp),
-        )
-        Spacer(Modifier.width(5.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMediumEmphasized,
-            color = Color.White,
-            maxLines = 1,
-        )
-        Spacer(Modifier.width(2.dp))
-        Text(
-            text = unit,
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.85f),
-            maxLines = 1,
-        )
-    }
-}
-
-/** Auto connect at startup, surfaced on the home screen. */
-@Composable
-private fun AutoConnectRow(
-    checked: Boolean,
-    onChecked: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painterResource(Res.drawable.ic_bolt),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                stringResource(Res.string.title_pref_is_booted),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Switch(checked = checked, onCheckedChange = onChecked)
-        }
-    }
-}

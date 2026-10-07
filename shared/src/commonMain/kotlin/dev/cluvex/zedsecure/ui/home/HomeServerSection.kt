@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -37,14 +38,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.cluvex.zedsecure.core.AutoSelect
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.data.net.GeoLookup
 import dev.cluvex.zedsecure.data.net.PingCoordinator
 import dev.cluvex.zedsecure.data.net.PingService
+import dev.cluvex.zedsecure.domain.config.AutoSelectIds
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.servers.AddServerSheet
+import dev.cluvex.zedsecure.ui.servers.AutoSelectCard
+import dev.cluvex.zedsecure.ui.servers.AutoSelectSheet
+import dev.cluvex.zedsecure.ui.servers.PsiphonSheet
+import dev.cluvex.zedsecure.ui.servers.ServersUiConfig
 import dev.cluvex.zedsecure.ui.servers.ServerCard
 import dev.cluvex.zedsecure.ui.servers.SubscriptionsSheet
 import dev.cluvex.zedsecure.ui.theme.Personalization
@@ -93,6 +100,8 @@ internal fun HomeServerSection(
     var moveTarget by remember { mutableStateOf<VpnProfile?>(null) }
     var updating by remember { mutableStateOf(false) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
+    var showAutoSheet by remember { mutableStateOf(false) }
+    var showPsiphon by remember { mutableStateOf(false) }
 
     val allServers = profiles.filterNot { it.isLocked }
     val manualCount = allServers.count { it.subscriptionId.isEmpty() }
@@ -102,6 +111,22 @@ internal fun HomeServerSection(
         else -> allServers.filter { it.subscriptionId == group }
     }
     val subscriptionNames = subscriptions.associate { it.id to it.name }
+
+    // The auto card: the group's best config comes up on its own.
+    val autoScope: String? = when (group) {
+        "all" -> null
+        "manual" -> ""
+        else -> group
+    }
+    val autoId = AutoSelectIds.of(autoScope)
+    val autoMembers = remember(profiles, autoScope) { repository.autoSelectMembers(autoScope) }
+    val autoSession by AutoSelect.session.collectAsStateWithLifecycle()
+    val autoLive = autoSession?.takeIf { it.profileId == autoId }
+    val autoLabel = when (autoScope) {
+        null -> stringResource(Res.string.auto_group_all)
+        "" -> stringResource(Res.string.group_manual)
+        else -> subscriptions.firstOrNull { it.id == autoScope }?.name.orEmpty()
+    }
 
     fun pingAll(useRealDelay: Boolean) {
         PingCoordinator.start(
@@ -166,7 +191,7 @@ internal fun HomeServerSection(
                         onDismissRequest = { pingMenu = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
-                        DropdownMenuItem(
+                        if (ServersUiConfig.SHOW_TCP_PING) DropdownMenuItem(
                             text = { Text(stringResource(Res.string.ping_tcp_all)) },
                             onClick = { pingMenu = false; pingAll(useRealDelay = false) },
                         )
@@ -265,6 +290,20 @@ internal fun HomeServerSection(
             }
         }
 
+        if (autoMembers.size >= 2) {
+            AutoSelectCard(
+                groupLabel = autoLabel,
+                memberCount = autoMembers.size,
+                active = activeId == autoId,
+                live = autoLive,
+                memberName = { id -> profiles.firstOrNull { it.id == id }?.name },
+                onSelect = { repository.setActive(autoId) },
+                onDetails = { showAutoSheet = true },
+                personalization = personalization,
+            )
+            Spacer(Modifier.height(10.dp))
+        }
+
         if (servers.isNotEmpty()) {
             // A bounded, scrollable column: the cards are plain children, so the section keeps
             // the home layout's exact sizing while long lists scroll inside their own box.
@@ -302,6 +341,25 @@ internal fun HomeServerSection(
         }
     }
 
+    if (showAutoSheet) {
+        AutoSelectSheet(
+            groupLabel = autoLabel,
+            members = autoMembers,
+            live = autoLive,
+            onDismiss = { showAutoSheet = false },
+        )
+    }
+
+    if (showPsiphon) {
+        PsiphonSheet(
+            onDismiss = { showPsiphon = false },
+            onSave = { name, settings ->
+                showPsiphon = false
+                repository.addPsiphon(settings, name)
+            },
+        )
+    }
+
     if (showSubs) {
         SubscriptionsSheet(
             repository = repository,
@@ -324,11 +382,24 @@ internal fun HomeServerSection(
                 }
             },
             onImportFile = {},
-            onScanQr = {},
+            onScanQr = {
+                showAdd = false
+                platform.scanQrCode { text ->
+                    if (text.isNullOrBlank()) return@scanQrCode
+                    scope.launch {
+                        repository.importText(text)
+                            .onSuccess { platform.toast(importedTemplate.format(it)) }
+                            .onFailure { platform.toast(importFailed) }
+                    }
+                }
+            },
             onScanQrImage = {},
             onManual = {},
             onCustom = {},
-            onPsiphon = {},
+            onPsiphon = {
+                showAdd = false
+                showPsiphon = true
+            },
             onDnsTunnel = {},
             onMasterDns = {},
             onOpenConnect = {},

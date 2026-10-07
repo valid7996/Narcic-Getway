@@ -205,11 +205,11 @@ private fun RootPage(
                     stringResource(Res.string.title_mode_settings),
                     stringResource(Res.string.summary_mode_settings),
                 ) { onOpen(SettingsPage.Mode) }
-                SettingsMenuRow(
+                if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                     stringResource(Res.string.monitor_title),
                     stringResource(Res.string.monitor_subtitle),
                 ) { onOpen(SettingsPage.Monitor) }
-                if (hasAi) {
+                if (hasAi && dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
                     SettingsMenuRow(
                         stringResource(Res.string.ai_title),
                         stringResource(Res.string.ai_subtitle),
