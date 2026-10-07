@@ -263,11 +263,6 @@ data class AppSettings(
     val reduceMotion: Boolean = false,
     val renderingMode: RenderingMode = RenderingMode.Auto,
 
-    val speedFabAtEnd: Boolean = true,
-    val speedFabY: Float = 0.9f,
-
-    val verifiedOriginCode: String = "",
-    val verifiedOriginLabel: String = "",
 
     val runMode: RunMode = RunMode.Vpn,
 

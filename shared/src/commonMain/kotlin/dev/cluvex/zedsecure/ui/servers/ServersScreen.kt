@@ -100,8 +100,6 @@ import dev.cluvex.zedsecure.domain.config.AutoSelectIds
 import dev.cluvex.zedsecure.domain.config.ConfigParseException
 import dev.cluvex.zedsecure.domain.config.ConfigParser
 import dev.cluvex.zedsecure.domain.config.VpnProfile
-import dev.cluvex.zedsecure.ui.onboarding.TourTargets
-import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
 import dev.cluvex.zedsecure.ui.format.formatBytes
 
@@ -452,7 +450,7 @@ fun ServersScreen(
                     IconButton(
                         enabled = !testing,
                         onClick = { pingMenu = true },
-                        modifier = Modifier.tourTarget(TourTargets.SERVERS_PING),
+                        modifier = Modifier,
                     ) {
                         Icon(
                             painterResource(Res.drawable.ic_speed),
@@ -523,7 +521,7 @@ fun ServersScreen(
                 }
                 IconButton(
                     onClick = { showSubs = true },
-                    modifier = Modifier.tourTarget(TourTargets.SERVERS_SUBS),
+                    modifier = Modifier,
                 ) {
                     Icon(
                         painterResource(Res.drawable.ic_add_link),
@@ -533,7 +531,7 @@ fun ServersScreen(
                 Box {
                     IconButton(
                         onClick = { overflowOpen = true },
-                        modifier = Modifier.tourTarget(TourTargets.SERVERS_MORE),
+                        modifier = Modifier,
                     ) {
                         Icon(
                             painterResource(Res.drawable.ic_more_vert),
@@ -669,7 +667,7 @@ fun ServersScreen(
                     state = groupRow,
                     contentPadding = PaddingValues(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().tourTarget(TourTargets.SERVERS_GROUPS)
+                    modifier = Modifier.fillMaxWidth()
                         .mouseDragScroll(groupRow),
                 ) {
                     if (showAllGroup) {
@@ -897,7 +895,7 @@ fun ServersScreen(
                                 Modifier
                                     .then(if (twoColumns) Modifier.fillMaxHeight() else Modifier)
 
-                                    .then(if (position == 0) Modifier.tourTarget(TourTargets.SERVER_CARD) else Modifier)
+                                    
                                     .then(
 
                                         if (selecting) Modifier
@@ -976,7 +974,7 @@ fun ServersScreen(
                 shadowElevation = 6.dp,
                 modifier = Modifier
                     .size(56.dp)
-                    .tourTarget(TourTargets.SERVERS_ADD)
+
                     .combinedClickable(
                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                         indication = androidx.compose.material3.ripple(),

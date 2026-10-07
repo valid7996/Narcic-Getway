@@ -536,6 +536,7 @@
     <string name="title_pref_reduce_motion">کاهش حرکت</string>
     <string name="summary_pref_reduce_motion">انیمیشن‌های پس‌زمینهٔ برنامه را آرام می‌کند</string>
     <string name="logs_title">لاگ‌ها</string>
+    <string name="logs_settings_sub">لاگ برنامه و تونل</string>
     <string name="logs_empty">هنوز لاگی نیست.</string>
     <string name="logs_copied">لاگ‌ها کپی شد</string>
     <string name="psiphon_add_title">افزودن سایفون</string>

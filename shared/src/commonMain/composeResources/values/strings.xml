@@ -543,6 +543,7 @@
     <string name="title_pref_reduce_motion">Reduce motion</string>
     <string name="summary_pref_reduce_motion">Calms background animations across the app</string>
     <string name="logs_title">Logs</string>
+    <string name="logs_settings_sub">App and tunnel logs</string>
     <string name="logs_empty">No logs yet.</string>
     <string name="logs_copied">Logs copied</string>
     <string name="psiphon_add_title">Add Psiphon</string>

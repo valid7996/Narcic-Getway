@@ -121,8 +121,6 @@ import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.domain.model.ConnectButtonStyle
 import dev.cluvex.zedsecure.domain.model.ConnectionState
-import dev.cluvex.zedsecure.ui.onboarding.TourTargets
-import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.components.NoteText
 import dev.cluvex.zedsecure.ui.components.OrganicSurface
@@ -201,7 +199,6 @@ fun HomeScreen(
 
     var statusTaps by remember { mutableIntStateOf(0) }
     var statusLastTap by remember { mutableLongStateOf(0L) }
-    var showLogs by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
 
     Box(
@@ -235,7 +232,6 @@ fun HomeScreen(
                 BrandHeader(
                     state = ui.state,
                     onSecretUnlocked = onSecretUnlocked,
-                    onShowLogs = { showLogs = true },
                 )
 
                 val fault = when {
@@ -250,11 +246,12 @@ fun HomeScreen(
                         FaultBanner(
                             fault = it,
                             connected = ui.state == ConnectionState.Connected,
-                            onShowLogs = { showLogs = true },
                         )
                     }
                 }
 
+                // The location and traffic dashboards travel as one block and only appear
+                // once the tunnel is actually connected.
                 AnimatedVisibility(visible = live && showConnectionInfo) {
                     Column {
                         Spacer(Modifier.height(10.dp))
@@ -264,21 +261,15 @@ fun HomeScreen(
                             onToggle = homeVm::toggleExpanded,
                             onRefresh = homeVm::refresh,
                         )
-                    }
-                }
-
-                if (personalization.showTrafficTiles && personalization.trafficTilesAboveHero) {
-                    Spacer(Modifier.height(10.dp))
-
-                    Box(Modifier.tourTarget(TourTargets.TRAFFIC)) {
-                      TrafficPanel(
-                        live = live,
-                        downloadBps = ui.downloadBps,
-                        uploadBps = ui.uploadBps,
-                        totalDownload = ui.totalDownload,
-                        totalUpload = ui.totalUpload,
-                        personalization = personalization,
-                      )
+                        Spacer(Modifier.height(10.dp))
+                        TrafficPanel(
+                            live = live,
+                            downloadBps = ui.downloadBps,
+                            uploadBps = ui.uploadBps,
+                            totalDownload = ui.totalDownload,
+                            totalUpload = ui.totalUpload,
+                            personalization = personalization,
+                        )
                     }
                 }
                 }
@@ -378,22 +369,8 @@ fun HomeScreen(
                   }
                 }
 
-                if (personalization.showTrafficTiles && !personalization.trafficTilesAboveHero) {
-                    Box(Modifier.tourTarget(TourTargets.TRAFFIC)) {
-                      TrafficPanel(
-                        live = live,
-                        downloadBps = ui.downloadBps,
-                        uploadBps = ui.uploadBps,
-                        totalDownload = ui.totalDownload,
-                        totalUpload = ui.totalUpload,
-                        personalization = personalization,
-                      )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                }
                 if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ACTIVE_CONFIG) {
                     ActiveConfigCard(
-                        modifier = Modifier.tourTarget(TourTargets.CONFIG_CARD),
                         name = activeConfigName,
                         detail = activeConfigDetail,
                         locked = activeLocked,
@@ -453,8 +430,6 @@ fun HomeScreen(
             reduceMotion = reduceMotion,
         )
     }
-
-    if (showLogs) LogSheet(onDismiss = { showLogs = false })
 }
 
 private const val STAGE_ID = "home-stage"
@@ -599,7 +574,6 @@ private fun Hero(
     Box(
         Modifier
             .size(size)
-            .tourTarget(TourTargets.CORE)
             .then(
                 if (budget == MotionBudget.Full) {
                     Modifier.scale(if (state.isActive) breathe else 1f)
@@ -716,7 +690,6 @@ private fun LiquidCircle(colors: List<Color>, modifier: Modifier = Modifier) {
 private fun BrandHeader(
     state: ConnectionState,
     onSecretUnlocked: () -> Unit,
-    onShowLogs: () -> Unit,
 ) {
     var taps by remember { mutableIntStateOf(0) }
     var lastTap by remember { mutableLongStateOf(0L) }
@@ -729,16 +702,6 @@ private fun BrandHeader(
     ) {
         Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f, fill = false)) { StatusChip(state) }
-            Spacer(Modifier.width(4.dp))
-
-            androidx.compose.material3.IconButton(onClick = onShowLogs) {
-                Icon(
-                    painterResource(Res.drawable.ic_description),
-                    contentDescription = stringResource(Res.string.logs_title),
-                    tint = if (state.isActive || state == ConnectionState.Disconnecting) Color.White
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
         Text(
             text = stringResource(Res.string.app_name),
@@ -776,7 +739,6 @@ private fun BrandHeader(
 private fun FaultBanner(
     fault: dev.cluvex.zedsecure.core.ConnectionFault,
     connected: Boolean,
-    onShowLogs: () -> Unit,
 ) {
     var expanded by remember(fault.raw) { mutableStateOf(false) }
     val known = fault.cause != dev.cluvex.zedsecure.core.ConnectionFault.Cause.Unknown
@@ -824,13 +786,6 @@ private fun FaultBanner(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                stringResource(Res.string.fault_open_logs),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.clickable(onClick = onShowLogs).padding(top = 2.dp),
-            )
         }
     }
 }

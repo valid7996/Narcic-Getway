@@ -38,8 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import dev.cluvex.zedsecure.ui.onboarding.TourTargets
-import dev.cluvex.zedsecure.ui.onboarding.tourTarget
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,8 +53,7 @@ fun ZedNavBar(
 ) {
     // Hidden destinations stay in the enum and out of the bar; NavConfig brings them back.
     val destinations = TopDestination.entries.filter { destination ->
-        (NavConfig.SHOW_VAULT || destination != TopDestination.Vault) &&
-            (NavConfig.SHOW_SERVERS_TAB || destination != TopDestination.Servers)
+        NavConfig.SHOW_SERVERS_TAB || destination != TopDestination.Servers
     }
     when (style) {
         NavBarStyle.FloatingPill -> FloatingPillBar(destinations, current, onSelect, compact = false)
@@ -92,7 +89,7 @@ private fun FloatingPillBar(
                     selected = current == dest,
                     compact = compact,
                     onClick = { onSelect(dest) },
-                    modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
+                    modifier = Modifier,
                 )
             }
         }
@@ -134,7 +131,7 @@ private fun ExpressivePillBar(destinations: List<TopDestination>, current: TopDe
                         shape = CircleShape,
                         color = bg,
                         contentColor = fg,
-                        modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
+                        modifier = Modifier,
                     ) {
                         Row(
                             Modifier.padding(horizontal = if (selected) 14.dp else 12.dp, vertical = 10.dp),
@@ -180,7 +177,7 @@ private fun MaterialBar(
         destinations.forEach { dest ->
             val selected = current == dest
             NavigationBarItem(
-                modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
+                modifier = Modifier,
                 selected = selected,
                 onClick = { onSelect(dest) },
                 icon = {
@@ -235,7 +232,7 @@ private fun MinimalBar(destinations: List<TopDestination>, current: TopDestinati
             )
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.tourTarget(TourTargets.nav(dest.name)),
+                modifier = Modifier,
             ) {
                 IconButton(onClick = { onSelect(dest) }) {
                     Icon(

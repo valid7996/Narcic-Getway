@@ -1,6 +1,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
-package dev.cluvex.zedsecure.ui.home
+package dev.cluvex.zedsecure.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll

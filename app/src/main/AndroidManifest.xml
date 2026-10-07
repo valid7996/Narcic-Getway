@@ -49,24 +49,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
-            <intent-filter android:label="@string/vault_import">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="content" />
-                <data android:scheme="file" />
-                <data android:host="*" />
-                <data android:mimeType="*/*" />
-                <data android:pathPattern=".*\\.zsx" />
-                <data android:pathPattern=".*\\..*\\.zsx" />
-                <data android:pathPattern=".*\\..*\\..*\\.zsx" />
-            </intent-filter>
-            <intent-filter android:label="@string/vault_import">
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/octet-stream" />
-            </intent-filter>
-
             <intent-filter android:label="@string/deeplink_open_label">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

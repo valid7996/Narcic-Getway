@@ -74,13 +74,6 @@ object AiTools {
             obj("id" to str("A server id from list_servers. Omit to measure all of them.")),
         ),
         AiTool(
-            "speed_test",
-            "Downloads and uploads through the tunnel as it is configured right now and reports the " +
-                "throughput. Requires an active connection. Takes about half a minute and uses real " +
-                "data from the user's allowance, so say what it will cost before running it.",
-            OBJ,
-        ),
-        AiTool(
             "test_dns",
             "Resolves a hostname through one DNS server and reports whether it answered, how fast, " +
                 "and what it returned. Use it to prove a DNS setting works BEFORE writing it into " +
@@ -198,7 +191,6 @@ object AiTools {
                 "app_map" -> bridge.appMapJson()
                 "list_protocols" -> bridge.protocolsJson()
                 "ping" -> bridge.ping(s("id").takeIf { it.isNotBlank() })
-                "speed_test" -> bridge.speedTest()
                 "test_dns" -> bridge.testDns(s("server"), s("mode", "udp"), s("host", "www.google.com"))
                 "probe_mtu" -> bridge.probeMtu(b("reconnect"), b("apply"))
                 "exit_info" -> bridge.exitInfo()

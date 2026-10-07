@@ -544,6 +544,7 @@
     <string name="title_pref_reduce_motion">Уменьшить анимацию</string>
     <string name="summary_pref_reduce_motion">Смягчает фоновые анимации во всём приложении</string>
     <string name="logs_title">Журнал</string>
+    <string name="logs_settings_sub">Журналы приложения и туннеля</string>
     <string name="logs_empty">Записей пока нет.</string>
     <string name="logs_copied">Журнал скопирован</string>
     <string name="psiphon_add_title">Добавить Psiphon</string>

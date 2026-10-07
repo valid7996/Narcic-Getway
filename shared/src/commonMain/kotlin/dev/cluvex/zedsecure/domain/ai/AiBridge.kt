@@ -31,8 +31,6 @@ interface AiAppBridge {
 
     suspend fun ping(id: String?): String
 
-    suspend fun speedTest(): String
-
     suspend fun testDns(server: String, mode: String, host: String): String
 
     suspend fun probeMtu(reconnect: Boolean = false, apply: Boolean = false): String

@@ -2,12 +2,10 @@ package dev.cluvex.zedsecure
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.core.content.IntentCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,7 +24,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import dev.cluvex.zedsecure.core.AndroidVpn
 import dev.cluvex.zedsecure.core.StartPlanner
-import dev.cluvex.zedsecure.core.VaultImportBus
 import dev.cluvex.zedsecure.core.VpnManager
 import dev.cluvex.zedsecure.core.platform.LocaleManager
 import dev.cluvex.zedsecure.data.config.ConfigRepository
@@ -81,16 +78,6 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
-
-    private val openZsxLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri == null) return@registerForActivityResult
-            offerLockedConfig(uri)
-        }
-
-    private fun importZsx() {
-        openZsxLauncher.launch(arrayOf("*/*"))
-    }
 
     private var filePickPending: CompletableDeferred<FilePick?>? = null
     private val filePickLauncher =
@@ -209,7 +196,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (!handleDeepLink(intent)) handleIncomingZsx(intent)
+        handleDeepLink(intent)
         handleConnectRequest(intent)
     }
 
@@ -235,40 +222,6 @@ class MainActivity : ComponentActivity() {
         toggleConnection()
     }
 
-    private fun handleIncomingZsx(intent: Intent?) {
-        val uri = when (intent?.action) {
-            Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(
-                intent, Intent.EXTRA_STREAM, Uri::class.java,
-            )
-            else -> null
-        } ?: return
-
-        offerLockedConfig(uri)
-    }
-
-    private fun offerLockedConfig(uri: Uri) {
-        val bytes = runCatching {
-            contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull()
-        if (bytes == null) {
-            toast(getString(R.string.zsx_invalid))
-            return
-        }
-        val peeked = runCatching { configRepository.peekLocked(bytes) }
-        val meta = peeked.getOrNull()
-        if (meta == null) {
-            val legacy = peeked.exceptionOrNull() is dev.cluvex.zedsecure.crypto.ZsxLegacyException
-            toast(getString(if (legacy) R.string.zsx_legacy else R.string.zsx_invalid))
-            return
-        }
-        if (meta.isExpired) {
-            toast(getString(R.string.zsx_expired))
-            return
-        }
-        VaultImportBus.request(bytes, meta)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         dev.cluvex.zedsecure.core.Ikev2CertBridgeAndroid.install(this)
@@ -277,7 +230,7 @@ class MainActivity : ComponentActivity() {
         maybeRequestNotificationPermission()
 
         if (savedInstanceState == null) {
-            if (!handleDeepLink(intent)) handleIncomingZsx(intent)
+            handleDeepLink(intent)
         }
         handleConnectRequest(intent)
         val repo = (application as ZedSecureApp).container.settingsRepository
@@ -334,7 +287,6 @@ class MainActivity : ComponentActivity() {
                         configRepository = configRepository,
                         onToggleConnection = ::toggleConnection,
                         onActiveServerChanged = ::switchActiveServer,
-                        onImportZsx = ::importZsx,
                         onUpdateSettings = repo::update,
                         onLanguage = { lang ->
                             repo.update { it.copy(language = lang) }

@@ -81,8 +81,6 @@ object AiSystemPrompt {
               pre-shared keys. The tools redact them and you do not need them.
             - Never claim a measurement you did not take. "Try MTU 1380" and "I measured 1372 on
               this path" are different sentences and only one of them is yours to write.
-            - Do not run speed_test without saying first that it spends real data from the user's
-              allowance.
 
             # Teaching the app
 

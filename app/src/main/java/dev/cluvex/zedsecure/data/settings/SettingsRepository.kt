@@ -75,11 +75,6 @@ class SettingsRepository(context: Context) {
             doubleColumnDisplay = prefs.getBoolean("double_column", d.doubleColumnDisplay),
             groupAllDisplay = prefs.getBoolean("group_all", d.groupAllDisplay),
             reduceMotion = prefs.getBoolean("reduce_motion", d.reduceMotion),
-            speedFabAtEnd = prefs.getBoolean("speed_fab_at_end", d.speedFabAtEnd),
-            speedFabY = prefs.getFloat("speed_fab_y", d.speedFabY),
-            verifiedOriginCode = prefs.str("verified_origin_code", d.verifiedOriginCode),
-            verifiedOriginLabel = prefs.str("verified_origin_label", d.verifiedOriginLabel),
-
             runMode = prefs.enum("run_mode", d.runMode),
 
             enableIpv6 = prefs.getBoolean("ipv6", d.enableIpv6),
@@ -280,11 +275,6 @@ class SettingsRepository(context: Context) {
             putBoolean("double_column", s.doubleColumnDisplay)
             putBoolean("group_all", s.groupAllDisplay)
             putBoolean("reduce_motion", s.reduceMotion)
-            putBoolean("speed_fab_at_end", s.speedFabAtEnd)
-            putFloat("speed_fab_y", s.speedFabY)
-            putString("verified_origin_code", s.verifiedOriginCode)
-            putString("verified_origin_label", s.verifiedOriginLabel)
-
             remove("real_origin_code")
             remove("real_origin_label")
 

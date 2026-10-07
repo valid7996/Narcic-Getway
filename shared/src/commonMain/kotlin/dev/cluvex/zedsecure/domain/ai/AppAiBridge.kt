@@ -28,7 +28,6 @@ class AppAiBridge(
     private val coreReportFn: () -> String = { AI_UNSUPPORTED },
     private val connectFn: suspend () -> String = { AI_UNSUPPORTED },
     private val disconnectFn: suspend () -> String = { AI_UNSUPPORTED },
-    private val speedTestFn: suspend () -> String = { AI_UNSUPPORTED },
     private val dnsTestFn: suspend (server: String, mode: String, host: String) -> String =
         { _, _, _ -> AI_UNSUPPORTED },
     private val exitInfoFn: suspend () -> String = { AI_UNSUPPORTED },
@@ -219,9 +218,6 @@ class AppAiBridge(
         }
         return buildJsonArray { results.forEach { add(it) } }.toString()
     }
-
-    override suspend fun speedTest(): String =
-        runCatching { speedTestFn() }.getOrElse { it.message ?: "the speed test failed" }
 
     override suspend fun testDns(server: String, mode: String, host: String): String =
         runCatching { dnsTestFn(server, mode, host) }.getOrElse { it.message ?: "the DNS test failed" }

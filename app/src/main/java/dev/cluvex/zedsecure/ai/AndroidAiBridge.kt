@@ -6,7 +6,6 @@ import dev.cluvex.zedsecure.core.XrayController
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.data.net.MtuServerHint
 import dev.cluvex.zedsecure.data.net.NetworkInfoRepository
-import dev.cluvex.zedsecure.data.net.SpeedTestEngine
 import dev.cluvex.zedsecure.data.settings.SettingsRepository
 import dev.cluvex.zedsecure.domain.ai.AppAiBridge
 import dev.cluvex.zedsecure.data.net.DohProbe
@@ -28,7 +27,6 @@ object AndroidAiBridge {
         coreReportFn = { XrayController.runtimeReport(14) },
         connectFn = { connect(toggleConnection) },
         disconnectFn = { disconnect(toggleConnection) },
-        speedTestFn = { speedTest() },
         dnsTestFn = { server, mode, host -> testDns(server, mode, host) },
         exitInfoFn = { exitInfo() },
         mtuHintFn = mtuHint,
@@ -53,24 +51,6 @@ object AndroidAiBridge {
         toggle()
         withTimeoutOrNull(15_000) { VpnManager.status.first { !it.state.isActive } }
         return "disconnected"
-    }
-
-    private suspend fun speedTest(): String {
-        if (!VpnManager.status.value.state.isActive) {
-            return "there is no active connection to measure — connect first"
-        }
-        val engine = SpeedTestEngine(VpnManager.activeSocksPort)
-        engine.run()
-        val s = engine.state.value
-        return buildJsonObject {
-            s.downloadMbps?.let { put("downloadMbps", it) }
-            s.uploadMbps?.let { put("uploadMbps", it) }
-            s.pingMs?.let { put("latencyMs", it) }
-            s.jitterMs?.let { put("jitterMs", it) }
-            s.loadedPingMs?.let { put("latencyUnderLoadMs", it) }
-            put("bytesUsed", s.bytesUsed)
-            s.error?.let { put("error", it) }
-        }.toString()
     }
 
     private suspend fun testDns(server: String, mode: String, host: String): String = when (mode.lowercase()) {
