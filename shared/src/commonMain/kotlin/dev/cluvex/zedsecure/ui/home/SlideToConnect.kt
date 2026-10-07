@@ -6,6 +6,7 @@
 package dev.cluvex.zedsecure.ui.home
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -105,6 +107,18 @@ internal fun SlideToConnect(
         )
 
         val idleColor = customColor ?: MaterialTheme.colorScheme.primary
+
+        // The shadow adopts the state colour, so the glow of the button always matches it.
+        val glowColor by animateColorAsState(
+            when {
+                state == ConnectionState.Error -> MaterialTheme.colorScheme.error
+                active -> customActiveColor ?: ZedViolet
+                else -> idleColor
+            },
+            tween(700),
+            label = "slide-glow",
+        )
+        val elevation by animateDpAsState(if (active) 16.dp else 8.dp, label = "slide-elevation")
         val track by animateColorAsState(
             when {
                 state == ConnectionState.Error -> MaterialTheme.colorScheme.errorContainer
@@ -122,6 +136,13 @@ internal fun SlideToConnect(
             modifier
                 .fillMaxWidth()
                 .height(height)
+                .shadow(
+                    elevation = elevation,
+                    shape = CircleShape,
+                    clip = false,
+                    ambientColor = glowColor.copy(alpha = 0.55f),
+                    spotColor = glowColor.copy(alpha = 0.55f),
+                )
                 .onSizeChanged { trackWidth = it.width.toFloat() }
                 .pointerInput(active, transition) {
                     if (active && !transition) {
@@ -177,6 +198,13 @@ internal fun SlideToConnect(
                     .padding(5.dp)
                     .size(knobSize)
                     .offset { IntOffset(offset.value.roundToInt(), 0) }
+                    .shadow(
+                        elevation = 6.dp,
+                        shape = CircleShape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.35f),
+                        spotColor = Color.Black.copy(alpha = 0.35f),
+                    )
                     .clip(CircleShape)
                     .background(Brush.linearGradient(listOf(Color.White, Color.White.copy(alpha = 0.88f))))
                     .pointerInput(active, transition, maxOffset) {

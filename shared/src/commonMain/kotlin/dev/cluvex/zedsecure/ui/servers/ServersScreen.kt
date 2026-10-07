@@ -462,7 +462,7 @@ fun ServersScreen(
                         onDismissRequest = { pingMenu = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
-                        DropdownMenuItem(
+                        if (ServersUiConfig.SHOW_TCP_PING) DropdownMenuItem(
                             text = { Text(stringResource(Res.string.ping_tcp_all)) },
                             onClick = {
                                 pingMenu = false
@@ -1554,12 +1554,12 @@ internal fun AddServerSheet(
 
             OptionGroup(Res.string.add_group_import)
             Option(Res.drawable.ic_content_paste, Res.string.servers_add_clipboard, onPasteLink)
+            if (ServersUiConfig.SHOW_QR_SCAN && LocalPlatform.current.supportsQrScan) {
+                Option(Res.drawable.ic_qr_code_2, Res.string.servers_add_scan_qr, onScanQr)
+            }
             if (ServersUiConfig.SHOW_ALL_ADD_OPTIONS) {
                 Option(Res.drawable.ic_description, Res.string.servers_add_file, onImportFile)
 
-                if (LocalPlatform.current.supportsQrScan) {
-                    Option(Res.drawable.ic_qr_code_2, Res.string.servers_add_scan_qr, onScanQr)
-                }
                 Option(Res.drawable.ic_add_link, Res.string.servers_add_scan_image, onScanQrImage)
                 Option(Res.drawable.ic_edit, Res.string.servers_add_manual, onManual)
                 Option(Res.drawable.ic_description, Res.string.servers_add_custom, onCustom)
@@ -1582,6 +1582,14 @@ internal fun AddServerSheet(
                 OptionGroup(Res.string.add_group_chains)
                 Option(Res.drawable.ic_add_link, Res.string.proxychain_add_title, onProxyChain)
                 Option(Res.drawable.ic_add_link, Res.string.crosschain_add_title, onCrossChain)
+            } else if (ServersUiConfig.SHOW_PSIPHON || ServersUiConfig.SHOW_TOR) {
+                OptionGroup(Res.string.add_group_tunnels)
+                if (ServersUiConfig.SHOW_PSIPHON) {
+                    Option(Res.drawable.ic_bolt, Res.string.psiphon_add_title, onPsiphon)
+                }
+                if (ServersUiConfig.SHOW_TOR) {
+                    Option(Res.drawable.ic_lock, Res.string.tor_add_title, onTor)
+                }
             }
 
             OptionGroup(Res.string.add_group_subscription)

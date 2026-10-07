@@ -200,7 +200,7 @@ private fun RootPage(
                 stringResource(Res.string.title_ui_settings),
                 stringResource(Res.string.summary_ui_settings),
             ) { onOpen(SettingsPage.Ui) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MODE) {
                 SettingsMenuRow(
                     stringResource(Res.string.title_mode_settings),
                     stringResource(Res.string.summary_mode_settings),
@@ -225,14 +225,14 @@ private fun RootPage(
             ) { showLogs = true }
         }
 
-        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ROUTING) SettingsGroup(
             stringResource(Res.string.routing_title),
         ) {
             SettingsMenuRow(
                 stringResource(Res.string.routing_title),
                 stringResource(Res.string.routing_subtitle),
             ) { onOpen(SettingsPage.Routing) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.per_app_title),
                 if (settings.perAppProxyEnabled) {
                     stringResource(Res.string.per_app_selected, settings.perAppPackages.size)
@@ -240,7 +240,7 @@ private fun RootPage(
                     stringResource(Res.string.per_app_mode_off)
                 },
             ) { onOpen(SettingsPage.PerApp) }
-            SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.assets_title),
                 stringResource(Res.string.assets_subtitle),
             ) { onOpen(SettingsPage.Assets) }
@@ -278,7 +278,7 @@ private fun RootPage(
                 stringResource(Res.string.title_mux_settings),
                 stringResource(Res.string.summary_mux_settings),
             ) { onOpen(SettingsPage.Mux) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT) SettingsMenuRow(
                 stringResource(Res.string.title_fragment_settings),
                 stringResource(Res.string.summary_fragment_settings),
             ) { onOpen(SettingsPage.Fragment) }
@@ -286,7 +286,7 @@ private fun RootPage(
                 stringResource(Res.string.title_singbox_settings),
                 stringResource(Res.string.summary_singbox_settings),
             ) { onOpen(SettingsPage.SingBox) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT) SettingsMenuRow(
                 stringResource(Res.string.title_observatory_settings),
                 stringResource(Res.string.summary_observatory_settings),
             ) { onOpen(SettingsPage.Observatory) }

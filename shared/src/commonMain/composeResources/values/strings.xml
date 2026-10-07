@@ -414,7 +414,7 @@
     <string name="assets_bundled_note">Data files ship with the app, so routing works out of the box. Download to get a fresher copy.</string>
 
     <string name="option_none">None</string>
-    <string name="title_ui_settings">Interface</string>
+    <string name="title_ui_settings">Appearance &amp; language</string>
     <string name="summary_ui_settings">Theme, language, list layout</string>
     <string name="title_vpn_settings">VPN and tunnel</string>
     <string name="summary_vpn_settings">Interface address, MTU, DNS, Hev TUN</string>

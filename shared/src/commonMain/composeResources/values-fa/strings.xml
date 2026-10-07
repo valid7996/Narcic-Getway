@@ -410,7 +410,7 @@
     <string name="mode_tun_body">همهٔ برنامه‌ها را از یک کارت شبکهٔ مجازی عبور می‌دهد، حتی برنامه‌هایی که پروکسی سیستم را نادیده می‌گیرند. هر بار که وصل می‌شوید دسترسی مدیر سیستم می‌خواهد. Tor و سایفون همچنان از پروکسی سیستم استفاده می‌کنند.</string>
     <string name="option_none">هیچ‌کدام</string>
 
-    <string name="title_ui_settings">رابط کاربری</string>
+    <string name="title_ui_settings">ظاهر و زبان برنامه</string>
     <string name="summary_ui_settings">تم، زبان، چیدمان فهرست</string>
     <string name="title_vpn_settings">VPN و تونل</string>
     <string name="summary_vpn_settings">آدرس اینترفیس، MTU، DNS، Hev TUN</string>

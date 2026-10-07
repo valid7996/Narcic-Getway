@@ -415,7 +415,7 @@
     <string name="assets_bundled_note">Файлы данных входят в приложение, поэтому маршрутизация работает сразу. Загрузите, чтобы обновить их.</string>
 
     <string name="option_none">Нет</string>
-    <string name="title_ui_settings">Интерфейс</string>
+    <string name="title_ui_settings">Внешний вид и язык</string>
     <string name="summary_ui_settings">Тема, язык, макет списка</string>
     <string name="title_vpn_settings">VPN и туннель</string>
     <string name="summary_vpn_settings">Адрес интерфейса, MTU, DNS, Hev TUN</string>

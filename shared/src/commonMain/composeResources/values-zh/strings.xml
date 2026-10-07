@@ -415,7 +415,7 @@
     <string name="assets_bundled_note">数据文件随应用一同安装，因此路由开箱即用。下载可获取更新的版本。</string>
 
     <string name="option_none">无</string>
-    <string name="title_ui_settings">界面</string>
+    <string name="title_ui_settings">外观与语言</string>
     <string name="summary_ui_settings">主题、语言、列表布局</string>
     <string name="title_vpn_settings">VPN 与隧道</string>
     <string name="summary_vpn_settings">接口地址、MTU、DNS、Hev TUN</string>

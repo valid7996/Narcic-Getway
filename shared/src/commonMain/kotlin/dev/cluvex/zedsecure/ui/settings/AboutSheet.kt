@@ -31,8 +31,10 @@ import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.platform.AppInfo
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
-import dev.cluvex.zedsecure.ui.components.MorphingBlob
-import dev.cluvex.zedsecure.ui.theme.ZedGradients
+import dev.cluvex.zedsecure.ui.components.LiquidCircle
+import dev.cluvex.zedsecure.ui.theme.ZedCyan
+import dev.cluvex.zedsecure.ui.theme.ZedLime
+import dev.cluvex.zedsecure.ui.theme.ZedViolet
 
 private const val TELEGRAM_URL = "https://t.me/Narcic_team"
 private const val GITHUB_URL = "https://github.com/valid7996/Narcic-Getway"
@@ -50,12 +52,10 @@ fun AboutSheet(onDismiss: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            MorphingBlob(
-                progress = 0.5f,
-                brush = ZedGradients.connected,
+            LiquidCircle(
+                colors = listOf(ZedViolet, ZedCyan, ZedLime),
                 modifier = Modifier.size(96.dp),
-            ) {
-            }
+            )
             Text(
                 stringResource(Res.string.app_name),
                 style = MaterialTheme.typography.headlineSmall,

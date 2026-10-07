@@ -12,6 +12,18 @@ object NavConfig {
     /** The servers tab of the bottom bar; the list itself lives on the home screen. */
     const val SHOW_SERVERS_TAB: Boolean = false
 
-    /** Every settings page; false leaves About, the VPN page and the core page. */
+    /** Every settings page; false leaves only the individually-enabled pages below. */
     const val SHOW_ALL_SETTINGS: Boolean = false
+
+    /** The Mode page (VPN / proxy / system-proxy). */
+    const val SHOW_MODE: Boolean = true
+
+    /** The Routing page. */
+    const val SHOW_ROUTING: Boolean = true
+
+    /** The TLS fragment page. */
+    const val SHOW_FRAGMENT: Boolean = true
+
+    /** The Auto-select (observatory) page. */
+    const val SHOW_AUTO_SELECT: Boolean = true
 }

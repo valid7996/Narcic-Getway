@@ -57,11 +57,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -99,7 +102,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -124,6 +126,9 @@ import dev.cluvex.zedsecure.domain.model.ConnectionState
 import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.components.NoteText
 import dev.cluvex.zedsecure.ui.components.OrganicSurface
+import dev.cluvex.zedsecure.data.net.NetworkInfo
+import dev.cluvex.zedsecure.ui.components.FlagBadge
+import dev.cluvex.zedsecure.ui.components.LiquidCircle
 import dev.cluvex.zedsecure.ui.connection.ConnectionViewModel
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.format.formatElapsed
@@ -180,6 +185,10 @@ fun HomeScreen(
     personalization: Personalization = Personalization.Default,
 
     connectStyle: ConnectButtonStyle = ConnectButtonStyle.Pill,
+
+    autoConnectOnBoot: Boolean = false,
+    onToggleAutoConnect: (Boolean) -> Unit = {},
+
     homeVm: HomeViewModel = viewModel { HomeViewModel() },
 ) {
     val ui by connectionVm.ui.collectAsStateWithLifecycle()
@@ -216,7 +225,7 @@ fun HomeScreen(
                 .padding(contentPadding)
                 .padding(horizontal = 22.dp),
         ) {
-            val heroSize = minOf(216.dp, maxHeight * 0.29f)
+            val heroSize = minOf(302.dp, maxHeight * 0.41f)
 
             val compact = maxHeight < 620.dp
 
@@ -250,28 +259,6 @@ fun HomeScreen(
                     }
                 }
 
-                // The location and traffic dashboards travel as one block and only appear
-                // once the tunnel is actually connected.
-                AnimatedVisibility(visible = live && showConnectionInfo) {
-                    Column {
-                        Spacer(Modifier.height(10.dp))
-                        ConnectionInfoPill(
-                            info = info,
-                            expanded = infoExpanded,
-                            onToggle = homeVm::toggleExpanded,
-                            onRefresh = homeVm::refresh,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        TrafficPanel(
-                            live = live,
-                            downloadBps = ui.downloadBps,
-                            uploadBps = ui.uploadBps,
-                            totalDownload = ui.totalDownload,
-                            totalUpload = ui.totalUpload,
-                            personalization = personalization,
-                        )
-                    }
-                }
                 }
 
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().layoutId(STAGE_ID)) {
@@ -285,9 +272,10 @@ fun HomeScreen(
                   ) {
                     Hero(
                         state = ui.state,
-                        elapsed = ui.elapsedSeconds,
                         sessionId = ui.sessionId,
                         size = stageHero,
+                        downloadBps = ui.downloadBps,
+                        uploadBps = ui.uploadBps,
                         onLongPress = {
                             burst++
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -406,6 +394,25 @@ fun HomeScreen(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
+
+                // The one merged dashboard: location, address and live traffic in a single
+                // green panel. It never collapses; it simply exists while the tunnel is up.
+                AnimatedVisibility(visible = live && showConnectionInfo) {
+                    MergedDashboardCard(
+                        info = info,
+                        downloadBps = ui.downloadBps,
+                        uploadBps = ui.uploadBps,
+                        totalDownload = ui.totalDownload,
+                        totalUpload = ui.totalUpload,
+                        onRefresh = homeVm::refresh,
+                    )
+                }
+
+                AutoConnectRow(
+                    checked = autoConnectOnBoot,
+                    onChecked = onToggleAutoConnect,
+                )
+                Spacer(Modifier.height(10.dp))
 
                 if (repository != null) {
                     HomeServerSection(
@@ -535,16 +542,12 @@ private fun DecorativeBackdrop(reduceMotion: Boolean) {
 }
 
 @Composable
-private fun coreTextSize(core: Dp, ratio: Float) = with(LocalDensity.current) {
-    (core.toPx() * ratio).toSp()
-}
-
-@Composable
 private fun Hero(
     state: ConnectionState,
-    elapsed: Int,
     sessionId: Int,
     size: Dp,
+    downloadBps: Long,
+    uploadBps: Long,
     onLongPress: () -> Unit,
 
     onTap: (() -> Unit)? = null,
@@ -606,15 +609,11 @@ private fun Hero(
                     containerColor = Color.Transparent,
                 )
 
-                s == ConnectionState.Connected -> Text(
-                    text = formatElapsed(elapsed),
-                    fontSize = coreTextSize(size, 0.194f),
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White,
-                    maxLines = 1,
-                    softWrap = false,
-                )
+                s == ConnectionState.Connected -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircleReading(Res.drawable.ic_download, stringResource(Res.string.home_download), downloadBps)
+                    Spacer(Modifier.height(8.dp))
+                    CircleReading(Res.drawable.ic_upload, stringResource(Res.string.home_upload), uploadBps)
+                }
                 else -> if (s == ConnectionState.Error) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_lock_open),
@@ -625,64 +624,6 @@ private fun Hero(
                 }
             }
         }
-    }
-}
-
-/**
- * The water circle: a closed loop of points whose radii breathe on two out-of-phase waves, drawn
- * fresh every frame and filled with the state gradient — a resting droplet that ripples as the
- * connection state changes.
- */
-@Composable
-private fun LiquidCircle(colors: List<Color>, modifier: Modifier = Modifier) {
-    val budget = LocalMotionBudget.current
-    val phase = if (budget == MotionBudget.Full) {
-        rememberInfiniteTransition(label = "water").animateFloat(
-            initialValue = 0f,
-            targetValue = (2.0 * PI).toFloat(),
-            animationSpec = infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Restart),
-            label = "water-phase",
-        ).value
-    } else {
-        0.6f
-    }
-    Canvas(modifier) {
-        val points = 30
-        val step = (2.0 * PI).toFloat() / points
-        val radius = size.minDimension / 2f * 0.90f
-        val cx = size.width / 2f
-        val cy = size.height / 2f
-        fun wobble(i: Int): Float = radius * (1f +
-            0.05f * sin(phase * 1.6f + i * step * 2f) +
-            0.03f * sin(2.3f * phase - i * step * 3f))
-        val pts = List(points) { i ->
-            val angle = step * i
-            val r = wobble(i)
-            Offset(cx + r * cos(angle), cy + r * sin(angle))
-        }
-        fun mid(a: Offset, b: Offset) = Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f)
-        val path = Path()
-        val first = mid(pts[points - 1], pts[0])
-        path.moveTo(first.x, first.y)
-        for (i in 0 until points) {
-            val m = mid(pts[i], pts[(i + 1) % points])
-            path.quadraticBezierTo(pts[i].x, pts[i].y, m.x, m.y)
-        }
-        path.close()
-        drawPath(
-            path,
-            brush = Brush.linearGradient(
-                colors,
-                start = Offset(cx - radius, cy - radius),
-                end = Offset(cx + radius, cy + radius),
-            ),
-        )
-        // The light patch that makes the fill read as water rather than a flat disc.
-        drawCircle(
-            color = Color.White.copy(alpha = 0.10f),
-            radius = radius * 0.55f,
-            center = Offset(cx - radius * 0.22f, cy - radius * 0.28f),
-        )
     }
 }
 
@@ -901,561 +842,6 @@ private fun StatusChip(state: ConnectionState) {
         }
     }
 }
-
-@Composable
-private fun TrafficPanel(
-    live: Boolean,
-    downloadBps: Long,
-    uploadBps: Long,
-    totalDownload: Long,
-    totalUpload: Long,
-    personalization: Personalization = Personalization.Default,
-) {
-    val down = personalization.downloadColor ?: MaterialTheme.colorScheme.primary
-    val up = personalization.uploadColor ?: MaterialTheme.colorScheme.tertiary
-    when (personalization.trafficCardStyle) {
-        TrafficCardStyle.Duo -> DuoTrafficCard(live, downloadBps, uploadBps, totalDownload, totalUpload, down, up, personalization)
-        TrafficCardStyle.Rings -> RingTrafficPanel(live, downloadBps, uploadBps, totalDownload, totalUpload, down, up, personalization)
-        TrafficCardStyle.Minimal -> MinimalTrafficRow(live, downloadBps, uploadBps, down, up)
-        TrafficCardStyle.Graph -> GraphTrafficPanel(live, downloadBps, uploadBps, totalDownload, totalUpload, down, up, personalization)
-        TrafficCardStyle.Cards -> CardsTrafficPanel(live, downloadBps, uploadBps, totalDownload, totalUpload, personalization)
-    }
-}
-
-@Composable
-private fun CardsTrafficPanel(
-    live: Boolean,
-    downloadBps: Long,
-    uploadBps: Long,
-    totalDownload: Long,
-    totalUpload: Long,
-    personalization: Personalization,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(personalization.density.gapDp.dp),
-    ) {
-        TrafficTile(
-            size = personalization.trafficTileSize,
-            icon = Res.drawable.ic_download,
-            badge = MaterialShapes.Cookie7Sided,
-            label = stringResource(Res.string.home_download),
-            bytesPerSecond = downloadBps,
-            total = totalDownload,
-            accent = personalization.downloadColor ?: MaterialTheme.colorScheme.primary,
-
-            alwaysTint = personalization.downloadColor != null,
-            containerOverride = personalization.downloadTileColor,
-            live = live,
-            modifier = Modifier.weight(1f),
-        )
-        TrafficTile(
-            size = personalization.trafficTileSize,
-            icon = Res.drawable.ic_upload,
-            badge = MaterialShapes.Cookie4Sided,
-            label = stringResource(Res.string.home_upload),
-            bytesPerSecond = uploadBps,
-            total = totalUpload,
-            accent = personalization.uploadColor ?: MaterialTheme.colorScheme.tertiary,
-            alwaysTint = personalization.uploadColor != null,
-            containerOverride = personalization.uploadTileColor,
-            live = live,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun TrafficTile(
-    icon: DrawableResource,
-    badge: RoundedPolygon,
-    label: String,
-    bytesPerSecond: Long,
-    total: Long,
-    accent: Color,
-    live: Boolean,
-    modifier: Modifier = Modifier,
-    alwaysTint: Boolean = false,
-    containerOverride: Color? = null,
-    size: TrafficTileSize = TrafficTileSize.Normal,
-) {
-    val flowing = live && bytesPerSecond > 0
-    val activity = if (live) rateFraction(bytesPerSecond) else 0f
-    val (value, unit) = formatRate(bytesPerSecond)
-
-    val container = containerOverride ?: MaterialTheme.colorScheme.surfaceContainerHigh
-    val onContainer = containerOverride?.readableOn() ?: MaterialTheme.colorScheme.onSurfaceVariant
-    val valueColor by animateColorAsState(
-        targetValue = if (flowing || alwaysTint) accent else onContainer,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        label = "tile-value",
-    )
-
-    val amplitude by animateFloatAsState(
-        targetValue = activity,
-        animationSpec = MaterialTheme.motionScheme.slowEffectsSpec(),
-        label = "tile-amplitude",
-    )
-
-    Surface(
-        color = Color.Transparent,
-        shape = MaterialTheme.shapes.large,
-        modifier = modifier,
-    ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            container.copy(alpha = 0.95f),
-                            container,
-                        ),
-                    ),
-                ),
-        ) {
-            // Vertical glass bar — the new tile signature.
-            Box(
-                Modifier
-                    .width(5.dp)
-                    .heightIn(min = 96.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accent, accent.copy(alpha = 0.25f + 0.6f * amplitude)),
-                        ),
-                    ),
-            )
-
-            Column(Modifier.padding(horizontal = 14.dp, vertical = (size.paddingDp - 2).dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = null,
-                        tint = if (live || alwaysTint) accent else onContainer,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(Modifier.width(7.dp))
-                    Text(
-                        text = label.uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        letterSpacing = 1.2.sp,
-                        color = onContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                Spacer(Modifier.height(size.gapDp.dp))
-
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = value,
-
-                        style = if (size == TrafficTileSize.Large) {
-                            MaterialTheme.typography.headlineMediumEmphasized
-                        } else {
-                            MaterialTheme.typography.headlineSmallEmphasized
-                        },
-                        color = valueColor,
-                        maxLines = 1,
-                    )
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        text = unit,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = onContainer,
-                        maxLines = 1,
-                        modifier = Modifier.padding(bottom = 3.dp),
-                    )
-                }
-
-                Spacer(Modifier.height(size.gapDp.dp))
-
-                val motion = LocalMotionBudget.current
-                LinearWavyProgressIndicator(
-                    progress = { activity },
-                    amplitude = { amplitude },
-                    color = if (flowing) accent else MaterialTheme.colorScheme.outlineVariant,
-                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    modifier = Modifier.fillMaxWidth(),
-                    waveSpeed = if (motion == MotionBudget.Full || flowing && motion == MotionBudget.Throttled) {
-                        WavyProgressIndicatorDefaults.LinearDeterminateWavelength
-                    } else {
-                        0.dp
-                    },
-                )
-
-                Spacer(Modifier.height(6.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = formatBytes(total),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = onContainer,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DirectionReading(
-    icon: DrawableResource,
-    label: String,
-    bytesPerSecond: Long,
-    accent: Color,
-    live: Boolean,
-    onContainer: Color,
-    big: Boolean = true,
-) {
-    val (value, unit) = formatRate(bytesPerSecond)
-    val flowing = live && bytesPerSecond > 0
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painterResource(icon),
-                contentDescription = null,
-                tint = if (flowing) accent else onContainer,
-                modifier = Modifier.size(14.dp),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                label.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = onContainer,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                value,
-                style = if (big) MaterialTheme.typography.headlineSmallEmphasized
-                else MaterialTheme.typography.titleMediumEmphasized,
-                color = if (flowing) accent else onContainer,
-                maxLines = 1,
-            )
-            Spacer(Modifier.width(3.dp))
-            Text(
-                unit,
-                style = MaterialTheme.typography.labelSmall,
-                color = onContainer,
-                maxLines = 1,
-                modifier = Modifier.padding(bottom = 2.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun DuoTrafficCard(
-    live: Boolean,
-    downloadBps: Long,
-    uploadBps: Long,
-    totalDownload: Long,
-    totalUpload: Long,
-    down: Color,
-    up: Color,
-    personalization: Personalization,
-) {
-    val pad = personalization.trafficTileSize.paddingDp.dp
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = pad, vertical = pad),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                DirectionReading(
-                    Res.drawable.ic_download,
-                    stringResource(Res.string.home_download),
-                    downloadBps,
-                    down,
-                    live,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    formatBytes(totalDownload),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            }
-            Box(
-                Modifier
-                    .padding(horizontal = 12.dp)
-                    .width(1.dp)
-                    .height(46.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-            )
-            Column(Modifier.weight(1f)) {
-                DirectionReading(
-                    Res.drawable.ic_upload,
-                    stringResource(Res.string.home_upload),
-                    uploadBps,
-                    up,
-                    live,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    formatBytes(totalUpload),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RingTrafficPanel(
-    live: Boolean,
-    downloadBps: Long,
-    uploadBps: Long,
-    totalDownload: Long,
-    totalUpload: Long,
-    down: Color,
-    up: Color,
-    personalization: Personalization,
-) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(personalization.density.gapDp.dp),
-    ) {
-        TrafficRing(
-            Res.drawable.ic_download, stringResource(Res.string.home_download),
-            downloadBps, totalDownload, down, live, Modifier.weight(1f),
-        )
-        TrafficRing(
-            Res.drawable.ic_upload, stringResource(Res.string.home_upload),
-            uploadBps, totalUpload, up, live, Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun TrafficRing(
-    icon: DrawableResource,
-    label: String,
-    bytesPerSecond: Long,
-    total: Long,
-    accent: Color,
-    live: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val fraction = if (live) rateFraction(bytesPerSecond) else 0f
-    val animated by animateFloatAsState(fraction, label = "ring-fraction")
-    val (value, unit) = formatRate(bytesPerSecond)
-    val onContainer = MaterialTheme.colorScheme.onSurfaceVariant
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.large,
-        modifier = modifier,
-    ) {
-        Column(
-            Modifier.fillMaxWidth().padding(vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                androidx.compose.material3.CircularProgressIndicator(
-                    progress = { animated.coerceIn(0f, 1f) },
-                    color = if (live && bytesPerSecond > 0) accent else MaterialTheme.colorScheme.outlineVariant,
-                    trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                    strokeWidth = 6.dp,
-                    modifier = Modifier.size(84.dp),
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        value,
-                        style = MaterialTheme.typography.titleLargeEmphasized,
-                        color = if (live && bytesPerSecond > 0) accent else onContainer,
-                        maxLines = 1,
-                    )
-                    Text(unit, style = MaterialTheme.typography.labelSmall, color = onContainer, maxLines = 1)
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painterResource(icon),
-                    contentDescription = null,
-                    tint = onContainer,
-                    modifier = Modifier.size(13.dp),
-                )
-                Spacer(Modifier.width(5.dp))
-                Text(
-                    formatBytes(total),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = onContainer,
-                    maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MinimalTrafficRow(
-    live: Boolean,
-    downloadBps: Long,
-    uploadBps: Long,
-    down: Color,
-    up: Color,
-) {
-    val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        MinimalReading(Res.drawable.ic_download, downloadBps, down, live, muted)
-        Text(
-            "  ·  ",
-            style = MaterialTheme.typography.titleMedium,
-            color = muted.copy(alpha = 0.5f),
-        )
-        MinimalReading(Res.drawable.ic_upload, uploadBps, up, live, muted)
-    }
-}
-
-@Composable
-private fun MinimalReading(
-    icon: DrawableResource,
-    bytesPerSecond: Long,
-    accent: Color,
-    live: Boolean,
-    muted: Color,
-) {
-    val (value, unit) = formatRate(bytesPerSecond)
-    val flowing = live && bytesPerSecond > 0
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painterResource(icon),
-            contentDescription = null,
-            tint = if (flowing) accent else muted,
-            modifier = Modifier.size(15.dp),
-        )
-        Spacer(Modifier.width(5.dp))
-        Text(
-            value,
-            style = MaterialTheme.typography.titleMediumEmphasized,
-            color = if (flowing) accent else muted,
-            maxLines = 1,
-        )
-        Spacer(Modifier.width(2.dp))
-        Text(unit, style = MaterialTheme.typography.labelSmall, color = muted, maxLines = 1)
-    }
-}
-
-@Composable
-private fun GraphTrafficPanel(
-    live: Boolean,
-    downloadBps: Long,
-    uploadBps: Long,
-    totalDownload: Long,
-    totalUpload: Long,
-    down: Color,
-    up: Color,
-    personalization: Personalization,
-) {
-    val downHistory = remember { mutableStateListOf<Float>() }
-    val upHistory = remember { mutableStateListOf<Float>() }
-    LaunchedEffect(downloadBps, uploadBps, live) {
-        fun push(list: MutableList<Float>, bps: Long) {
-            list.add(if (live) rateFraction(bps) else 0f)
-            while (list.size > HISTORY_POINTS) list.removeAt(0)
-        }
-        push(downHistory, downloadBps)
-        push(upHistory, uploadBps)
-    }
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(personalization.density.gapDp.dp),
-    ) {
-        GraphTile(
-            Res.drawable.ic_download, stringResource(Res.string.home_download),
-            downloadBps, totalDownload, down, live, downHistory, personalization, Modifier.weight(1f),
-        )
-        GraphTile(
-            Res.drawable.ic_upload, stringResource(Res.string.home_upload),
-            uploadBps, totalUpload, up, live, upHistory, personalization, Modifier.weight(1f),
-        )
-    }
-}
-
-private const val HISTORY_POINTS = 30
-
-@Composable
-private fun GraphTile(
-    icon: DrawableResource,
-    label: String,
-    bytesPerSecond: Long,
-    total: Long,
-    accent: Color,
-    live: Boolean,
-    history: List<Float>,
-    personalization: Personalization,
-    modifier: Modifier = Modifier,
-) {
-    val onContainer = MaterialTheme.colorScheme.onSurfaceVariant
-    val pad = personalization.trafficTileSize.paddingDp.dp
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.large,
-        modifier = modifier,
-    ) {
-        Column(Modifier.padding(horizontal = pad, vertical = pad)) {
-            DirectionReading(icon, label, bytesPerSecond, accent, live, onContainer)
-            Spacer(Modifier.height(8.dp))
-            Canvas(Modifier.fillMaxWidth().height(28.dp)) {
-                if (history.size < 2) return@Canvas
-                val step = size.width / (HISTORY_POINTS - 1)
-                val path = Path()
-                val fill = Path()
-                history.forEachIndexed { i, v ->
-                    val x = i * step
-                    val y = size.height - (v.coerceIn(0f, 1f) * size.height)
-                    if (i == 0) {
-                        path.moveTo(x, y)
-                        fill.moveTo(x, size.height)
-                        fill.lineTo(x, y)
-                    } else {
-                        path.lineTo(x, y)
-                        fill.lineTo(x, y)
-                    }
-                }
-                fill.lineTo((history.size - 1) * step, size.height)
-                fill.close()
-                drawPath(fill, accent.copy(alpha = 0.18f))
-                drawPath(path, accent, style = Stroke(width = 2.5f))
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                formatBytes(total),
-                style = MaterialTheme.typography.labelSmall,
-                color = onContainer,
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-private fun rateFraction(bytesPerSecond: Long): Float {
-    if (bytesPerSecond <= 0L) return 0f
-    val kb = bytesPerSecond / 1024.0
-    return (ln(1.0 + kb) / FULL_SCALE_LN).toFloat().coerceIn(0f, 1f)
-}
-
-private val FULL_SCALE_LN = ln(1.0 + 10 * 1024.0)
 
 @Composable
 private fun ActiveConfigCard(
@@ -1852,4 +1238,222 @@ private fun ConnectionState.labelRes(): StringResource = when (this) {
     ConnectionState.Reconnecting -> Res.string.state_reconnecting
     ConnectionState.Disconnecting -> Res.string.state_disconnecting
     ConnectionState.Error -> Res.string.state_error
+}
+
+private val ConnectedGreen = Color(0xFF27A468)
+
+/**
+ * The one merged dashboard: location, address and live traffic in a single always-open panel.
+ * The green wash is the "connected" colour of the app at its 60% focus strength.
+ */
+@Composable
+private fun MergedDashboardCard(
+    info: NetworkInfo,
+    downloadBps: Long,
+    uploadBps: Long,
+    totalDownload: Long,
+    totalUpload: Long,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(24.dp)
+    Surface(color = Color.Transparent, shape = shape, modifier = modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            ConnectedGreen.copy(alpha = 0.60f),
+                            ConnectedGreen.copy(alpha = 0.35f),
+                        ),
+                    ),
+                ),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    FlagBadge(countryCode = info.countryCode, size = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = listOfNotNull(info.city, info.country).joinToString(", ")
+                                .ifBlank { null }
+                                ?: stringResource(Res.string.info_unknown_location),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = info.ipv4 ?: stringResource(Res.string.info_no_ip),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                    info.pingMs?.let { ping ->
+                        Text(
+                            text = "$ping ms",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (ping < 250) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                        )
+                    }
+                    IconButton(onClick = onRefresh, enabled = !info.loading) {
+                        if (info.loading) {
+                            ContainedLoadingIndicator(
+                                modifier = Modifier.size(18.dp),
+                                containerColor = Color.Transparent,
+                            )
+                        } else {
+                            Icon(
+                                painterResource(Res.drawable.ic_sync),
+                                contentDescription = stringResource(Res.string.info_refresh),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f))
+                Spacer(Modifier.height(12.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    DashboardReading(
+                        icon = Res.drawable.ic_download,
+                        label = stringResource(Res.string.home_download),
+                        bytesPerSecond = downloadBps,
+                        total = totalDownload,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Box(
+                        Modifier
+                            .width(1.dp)
+                            .height(44.dp)
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+                    )
+                    DashboardReading(
+                        icon = Res.drawable.ic_upload,
+                        label = stringResource(Res.string.home_upload),
+                        bytesPerSecond = uploadBps,
+                        total = totalUpload,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashboardReading(
+    icon: DrawableResource,
+    label: String,
+    bytesPerSecond: Long,
+    total: Long,
+    modifier: Modifier = Modifier,
+) {
+    val (value, unit) = formatRate(bytesPerSecond)
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+        Icon(
+            painterResource(icon),
+            contentDescription = label,
+            tint = if (bytesPerSecond > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(9.dp))
+        Column {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    value,
+                    style = MaterialTheme.typography.headlineSmallEmphasized,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    unit,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 3.dp),
+                )
+            }
+            Text(
+                formatBytes(total),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** The compact live reading inside the liquid circle. */
+@Composable
+private fun CircleReading(icon: DrawableResource, label: String, bytesPerSecond: Long) {
+    val (value, unit) = formatRate(bytesPerSecond)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painterResource(icon),
+            contentDescription = label,
+            tint = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMediumEmphasized,
+            color = Color.White,
+            maxLines = 1,
+        )
+        Spacer(Modifier.width(2.dp))
+        Text(
+            text = unit,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = 0.85f),
+            maxLines = 1,
+        )
+    }
+}
+
+/** Auto connect at startup, surfaced on the home screen. */
+@Composable
+private fun AutoConnectRow(
+    checked: Boolean,
+    onChecked: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(Res.drawable.ic_bolt),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                stringResource(Res.string.title_pref_is_booted),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(checked = checked, onCheckedChange = onChecked)
+        }
+    }
 }
