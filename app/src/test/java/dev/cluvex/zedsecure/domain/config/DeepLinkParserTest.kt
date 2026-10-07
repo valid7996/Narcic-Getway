@@ -109,14 +109,8 @@ class DeepLinkParserTest {
     }
 
     @Test
-    fun `legacy zedsecure links still open`() {
-        assertEquals(
-            DeepLinkRequest.Subscription("https://sub.example/z", "Mine"),
-            DeepLinkParser.parse("zedsecure://import?url=${enc("https://sub.example/z")}&name=Mine"),
-        )
-        val shared = ZedLink.build("Tor here", ProfileSource.Tor)!!
-            .replaceFirst("narcicgetway://", "zedsecure://")
-        assertEquals(DeepLinkRequest.ConfigText(shared), DeepLinkParser.parse(shared))
+    fun `legacy zedsecure links are no longer accepted`() {
+        assertEquals(null, DeepLinkParser.parse("zedsecure://import?url=${enc("https://sub.example/z")}&name=Mine"))
     }
 
     @Test
