@@ -8,6 +8,7 @@ package dev.cluvex.zedsecure.ui.servers
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,7 @@ import dev.cluvex.zedsecure.platform.currentTimeMillis
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.theme.Personalization
+import dev.cluvex.zedsecure.ui.theme.ZedGreen
 import dev.cluvex.zedsecure.ui.theme.goodPingColor
 import dev.cluvex.zedsecure.ui.theme.ZedLime
 import dev.cluvex.zedsecure.ui.theme.readableOn
@@ -87,9 +89,10 @@ fun AutoSelectCard(
     personalization: Personalization = Personalization.Default,
 ) {
     val container = if (active) {
-        personalization.serverActiveColor ?: MaterialTheme.colorScheme.primaryContainer
+        personalization.serverActiveColor ?: ZedGreen
     } else {
-        personalization.serverCardColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
+        personalization.serverCardColor
+            ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
     }
     val onContainer = when {
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
@@ -98,15 +101,21 @@ fun AutoSelectCard(
         else -> MaterialTheme.colorScheme.onSurface
     }
     val phase = live?.status?.phase
+    val frame = if (active) ZedGreen.copy(alpha = 0.95f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
     Surface(
         onClick = onSelect,
         shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),
-        color = container,
+        color = Color.Transparent,
         contentColor = onContainer,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp)),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(container, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
+                .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(

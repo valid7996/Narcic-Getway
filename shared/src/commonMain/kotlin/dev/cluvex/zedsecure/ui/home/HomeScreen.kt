@@ -97,6 +97,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -104,7 +106,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -126,7 +132,6 @@ import dev.cluvex.zedsecure.ui.components.MorphingBlob
 import dev.cluvex.zedsecure.ui.components.NoteText
 import dev.cluvex.zedsecure.data.net.NetworkInfo
 import dev.cluvex.zedsecure.ui.components.FlagBadge
-import dev.cluvex.zedsecure.ui.components.LiquidCircle
 import dev.cluvex.zedsecure.ui.connection.ConnectionViewModel
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.format.formatElapsed
@@ -547,6 +552,96 @@ private fun DecorativeBackdrop(reduceMotion: Boolean) {
     }
 }
 
+/**
+ * The home hero: a ringed planet — one large glossy sphere with a moonlet hugging it, a thin
+ * orbit ring and a few droplets, all tinted by the connection state.
+ */
+@Composable
+private fun PlanetBody(colors: List<Color>, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val cx = size.width / 2f
+        val cy = size.height * 0.47f
+        val r = size.minDimension * 0.335f
+
+        val ringW = r * 3.0f
+        val ringH = r * 1.12f
+        val ringTop = Offset(cx - ringW / 2f, cy - ringH / 2f)
+        val ringSize = Size(ringW, ringH)
+
+        // the orbit ring behind the sphere
+        rotate(-16f, pivot = Offset(cx, cy)) {
+            drawOval(
+                color = colors[1].copy(alpha = 0.5f),
+                topLeft = ringTop,
+                size = ringSize,
+                style = Stroke(width = r * 0.045f),
+            )
+        }
+
+        // the planet
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(colors[0], colors[1], colors[2].copy(alpha = 0.85f)),
+                center = Offset(cx - r * 0.35f, cy - r * 0.45f),
+                radius = r * 1.9f,
+            ),
+            radius = r,
+            center = Offset(cx, cy),
+        )
+        // shading toward the far side
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent),
+                center = Offset(cx + r * 0.55f, cy + r * 0.6f),
+                radius = r * 1.25f,
+            ),
+            radius = r,
+            center = Offset(cx, cy),
+        )
+
+        // the moonlet hugging the lower-left
+        val mr = r * 0.40f
+        val mc = Offset(cx - r * 0.80f, cy + r * 0.60f)
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(colors[2], colors[0]),
+                center = Offset(mc.x - mr * 0.3f, mc.y - mr * 0.35f),
+                radius = mr * 1.6f,
+            ),
+            radius = mr,
+            center = mc,
+        )
+
+        // droplets thrown off the planet
+        drawCircle(colors[2].copy(alpha = 0.9f), radius = r * 0.055f, center = Offset(cx - r * 1.28f, cy - r * 0.92f))
+        drawCircle(colors[1].copy(alpha = 0.8f), radius = r * 0.04f, center = Offset(cx + r * 1.32f, cy + r * 0.38f))
+        drawCircle(Color.White.copy(alpha = 0.55f), radius = r * 0.03f, center = Offset(cx + r * 0.92f, cy - r * 1.06f))
+
+        // specular highlight
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color.White.copy(alpha = 0.32f), Color.Transparent),
+                center = Offset(cx - r * 0.38f, cy - r * 0.5f),
+                radius = r * 0.7f,
+            ),
+            radius = r,
+            center = Offset(cx, cy),
+        )
+
+        // the orbit ring's front half, passing over the planet
+        rotate(-16f, pivot = Offset(cx, cy)) {
+            clipRect(left = 0f, top = cy, right = size.width, bottom = size.height) {
+                drawOval(
+                    color = colors[1].copy(alpha = 0.85f),
+                    topLeft = ringTop,
+                    size = ringSize,
+                    style = Stroke(width = r * 0.05f),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun Hero(
     state: ConnectionState,
@@ -601,7 +696,7 @@ private fun Hero(
             },
         contentAlignment = Alignment.Center,
     ) {
-        LiquidCircle(colors = liquidColors, modifier = Modifier.fillMaxSize())
+        PlanetBody(colors = liquidColors, modifier = Modifier.fillMaxSize())
         AnimatedContent(
             targetState = state,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -644,14 +739,28 @@ private fun BrandHeader(
             Box(Modifier.weight(1f, fill = false)) { StatusChip(state) }
         }
         Text(
-            text = stringResource(Res.string.app_name),
+            text = run {
+                val name = stringResource(Res.string.app_name)
+                buildAnnotatedString {
+                    val cut = name.lastIndexOf(' ')
+                    if (cut > 0) {
+                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
+                            append(name.substring(0, cut))
+                        }
+                        append(" ")
+                        withStyle(SpanStyle(color = ConnectedGreen)) {
+                            append(name.substring(cut + 1))
+                        }
+                    } else {
+                        withStyle(SpanStyle(color = ConnectedGreen)) { append(name) }
+                    }
+                }
+            },
 
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.ExtraBold,
             maxLines = 1,
             softWrap = false,
-
-            color = ConnectedGreen,
             modifier = Modifier
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -1238,7 +1347,7 @@ private fun ConnectionState.labelRes(): StringResource = when (this) {
     ConnectionState.Error -> Res.string.state_error
 }
 
-private val ConnectedGreen = Color(0xFF27A468)
+private val ConnectedGreen = dev.cluvex.zedsecure.ui.theme.ZedGreen
 
 /**
  * The one merged dashboard: location, address and live traffic in a single always-open panel.

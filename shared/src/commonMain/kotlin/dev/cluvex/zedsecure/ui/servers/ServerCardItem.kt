@@ -3,6 +3,7 @@
 package dev.cluvex.zedsecure.ui.servers
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +45,7 @@ import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.theme.Personalization
+import dev.cluvex.zedsecure.ui.theme.ZedGreen
 import dev.cluvex.zedsecure.ui.theme.pingColor
 import dev.cluvex.zedsecure.ui.theme.readableOn
 import org.jetbrains.compose.resources.painterResource
@@ -82,9 +84,15 @@ internal fun ServerCard(
     val container = if (isSelectedCard) {
         MaterialTheme.colorScheme.secondaryContainer
     } else if (active) {
-        personalization.serverActiveColor ?: MaterialTheme.colorScheme.primaryContainer
+        personalization.serverActiveColor ?: ZedGreen
     } else {
-        personalization.serverCardColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
+        personalization.serverCardColor
+            ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
+    }
+    val frame = when {
+        isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+        active -> ZedGreen.copy(alpha = 0.95f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
     }
 
     val onContainer = when {
@@ -105,6 +113,7 @@ internal fun ServerCard(
                 .height(IntrinsicSize.Min)
                 .clip(RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
                 .background(container)
+                .border(1.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
                 .clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
         ) {

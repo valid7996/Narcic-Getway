@@ -32,6 +32,9 @@ val LightColors: ColorScheme = expressiveLightColorScheme().copy(
 val ZedLime = Color(0xFF7DD8FF)
 val ZedOnLime = Color(0xFF00213A)
 val ZedHotPink = Color(0xFFFF8A5C)
+
+/** The connected green of the brand — the dashboard wash, the active server, the name. */
+val ZedGreen = Color(0xFF27A468)
 val ZedViolet = Color(0xFF3D7BFF)
 val ZedDeepViolet = Color(0xFF0A1830)
 val ZedCyan = Color(0xFF4ED9E0)

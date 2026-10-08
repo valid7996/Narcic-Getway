@@ -3,6 +3,7 @@
 package dev.cluvex.zedsecure.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,6 +27,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +60,7 @@ import dev.cluvex.zedsecure.ui.servers.ServersUiConfig
 import dev.cluvex.zedsecure.ui.servers.ServerCard
 import dev.cluvex.zedsecure.ui.servers.SubscriptionsSheet
 import dev.cluvex.zedsecure.ui.theme.Personalization
+import dev.cluvex.zedsecure.ui.theme.ZedGreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -172,7 +178,7 @@ internal fun HomeServerSection(
                 modifier = Modifier.weight(1f),
             )
             if (testing) {
-                IconButton(onClick = { PingCoordinator.cancel() }) {
+                GlassIconButton(onClick = { PingCoordinator.cancel() }) {
                     Icon(
                         painterResource(Res.drawable.ic_close),
                         contentDescription = stringResource(Res.string.ping_stop),
@@ -180,7 +186,7 @@ internal fun HomeServerSection(
                 }
             } else {
                 Box {
-                    IconButton(onClick = { pingMenu = true }) {
+                    GlassIconButton(onClick = { pingMenu = true }) {
                         Icon(
                             painterResource(Res.drawable.ic_speed),
                             contentDescription = stringResource(Res.string.ping_test),
@@ -203,7 +209,7 @@ internal fun HomeServerSection(
                 }
             }
             Box {
-                IconButton(onClick = { overflowOpen = true }) {
+                GlassIconButton(onClick = { overflowOpen = true }) {
                     Icon(
                         painterResource(Res.drawable.ic_more_vert),
                         contentDescription = stringResource(Res.string.servers_actions),
@@ -282,7 +288,7 @@ internal fun HomeServerSection(
                     )
                 }
             }
-            IconButton(onClick = { showAdd = true }) {
+            GlassIconButton(onClick = { showAdd = true }) {
                 Icon(
                     painterResource(Res.drawable.ic_add),
                     contentDescription = stringResource(Res.string.servers_add),
@@ -447,16 +453,28 @@ internal fun HomeServerSection(
     }
 }
 
-/** The group chip of the servers screen, restyled for the home header. */
+/** A header action button sitting in a glass circle. */
+@Composable
+private fun GlassIconButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+        modifier = Modifier.size(42.dp),
+    ) {
+        IconButton(onClick = onClick, modifier = Modifier.size(42.dp)) { content() }
+    }
+}
+
+/** The group chip of the servers screen, restyled as glass for the home header. */
 @Composable
 private fun GroupTab(label: String, count: Int, selected: Boolean, onClick: () -> Unit) {
     val background = if (selected) {
-        MaterialTheme.colorScheme.primary
+        ZedGreen
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
     }
     val content = if (selected) {
-        MaterialTheme.colorScheme.onPrimary
+        Color(0xFF052918)
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -464,6 +482,11 @@ private fun GroupTab(label: String, count: Int, selected: Boolean, onClick: () -
         Modifier
             .clip(MaterialTheme.shapes.small)
             .background(background)
+            .border(
+                1.dp,
+                if (selected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+                MaterialTheme.shapes.small,
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,

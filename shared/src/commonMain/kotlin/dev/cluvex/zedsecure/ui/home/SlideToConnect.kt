@@ -12,6 +12,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -107,6 +108,7 @@ internal fun SlideToConnect(
         )
 
         val idleColor = customColor ?: MaterialTheme.colorScheme.primary
+        val glass = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
 
         // The shadow adopts the state colour, so the glow of the button always matches it.
         val glowColor by animateColorAsState(
@@ -119,17 +121,11 @@ internal fun SlideToConnect(
             label = "slide-glow",
         )
         val elevation by animateDpAsState(if (active) 16.dp else 8.dp, label = "slide-elevation")
-        val track by animateColorAsState(
-            when {
-                state == ConnectionState.Error -> MaterialTheme.colorScheme.errorContainer
-                active -> MaterialTheme.colorScheme.surfaceContainerHighest
-                else -> MaterialTheme.colorScheme.surfaceContainerHigh
-            },
-            tween(700),
-            label = "slide-track",
-        )
         val activeGradient = Brush.horizontalGradient(
             listOf(customActiveColor ?: ZedViolet, (customActiveColor ?: ZedCyan)),
+        )
+        val errorGradient = Brush.horizontalGradient(
+            listOf(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.errorContainer),
         )
 
         Box(
@@ -177,7 +173,14 @@ internal fun SlideToConnect(
                 Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .background(if (active) activeGradient else Brush.horizontalGradient(listOf(track, track))),
+                    .background(
+                        when {
+                            state == ConnectionState.Error -> errorGradient
+                            active -> activeGradient
+                            else -> Brush.horizontalGradient(listOf(glass, glass))
+                        },
+                    )
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), CircleShape),
             )
 
             if (!transition) {
@@ -190,6 +193,17 @@ internal fun SlideToConnect(
                         .graphicsLayer { alpha = hintAlpha },
                 )
             }
+
+            // The chevron marking the far end; it yields as the knob approaches.
+            Icon(
+                painterResource(Res.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp)
+                    .graphicsLayer { alpha = if (active) 0f else (1f - progress * 0.7f).coerceIn(0f, 1f) },
+            )
 
             // The knob.
             Box(
