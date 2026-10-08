@@ -401,7 +401,10 @@
 
     <string name="notif_channel_name">وضعیت اتصال</string>
     <string name="notif_channel_desc">هنگام اتصال، تونل، سرعت و مدت زمان را زنده نشان می‌دهد</string>
-    <string name="notif_speeds">↓ %1$s   ↑ %2$s</string>
+        <string name="notif_down">دانلود</string>
+    <string name="notif_up">آپلود</string>
+    <string name="notif_auto">خودکار</string>
+<string name="notif_speeds">↓ %1$s   ↑ %2$s</string>
     <string name="notif_totals">این نشست: %1$s دریافت · %2$s ارسال</string>
     <string name="subs_user_agent">User-Agent (اختیاری)</string>
     <string name="vault_no_password_needed">این فایل رمز ندارد. وارد شود؟</string>

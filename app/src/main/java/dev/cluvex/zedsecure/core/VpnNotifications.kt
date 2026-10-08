@@ -184,7 +184,7 @@ class VpnNotifications(private val ctx: Context) {
     private fun flagEmoji(code: String?): String {
         val c = code?.trim()?.uppercase() ?: return ""
         if (c.length != 2 || c.any { it !in 'A'..'Z' }) return ""
-        return c.map { Character.toChars(0x1F1E6 + (it - 'A')) }.concatToString()
+        return c.joinToString("") { String(Character.toChars(0x1F1E6 + (it - 'A'))) }
     }
 
     private fun chipText(
