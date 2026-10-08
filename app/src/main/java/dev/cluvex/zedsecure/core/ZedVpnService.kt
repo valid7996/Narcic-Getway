@@ -949,7 +949,24 @@ class ZedVpnService : VpnService() {
         showSpeed = showSpeed,
         livePromotion = livePromotion,
         chip = notifChip,
+        autoBadge = autoBadge(),
     )
+
+    /**
+     * The notification's auto badge: the exit flag with the auto label, shown only while an
+     * auto-select profile is active. The flag follows the member the auto engine has picked.
+     */
+    private fun autoBadge(): String? {
+        val container = (application as dev.cluvex.zedsecure.ZedSecureApp).container
+        val profile = container.configRepository.activeProfile() ?: return null
+        if (!profile.isAutoSelect) return null
+        val selectedId = dev.cluvex.zedsecure.core.AutoSelect.session.value?.selectedProfileId
+        val code = selectedId?.let { container.configRepository.profile(it)?.countryCode }
+        val flag = notifications.flagEmojiOf(code)
+        return listOf(flag, getString(R.string.notif_auto)).filter { it.isNotBlank() }
+            .joinToString(" ")
+            .takeIf { it.isNotBlank() }
+    }
 
     private var lastUidRx = -1L
     private var lastUidTx = -1L

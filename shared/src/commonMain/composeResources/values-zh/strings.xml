@@ -239,7 +239,10 @@
     <string name="transport_unsupported">此传输方式 (%1$s) 已从 Xray 核心移除，无法使用</string>
     <string name="notif_channel_name">连接状态</string>
     <string name="notif_channel_desc">连接期间显示实时隧道、速度和时长</string>
-    <string name="notif_speeds">↓ %1$s   ↑ %2$s</string>
+        <string name="notif_down">下载</string>
+        <string name="notif_auto">自动</string>
+<string name="notif_up">上传</string>
+<string name="notif_speeds">↓ %1$s   ↑ %2$s</string>
     <string name="notif_totals">本次会话：下载 %1$s · 上传 %2$s</string>
     <string name="notif_connected_to">已连接到 %1$s</string>
     <string name="select_config_first">请先选择配置</string>

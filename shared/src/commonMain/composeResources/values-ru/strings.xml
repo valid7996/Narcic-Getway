@@ -239,7 +239,10 @@
     <string name="transport_unsupported">Этот транспорт (%1$s) удалён из ядра Xray и не может использоваться</string>
     <string name="notif_channel_name">Статус подключения</string>
     <string name="notif_channel_desc">Показывает активный туннель, скорость и время во время подключения</string>
-    <string name="notif_speeds">↓ %1$s   ↑ %2$s</string>
+        <string name="notif_down">Загрузка</string>
+        <string name="notif_auto">Авто</string>
+<string name="notif_up">Отдача</string>
+<string name="notif_speeds">↓ %1$s   ↑ %2$s</string>
     <string name="notif_totals">Сессия: %1$s загр. · %2$s отд.</string>
     <string name="notif_connected_to">Подключено к %1$s</string>
     <string name="select_config_first">Сначала выберите конфигурацию</string>

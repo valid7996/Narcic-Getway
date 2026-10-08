@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import dev.cluvex.zedsecure.domain.model.NotifChip
 import androidx.core.graphics.drawable.IconCompat
@@ -51,6 +52,7 @@ class VpnNotifications(private val ctx: Context) {
         showSpeed: Boolean = true,
         livePromotion: Boolean = true,
         chip: NotifChip = NotifChip.Speed,
+        autoBadge: String? = null,
     ): android.app.Notification {
         val title = BidiText.auto(server.ifBlank { ctx.getString(R.string.app_name) })
         val b = NotificationCompat.Builder(ctx, CHANNEL_ID)
@@ -69,6 +71,7 @@ class VpnNotifications(private val ctx: Context) {
         return when (phase) {
             is Phase.Connecting -> b.applyConnecting(phase.stage, protocolLabel).build()
             Phase.Connected -> b.applyConnected(
+                autoBadge,
                 protocolLabel, downBps, upBps, totalDown, totalUp, connectedAt, showSpeed, chip,
                 title,
             ).build()
@@ -108,6 +111,7 @@ class VpnNotifications(private val ctx: Context) {
     }
 
     private fun NotificationCompat.Builder.applyConnected(
+        autoBadge: String?,
         protocolLabel: String,
         downBps: Long,
         upBps: Long,
@@ -132,8 +136,35 @@ class VpnNotifications(private val ctx: Context) {
 
         val detail = if (showSpeed) "$speeds\n$totals" else totals
 
+        fun views(): RemoteViews = RemoteViews(ctx.packageName, R.layout.notif_connected).apply {
+            setTextViewText(R.id.notif_brand, ctx.getString(R.string.app_name))
+            setTextViewText(
+                R.id.notif_meta,
+                listOf(
+                    protocolLabel.takeIf { it.isNotBlank() },
+                    connectedAt.takeIf { it > 0 }?.let { elapsedShort(it) },
+                ).filterNotNull().joinToString(" · ").let(BidiText::ltr),
+            )
+            setTextViewText(R.id.notif_server, BidiText.auto(configName))
+            setTextViewText(R.id.notif_state_pill, ctx.getString(R.string.state_connected))
+            setViewVisibility(
+                R.id.notif_auto_badge,
+                if (autoBadge.isNullOrBlank()) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            setTextViewText(R.id.notif_auto_badge, autoBadge.orEmpty())
+            setTextViewText(R.id.notif_down_rate, BidiText.ltr("$dl $dlU"))
+            setTextViewText(R.id.notif_down_label, ctx.getString(R.string.notif_down))
+            setTextViewText(R.id.notif_up_rate, BidiText.ltr("$ul $ulU"))
+            setTextViewText(R.id.notif_up_label, ctx.getString(R.string.notif_up))
+            setTextViewText(R.id.notif_session_totals, BidiText.auto(totals))
+            setOnClickPendingIntent(R.id.notif_action_disconnect, stopTunnel())
+            setTextViewText(R.id.notif_action_disconnect, ctx.getString(R.string.action_disconnect))
+            setOnClickPendingIntent(R.id.notif_action_open, openApp())
+        }
+
         return setContentText(headline)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
+            .setCustomContentView(views())
+            .setCustomBigContentView(views())
 
             .setShortCriticalText(
                 chipText(chip, showSpeed, "$dl$dlU", totalDown + totalUp, connectedAt, configName),
@@ -144,6 +175,16 @@ class VpnNotifications(private val ctx: Context) {
             .setWhen(connectedAt.takeIf { it > 0 } ?: System.currentTimeMillis())
             .setUsesChronometer(connectedAt > 0)
             .addAction(R.drawable.ic_close, ctx.getString(R.string.action_disconnect), stopTunnel())
+    }
+
+    /** The flag emoji of a two-letter country code, or empty when unknown. */
+    fun flagEmojiOf(code: String?): String = flagEmoji(code)
+
+    /** The flag emoji of a two-letter country code, or empty when unknown. */
+    private fun flagEmoji(code: String?): String {
+        val c = code?.trim()?.uppercase() ?: return ""
+        if (c.length != 2 || c.any { it !in 'A'..'Z' }) return ""
+        return c.map { Character.toChars(0x1F1E6 + (it - 'A')) }.concatToString()
     }
 
     private fun chipText(
