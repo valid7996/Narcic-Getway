@@ -6,7 +6,11 @@
 
     <string name="servers_count">%1$d سرور</string>
     <string name="servers_add">افزودن سرور</string>
-    <string name="servers_add_clipboard">وارد کردن از کلیپ‌بورد</string>
+        <string name="servers_add_clipboard_sub">لینک یا کانفیگ را از کلیپ‌برد وارد کنید</string>
+    <string name="servers_add_scan_qr_sub">بارکد را برای افزودن سرور اسکن کنید</string>
+    <string name="psiphon_add_title_sub">افزودن سرور سایفون به برنامه</string>
+    <string name="subs_add_sub">افزودن لینک اشتراک و دریافت خودکار سرورها</string>
+<string name="servers_add_clipboard">وارد کردن از کلیپ‌بورد</string>
     <string name="servers_add_manual">افزودن دستی (Xray)</string>
     <string name="servers_add_custom">کانفیگ سفارشی (JSON)</string>
     <string name="servers_imported">%1$d سرور اضافه شد</string>

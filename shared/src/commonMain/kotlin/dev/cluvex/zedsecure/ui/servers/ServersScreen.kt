@@ -11,6 +11,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.combinedClickable
@@ -77,6 +78,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import org.jetbrains.compose.resources.getString
@@ -1538,7 +1540,21 @@ internal fun AddServerSheet(
     onCrossChain: () -> Unit,
     onSubscription: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color(0xF20B1C38),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.5f)),
+            )
+        },
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -1547,77 +1563,360 @@ internal fun AddServerSheet(
         ) {
             Text(
                 stringResource(Res.string.servers_add),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
             )
 
             OptionGroup(Res.string.add_group_import)
-            Option(Res.drawable.ic_content_paste, Res.string.servers_add_clipboard, onPasteLink)
+            GlassOptionCard(
+                title = stringResource(Res.string.servers_add_clipboard),
+                subtitle = stringResource(Res.string.servers_add_clipboard_sub),
+                icon = Res.drawable.ic_content_paste,
+                accentColor = Color(0xFF20D8C0),
+                iconTint = Color(0xFF60E0B0),
+                gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
+                onClick = onPasteLink,
+            )
             if (ServersUiConfig.SHOW_QR_SCAN && LocalPlatform.current.supportsQrScan) {
-                Option(Res.drawable.ic_qr_code_2, Res.string.servers_add_scan_qr, onScanQr)
+                GlassOptionCard(
+                    title = stringResource(Res.string.servers_add_scan_qr),
+                    subtitle = stringResource(Res.string.servers_add_scan_qr_sub),
+                    icon = Res.drawable.ic_qr_code_2,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onScanQr,
+                )
             }
             if (ServersUiConfig.SHOW_ALL_ADD_OPTIONS) {
-                Option(Res.drawable.ic_description, Res.string.servers_add_file, onImportFile)
-
-                Option(Res.drawable.ic_add_link, Res.string.servers_add_scan_image, onScanQrImage)
-                Option(Res.drawable.ic_edit, Res.string.servers_add_manual, onManual)
-                Option(Res.drawable.ic_description, Res.string.servers_add_custom, onCustom)
+                GlassOptionCard(
+                    title = stringResource(Res.string.servers_add_file),
+                    subtitle = "",
+                    icon = Res.drawable.ic_description,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onImportFile,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.servers_add_scan_image),
+                    subtitle = "",
+                    icon = Res.drawable.ic_add_link,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onScanQrImage,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.servers_add_manual),
+                    subtitle = "",
+                    icon = Res.drawable.ic_edit,
+                    accentColor = Color(0xFF20D8C0),
+                    iconTint = Color(0xFF60E0B0),
+                    gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
+                    onClick = onManual,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.servers_add_custom),
+                    subtitle = "",
+                    icon = Res.drawable.ic_description,
+                    accentColor = Color(0xFF20D8C0),
+                    iconTint = Color(0xFF60E0B0),
+                    gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
+                    onClick = onCustom,
+                )
 
                 OptionGroup(Res.string.add_group_tunnels)
-                Option(Res.drawable.ic_bolt, Res.string.psiphon_add_title, onPsiphon)
-                Option(Res.drawable.ic_lock, Res.string.tor_add_title, onTor)
-                Option(Res.drawable.ic_speed, Res.string.ssh_add_title, onSsh)
-                Option(Res.drawable.ic_bolt, Res.string.snispoof_add_title, onSniSpoof)
+                GlassOptionCard(
+                    title = stringResource(Res.string.psiphon_add_title),
+                    subtitle = stringResource(Res.string.psiphon_add_title_sub),
+                    icon = Res.drawable.ic_bolt,
+                    accentColor = Color(0xFFB55FE6),
+                    iconTint = Color(0xFFD8B4FE),
+                    gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                    onClick = onPsiphon,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.tor_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_lock,
+                    accentColor = Color(0xFFB55FE6),
+                    iconTint = Color(0xFFD8B4FE),
+                    gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                    onClick = onTor,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.ssh_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_bolt,
+                    accentColor = Color(0xFFB55FE6),
+                    iconTint = Color(0xFFD8B4FE),
+                    gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                    onClick = onSsh,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.snispoof_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_bolt,
+                    accentColor = Color(0xFFB55FE6),
+                    iconTint = Color(0xFFD8B4FE),
+                    gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                    onClick = onSniSpoof,
+                )
 
                 OptionGroup(Res.string.add_group_dns)
-                Option(Res.drawable.ic_public, Res.string.dns_tunnel_add_title, onDnsTunnel)
-                Option(Res.drawable.ic_public, Res.string.master_dns_add_title, onMasterDns)
+                GlassOptionCard(
+                    title = stringResource(Res.string.dns_tunnel_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_public,
+                    accentColor = Color(0xFF20D8C0),
+                    iconTint = Color(0xFF60E0B0),
+                    gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
+                    onClick = onDnsTunnel,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.master_dns_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_public,
+                    accentColor = Color(0xFF20D8C0),
+                    iconTint = Color(0xFF60E0B0),
+                    gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
+                    onClick = onMasterDns,
+                )
 
                 OptionGroup(Res.string.add_group_vpn)
-                Option(Res.drawable.ic_lock, Res.string.openconnect_add_title, onOpenConnect)
-                Option(Res.drawable.ic_bolt, Res.string.aether_add_title, onAether)
-                Option(Res.drawable.ic_lock, Res.string.ikev2_add_title, onIkev2)
+                GlassOptionCard(
+                    title = stringResource(Res.string.openconnect_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_lock,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onOpenConnect,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.aether_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_bolt,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onAether,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.ikev2_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_lock,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onIkev2,
+                )
 
                 OptionGroup(Res.string.add_group_chains)
-                Option(Res.drawable.ic_add_link, Res.string.proxychain_add_title, onProxyChain)
-                Option(Res.drawable.ic_add_link, Res.string.crosschain_add_title, onCrossChain)
+                GlassOptionCard(
+                    title = stringResource(Res.string.proxychain_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_add_link,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onProxyChain,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.crosschain_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_add_link,
+                    accentColor = Color(0xFF2088FF),
+                    iconTint = Color(0xFF38BDF8),
+                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    onClick = onCrossChain,
+                )
             } else if (ServersUiConfig.SHOW_PSIPHON || ServersUiConfig.SHOW_TOR) {
                 OptionGroup(Res.string.add_group_tunnels)
                 if (ServersUiConfig.SHOW_PSIPHON) {
-                    Option(Res.drawable.ic_bolt, Res.string.psiphon_add_title, onPsiphon)
+                    GlassOptionCard(
+                        title = stringResource(Res.string.psiphon_add_title),
+                        subtitle = stringResource(Res.string.psiphon_add_title_sub),
+                        icon = Res.drawable.ic_bolt,
+                        accentColor = Color(0xFFB55FE6),
+                        iconTint = Color(0xFFD8B4FE),
+                        gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                        onClick = onPsiphon,
+                    )
                 }
                 if (ServersUiConfig.SHOW_TOR) {
-                    Option(Res.drawable.ic_lock, Res.string.tor_add_title, onTor)
+                    GlassOptionCard(
+                        title = stringResource(Res.string.tor_add_title),
+                        subtitle = "",
+                        icon = Res.drawable.ic_lock,
+                        accentColor = Color(0xFFB55FE6),
+                        iconTint = Color(0xFFD8B4FE),
+                        gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                        onClick = onTor,
+                    )
                 }
             }
 
             OptionGroup(Res.string.add_group_subscription)
-            Option(Res.drawable.ic_add_link, Res.string.subs_add, onSubscription)
+            GlassOptionCard(
+                title = stringResource(Res.string.subs_add),
+                subtitle = stringResource(Res.string.subs_add_sub),
+                icon = Res.drawable.ic_add_link,
+                accentColor = Color(0xFF2088FF),
+                iconTint = Color(0xFF38BDF8),
+                gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                onClick = onSubscription,
+            )
         }
     }
 }
 
 @Composable
 private fun OptionGroup(labelRes: StringResource) {
-    Text(
-        stringResource(labelRes),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 14.dp, bottom = 4.dp),
-    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 22.dp, end = 22.dp, top = 16.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(width = 3.5.dp, height = 18.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(Color(0xFF20D8C0)),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            stringResource(labelRes),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF20D8C0),
+        )
+    }
 }
 
 @Composable
-private fun Option(iconRes: DrawableResource, labelRes: StringResource, onClick: () -> Unit) {
-    Surface(onClick = onClick, color = Color.Transparent, modifier = Modifier.fillMaxWidth()) {
+private fun GlassOptionCard(
+    title: String,
+    subtitle: String,
+    icon: DrawableResource,
+    accentColor: Color,
+    iconTint: Color,
+    gradientStart: Color,
+    gradientEnd: Color,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(22.dp)
+    Surface(
+        onClick = onClick,
+        shape = shape,
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 5.dp)
+            .border(
+                1.dp,
+                Brush.horizontalGradient(
+                    listOf(
+                        accentColor.copy(alpha = 0.85f),
+                        accentColor.copy(alpha = 0.30f),
+                    ),
+                ),
+                shape,
+            ),
+    ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 15.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(gradientStart, gradientEnd),
+                    ),
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(painterResource(iconRes), null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(18.dp))
-            Text(stringResource(labelRes), style = MaterialTheme.typography.titleMedium)
+            Box(
+                Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Black.copy(alpha = 0.40f))
+                    .border(
+                        1.dp,
+                        accentColor.copy(alpha = 0.45f),
+                        RoundedCornerShape(16.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(icon),
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (subtitle.isNotBlank()) {
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFC0C0D0),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            val direction = LocalLayoutDirection.current
+            Icon(
+                painter = painterResource(Res.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = Color(0xFFC0C0D0),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer {
+                        if (direction == LayoutDirection.Rtl) {
+                            rotationY = 180f
+                        }
+                    },
+            )
         }
     }
 }

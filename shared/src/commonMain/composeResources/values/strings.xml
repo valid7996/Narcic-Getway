@@ -7,7 +7,11 @@
 
     <string name="servers_count">%1$d servers</string>
     <string name="servers_add">Add server</string>
-    <string name="servers_add_clipboard">Import from clipboard</string>
+        <string name="servers_add_clipboard_sub">Import a link or config from clipboard</string>
+    <string name="servers_add_scan_qr_sub">Scan a barcode to add a server</string>
+    <string name="psiphon_add_title_sub">Add a Psiphon server to the app</string>
+    <string name="subs_add_sub">Add subscription link and receive servers automatically</string>
+<string name="servers_add_clipboard">Import from clipboard</string>
     <string name="servers_add_manual">Add manually (Xray)</string>
     <string name="servers_add_custom">Custom config (JSON)</string>
     <string name="servers_imported">Imported %1$d server(s)</string>

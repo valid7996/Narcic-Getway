@@ -8,7 +8,11 @@
 
     <string name="servers_count">%1$d 个服务器</string>
     <string name="servers_add">添加服务器</string>
-    <string name="servers_add_clipboard">从剪贴板导入</string>
+        <string name="servers_add_clipboard_sub">从剪贴板导入链接或配置</string>
+    <string name="servers_add_scan_qr_sub">扫描条码添加服务器</string>
+    <string name="psiphon_add_title_sub">添加赛风服务器到应用</string>
+    <string name="subs_add_sub">添加订阅链接并自动获取服务器</string>
+<string name="servers_add_clipboard">从剪贴板导入</string>
     <string name="servers_add_manual">手动添加 (Xray)</string>
     <string name="servers_add_custom">自定义配置 (JSON)</string>
     <string name="servers_imported">已导入 %1$d 个服务器</string>

@@ -8,7 +8,11 @@
 
     <string name="servers_count">Серверов: %1$d</string>
     <string name="servers_add">Добавить сервер</string>
-    <string name="servers_add_clipboard">Импорт из буфера обмена</string>
+        <string name="servers_add_clipboard_sub">Импортировать ссылку или конфигурацию из буфера</string>
+    <string name="servers_add_scan_qr_sub">Отсканируйте штрихкод для добавления сервера</string>
+    <string name="psiphon_add_title_sub">Добавить сервер Psiphon в приложение</string>
+    <string name="subs_add_sub">Добавить ссылку на подписку и получать серверы автоматически</string>
+<string name="servers_add_clipboard">Импорт из буфера обмена</string>
     <string name="servers_add_manual">Добавить вручную (Xray)</string>
     <string name="servers_add_custom">Своя конфигурация (JSON)</string>
     <string name="servers_imported">Импортировано серверов: %1$d</string>
