@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -72,9 +73,10 @@ private fun SettingsRow(
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    val titleColor = if (enabled) Color(0xFFE0E0F0)
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val titleColor = if (enabled) (if (isDark) Color(0xFFE0E0F0) else Color(0xFF0F172A))
     else MaterialTheme.colorScheme.onSurface.copy(alpha = DisabledAlpha)
-    val descColor = if (enabled) Color(0xFFA0B0C4)
+    val descColor = if (enabled) (if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B))
     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DisabledAlpha)
 
     Row(
@@ -331,6 +333,7 @@ fun SettingsMenuRow(
     iconTile: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val direction = LocalLayoutDirection.current
     SettingsRow(
         title = title,
@@ -340,14 +343,25 @@ fun SettingsMenuRow(
         leading = leadingIcon?.let {
             {
                 if (iconTile) {
+                    val tileBg = if (isDark) Color.Black.copy(alpha = 0.40f) else Color(0xFFF1F5F9).copy(alpha = 0.95f)
+                    val effectiveTint = if (isDark) {
+                        iconTint ?: Color(0xFF60E0B0)
+                    } else {
+                        when (iconTint) {
+                            Color(0xFF60E0B0), Color(0xFF20D8C0) -> Color(0xFF059669)
+                            Color(0xFF38BDF8), Color(0xFF2088FF) -> Color(0xFF2563EB)
+                            Color(0xFFD8B4FE), Color(0xFFB55FE6) -> Color(0xFF7C3AED)
+                            else -> iconTint ?: Color(0xFF0D9488)
+                        }
+                    }
                     Box(
                         Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color.Black.copy(alpha = 0.40f))
+                            .background(tileBg)
                             .border(
                                 1.dp,
-                                (iconTint ?: Color(0xFF60E0B0)).copy(alpha = 0.45f),
+                                effectiveTint.copy(alpha = if (isDark) 0.45f else 0.25f),
                                 RoundedCornerShape(16.dp),
                             ),
                         contentAlignment = Alignment.Center,
@@ -355,7 +369,7 @@ fun SettingsMenuRow(
                         Icon(
                             painterResource(it),
                             contentDescription = null,
-                            tint = iconTint ?: Color(0xFF60E0B0),
+                            tint = effectiveTint,
                             modifier = Modifier.size(24.dp),
                         )
                     }
@@ -373,7 +387,7 @@ fun SettingsMenuRow(
             Icon(
                 painter = painterResource(Res.drawable.ic_chevron_right),
                 contentDescription = null,
-                tint = Color(0xFFC0C0D0),
+                tint = if (isDark) Color(0xFFC0C0D0) else Color(0xFF94A3B8),
                 modifier = Modifier
                     .size(20.dp)
                     .graphicsLayer {
@@ -393,7 +407,28 @@ fun SettingsGroup(
     sectionTitle: Boolean = false,
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val cardShape = RoundedCornerShape(26.dp)
+    val cardBorder = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
+        )
+    }
+    val cardBg = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
+        )
+    }
+    val sectionColor = if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488)
+
     Column(modifier.fillMaxWidth()) {
         if (title != null) {
             if (sectionTitle) {
@@ -407,14 +442,14 @@ fun SettingsGroup(
                         title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF60E0B0),
+                        color = sectionColor,
                     )
                     Spacer(Modifier.width(10.dp))
                     Box(
                         Modifier
                             .size(width = 28.dp, height = 3.5.dp)
                             .clip(RoundedCornerShape(2.dp))
-                            .background(Color(0xFF60E0B0).copy(alpha = 0.85f)),
+                            .background(sectionColor.copy(alpha = 0.85f)),
                     )
                 }
             } else {
@@ -432,28 +467,12 @@ fun SettingsGroup(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 5.dp)
-                .border(
-                    1.dp,
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color(0xFF20D8C0).copy(alpha = 0.50f),
-                            Color(0xFF2088FF).copy(alpha = 0.35f),
-                        ),
-                    ),
-                    cardShape,
-                ),
+                .border(1.dp, cardBorder, cardShape),
         ) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFF0F243A).copy(alpha = 0.90f),
-                                Color(0xFF0A1828).copy(alpha = 0.82f),
-                            ),
-                        ),
-                    )
+                    .background(cardBg)
                     .padding(vertical = 4.dp),
                 content = content,
             )
@@ -473,10 +492,25 @@ fun SettingsPageScaffold(
     accentLine: Boolean = false,
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val glowColors = if (isDark) {
+        listOf(
+            Color(0xFF0168D1).copy(alpha = 0.40f),
+            Color(0xFF08C6AB).copy(alpha = 0.18f),
+            Color.Transparent,
+        )
+    } else {
+        listOf(
+            Color(0xFF60A5FA).copy(alpha = 0.20f),
+            Color(0xFF2DD4BF).copy(alpha = 0.14f),
+            Color.Transparent,
+        )
+    }
+
     Box(
         modifier
             .fillMaxSize()
-            .background(Color(0xFF030D18)),
+            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
     ) {
         // Top-left cosmic aurora / crescent glow curve from screenshot
         Box(
@@ -486,11 +520,7 @@ fun SettingsPageScaffold(
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF0168D1).copy(alpha = 0.40f),
-                            Color(0xFF08C6AB).copy(alpha = 0.18f),
-                            Color.Transparent,
-                        ),
+                        colors = glowColors,
                         radius = 500f,
                     ),
                 ),

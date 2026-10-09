@@ -1,6 +1,8 @@
 package dev.cluvex.zedsecure.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,6 +52,7 @@ fun PageHeader(
     accentLine: Boolean = false,
 ) {
     val back = LocalPageBack.current
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Column(modifier.fillMaxWidth().padding(horizontal = 22.dp)) {
         if (accentLine) {
             Box(
@@ -57,7 +60,7 @@ fun PageHeader(
                     .padding(bottom = 8.dp)
                     .size(width = 58.dp, height = 5.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(dev.cluvex.zedsecure.ui.theme.ZedGreen),
+                    .background(if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488)),
             )
         }
         if (back != null) {
@@ -84,7 +87,7 @@ fun PageHeader(
                     else -> MaterialTheme.typography.displaySmall
                 },
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isDark) Color(0xFFE0E0F0) else Color(0xFF0F172A),
                 maxLines = if (singleLine) 1 else Int.MAX_VALUE,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )

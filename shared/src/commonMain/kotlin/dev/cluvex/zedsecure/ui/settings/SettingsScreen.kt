@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.cluvex.zedsecure.ui.motion.transitionDecoration
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
@@ -186,6 +187,9 @@ private fun RootPage(
     var checking by androidx.compose.runtime.remember { mutableStateOf(false) }
     var showLogs by androidx.compose.runtime.remember { mutableStateOf(false) }
 
+    val isDark = androidx.compose.material3.MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val dividerColor = if (isDark) Color(0xFF28384F).copy(alpha = 0.35f) else Color(0xFFE2E8F0).copy(alpha = 0.80f)
+
     SettingsPageScaffold(
         title = stringResource(Res.string.settings_title),
         contentPadding = contentPadding,
@@ -211,7 +215,7 @@ private fun RootPage(
             ) { onOpen(SettingsPage.Ui) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MODE) {
                 HorizontalDivider(
-                    color = Color(0xFF28384F).copy(alpha = 0.35f),
+                    color = dividerColor,
                     thickness = 1.dp,
                     modifier = Modifier.padding(horizontal = 14.dp),
                 )
@@ -299,7 +303,7 @@ private fun RootPage(
                 iconTile = true,
             ) { onOpen(SettingsPage.Vpn) }
             HorizontalDivider(
-                color = Color(0xFF28384F).copy(alpha = 0.35f),
+                color = dividerColor,
                 thickness = 1.dp,
                 modifier = Modifier.padding(horizontal = 14.dp),
             )
@@ -316,7 +320,7 @@ private fun RootPage(
             ) { onOpen(SettingsPage.Mux) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT) {
                 HorizontalDivider(
-                    color = Color(0xFF28384F).copy(alpha = 0.35f),
+                    color = dividerColor,
                     thickness = 1.dp,
                     modifier = Modifier.padding(horizontal = 14.dp),
                 )
@@ -334,7 +338,7 @@ private fun RootPage(
             ) { onOpen(SettingsPage.SingBox) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT) {
                 HorizontalDivider(
-                    color = Color(0xFF28384F).copy(alpha = 0.35f),
+                    color = dividerColor,
                     thickness = 1.dp,
                     modifier = Modifier.padding(horizontal = 14.dp),
                 )

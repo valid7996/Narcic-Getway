@@ -80,6 +80,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -1540,10 +1541,11 @@ internal fun AddServerSheet(
     onCrossChain: () -> Unit,
     onSubscription: () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xF20B1C38),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         dragHandle = {
             Box(
@@ -1551,7 +1553,7 @@ internal fun AddServerSheet(
                     .padding(top = 12.dp, bottom = 4.dp)
                     .size(width = 38.dp, height = 4.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.5f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
             )
         },
     ) {
@@ -1565,7 +1567,7 @@ internal fun AddServerSheet(
                 stringResource(Res.string.servers_add),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
             )
 
@@ -1796,6 +1798,8 @@ internal fun AddServerSheet(
 
 @Composable
 private fun OptionGroup(labelRes: StringResource) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val pipeColor = if (isDark) Color(0xFF20D8C0) else Color(0xFF0D9488)
     Row(
         Modifier
             .fillMaxWidth()
@@ -1806,14 +1810,14 @@ private fun OptionGroup(labelRes: StringResource) {
             Modifier
                 .size(width = 3.5.dp, height = 18.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(Color(0xFF20D8C0)),
+                .background(pipeColor),
         )
         Spacer(Modifier.width(8.dp))
         Text(
             stringResource(labelRes),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF20D8C0),
+            color = pipeColor,
         )
     }
 }
@@ -1829,7 +1833,49 @@ private fun GlassOptionCard(
     gradientEnd: Color,
     onClick: () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val shape = RoundedCornerShape(22.dp)
+    val cardBorder = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(
+                accentColor.copy(alpha = 0.85f),
+                accentColor.copy(alpha = 0.30f),
+            ),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(
+                accentColor.copy(alpha = 0.40f),
+                accentColor.copy(alpha = 0.18f),
+            ),
+        )
+    }
+    val cardBg = if (isDark) {
+        Brush.horizontalGradient(listOf(gradientStart, gradientEnd))
+    } else {
+        Brush.horizontalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.95f),
+                Color(0xFFF1F5F9).copy(alpha = 0.85f),
+            ),
+        )
+    }
+    val tileBg = if (isDark) Color.Black.copy(alpha = 0.40f) else Color(0xFFE2E8F0).copy(alpha = 0.60f)
+    val tileBorder = if (isDark) accentColor.copy(alpha = 0.45f) else accentColor.copy(alpha = 0.30f)
+    val effectiveIconTint = if (isDark) {
+        iconTint
+    } else {
+        when (iconTint) {
+            Color(0xFF60E0B0), Color(0xFF20D8C0) -> Color(0xFF059669)
+            Color(0xFF38BDF8), Color(0xFF2088FF) -> Color(0xFF2563EB)
+            Color(0xFFD8B4FE), Color(0xFFB55FE6) -> Color(0xFF7C3AED)
+            else -> accentColor
+        }
+    }
+    val titleColor = if (isDark) Color.White else Color(0xFF0F172A)
+    val subtitleColor = if (isDark) Color(0xFFC0C0D0) else Color(0xFF64748B)
+    val chevronColor = if (isDark) Color(0xFFC0C0D0) else Color(0xFF94A3B8)
+
     Surface(
         onClick = onClick,
         shape = shape,
@@ -1837,25 +1883,12 @@ private fun GlassOptionCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 18.dp, vertical = 5.dp)
-            .border(
-                1.dp,
-                Brush.horizontalGradient(
-                    listOf(
-                        accentColor.copy(alpha = 0.85f),
-                        accentColor.copy(alpha = 0.30f),
-                    ),
-                ),
-                shape,
-            ),
+            .border(1.dp, cardBorder, shape),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(gradientStart, gradientEnd),
-                    ),
-                )
+                .background(cardBg)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -1863,18 +1896,14 @@ private fun GlassOptionCard(
                 Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.40f))
-                    .border(
-                        1.dp,
-                        accentColor.copy(alpha = 0.45f),
-                        RoundedCornerShape(16.dp),
-                    ),
+                    .background(tileBg)
+                    .border(1.dp, tileBorder, RoundedCornerShape(16.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(icon),
                     contentDescription = null,
-                    tint = iconTint,
+                    tint = effectiveIconTint,
                     modifier = Modifier.size(24.dp),
                 )
             }
@@ -1886,7 +1915,7 @@ private fun GlassOptionCard(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1895,7 +1924,7 @@ private fun GlassOptionCard(
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFC0C0D0),
+                        color = subtitleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -1908,7 +1937,7 @@ private fun GlassOptionCard(
             Icon(
                 painter = painterResource(Res.drawable.ic_chevron_right),
                 contentDescription = null,
-                tint = Color(0xFFC0C0D0),
+                tint = chevronColor,
                 modifier = Modifier
                     .size(20.dp)
                     .graphicsLayer {
