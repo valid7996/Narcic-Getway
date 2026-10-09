@@ -305,6 +305,7 @@ fun SettingsMenuRow(
     subtitle: String? = null,
     leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
     iconTint: androidx.compose.ui.graphics.Color? = null,
+    iconTile: Boolean = false,
     onClick: () -> Unit,
 ) {
     SettingsRow(
@@ -314,12 +315,29 @@ fun SettingsMenuRow(
         onClick = onClick,
         leading = leadingIcon?.let {
             {
-                Icon(
-                    painterResource(it),
-                    contentDescription = null,
-                    tint = iconTint ?: MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp),
-                )
+                if (iconTile) {
+                    Box(
+                        Modifier
+                            .size(44.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(it),
+                            contentDescription = null,
+                            tint = iconTint ?: MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                } else {
+                    Icon(
+                        painterResource(it),
+                        contentDescription = null,
+                        tint = iconTint ?: MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         },
         trailing = {
@@ -336,21 +354,55 @@ fun SettingsMenuRow(
 fun SettingsGroup(
     title: String? = null,
     modifier: Modifier = Modifier,
+    sectionTitle: Boolean = false,
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
     Column(modifier.fillMaxWidth()) {
         if (title != null) {
-            Text(
-                title,
-                style = MaterialTheme.typography.labelLargeEmphasized,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 8.dp),
-            )
+            if (sectionTitle) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                        color = dev.cluvex.zedsecure.ui.theme.ZedGreen,
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Box(
+                        Modifier
+                            .size(width = 22.dp, height = 4.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                            .background(dev.cluvex.zedsecure.ui.theme.ZedGreen.copy(alpha = 0.8f)),
+                    )
+                }
+            } else {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 8.dp),
+                )
+            }
         }
         Surface(
-            shape = MaterialTheme.shapes.largeIncreased,
+            shape = if (sectionTitle) androidx.compose.foundation.shape.RoundedCornerShape(30.dp)
+            else MaterialTheme.shapes.largeIncreased,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .then(
+                    if (sectionTitle) Modifier.border(
+                        1.dp,
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(30.dp),
+                    ) else Modifier,
+                ),
         ) {
             Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), content = content)
         }
@@ -366,6 +418,7 @@ fun SettingsPageScaffold(
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
     modifier: Modifier = Modifier,
     titleIcon: org.jetbrains.compose.resources.DrawableResource? = null,
+    accentLine: Boolean = false,
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
     Column(
@@ -380,6 +433,7 @@ fun SettingsPageScaffold(
             title = title,
             subtitle = subtitle,
             titleIcon = titleIcon,
+            accentLine = accentLine,
         )
         Spacer(Modifier.height(10.dp))
         content()

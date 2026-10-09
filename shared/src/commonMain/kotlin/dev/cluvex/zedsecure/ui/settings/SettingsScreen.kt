@@ -186,12 +186,14 @@ private fun RootPage(
         title = stringResource(Res.string.settings_title),
         contentPadding = contentPadding,
         modifier = modifier,
+        accentLine = true,
     ) {
         if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup {
             SettingsMenuRow(
                 stringResource(Res.string.support_title),
                 stringResource(Res.string.support_subtitle),
                 leadingIcon = Res.drawable.ic_favorite,
+                iconTile = true,
             ) { onOpen(SettingsPage.Support) }
         }
 
@@ -199,11 +201,15 @@ private fun RootPage(
             SettingsMenuRow(
                 stringResource(Res.string.title_ui_settings),
                 stringResource(Res.string.summary_ui_settings),
+                leadingIcon = Res.drawable.ic_palette,
+                iconTile = true,
             ) { onOpen(SettingsPage.Ui) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MODE) {
                 SettingsMenuRow(
                     stringResource(Res.string.title_mode_settings),
                     stringResource(Res.string.summary_mode_settings),
+                    leadingIcon = Res.drawable.ic_tune,
+                    iconTile = true,
                 ) { onOpen(SettingsPage.Mode) }
                 if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                     stringResource(Res.string.monitor_title),
@@ -222,15 +228,20 @@ private fun RootPage(
             SettingsMenuRow(
                 stringResource(Res.string.logs_title),
                 stringResource(Res.string.logs_settings_sub),
+                leadingIcon = Res.drawable.ic_description,
+                iconTile = true,
             ) { showLogs = true }
         }
 
         if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ROUTING) SettingsGroup(
             stringResource(Res.string.routing_title),
+            sectionTitle = true,
         ) {
             SettingsMenuRow(
                 stringResource(Res.string.routing_title),
                 stringResource(Res.string.routing_subtitle),
+                leadingIcon = Res.drawable.ic_public,
+                iconTile = true,
             ) { onOpen(SettingsPage.Routing) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.per_app_title),
@@ -265,14 +276,19 @@ private fun RootPage(
 
         SettingsGroup(
             stringResource(Res.string.title_core_settings),
+            sectionTitle = true,
         ) {
             SettingsMenuRow(
                 stringResource(Res.string.title_vpn_settings),
                 stringResource(Res.string.summary_vpn_settings),
+                leadingIcon = Res.drawable.ic_lock,
+                iconTile = true,
             ) { onOpen(SettingsPage.Vpn) }
             SettingsMenuRow(
                 stringResource(Res.string.title_core_settings),
                 stringResource(Res.string.summary_core_settings),
+                leadingIcon = Res.drawable.ic_dns,
+                iconTile = true,
             ) { onOpen(SettingsPage.Core) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_mux_settings),
@@ -281,6 +297,8 @@ private fun RootPage(
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT) SettingsMenuRow(
                 stringResource(Res.string.title_fragment_settings),
                 stringResource(Res.string.summary_fragment_settings),
+                leadingIcon = Res.drawable.ic_bolt,
+                iconTile = true,
             ) { onOpen(SettingsPage.Fragment) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_singbox_settings),
@@ -289,6 +307,8 @@ private fun RootPage(
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT) SettingsMenuRow(
                 stringResource(Res.string.title_observatory_settings),
                 stringResource(Res.string.summary_observatory_settings),
+                leadingIcon = Res.drawable.ic_sync,
+                iconTile = true,
             ) { onOpen(SettingsPage.Observatory) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_advanced),
@@ -298,6 +318,7 @@ private fun RootPage(
 
         SettingsGroup(
             stringResource(Res.string.settings_about),
+            sectionTitle = true,
         ) {
             val fromPlay = platform.distribution == Distribution.PlayStore
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {

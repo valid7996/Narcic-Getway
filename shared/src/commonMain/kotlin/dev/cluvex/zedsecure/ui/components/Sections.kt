@@ -2,6 +2,7 @@ package dev.cluvex.zedsecure.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,9 +47,19 @@ fun PageHeader(
     titleIconTint: androidx.compose.ui.graphics.Color? = null,
 
     singleLine: Boolean = false,
+    accentLine: Boolean = false,
 ) {
     val back = LocalPageBack.current
     Column(modifier.fillMaxWidth().padding(horizontal = 22.dp)) {
+        if (accentLine) {
+            Box(
+                Modifier
+                    .padding(bottom = 8.dp)
+                    .size(width = 58.dp, height = 5.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(dev.cluvex.zedsecure.ui.theme.ZedGreen),
+            )
+        }
         if (back != null) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 IconButton(onClick = back, modifier = Modifier.offset(x = (-12).dp)) {
