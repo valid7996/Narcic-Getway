@@ -13,6 +13,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.cluvex.zedsecure.ui.motion.transitionDecoration
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.intl.Locale
 import dev.cluvex.zedsecure.shared.resources.Res
@@ -202,13 +206,20 @@ private fun RootPage(
                 stringResource(Res.string.title_ui_settings),
                 stringResource(Res.string.summary_ui_settings),
                 leadingIcon = Res.drawable.ic_palette,
+                iconTint = Color(0xFF60E0B0),
                 iconTile = true,
             ) { onOpen(SettingsPage.Ui) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MODE) {
+                HorizontalDivider(
+                    color = Color(0xFF28384F).copy(alpha = 0.35f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
                 SettingsMenuRow(
                     stringResource(Res.string.title_mode_settings),
                     stringResource(Res.string.summary_mode_settings),
                     leadingIcon = Res.drawable.ic_tune,
+                    iconTint = Color(0xFF38BDF8),
                     iconTile = true,
                 ) { onOpen(SettingsPage.Mode) }
                 if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
@@ -229,6 +240,7 @@ private fun RootPage(
                 stringResource(Res.string.logs_title),
                 stringResource(Res.string.logs_settings_sub),
                 leadingIcon = Res.drawable.ic_description,
+                iconTint = Color(0xFF38BDF8),
                 iconTile = true,
             ) { showLogs = true }
         }
@@ -241,6 +253,7 @@ private fun RootPage(
                 stringResource(Res.string.routing_title),
                 stringResource(Res.string.routing_subtitle),
                 leadingIcon = Res.drawable.ic_public,
+                iconTint = Color(0xFF60E0B0),
                 iconTile = true,
             ) { onOpen(SettingsPage.Routing) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
@@ -282,34 +295,57 @@ private fun RootPage(
                 stringResource(Res.string.title_vpn_settings),
                 stringResource(Res.string.summary_vpn_settings),
                 leadingIcon = Res.drawable.ic_lock,
+                iconTint = Color(0xFF60E0B0),
                 iconTile = true,
             ) { onOpen(SettingsPage.Vpn) }
+            HorizontalDivider(
+                color = Color(0xFF28384F).copy(alpha = 0.35f),
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 14.dp),
+            )
             SettingsMenuRow(
                 stringResource(Res.string.title_core_settings),
                 stringResource(Res.string.summary_core_settings),
                 leadingIcon = Res.drawable.ic_dns,
+                iconTint = Color(0xFF38BDF8),
                 iconTile = true,
             ) { onOpen(SettingsPage.Core) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_mux_settings),
                 stringResource(Res.string.summary_mux_settings),
             ) { onOpen(SettingsPage.Mux) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT) SettingsMenuRow(
-                stringResource(Res.string.title_fragment_settings),
-                stringResource(Res.string.summary_fragment_settings),
-                leadingIcon = Res.drawable.ic_bolt,
-                iconTile = true,
-            ) { onOpen(SettingsPage.Fragment) }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT) {
+                HorizontalDivider(
+                    color = Color(0xFF28384F).copy(alpha = 0.35f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
+                    stringResource(Res.string.title_fragment_settings),
+                    stringResource(Res.string.summary_fragment_settings),
+                    leadingIcon = Res.drawable.ic_lock,
+                    iconTint = Color(0xFF60E0B0),
+                    iconTile = true,
+                ) { onOpen(SettingsPage.Fragment) }
+            }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_singbox_settings),
                 stringResource(Res.string.summary_singbox_settings),
             ) { onOpen(SettingsPage.SingBox) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT) SettingsMenuRow(
-                stringResource(Res.string.title_observatory_settings),
-                stringResource(Res.string.summary_observatory_settings),
-                leadingIcon = Res.drawable.ic_sync,
-                iconTile = true,
-            ) { onOpen(SettingsPage.Observatory) }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT) {
+                HorizontalDivider(
+                    color = Color(0xFF28384F).copy(alpha = 0.35f),
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
+                    stringResource(Res.string.title_observatory_settings),
+                    stringResource(Res.string.summary_observatory_settings),
+                    leadingIcon = Res.drawable.ic_sync,
+                    iconTint = Color(0xFF38BDF8),
+                    iconTile = true,
+                ) { onOpen(SettingsPage.Observatory) }
+            }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
                 stringResource(Res.string.title_advanced),
                 stringResource(Res.string.summary_advanced),
@@ -340,7 +376,13 @@ private fun RootPage(
                     leadingIcon = Res.drawable.ic_policy,
                 ) { onOpen(SettingsPage.Privacy) }
             }
-            SettingsMenuRow(stringResource(Res.string.settings_about), AppInfo.versionName) {
+            SettingsMenuRow(
+                stringResource(Res.string.settings_about),
+                "",
+                leadingIcon = Res.drawable.ic_info,
+                iconTint = Color(0xFF38BDF8),
+                iconTile = true,
+            ) {
                 onAbout()
             }
         }

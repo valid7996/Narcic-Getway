@@ -37,6 +37,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import dev.cluvex.zedsecure.ui.theme.AccentPresets
@@ -62,9 +72,9 @@ private fun SettingsRow(
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
-    val titleColor = if (enabled) MaterialTheme.colorScheme.onSurface
+    val titleColor = if (enabled) Color(0xFFE0E0F0)
     else MaterialTheme.colorScheme.onSurface.copy(alpha = DisabledAlpha)
-    val descColor = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+    val descColor = if (enabled) Color(0xFFA0B0C4)
     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DisabledAlpha)
 
     Row(
@@ -74,22 +84,35 @@ private fun SettingsRow(
                 if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick)
                 else Modifier
             )
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leading != null) {
             leading()
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(14.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = titleColor)
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = titleColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             if (!description.isNullOrEmpty()) {
                 Spacer(Modifier.height(3.dp))
-                Text(description, style = MaterialTheme.typography.bodySmall, color = descColor)
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = descColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         if (trailing != null) {
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(10.dp))
             trailing()
         }
     }
@@ -304,10 +327,11 @@ fun SettingsMenuRow(
     title: String,
     subtitle: String? = null,
     leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
-    iconTint: androidx.compose.ui.graphics.Color? = null,
+    iconTint: Color? = null,
     iconTile: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val direction = LocalLayoutDirection.current
     SettingsRow(
         title = title,
         description = subtitle,
@@ -318,16 +342,21 @@ fun SettingsMenuRow(
                 if (iconTile) {
                     Box(
                         Modifier
-                            .size(44.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.Black.copy(alpha = 0.40f))
+                            .border(
+                                1.dp,
+                                (iconTint ?: Color(0xFF60E0B0)).copy(alpha = 0.45f),
+                                RoundedCornerShape(16.dp),
+                            ),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painterResource(it),
                             contentDescription = null,
-                            tint = iconTint ?: MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp),
+                            tint = iconTint ?: Color(0xFF60E0B0),
+                            modifier = Modifier.size(24.dp),
                         )
                     }
                 } else {
@@ -342,9 +371,16 @@ fun SettingsMenuRow(
         },
         trailing = {
             Icon(
-                painterResource(Res.drawable.ic_chevron_right),
+                painter = painterResource(Res.drawable.ic_chevron_right),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Color(0xFFC0C0D0),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer {
+                        if (direction == LayoutDirection.Rtl) {
+                            rotationY = 180f
+                        }
+                    },
             )
         },
     )
@@ -357,27 +393,28 @@ fun SettingsGroup(
     sectionTitle: Boolean = false,
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
+    val cardShape = RoundedCornerShape(26.dp)
     Column(modifier.fillMaxWidth()) {
         if (title != null) {
             if (sectionTitle) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 10.dp),
+                        .padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         title,
-                        style = MaterialTheme.typography.titleMediumEmphasized,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                        color = dev.cluvex.zedsecure.ui.theme.ZedGreen,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF60E0B0),
                     )
                     Spacer(Modifier.width(10.dp))
                     Box(
                         Modifier
-                            .size(width = 22.dp, height = 4.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
-                            .background(dev.cluvex.zedsecure.ui.theme.ZedGreen.copy(alpha = 0.8f)),
+                            .size(width = 28.dp, height = 3.5.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF60E0B0).copy(alpha = 0.85f)),
                     )
                 }
             } else {
@@ -390,21 +427,36 @@ fun SettingsGroup(
             }
         }
         Surface(
-            shape = if (sectionTitle) androidx.compose.foundation.shape.RoundedCornerShape(30.dp)
-            else MaterialTheme.shapes.largeIncreased,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = cardShape,
+            color = Color.Transparent,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .then(
-                    if (sectionTitle) Modifier.border(
-                        1.dp,
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(30.dp),
-                    ) else Modifier,
+                .padding(horizontal = 16.dp, vertical = 5.dp)
+                .border(
+                    1.dp,
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFF20D8C0).copy(alpha = 0.50f),
+                            Color(0xFF2088FF).copy(alpha = 0.35f),
+                        ),
+                    ),
+                    cardShape,
                 ),
         ) {
-            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), content = content)
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFF0F243A).copy(alpha = 0.90f),
+                                Color(0xFF0A1828).copy(alpha = 0.82f),
+                            ),
+                        ),
+                    )
+                    .padding(vertical = 4.dp),
+                content = content,
+            )
         }
     }
 }
@@ -421,23 +473,47 @@ fun SettingsPageScaffold(
     accentLine: Boolean = false,
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
-    Column(
+    Box(
         modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .fillMaxSize()
+            .background(Color(0xFF030D18)),
     ) {
-        Spacer(Modifier.height(8.dp))
-        dev.cluvex.zedsecure.ui.components.PageHeader(
-            title = title,
-            subtitle = subtitle,
-            titleIcon = titleIcon,
-            accentLine = accentLine,
+        // Top-left cosmic aurora / crescent glow curve from screenshot
+        Box(
+            Modifier
+                .size(360.dp)
+                .offset(x = (-80).dp, y = (-60).dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF0168D1).copy(alpha = 0.40f),
+                            Color(0xFF08C6AB).copy(alpha = 0.18f),
+                            Color.Transparent,
+                        ),
+                        radius = 500f,
+                    ),
+                ),
         )
-        Spacer(Modifier.height(10.dp))
-        content()
-        Spacer(Modifier.height(28.dp))
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Spacer(Modifier.height(8.dp))
+            dev.cluvex.zedsecure.ui.components.PageHeader(
+                title = title,
+                subtitle = subtitle,
+                titleIcon = titleIcon,
+                accentLine = accentLine,
+            )
+            Spacer(Modifier.height(10.dp))
+            content()
+            Spacer(Modifier.height(32.dp))
+        }
     }
 }
 
