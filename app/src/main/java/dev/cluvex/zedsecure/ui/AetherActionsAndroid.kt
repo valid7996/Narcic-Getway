@@ -58,7 +58,7 @@ class AetherActionsAndroid(private val context: Context) : AetherActions {
 
     override fun isPsiphonAvailable(): Boolean = AetherSupport.isPsiphonSupported(context)
 
-    override fun isTorTransportsSupported(): Boolean = AetherSupport.isTorTransportsSupported(context)
+    override fun isTorTransportsAvailable(): Boolean = AetherSupport.isTorTransportsSupported(context)
 
     private fun relayScan(line: String) {
         LogBus.append("${AetherSupport.levelOf(line)}/aether-scan ${line.trim()}")

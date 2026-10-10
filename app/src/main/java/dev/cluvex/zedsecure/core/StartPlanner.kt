@@ -52,11 +52,6 @@ class StartPlanner(context: Context) {
     fun plan(profile: VpnProfile?, allowProxyOnly: Boolean = true): Plan {
         AutoSelect.clearPrepared()
         if (profile == null) return Plan.Failure(appContext.getString(R.string.select_config_first))
-        profile.aetherSettings()?.let {
-            return kotlinx.serialization.json.Json.encodeToString(
-                dev.cluvex.zedsecure.domain.config.AetherProfile.serializer(), it,
-            )
-        }
         profile.ikev2Settings()?.let { return Plan.Ikev2(profile.name, it) }
         val kind = engineKindOf(profile)
         val configJson = try {
@@ -183,6 +178,11 @@ class StartPlanner(context: Context) {
         profile.openConnectSettings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
                 dev.cluvex.zedsecure.domain.config.OpenConnectProfile.serializer(), it,
+            )
+        }
+        profile.aetherSettings()?.let {
+            return kotlinx.serialization.json.Json.encodeToString(
+                dev.cluvex.zedsecure.domain.config.AetherProfile.serializer(), it,
             )
         }
         profile.ikev2Settings()?.let {
