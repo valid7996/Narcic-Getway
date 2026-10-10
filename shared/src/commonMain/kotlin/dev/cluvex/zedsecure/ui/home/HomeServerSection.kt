@@ -58,7 +58,6 @@ import dev.cluvex.zedsecure.ui.servers.AutoSelectSheet
 import dev.cluvex.zedsecure.ui.servers.PsiphonSheet
 import dev.cluvex.zedsecure.ui.servers.ServersUiConfig
 import dev.cluvex.zedsecure.ui.servers.ServerCard
-import dev.cluvex.zedsecure.ui.servers.AetherSheet
 import dev.cluvex.zedsecure.ui.servers.ProxyChainSheet
 import dev.cluvex.zedsecure.ui.servers.CrossChainSheet
 import dev.cluvex.zedsecure.ui.components.QrDialog
@@ -113,7 +112,6 @@ internal fun HomeServerSection(
     var confirmDeleteAll by remember { mutableStateOf(false) }
     var showAutoSheet by remember { mutableStateOf(false) }
     var showPsiphon by remember { mutableStateOf(false) }
-    var showAether by remember { mutableStateOf(false) }
     var showProxyChain by remember { mutableStateOf(false) }
     var showCrossChain by remember { mutableStateOf(false) }
     var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -441,10 +439,6 @@ internal fun HomeServerSection(
             onDnsTunnel = {},
             onMasterDns = {},
             onOpenConnect = {},
-            onAether = {
-                showAdd = false
-                showAether = true
-            },
             onIkev2 = {},
             onTor = {},
             onSsh = {},
@@ -458,16 +452,6 @@ internal fun HomeServerSection(
                 showCrossChain = true
             },
             onSubscription = { showAdd = false; showSubs = true },
-        )
-    }
-
-    if (showAether) {
-        AetherSheet(
-            onDismiss = { showAether = false },
-            onSave = { name, settings ->
-                showAether = false
-                repository.addAether(settings, name)
-            },
         )
     }
 

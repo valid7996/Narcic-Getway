@@ -67,7 +67,6 @@ object VpnManager {
 
     const val KIND_OPENCONNECT = "openconnect"
 
-    const val KIND_AETHER = "aether"
 
     const val KIND_IKEV2 = "ikev2"
 

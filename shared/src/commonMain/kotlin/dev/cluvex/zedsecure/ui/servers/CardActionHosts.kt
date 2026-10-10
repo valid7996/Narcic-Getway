@@ -178,18 +178,6 @@ internal fun CardActionHosts(
                     },
                 )
             }
-            target.isAether -> {
-                AetherSheet(
-                    initial = target.aetherSettings(),
-                    initialName = target.name,
-                    onDismiss = onDismissEdit,
-                    onSave = { name, settings ->
-                        repository.addAether(settings, name, id = target.id)
-                        toastSaved()
-                        onDismissEdit()
-                    },
-                )
-            }
             target.isSniSpoof -> {
                 SniSpoofSheet(
                     candidates = spoofCandidates,

@@ -291,7 +291,6 @@ class AppAiBridge(
         is ProfileSource.DnsTunnel -> "dnstunnel"
         is ProfileSource.MasterDns -> "masterdns"
         is ProfileSource.OpenConnect -> "openconnect"
-        is ProfileSource.Aether -> "aether"
         is ProfileSource.Ikev2 -> "ikev2"
         is ProfileSource.ProxyChain -> "chain"
         is ProfileSource.CrossChain -> "crosschain"

@@ -50,10 +50,6 @@ sealed interface ProfileSource {
     data class OpenConnect(val settings: OpenConnectProfile) : ProfileSource
 
     @Serializable
-    @SerialName("aether")
-    data class Aether(val settings: AetherProfile) : ProfileSource
-
-    @Serializable
     @SerialName("ikev2")
     data class Ikev2(val settings: Ikev2Profile) : ProfileSource
 
@@ -117,8 +113,6 @@ data class VpnProfile(
 
     val isOpenConnect: Boolean get() = source is ProfileSource.OpenConnect
 
-    val isAether: Boolean get() = source is ProfileSource.Aether
-
     val isIkev2: Boolean get() = source is ProfileSource.Ikev2
 
     val isProxyChain: Boolean get() = source is ProfileSource.ProxyChain
@@ -146,7 +140,7 @@ data class VpnProfile(
 
     val isManagedTunnel: Boolean
         get() = isPsiphon || isDnsTunnel || isMasterDns || isTor || isSsh || isSniSpoof ||
-            isOpenConnect || isIkev2 || isAether || isCrossChain || isSingBoxConfig
+            isOpenConnect || isIkev2 || isCrossChain || isSingBoxConfig
 
     val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns
 
@@ -157,8 +151,6 @@ data class VpnProfile(
     fun masterDnsSettings(): MasterDnsProfile? = (source as? ProfileSource.MasterDns)?.settings
 
     fun openConnectSettings(): OpenConnectProfile? = (source as? ProfileSource.OpenConnect)?.settings
-
-    fun aetherSettings(): AetherProfile? = (source as? ProfileSource.Aether)?.settings
 
     fun ikev2Settings(): Ikev2Profile? = (source as? ProfileSource.Ikev2)?.settings
 
@@ -210,8 +202,6 @@ data class VpnProfile(
         is ProfileSource.OpenConnect -> ZedLink.build(name, src)
         is ProfileSource.Ikev2 -> ZedLink.build(name, src)
 
-        is ProfileSource.Aether -> null
-
         is ProfileSource.ProxyChain -> null
         is ProfileSource.CrossChain -> null
 
@@ -251,7 +241,6 @@ data class VpnProfile(
         is ProfileSource.DnsTunnel -> throw IllegalStateException("DNS-tunnel profiles do not build Xray config")
         is ProfileSource.MasterDns -> throw IllegalStateException("MasterDNS profiles do not build Xray config")
         is ProfileSource.OpenConnect -> throw IllegalStateException("OpenConnect profiles do not build Xray config")
-        is ProfileSource.Aether -> throw IllegalStateException("Aether profiles do not build Xray config")
         is ProfileSource.Ikev2 -> throw IllegalStateException("IKEv2 profiles do not build Xray config")
         is ProfileSource.Tor -> throw IllegalStateException("Tor profiles do not build Xray config")
         is ProfileSource.Ssh -> throw IllegalStateException("SSH profiles do not build Xray config")
@@ -373,22 +362,6 @@ data class VpnProfile(
             port = 0,
             transportLabel = "IKEv2",
             source = ProfileSource.Ikev2(settings),
-            addedAt = addedAt,
-        )
-
-        fun fromAether(
-            settings: AetherProfile,
-            id: String,
-            addedAt: Long,
-            name: String,
-        ): VpnProfile = VpnProfile(
-            id = id,
-            name = name.ifBlank { "Aether ${settings.server.ifBlank { "scan" }}" },
-            protocol = "AETHER",
-            address = settings.server,
-            port = settings.serverPort,
-            transportLabel = settings.protocol.uppercase(),
-            source = ProfileSource.Aether(settings),
             addedAt = addedAt,
         )
 

@@ -22,9 +22,6 @@ object ServersUiConfig {
     /** The Tor engine option of the add sheet. */
     const val SHOW_TOR: Boolean = false
 
-    /** The Aether engine option of the add sheet. */
-    const val SHOW_AETHER: Boolean = true
-
     /** The Proxy Chain option of the add sheet. */
     const val SHOW_PROXY_CHAIN: Boolean = true
 

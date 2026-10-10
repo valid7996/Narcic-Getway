@@ -318,7 +318,6 @@ fun ServersScreen(
     var showDnsTunnel by remember { mutableStateOf(false) }
     var showMasterDns by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
-    var showAether by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
     var showSniSpoof by remember { mutableStateOf(false) }
@@ -1086,10 +1085,6 @@ fun ServersScreen(
                 showAddSheet = false
                 showOpenConnect = true
             },
-            onAether = {
-                showAddSheet = false
-                showAether = true
-            },
             onIkev2 = {
                 showAddSheet = false
                 showIkev2 = true
@@ -1163,17 +1158,6 @@ fun ServersScreen(
             onSave = { name, settings ->
                 showOpenConnect = false
                 repository.addOpenConnect(settings, name)
-                onServerActivated()
-            },
-        )
-    }
-
-    if (showAether) {
-        AetherSheet(
-            onDismiss = { showAether = false },
-            onSave = { name, settings ->
-                showAether = false
-                repository.addAether(settings, name)
                 onServerActivated()
             },
         )
@@ -1532,7 +1516,6 @@ internal fun AddServerSheet(
     onDnsTunnel: () -> Unit,
     onMasterDns: () -> Unit,
     onOpenConnect: () -> Unit,
-    onAether: () -> Unit,
     onIkev2: () -> Unit,
     onTor: () -> Unit,
     onSsh: () -> Unit,
@@ -1712,16 +1695,6 @@ internal fun AddServerSheet(
                     onClick = onOpenConnect,
                 )
                 GlassOptionCard(
-                    title = stringResource(Res.string.aether_add_title),
-                    subtitle = stringResource(Res.string.aether_add_title_sub),
-                    icon = Res.drawable.ic_bolt,
-                    accentColor = Color(0xFF2088FF),
-                    iconTint = Color(0xFF38BDF8),
-                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
-                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
-                    onClick = onAether,
-                )
-                GlassOptionCard(
                     title = stringResource(Res.string.ikev2_add_title),
                     subtitle = "",
                     icon = Res.drawable.ic_lock,
@@ -1780,19 +1753,6 @@ internal fun AddServerSheet(
                             onClick = onTor,
                         )
                     }
-                }
-                if (ServersUiConfig.SHOW_AETHER) {
-                    OptionGroup(Res.string.add_group_vpn)
-                    GlassOptionCard(
-                        title = stringResource(Res.string.aether_add_title),
-                        subtitle = stringResource(Res.string.aether_add_title_sub),
-                        icon = Res.drawable.ic_bolt,
-                        accentColor = Color(0xFF2088FF),
-                        iconTint = Color(0xFF38BDF8),
-                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
-                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
-                        onClick = onAether,
-                    )
                 }
                 if (ServersUiConfig.SHOW_PROXY_CHAIN || ServersUiConfig.SHOW_CROSS_CHAIN) {
                     OptionGroup(Res.string.add_group_chains)
