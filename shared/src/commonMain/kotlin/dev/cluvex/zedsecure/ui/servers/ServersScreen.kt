@@ -1713,7 +1713,7 @@ internal fun AddServerSheet(
                 )
                 GlassOptionCard(
                     title = stringResource(Res.string.aether_add_title),
-                    subtitle = "",
+                    subtitle = stringResource(Res.string.aether_add_title_sub),
                     icon = Res.drawable.ic_bolt,
                     accentColor = Color(0xFF2088FF),
                     iconTint = Color(0xFF38BDF8),
@@ -1735,17 +1735,17 @@ internal fun AddServerSheet(
                 OptionGroup(Res.string.add_group_chains)
                 GlassOptionCard(
                     title = stringResource(Res.string.proxychain_add_title),
-                    subtitle = "",
+                    subtitle = stringResource(Res.string.proxychain_add_title_sub),
                     icon = Res.drawable.ic_add_link,
-                    accentColor = Color(0xFF2088FF),
-                    iconTint = Color(0xFF38BDF8),
-                    gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
-                    gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                    accentColor = Color(0xFF20D8C0),
+                    iconTint = Color(0xFF60E0B0),
+                    gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
                     onClick = onProxyChain,
                 )
                 GlassOptionCard(
                     title = stringResource(Res.string.crosschain_add_title),
-                    subtitle = "",
+                    subtitle = stringResource(Res.string.crosschain_add_title_sub),
                     icon = Res.drawable.ic_add_link,
                     accentColor = Color(0xFF2088FF),
                     iconTint = Color(0xFF38BDF8),
@@ -1753,31 +1753,73 @@ internal fun AddServerSheet(
                     gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
                     onClick = onCrossChain,
                 )
-            } else if (ServersUiConfig.SHOW_PSIPHON || ServersUiConfig.SHOW_TOR) {
-                OptionGroup(Res.string.add_group_tunnels)
-                if (ServersUiConfig.SHOW_PSIPHON) {
+            } else {
+                if (ServersUiConfig.SHOW_PSIPHON || ServersUiConfig.SHOW_TOR) {
+                    OptionGroup(Res.string.add_group_tunnels)
+                    if (ServersUiConfig.SHOW_PSIPHON) {
+                        GlassOptionCard(
+                            title = stringResource(Res.string.psiphon_add_title),
+                            subtitle = stringResource(Res.string.psiphon_add_title_sub),
+                            icon = Res.drawable.ic_bolt,
+                            accentColor = Color(0xFFB55FE6),
+                            iconTint = Color(0xFFD8B4FE),
+                            gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                            gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                            onClick = onPsiphon,
+                        )
+                    }
+                    if (ServersUiConfig.SHOW_TOR) {
+                        GlassOptionCard(
+                            title = stringResource(Res.string.tor_add_title),
+                            subtitle = "",
+                            icon = Res.drawable.ic_lock,
+                            accentColor = Color(0xFFB55FE6),
+                            iconTint = Color(0xFFD8B4FE),
+                            gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
+                            gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
+                            onClick = onTor,
+                        )
+                    }
+                }
+                if (ServersUiConfig.SHOW_AETHER) {
+                    OptionGroup(Res.string.add_group_vpn)
                     GlassOptionCard(
-                        title = stringResource(Res.string.psiphon_add_title),
-                        subtitle = stringResource(Res.string.psiphon_add_title_sub),
+                        title = stringResource(Res.string.aether_add_title),
+                        subtitle = stringResource(Res.string.aether_add_title_sub),
                         icon = Res.drawable.ic_bolt,
-                        accentColor = Color(0xFFB55FE6),
-                        iconTint = Color(0xFFD8B4FE),
-                        gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
-                        gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
-                        onClick = onPsiphon,
+                        accentColor = Color(0xFF2088FF),
+                        iconTint = Color(0xFF38BDF8),
+                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                        onClick = onAether,
                     )
                 }
-                if (ServersUiConfig.SHOW_TOR) {
-                    GlassOptionCard(
-                        title = stringResource(Res.string.tor_add_title),
-                        subtitle = "",
-                        icon = Res.drawable.ic_lock,
-                        accentColor = Color(0xFFB55FE6),
-                        iconTint = Color(0xFFD8B4FE),
-                        gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
-                        gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
-                        onClick = onTor,
-                    )
+                if (ServersUiConfig.SHOW_PROXY_CHAIN || ServersUiConfig.SHOW_CROSS_CHAIN) {
+                    OptionGroup(Res.string.add_group_chains)
+                    if (ServersUiConfig.SHOW_PROXY_CHAIN) {
+                        GlassOptionCard(
+                            title = stringResource(Res.string.proxychain_add_title),
+                            subtitle = stringResource(Res.string.proxychain_add_title_sub),
+                            icon = Res.drawable.ic_add_link,
+                            accentColor = Color(0xFF20D8C0),
+                            iconTint = Color(0xFF60E0B0),
+                            gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
+                            gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
+                            onClick = onProxyChain,
+                        )
+                    }
+                    if (ServersUiConfig.SHOW_CROSS_CHAIN) {
+                        GlassOptionCard(
+                            title = stringResource(Res.string.crosschain_add_title),
+                            subtitle = stringResource(Res.string.crosschain_add_title_sub),
+                            icon = Res.drawable.ic_add_link,
+                            accentColor = Color(0xFF2088FF),
+                            iconTint = Color(0xFF38BDF8),
+                            gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                            gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                            onClick = onCrossChain,
+                        )
+                    }
                 }
             }
 

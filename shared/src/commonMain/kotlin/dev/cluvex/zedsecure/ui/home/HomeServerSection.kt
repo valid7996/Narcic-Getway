@@ -58,6 +58,10 @@ import dev.cluvex.zedsecure.ui.servers.AutoSelectSheet
 import dev.cluvex.zedsecure.ui.servers.PsiphonSheet
 import dev.cluvex.zedsecure.ui.servers.ServersUiConfig
 import dev.cluvex.zedsecure.ui.servers.ServerCard
+import dev.cluvex.zedsecure.ui.servers.AetherSheet
+import dev.cluvex.zedsecure.ui.servers.ProxyChainSheet
+import dev.cluvex.zedsecure.ui.servers.CrossChainSheet
+import dev.cluvex.zedsecure.ui.components.QrDialog
 import dev.cluvex.zedsecure.ui.servers.SubscriptionsSheet
 import dev.cluvex.zedsecure.ui.theme.Personalization
 import dev.cluvex.zedsecure.ui.theme.ZedGreen
@@ -94,6 +98,7 @@ internal fun HomeServerSection(
     val importFailed = stringResource(Res.string.config_invalid)
     val updatedTemplate = stringResource(Res.string.subs_updated)
     val removedTemplate = stringResource(Res.string.removed_count)
+    val copiedToast = stringResource(Res.string.copied)
 
     // The group tabs: every server, the manual ones, then one per subscription.
     var group by remember { mutableStateOf("all") }
@@ -108,6 +113,11 @@ internal fun HomeServerSection(
     var confirmDeleteAll by remember { mutableStateOf(false) }
     var showAutoSheet by remember { mutableStateOf(false) }
     var showPsiphon by remember { mutableStateOf(false) }
+    var showAether by remember { mutableStateOf(false) }
+    var showProxyChain by remember { mutableStateOf(false) }
+    var showCrossChain by remember { mutableStateOf(false) }
+    var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
 
     val allServers = profiles.filterNot { it.isLocked }
     val manualCount = allServers.count { it.subscriptionId.isEmpty() }
@@ -117,6 +127,19 @@ internal fun HomeServerSection(
         else -> allServers.filter { it.subscriptionId == group }
     }
     val subscriptionNames = subscriptions.associate { it.id to it.name }
+
+    val chainCandidates = allServers.filter {
+        it.rawPayload() != null && (!it.isCustom || it.isServerless) && !it.isManagedTunnel && !it.isProxyChain &&
+            !it.isSingBoxConfig
+    }
+    val crossCarriers = allServers.filter { it.canCarryChain && !it.isCrossChain }
+    val crossExits = allServers.filter { it.canDialThroughProxy && !it.isCrossChain }
+    val udpMismatchTemplate = stringResource(Res.string.crosschain_udp_unsupported)
+    val crossPairError: (VpnProfile, VpnProfile) -> String? = { inner, outer ->
+        repository.udpMismatch(inner, outer)?.let {
+            udpMismatchTemplate.replace("%1\$s", it.protocol).replace("%2\$s", it.carrier)
+        }
+    }
 
     // The auto card: the group's best config comes up on its own.
     val autoScope: String? = when (group) {
@@ -327,6 +350,15 @@ internal fun HomeServerSection(
                         subscriptionName = subscriptionNames[profile.subscriptionId],
                         personalization = personalization,
                         onClick = { repository.setActive(profile.id) },
+                        shareLink = runCatching { repository.shareLinkOf(profile) }.getOrNull(),
+                        onShare = {
+                            val pl = runCatching { repository.shareLinkOf(profile) }.getOrNull()
+                            if (pl == null) platform.toast(lockedCannotShare) else platform.shareText(pl)
+                        },
+                        onShareQr = {
+                            qrTarget = runCatching { repository.shareLinkOf(profile) }.getOrNull()
+                                ?.let { profile.name to it }
+                        },
                         onPingTcp = {
                             scope.launch(Dispatchers.Default) {
                                 pingOne(repository, profile, delayTestUrl, real = false)
@@ -409,14 +441,71 @@ internal fun HomeServerSection(
             onDnsTunnel = {},
             onMasterDns = {},
             onOpenConnect = {},
-            onAether = {},
+            onAether = {
+                showAdd = false
+                showAether = true
+            },
             onIkev2 = {},
             onTor = {},
             onSsh = {},
             onSniSpoof = {},
-            onProxyChain = {},
-            onCrossChain = {},
+            onProxyChain = {
+                showAdd = false
+                showProxyChain = true
+            },
+            onCrossChain = {
+                showAdd = false
+                showCrossChain = true
+            },
             onSubscription = { showAdd = false; showSubs = true },
+        )
+    }
+
+    if (showAether) {
+        AetherSheet(
+            onDismiss = { showAether = false },
+            onSave = { name, settings ->
+                showAether = false
+                repository.addAether(settings, name)
+            },
+        )
+    }
+
+    if (showProxyChain) {
+        ProxyChainSheet(
+            candidates = chainCandidates,
+            onDismiss = { showProxyChain = false },
+            onSave = { name, memberIds ->
+                showProxyChain = false
+                repository.addProxyChain(memberIds, name)
+            },
+        )
+    }
+
+    if (showCrossChain) {
+        CrossChainSheet(
+            exits = crossExits,
+            carriers = crossCarriers,
+            pairError = crossPairError,
+            onDismiss = { showCrossChain = false },
+            onSave = { name, innerId, outerId ->
+                showCrossChain = false
+                repository.addCrossChain(innerId = innerId, outerId = outerId, name = name)
+            },
+        )
+    }
+
+    qrTarget?.let { (qrTitle, qrText) ->
+        QrDialog(
+            title = qrTitle,
+            text = qrText,
+            copyLabel = stringResource(Res.string.action_copy),
+            shareLabel = stringResource(Res.string.action_share),
+            closeLabel = stringResource(Res.string.action_close),
+            unsupportedLabel = stringResource(Res.string.qr_too_large),
+            onCopy = { platform.copyToClipboard(qrText); platform.toast(copiedToast) },
+            onShare = { platform.shareText(qrText) },
+            onDismiss = { qrTarget = null },
         )
     }
 

@@ -740,7 +740,10 @@
     <string name="master_dns_compression">Compression</string>
     <string name="master_dns_auto_disable">Auto-disable dead resolvers</string>
     <string name="openconnect_add_title">Add OpenConnect</string>
-    <string name="aether_add_title">Add Aether manually</string>
+        <string name="aether_add_title_sub">Add an Aether tunnel over WARP network</string>
+    <string name="proxychain_add_title_sub">Route traffic through multiple servers in order</string>
+    <string name="crosschain_add_title_sub">Stack two engines to bypass filtering</string>
+<string name="aether_add_title">Add Aether manually</string>
     <string name="aether_intro">The Aether tunnel over the WARP network: Masque, WireGuard or a two-hop kind. Leave the endpoint empty to scan for one. Aether core by PattNG (AGPL-3.0).</string>
     <string name="aether_lab_endpoint">Endpoint address</string>
     <string name="aether_lab_port">Endpoint port</string>

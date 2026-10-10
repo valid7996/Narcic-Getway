@@ -741,7 +741,10 @@
     <string name="master_dns_compression">压缩</string>
     <string name="master_dns_auto_disable">自动禁用失效解析器</string>
     <string name="openconnect_add_title">添加 OpenConnect</string>
-    <string name="aether_add_title">手动添加 Aether</string>
+        <string name="aether_add_title_sub">手动添加基于 WARP 网络的 Aether 隧道</string>
+    <string name="proxychain_add_title_sub">按顺序经过多个服务器路由流量</string>
+    <string name="crosschain_add_title_sub">叠加两个引擎绕过封锁</string>
+<string name="aether_add_title">手动添加 Aether</string>
     <string name="aether_intro">基于 WARP 网络的 Aether 隧道：Masque、WireGuard 或双跳。留空地址可自动扫描。Aether 核心来自 PattNG (AGPL-3.0)。</string>
     <string name="aether_lab_endpoint">服务器地址</string>
     <string name="aether_lab_port">服务器端口</string>

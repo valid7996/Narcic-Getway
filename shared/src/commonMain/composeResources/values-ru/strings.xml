@@ -741,7 +741,10 @@
     <string name="master_dns_compression">Сжатие</string>
     <string name="master_dns_auto_disable">Автоотключение мёртвых резолверов</string>
     <string name="openconnect_add_title">Добавить OpenConnect</string>
-    <string name="aether_add_title">Добавить Aether вручную</string>
+        <string name="aether_add_title_sub">Вручную добавить туннель Aether через сеть WARP</string>
+    <string name="proxychain_add_title_sub">Последовательная маршрутизация через несколько серверов</string>
+    <string name="crosschain_add_title_sub">Объединение двух движков для обхода блокировок</string>
+<string name="aether_add_title">Добавить Aether вручную</string>
     <string name="aether_intro">Туннель Aether через сеть WARP: Masque, WireGuard или двух-hоп. Оставьте адрес пустым для автоматического поиска. Ядро Aether из PattNG (AGPL-3.0).</string>
     <string name="aether_lab_endpoint">Адрес сервера</string>
     <string name="aether_lab_port">Порт сервера</string>

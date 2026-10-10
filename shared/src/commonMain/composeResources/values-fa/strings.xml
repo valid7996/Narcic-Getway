@@ -733,7 +733,10 @@
     <string name="master_dns_compression">فشرده‌سازی</string>
     <string name="master_dns_auto_disable">غیرفعال‌سازی خودکار ریزالورهای مرده</string>
     <string name="openconnect_add_title">افزودن OpenConnect</string>
-    <string name="aether_add_title">افزودن دستی Aether</string>
+        <string name="aether_add_title_sub">افزودن دستی تونل Aether روی شبکه WARP</string>
+    <string name="proxychain_add_title_sub">عبور ترافیک به‌ترتیب از چند سرور</string>
+    <string name="crosschain_add_title_sub">ترکیب دو موتور برای عبور از فیلترینگ</string>
+<string name="aether_add_title">افزودن دستی Aether</string>
     <string name="aether_intro">تونل Aether روی شبکه WARP: Masque، WireGuard یا دو هاپ. برای اسکن خودکار، آدرس مقصد را خالی بگذارید. هسته Aether از PattNG (AGPL-3.0).</string>
     <string name="aether_lab_endpoint">آدرس مقصد</string>
     <string name="aether_lab_port">پورت مقصد</string>
