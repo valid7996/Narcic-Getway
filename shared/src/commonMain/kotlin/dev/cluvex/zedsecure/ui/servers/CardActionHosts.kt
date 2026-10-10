@@ -166,6 +166,18 @@ internal fun CardActionHosts(
                     },
                 )
             }
+            target.isAether -> {
+                AetherSheet(
+                    initial = target.aetherSettings(),
+                    initialName = target.name,
+                    onDismiss = onDismissEdit,
+                    onSave = { name, settings ->
+                        repository.addAether(settings, name, id = target.id)
+                        toastSaved()
+                        onDismissEdit()
+                    },
+                )
+            }
             target.isIkev2 -> {
                 Ikev2Sheet(
                     initial = target.ikev2Settings(),

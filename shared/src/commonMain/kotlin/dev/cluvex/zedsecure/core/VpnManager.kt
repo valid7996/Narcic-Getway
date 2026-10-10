@@ -71,6 +71,7 @@ object VpnManager {
     const val KIND_IKEV2 = "ikev2"
 
     const val KIND_CROSS_CHAIN = "cross_chain"
+    const val KIND_AETHER = "aether"
 
     const val KIND_SINGBOX = "sing_box"
 

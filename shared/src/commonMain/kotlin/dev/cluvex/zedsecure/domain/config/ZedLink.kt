@@ -62,6 +62,7 @@ object ZedLink {
         is ProfileSource.MasterDns,
         is ProfileSource.OpenConnect,
         is ProfileSource.Ikev2,
+        is ProfileSource.Aether,
         is ProfileSource.ProxyChain,
         is ProfileSource.CrossChain,
         -> true

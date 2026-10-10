@@ -53,6 +53,7 @@ import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.servers.AddServerSheet
+import dev.cluvex.zedsecure.ui.servers.AetherSheet
 import dev.cluvex.zedsecure.ui.servers.AutoSelectCard
 import dev.cluvex.zedsecure.ui.servers.AutoSelectSheet
 import dev.cluvex.zedsecure.ui.servers.PsiphonSheet
@@ -112,6 +113,7 @@ internal fun HomeServerSection(
     var confirmDeleteAll by remember { mutableStateOf(false) }
     var showAutoSheet by remember { mutableStateOf(false) }
     var showPsiphon by remember { mutableStateOf(false) }
+    var showAether by remember { mutableStateOf(false) }
     var showProxyChain by remember { mutableStateOf(false) }
     var showCrossChain by remember { mutableStateOf(false) }
     var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -386,6 +388,16 @@ internal fun HomeServerSection(
         )
     }
 
+    if (showAether) {
+        AetherSheet(
+            onDismiss = { showAether = false },
+            onSave = { name, settings ->
+                showAether = false
+                repository.addAether(settings, name)
+            },
+        )
+    }
+
     if (showPsiphon) {
         PsiphonSheet(
             onDismiss = { showPsiphon = false },
@@ -451,6 +463,7 @@ internal fun HomeServerSection(
                 showAdd = false
                 showCrossChain = true
             },
+            onAether = { showAdd = false; showAether = true },
             onSubscription = { showAdd = false; showSubs = true },
         )
     }

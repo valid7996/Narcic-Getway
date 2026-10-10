@@ -295,6 +295,7 @@ fun ServersScreen(
 
     var fanOpen by remember { mutableStateOf(false) }
     var showSubs by remember { mutableStateOf(false) }
+    var showAether by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<VpnProfile?>(null) }
     var deleteTarget by remember { mutableStateOf<VpnProfile?>(null) }
     var updating by remember { mutableStateOf(false) }
@@ -1103,6 +1104,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showSniSpoof = true
             },
+            onAether = {
+                showAddSheet = false
+                showAether = true
+            },
             onProxyChain = {
                 showAddSheet = false
                 showProxyChain = true
@@ -1229,6 +1234,17 @@ fun ServersScreen(
             onSave = { name, settings ->
                 showPsiphon = false
                 repository.addPsiphon(settings, name)
+                onServerActivated()
+            },
+        )
+    }
+
+    if (showAether) {
+        AetherSheet(
+            onDismiss = { showAether = false },
+            onSave = { name, settings ->
+                showAether = false
+                repository.addAether(settings, name)
                 onServerActivated()
             },
         )
@@ -1520,6 +1536,7 @@ internal fun AddServerSheet(
     onTor: () -> Unit,
     onSsh: () -> Unit,
     onSniSpoof: () -> Unit,
+    onAether: () -> Unit,
     onProxyChain: () -> Unit,
     onCrossChain: () -> Unit,
     onSubscription: () -> Unit,
@@ -1753,6 +1770,19 @@ internal fun AddServerSheet(
                             onClick = onTor,
                         )
                     }
+                }
+                if (ServersUiConfig.SHOW_AETHER) {
+                    OptionGroup(Res.string.add_group_vpn)
+                    GlassOptionCard(
+                        title = stringResource(Res.string.aether_add_title),
+                        subtitle = stringResource(Res.string.aether_add_title_sub),
+                        icon = Res.drawable.ic_bolt,
+                        accentColor = Color(0xFF2088FF),
+                        iconTint = Color(0xFF38BDF8),
+                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                        onClick = onAether,
+                    )
                 }
                 if (ServersUiConfig.SHOW_PROXY_CHAIN || ServersUiConfig.SHOW_CROSS_CHAIN) {
                     OptionGroup(Res.string.add_group_chains)

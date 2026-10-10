@@ -251,8 +251,10 @@ class MainActivity : ComponentActivity() {
                 languageTag = langTag,
                 fontScale = settings.uiFontScale.scale,
             ) {
+                val aetherActions = androidx.compose.runtime.remember { dev.cluvex.zedsecure.ui.AetherActionsAndroid(applicationContext) }
                 CompositionLocalProvider(
                     LocalPlatform provides androidPlatform,
+                    dev.cluvex.zedsecure.ui.servers.LocalAetherActions provides aetherActions,
                 ) {
                     val aiBridge = androidx.compose.runtime.remember {
                         dev.cluvex.zedsecure.ai.AndroidAiBridge.create(
