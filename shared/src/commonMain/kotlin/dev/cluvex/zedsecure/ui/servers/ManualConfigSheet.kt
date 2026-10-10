@@ -12,10 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -29,6 +34,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -168,10 +176,21 @@ fun ManualConfigSheet(
         }
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
     ) {
         Column(
             Modifier
@@ -183,8 +202,10 @@ fun ManualConfigSheet(
         ) {
             Text(
                 stringResource(Res.string.servers_add_manual),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
+                modifier = Modifier.padding(vertical = 4.dp),
             )
 
             PickerField(
@@ -483,10 +504,14 @@ fun ManualConfigSheet(
                     Protocol.HYSTERIA -> secretKey.isNotBlank()
                     else -> userId.isNotBlank()
                 },
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    contentColor = Color.White,
+                ),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -516,6 +541,7 @@ private fun AwgField(key: String, value: String, onValueChange: (String) -> Unit
         onValueChange = onValueChange,
         label = { Text(if (desc == null) name else "$name — $desc") },
         singleLine = true,
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -532,6 +558,7 @@ private fun Field(
         onValueChange = onValueChange,
         label = { Text(stringResource(labelRes)) },
         singleLine = true,
+        shape = RoundedCornerShape(16.dp),
         keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Number)
         else KeyboardOptions.Default,
         modifier = Modifier.fillMaxWidth(),

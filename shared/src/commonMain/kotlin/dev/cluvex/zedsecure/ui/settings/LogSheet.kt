@@ -3,6 +3,7 @@
 package dev.cluvex.zedsecure.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
@@ -38,7 +40,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -169,7 +173,21 @@ fun LogSheet(onDismiss: () -> Unit) {
         if (lines.isNotEmpty() && atBottom) listState.scrollToItem(lines.lastIndex)
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
+    ) {
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 20.dp)) {
             Row(
                 Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -178,8 +196,9 @@ fun LogSheet(onDismiss: () -> Unit) {
             ) {
                 Text(
                     stringResource(Res.string.logs_title),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
                     modifier = Modifier.weight(1f),
                 )
                 Text(
@@ -205,6 +224,7 @@ fun LogSheet(onDismiss: () -> Unit) {
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 placeholder = { Text(stringResource(Res.string.logs_search)) },
                 leadingIcon = { Icon(painterResource(Res.drawable.ic_search), null, Modifier.size(18.dp)) },
                 trailingIcon = {
@@ -275,10 +295,18 @@ fun LogSheet(onDismiss: () -> Unit) {
                             modifier = Modifier.padding(12.dp),
                         )
                     } else {
+                        val logBoxShape = RoundedCornerShape(18.dp)
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth().height(420.dp),
+                            color = if (isDark) Color(0xFF071224) else Color.White,
+                            shape = logBoxShape,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(420.dp)
+                                .border(
+                                    1.dp,
+                                    if (isDark) Color(0xFF2088FF).copy(alpha = 0.25f) else Color(0xFFE2E8F0),
+                                    logBoxShape,
+                                ),
                         ) {
                             LazyColumn(
                                 state = listState,

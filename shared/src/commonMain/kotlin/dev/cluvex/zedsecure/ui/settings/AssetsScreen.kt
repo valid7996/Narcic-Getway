@@ -2,7 +2,10 @@
 
 package dev.cluvex.zedsecure.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,13 +13,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -56,18 +66,52 @@ fun AssetsScreen(
     val geo = platform.geoAssets
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-    Column(
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val glowColors = if (isDark) {
+        listOf(
+            Color(0xFF0168D1).copy(alpha = 0.40f),
+            Color(0xFF08C6AB).copy(alpha = 0.18f),
+            Color.Transparent,
+        )
+    } else {
+        listOf(
+            Color(0xFF60A5FA).copy(alpha = 0.20f),
+            Color(0xFF2DD4BF).copy(alpha = 0.14f),
+            Color.Transparent,
+        )
+    }
+
+    Box(
         modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(contentPadding),
+            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
     ) {
-        Spacer(Modifier.height(8.dp))
-        PageHeader(
-            title = stringResource(Res.string.assets_title),
-            subtitle = stringResource(Res.string.assets_subtitle),
+        Box(
+            Modifier
+                .size(360.dp)
+                .offset(x = (-80).dp, y = (-60).dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = glowColors,
+                        radius = 500f,
+                    ),
+                ),
         )
-        Spacer(Modifier.height(14.dp))
+
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(contentPadding),
+        ) {
+            Spacer(Modifier.height(8.dp))
+            PageHeader(
+                title = stringResource(Res.string.assets_title),
+                subtitle = stringResource(Res.string.assets_subtitle),
+                accentLine = true,
+            )
+            Spacer(Modifier.height(14.dp))
 
         if (geo == null) {
             Text(
@@ -148,9 +192,14 @@ fun AssetsScreen(
                             message = getString(if (ok) Res.string.assets_done else Res.string.assets_failed)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                        contentColor = Color.White,
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
-                    Text(stringResource(Res.string.assets_download))
+                    Text(stringResource(Res.string.assets_download), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -158,11 +207,12 @@ fun AssetsScreen(
                 Text(
                     it,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488),
                 )
             }
             Spacer(Modifier.height(24.dp))
         }
+    }
     }
 }
 
@@ -178,20 +228,46 @@ private fun formatBytes(bytes: Long): String {
 
 @Composable
 private fun AssetCard(asset: GeoAsset, onImport: () -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = RoundedCornerShape(22.dp)
+    val cardBorder = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
+        )
+    }
+    val cardBg = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
+        )
+    }
+
     Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, cardBorder, shape),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(16.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(cardBg)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 painterResource(Res.drawable.ic_description),
                 contentDescription = null,
-                tint = if (asset.present) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (asset.present) (if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488))
+                else (if (isDark) Color(0xFF8899A6) else Color(0xFF94A3B8)),
                 modifier = Modifier.size(26.dp),
             )
             Spacer(Modifier.width(14.dp))
@@ -199,7 +275,8 @@ private fun AssetCard(asset: GeoAsset, onImport: () -> Unit) {
                 Text(
                     asset.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
                 )
                 Text(
                     if (asset.present) {
@@ -208,10 +285,13 @@ private fun AssetCard(asset: GeoAsset, onImport: () -> Unit) {
                         stringResource(Res.string.assets_missing)
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B),
                 )
             }
-            OutlinedButton(onClick = onImport) {
+            OutlinedButton(
+                onClick = onImport,
+                shape = RoundedCornerShape(16.dp),
+            ) {
                 Text(stringResource(Res.string.assets_import))
             }
         }

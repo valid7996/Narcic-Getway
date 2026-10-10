@@ -3,8 +3,10 @@
 package dev.cluvex.zedsecure.ui.servers
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,7 +17,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.domain.config.ConfigParser
 import dev.cluvex.zedsecure.domain.config.ProfileSource
@@ -281,15 +286,24 @@ internal fun CardActionHosts(
     }
 
     renameTarget?.let { target ->
+        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
         var name by remember(target.id) { mutableStateOf(target.name) }
         AlertDialog(
             onDismissRequest = onDismissRename,
-            title = { Text(stringResource(Res.string.servers_rename)) },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = if (isDark) Color(0xFF0F243A) else Color.White,
+            title = {
+                Text(
+                    stringResource(Res.string.servers_rename),
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                )
+            },
             text = {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
@@ -308,9 +322,17 @@ internal fun CardActionHosts(
     }
 
     moveTarget?.let { target ->
+        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
         AlertDialog(
             onDismissRequest = onDismissMove,
-            title = { Text(stringResource(Res.string.groups_move)) },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = if (isDark) Color(0xFF0F243A) else Color.White,
+            title = {
+                Text(
+                    stringResource(Res.string.groups_move),
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                )
+            },
             text = {
                 androidx.compose.foundation.layout.Column {
                     listOf("" to stringResource(Res.string.groups_manual)).plus(

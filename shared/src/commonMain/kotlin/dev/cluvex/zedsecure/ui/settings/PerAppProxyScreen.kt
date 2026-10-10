@@ -2,6 +2,8 @@
 
 package dev.cluvex.zedsecure.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +14,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Checkbox
@@ -39,6 +43,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -130,13 +137,47 @@ fun PerAppProxyScreen(
         onUpdate { it.copy(perAppPackages = next) }
     }
 
-    Column(modifier.fillMaxSize().padding(contentPadding)) {
-        Spacer(Modifier.height(8.dp))
-        PageHeader(
-            title = stringResource(Res.string.per_app_title),
-            subtitle = stringResource(Res.string.per_app_subtitle),
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val glowColors = if (isDark) {
+        listOf(
+            Color(0xFF0168D1).copy(alpha = 0.40f),
+            Color(0xFF08C6AB).copy(alpha = 0.18f),
+            Color.Transparent,
         )
-        Spacer(Modifier.height(12.dp))
+    } else {
+        listOf(
+            Color(0xFF60A5FA).copy(alpha = 0.20f),
+            Color(0xFF2DD4BF).copy(alpha = 0.14f),
+            Color.Transparent,
+        )
+    }
+
+    Box(
+        modifier
+            .fillMaxSize()
+            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
+    ) {
+        Box(
+            Modifier
+                .size(360.dp)
+                .offset(x = (-80).dp, y = (-60).dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = glowColors,
+                        radius = 500f,
+                    ),
+                ),
+        )
+
+        Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
+            Spacer(Modifier.height(8.dp))
+            PageHeader(
+                title = stringResource(Res.string.per_app_title),
+                subtitle = stringResource(Res.string.per_app_subtitle),
+                accentLine = true,
+            )
+            Spacer(Modifier.height(12.dp))
 
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -263,6 +304,7 @@ fun PerAppProxyScreen(
             }
         }
     }
+    }
 }
 
 internal enum class PerAppMode { Off, Include, Exclude }
@@ -274,17 +316,48 @@ private fun AppRow(
     enabled: Boolean,
     onToggle: () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = RoundedCornerShape(16.dp)
+    val cardBorder = if (isDark) {
+        if (checked) {
+            Brush.horizontalGradient(
+                listOf(Color(0xFF20D8C0).copy(alpha = 0.60f), Color(0xFF2088FF).copy(alpha = 0.45f)),
+            )
+        } else {
+            Brush.horizontalGradient(
+                listOf(Color(0xFF28384F).copy(alpha = 0.25f), Color(0xFF1E293B).copy(alpha = 0.20f)),
+            )
+        }
+    } else {
+        if (checked) {
+            Brush.horizontalGradient(
+                listOf(Color(0xFF0D9488).copy(alpha = 0.40f), Color(0xFF3B82F6).copy(alpha = 0.30f)),
+            )
+        } else {
+            Brush.horizontalGradient(
+                listOf(Color(0xFFE2E8F0), Color(0xFFE2E8F0)),
+            )
+        }
+    }
+    val cardBg = if (isDark) {
+        if (checked) Color(0xFF102840).copy(alpha = 0.85f) else Color(0xFF0A1828).copy(alpha = 0.65f)
+    } else {
+        if (checked) Color(0xFFF0FDF4) else Color.White
+    }
+
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (checked) MaterialTheme.colorScheme.primaryContainer
-        else androidx.compose.ui.graphics.Color.Transparent,
-        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, cardBorder, shape),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
+                .background(cardBg)
                 .clickable(enabled = enabled, onClick = onToggle)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val platform = LocalPlatform.current
@@ -298,13 +371,14 @@ private fun AppRow(
                     app.label,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
+                    color = if (isDark) Color(0xFFE0E0F0) else Color(0xFF0F172A),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     app.packageName,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

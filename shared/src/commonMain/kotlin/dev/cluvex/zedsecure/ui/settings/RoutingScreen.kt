@@ -2,6 +2,8 @@
 
 package dev.cluvex.zedsecure.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,12 +15,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -40,6 +44,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -121,17 +129,27 @@ fun RoutingScreen(
         )
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
     deleting?.let { rule ->
         val target = rule
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text(stringResource(Res.string.rule_delete_confirm_title)) },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = if (isDark) Color(0xFF0F243A) else Color.White,
+            title = {
+                Text(
+                    stringResource(Res.string.rule_delete_confirm_title),
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                )
+            },
             text = {
                 Text(
                     stringResource(
                         Res.string.rule_delete_confirm_body,
                         target.remarks.ifBlank { target.outboundTag },
                     ),
+                    color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B),
                 )
             },
             confirmButton = {
@@ -165,25 +183,59 @@ fun RoutingScreen(
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier
+    val glowColors = if (isDark) {
+        listOf(
+            Color(0xFF0168D1).copy(alpha = 0.40f),
+            Color(0xFF08C6AB).copy(alpha = 0.18f),
+            Color.Transparent,
+        )
+    } else {
+        listOf(
+            Color(0xFF60A5FA).copy(alpha = 0.20f),
+            Color(0xFF2DD4BF).copy(alpha = 0.14f),
+            Color.Transparent,
+        )
+    }
+
+    Box(
+        modifier
             .fillMaxSize()
-            .imePadding()
-            .padding(contentPadding),
-        contentPadding = PaddingValues(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
     ) {
-        item(key = "header") {
-            Column {
-                Spacer(Modifier.height(8.dp))
-                PageHeader(
-                    title = stringResource(Res.string.routing_title),
-                    subtitle = stringResource(Res.string.routing_subtitle),
-                )
-                Spacer(Modifier.height(14.dp))
+        // Top-left cosmic aurora / crescent glow curve from screenshot
+        Box(
+            Modifier
+                .size(360.dp)
+                .offset(x = (-80).dp, y = (-60).dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = glowColors,
+                        radius = 500f,
+                    ),
+                ),
+        )
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+                .padding(contentPadding),
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            item(key = "header") {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    PageHeader(
+                        title = stringResource(Res.string.routing_title),
+                        subtitle = stringResource(Res.string.routing_subtitle),
+                        accentLine = true,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                }
             }
-        }
 
         item(key = "mode") {
             Column(
@@ -356,6 +408,7 @@ fun RoutingScreen(
             )
         }
     }
+    }
 }
 
 private const val RULES_HEADER_ITEMS = 2
@@ -417,13 +470,39 @@ private fun RuleRow(
         rule.protocol.forEach { add(it) }
     }.joinToString(", ").ifBlank { stringResource(Res.string.routing_rule_no_match) }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = RoundedCornerShape(22.dp)
+    val cardBorder = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
+        )
+    }
+    val cardBg = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
+        )
+    }
+
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, cardBorder, shape),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 6.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            Modifier
+                .fillMaxWidth()
+                .background(cardBg)
+                .padding(start = 6.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -521,11 +600,39 @@ private fun ToggleRow(
 
 @Composable
 private fun RoutingCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = RoundedCornerShape(26.dp)
+    val cardBorder = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
+        )
+    }
+    val cardBg = if (isDark) {
+        Brush.horizontalGradient(
+            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
+        )
+    } else {
+        Brush.horizontalGradient(
+            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
+        )
+    }
     Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, cardBorder, shape),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), content = content)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(cardBg)
+                .padding(16.dp),
+            content = content,
+        )
     }
 }

@@ -121,26 +121,26 @@ fun PageHeader(
 
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val accent = if (isDark) Color(0xFF20D8C0) else Color(0xFF0D9488)
     Row(
-        modifier = modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+        modifier = modifier.padding(horizontal = 6.dp, vertical = 6.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
         // Accent bar — the new section marker.
         androidx.compose.foundation.layout.Box(
             Modifier
                 .padding(end = 8.dp)
-                .width(4.dp)
-                .height(14.dp)
-                .background(
-                    MaterialTheme.colorScheme.primary,
-                    RoundedCornerShape(2.dp),
-                ),
+                .width(3.5.dp)
+                .height(18.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(accent),
         )
         Text(
-            text = text.uppercase(),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = accent,
         )
     }
 }

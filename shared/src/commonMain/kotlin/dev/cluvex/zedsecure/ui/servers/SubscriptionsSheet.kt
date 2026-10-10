@@ -22,6 +22,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -71,10 +78,21 @@ fun SubscriptionsSheet(
     var deleteTarget by remember { mutableStateOf<dev.cluvex.zedsecure.domain.config.Subscription?>(null) }
     var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
     ) {
         Column(
             Modifier
@@ -86,8 +104,10 @@ fun SubscriptionsSheet(
         ) {
             Text(
                 stringResource(Res.string.subs_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
+                modifier = Modifier.padding(vertical = 4.dp),
             )
 
             SectionTitle(stringResource(Res.string.subs_add))
@@ -96,6 +116,7 @@ fun SubscriptionsSheet(
                 onValueChange = { name = it },
                 label = { Text(stringResource(Res.string.subs_name)) },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -103,6 +124,7 @@ fun SubscriptionsSheet(
                 onValueChange = { url = it },
                 label = { Text(stringResource(Res.string.subs_url)) },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             UserAgentPicker(userAgent) { userAgent = it }
@@ -125,10 +147,14 @@ fun SubscriptionsSheet(
                     }
                 },
                 enabled = url.isNotBlank(),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    contentColor = Color.White,
+                ),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
-                Text(stringResource(Res.string.subs_add_and_fetch), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(Res.string.subs_add_and_fetch), fontWeight = FontWeight.Bold)
             }
 
             SectionTitle(stringResource(Res.string.groups_add))
@@ -142,6 +168,7 @@ fun SubscriptionsSheet(
                     onValueChange = { groupName = it },
                     label = { Text(stringResource(Res.string.groups_name)) },
                     singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f),
                 )
                 Button(
@@ -151,19 +178,48 @@ fun SubscriptionsSheet(
                     },
                     enabled = groupName.isNotBlank(),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.height(50.dp),
-                ) { Text(stringResource(Res.string.action_add)) }
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                        contentColor = Color.White,
+                    ),
+                    modifier = Modifier.height(52.dp),
+                ) { Text(stringResource(Res.string.action_add), fontWeight = FontWeight.Bold) }
             }
 
             if (subs.isNotEmpty()) {
                 SectionTitle(stringResource(Res.string.subs_existing))
+                val subCardBorder = if (isDark) {
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFF2088FF).copy(alpha = 0.50f), Color(0xFF20D8C0).copy(alpha = 0.30f)),
+                    )
+                } else {
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFF3B82F6).copy(alpha = 0.25f), Color(0xFF0D9488).copy(alpha = 0.18f)),
+                    )
+                }
+                val subCardBg = if (isDark) {
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
+                    )
+                } else {
+                    Brush.horizontalGradient(
+                        listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
+                    )
+                }
+                val subCardShape = RoundedCornerShape(22.dp)
                 subs.forEach { sub ->
                     Surface(
-                        shape = RoundedCornerShape(18.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier.fillMaxWidth(),
+                        shape = subCardShape,
+                        color = Color.Transparent,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, subCardBorder, subCardShape),
                     ) {
-                      Column {
+                      Column(
+                          Modifier
+                              .fillMaxWidth()
+                              .background(subCardBg),
+                      ) {
                         Row(
                             Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,

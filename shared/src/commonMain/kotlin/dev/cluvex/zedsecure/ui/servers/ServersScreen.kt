@@ -2016,10 +2016,21 @@ internal fun RawJsonSheet(
         }
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
     ) {
         Column(
             Modifier
@@ -2028,7 +2039,12 @@ internal fun RawJsonSheet(
                 .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
+            )
 
             androidx.compose.foundation.layout.FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -2069,7 +2085,7 @@ internal fun RawJsonSheet(
                     },
                 ),
                 style = MaterialTheme.typography.labelSmall,
-                color = if (usable && saveError == null) MaterialTheme.colorScheme.primary
+                color = if (usable && saveError == null) (if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488))
                 else MaterialTheme.colorScheme.error,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -2085,17 +2101,21 @@ internal fun RawJsonSheet(
                     autoCorrectEnabled = false,
                 ),
                 isError = text.isNotBlank() && !usable,
-
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().weight(1f),
             )
 
             Button(
                 onClick = { saveError = onSave(text.trim()) },
                 enabled = usable,
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    contentColor = Color.White,
+                ),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
             }
         }
     }

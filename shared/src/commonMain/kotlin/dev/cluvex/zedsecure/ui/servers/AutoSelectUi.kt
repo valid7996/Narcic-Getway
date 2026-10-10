@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -180,9 +182,21 @@ fun AutoSelectSheet(
     val byId = members.associateBy { it.id }
     val memberName: (String) -> String? = { id -> byId[id]?.name }
     val status = live?.status
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
     ) {
         Column(
             Modifier
@@ -209,8 +223,9 @@ fun AutoSelectSheet(
                 Column(Modifier.weight(1f)) {
                     Text(
                         stringResource(Res.string.auto_title_for, groupLabel),
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color.White else Color(0xFF0F172A),
                     )
                     Text(
                         status?.let { phaseLabel(it.phase) } ?: stringResource(Res.string.auto_not_connected),

@@ -2,11 +2,17 @@
 
 package dev.cluvex.zedsecure.ui.servers
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -123,21 +129,35 @@ private fun CountryPickerSheet(
         }
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
     ) {
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)) {
             Text(
                 stringResource(Res.string.psiphon_country_pick),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
                 modifier = Modifier.padding(start = 4.dp, bottom = 10.dp),
             )
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 placeholder = { Text(stringResource(Res.string.action_search)) },
                 modifier = Modifier.fillMaxWidth(),
             )

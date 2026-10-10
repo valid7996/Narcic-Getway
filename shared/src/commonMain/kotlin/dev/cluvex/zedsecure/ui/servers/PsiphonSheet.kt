@@ -2,6 +2,15 @@
 
 package dev.cluvex.zedsecure.ui.servers
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -45,10 +53,21 @@ fun PsiphonSheet(
     var cdnIps by remember { mutableStateOf(initial?.cdnIps ?: "") }
     var cdnSni by remember { mutableStateOf(initial?.cdnSni ?: "") }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
     ) {
         Column(
             Modifier
@@ -60,8 +79,10 @@ fun PsiphonSheet(
         ) {
             Text(
                 stringResource(Res.string.psiphon_add_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
+                modifier = Modifier.padding(vertical = 4.dp),
             )
 
             OutlinedTextField(
@@ -69,6 +90,7 @@ fun PsiphonSheet(
                 onValueChange = { name = it },
                 label = { Text(stringResource(Res.string.manual_remark)) },
                 singleLine = true,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             PsiphonCountryField(
@@ -87,6 +109,7 @@ fun PsiphonSheet(
                     onValueChange = { cdnIps = it },
                     label = { Text(stringResource(Res.string.psiphon_cdn_ips)) },
                     minLines = 2,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
@@ -94,6 +117,7 @@ fun PsiphonSheet(
                     onValueChange = { cdnSni = it },
                     label = { Text(stringResource(Res.string.psiphon_cdn_sni)) },
                     minLines = 2,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -110,10 +134,14 @@ fun PsiphonSheet(
                         ),
                     )
                 },
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    contentColor = Color.White,
+                ),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             }
         }
     }
