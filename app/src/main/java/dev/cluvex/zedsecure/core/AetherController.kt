@@ -253,7 +253,7 @@ object AetherSupport {
 
     fun startExitProxy(profile: AetherProfile): Int? {
         if (exitRunning) return AetherExitJson.EXIT_SOCKS_PORT
-        val config = AetherExitJson.exitConfig(profile.finalMask, profile.dialMode)
+        val config = AetherExitJson.exitConfig(profile.finalMask, profile.dialMode, profile.targetStrategy)
         val ok = try {
             XrayController.start(config)
         } catch (t: Throwable) {

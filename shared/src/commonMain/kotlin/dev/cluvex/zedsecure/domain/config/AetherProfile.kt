@@ -38,6 +38,7 @@ data class AetherProfile(
     val psiphonCdnSni: String = "",
     val psiphonCdnSets: String = "",
     val psiphonBundledList: Boolean = true,
+    val masqueSni: String = "",
     val finalMask: String = "",
     val dialMode: String = "",
     val targetStrategy: String = "",

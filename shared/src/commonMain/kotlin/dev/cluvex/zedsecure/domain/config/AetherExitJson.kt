@@ -19,11 +19,12 @@ object AetherExitJson {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    fun exitConfig(finalMaskJson: String?, dialMode: String?): String {
+    fun exitConfig(finalMaskJson: String?, dialMode: String?, domainStrategy: String?): String {
         val maskObj = finalMaskJson?.trim()?.takeIf { it.isNotEmpty() }?.let { raw ->
             runCatching { json.parseToJsonElement(raw) as? JsonObject }.getOrNull()
         }
         val dial = dialMode?.trim()?.takeIf { it.isNotEmpty() }
+        val strategy = domainStrategy?.trim()?.takeIf { it.isNotEmpty() }
 
         val root = buildJsonObject {
             putJsonObject("log") {
@@ -51,6 +52,7 @@ object AetherExitJson {
                         putJsonObject("settings") {
                             if (dial != null) put("dialMode", dial)
                             if (maskObj != null) put("finalMask", maskObj)
+                            if (strategy != null) put("domainStrategy", strategy)
                         }
                     },
                 )

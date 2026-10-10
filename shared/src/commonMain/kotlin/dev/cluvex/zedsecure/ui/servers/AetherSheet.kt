@@ -135,6 +135,7 @@ fun AetherSheet(
     var psiphonBundledList by remember { mutableStateOf(initial?.psiphonBundledList ?: true) }
     var finalMask by remember { mutableStateOf(initial?.finalMask.orEmpty()) }
     var dialMode by remember { mutableStateOf(initial?.dialMode.orEmpty()) }
+    var masqueSni by remember { mutableStateOf(initial?.masqueSni.orEmpty()) }
     var command by remember { mutableStateOf(initial?.command.orEmpty()) }
     var showOther by remember { mutableStateOf(dns.isNotBlank() || exitLoc.isNotBlank() || targetStrategy.isNotBlank()) }
     var showCdnSets by remember { mutableStateOf(psiphonCdnSets.isNotBlank()) }
@@ -282,6 +283,17 @@ fun AetherSheet(
                         onSelect = { transport = it },
                     )
                 }
+
+                // MASQUE SNI: the server name the MASQUE handshakes put in their ClientHello
+                OutlinedTextField(
+                    value = masqueSni,
+                    onValueChange = { masqueSni = it },
+                    label = { Text("MASQUE SNI") },
+                    placeholder = { Text("www.cloudflare.com") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 if (overHttp2) {
                     SettingToggleRow(

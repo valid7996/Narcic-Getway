@@ -2,7 +2,7 @@ package dev.cluvex.zedsecure.domain.config
 
 /**
  * Builds command line arguments for the Rust Aether core daemon.
- * Strictly adheres to PattNG's AetherCoreManager.buildArguments logic.
+ * A faithful port of PattNG's AetherCoreManager.buildArguments.
  */
 object AetherCommands {
 
@@ -14,8 +14,21 @@ object AetherCommands {
     const val LOG_LEVEL = "--log-level"
     const val DEFAULT_LOG_LEVEL = "info"
 
+    /** The marker that asks the core to load the shipped Psiphon server entries file. */
+    const val PSIPHON_SERVER_ENTRIES = "--psiphon-server-entries"
+    const val SHIPPED_LIST = "shipped"
+
     private fun settingValue(value: String?): String? =
         value?.trim()?.takeUnless { it.isEmpty() || it.startsWith('-') }
+
+    /** MASQUE over HTTP/2, or a REVERSE carrier around the tunnel, takes no obfuscation noise. */
+    fun masqueOverHttp2(
+        protocol: String,
+        transport: String,
+        tor: String,
+        psiphon: String,
+    ): Boolean = (protocol == AetherProfile.PROTO_MASQUE || protocol == AetherProfile.PROTO_MIM || protocol == AetherProfile.PROTO_WG_OVER_MASQUE) &&
+        (transport == AetherProfile.TRANSPORT_H2 || tor == AetherProfile.CARRIER_REVERSE || psiphon == AetherProfile.CARRIER_REVERSE)
 
     private fun fingerprintArguments(fingerprint: String): List<String> {
         val (ciphers, grease) = when (fingerprint) {
@@ -42,14 +55,51 @@ object AetherCommands {
         return listOf("--tls-ciphers", ciphers) + if (grease) emptyList() else listOf("--disable-grease")
     }
 
+    /**
+     * [text] as a range of [bounds]: "16" or "8-16", trimmed; null when out of bounds or malformed.
+     * [AetherRange] equivalent.
+     */
+    fun parseRange(text: String?, bounds: IntRange): Pair<Int, Int>? {
+        val parts = text?.trim()?.split('-') ?: return null
+        if (parts.size !in 1..2) return null
+        val values = parts.map { part -> part.trim().toIntOrNull()?.takeIf { it in bounds } ?: return null }
+        return Pair(values.min(), values.max())
+    }
+
+    fun rangeText(range: Pair<Int, Int>): String =
+        if (range.first == range.second) "${range.first}" else "${range.first}-${range.second}"
+
+    /**
+     * [profile] as an endpoint "host:port"; [AetherEndpoint]-equivalent validation, IPv6 brackets included.
+     */
+    fun endpointOf(host: String?, port: String?): String? {
+        val h = host?.trim()?.removeSurrounding("[", "]")?.takeIf { it.isNotEmpty() } ?: return null
+        val p = port?.trim()?.toIntOrNull()?.takeIf { it in 1..65535 } ?: return null
+        return if (':' in h) "[$h]:$p" else "$h:$p"
+    }
+
+    fun parseEndpoint(value: String?): Pair<String, Int>? {
+        val text = value?.trim().orEmpty()
+        val separator = text.lastIndexOf(':')
+        if (separator <= 0) return null
+        val host = text.substring(0, separator)
+        if (':' in host && !(host.startsWith('[') && host.endsWith(']'))) return null
+        val port = text.substring(separator + 1).trim().toIntOrNull()?.takeIf { it in 1..65535 } ?: return null
+        val cleanHost = host.removeSurrounding("[", "]")
+        return Pair(cleanHost, port)
+    }
+
     fun buildArguments(
         profile: AetherProfile,
         port: Int,
         scan: Boolean = false,
         logLevel: String = DEFAULT_LOG_LEVEL,
     ): List<String> {
-        val psiphon = profile.psiphon
-        val tor = profile.tor
+        // A scan looks for WARP endpoints from where the session will look: a carrier around the
+        // tunnel stays (REVERSE), while one inside the tunnel (CHAIN / ONLY) has no part in it.
+        val tor = profile.tor.takeUnless { scan && it != AetherProfile.CARRIER_REVERSE } ?: AetherProfile.CARRIER_OFF
+        val psiphon = profile.psiphon.takeUnless { scan && it != AetherProfile.CARRIER_REVERSE } ?: AetherProfile.CARRIER_OFF
+
         val dialsPsiphon = psiphon == AetherProfile.CARRIER_CHAIN
         val dialsTor = tor == AetherProfile.CARRIER_CHAIN && !dialsPsiphon
         var next = port + 1
@@ -69,24 +119,24 @@ object AetherCommands {
             if (psiphon != AetherProfile.CARRIER_ONLY && tor != AetherProfile.CARRIER_ONLY) {
                 addAll(listOf("--protocol", profile.protocol))
                 addAll(listOf("--scan", profile.scanMode))
-                if (profile.obfuscation != AetherProfile.OBF_AUTO &&
-                    !(profile.overMasque && profile.transport == AetherProfile.TRANSPORT_H2)
-                ) {
-                    addAll(listOf("--noize", profile.obfuscation))
+                masqueOverHttp2(profile.protocol, profile.transport, tor, psiphon).let { overHttp2 ->
+                    if (profile.obfuscation != AetherProfile.OBF_AUTO && !overHttp2) {
+                        addAll(listOf("--noize", profile.obfuscation))
+                    }
                 }
                 addAll(listOf("--ip", profile.ipVersion))
                 settingValue(profile.dns)?.let { addAll(listOf("--dns", it)) }
+                // A scan keeps the exit rule as well, so that it ends on an endpoint the session will accept.
                 settingValue(profile.exitLoc)?.let { addAll(listOf("--exit-loc", it)) }
-                settingValue(profile.targetStrategy)?.let { addAll(listOf("--target-strategy", it)) }
 
                 if (profile.overMasque && profile.transport == AetherProfile.TRANSPORT_H2) {
                     add("--h2")
                     if (profile.fragment) {
                         add("--fragment")
-                        profile.fragmentSize.trim().toIntOrNull()?.takeIf { it in 1..4096 }
-                            ?.let { addAll(listOf("--fragment-size", it.toString())) }
-                        profile.fragmentDelay.trim().toIntOrNull()?.takeIf { it in 0..1000 }
-                            ?.let { addAll(listOf("--fragment-delay", it.toString())) }
+                        parseRange(profile.fragmentSize, 1..4096)
+                            ?.let { addAll(listOf("--fragment-size", rangeText(it))) }
+                        parseRange(profile.fragmentDelay, 0..1000)
+                            ?.let { addAll(listOf("--fragment-delay", rangeText(it))) }
                     }
                 }
                 if (profile.overMasque && profile.ech) {
@@ -94,7 +144,10 @@ object AetherCommands {
                     addAll(listOf("--ech-dns", settingValue(profile.echDns) ?: AetherProfile.DEFAULT_ECH_DNS))
                     addAll(listOf("--ech-domain", settingValue(profile.echDomain) ?: AetherProfile.DEFAULT_ECH_DOMAIN))
                 }
-                if (profile.overMasque) addAll(fingerprintArguments(profile.fingerprint))
+                if (profile.overMasque) {
+                    settingValue(profile.masqueSni)?.let { addAll(listOf("--masque-sni", it)) }
+                    addAll(fingerprintArguments(profile.fingerprint))
+                }
 
                 if (profile.isTwoHops) {
                     val hop = if (profile.protocol == AetherProfile.PROTO_MIM) "--mim" else "--wiw"
@@ -103,15 +156,12 @@ object AetherCommands {
                     outer?.takeIf { it.isNotEmpty() }?.let { addAll(listOf("$hop-outer", it)) }
                     inner?.takeIf { it.isNotEmpty() }?.let { addAll(listOf("$hop-inner", it)) }
                     if (outer.isNullOrEmpty() && inner.isNullOrEmpty()) add("$hop-scan")
-                } else {
-                    profile.endpointText()?.takeUnless { scan }?.let { addAll(listOf("--peer", it)) }
+                } else if (!scan) {
+                    profile.endpointText()?.let { addAll(listOf("--peer", it)) }
                 }
 
                 add(if (scan) "--no-quick-reconnect" else "--quick-reconnect")
             }
-
-            settingValue(profile.finalMask)?.let { addAll(listOf("--final-mask", it)) }
-            settingValue(profile.dialMode)?.let { addAll(listOf("--dial-mode", it)) }
 
             when (tor) {
                 AetherProfile.CARRIER_OFF -> Unit
@@ -128,12 +178,12 @@ object AetherCommands {
                     AetherProfile.TOR_BRIDGES_OWN -> profile.torBridgeLines.lines()
                         .map(String::trim)
                         .filter { it.isNotEmpty() }
-                        .flatMap { line -> listOf("--tor-bridge", line) }
+                        .forEach { addAll(listOf("--tor-bridge", it)) }
                 }
                 if (profile.torBridges == AetherProfile.TOR_BRIDGES_AUTO ||
                     profile.torBridges == AetherProfile.TOR_BRIDGES_FIRST
                 ) {
-                    settingValue(profile.torRelays)?.takeIf { it != AetherProfile.TOR_RELAYS_AUTO }
+                    profile.torRelays.takeUnless { it == AetherProfile.TOR_RELAYS_AUTO }
                         ?.let { addAll(listOf("--tor-relays", it)) }
                 }
             }
@@ -154,7 +204,8 @@ object AetherCommands {
                     settingValue(profile.psiphonCdnSets)?.let { addAll(listOf("--psiphon-cdn-sets", it)) }
                 }
                 settingValue(profile.psiphonRegion)?.let { addAll(listOf("--psiphon-region", it)) }
-                if (profile.psiphonBundledList) add("--psiphon-bundled-list")
+                // The bundled list, unless the profile wants Psiphon to fetch a fresh one before it dials anything.
+                if (profile.psiphonBundledList) addAll(listOf(PSIPHON_SERVER_ENTRIES, SHIPPED_LIST))
             }
             addAll(listOf(LOG_LEVEL, logLevel))
         }
