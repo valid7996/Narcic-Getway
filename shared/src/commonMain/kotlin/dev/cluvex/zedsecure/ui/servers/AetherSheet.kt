@@ -2,13 +2,17 @@
 
 package dev.cluvex.zedsecure.ui.servers
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +29,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +38,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -88,12 +96,15 @@ fun AetherSheet(
     var finalMask by remember { mutableStateOf(initial?.finalMask.orEmpty()) }
     var dialMode by remember { mutableStateOf(initial?.dialMode.orEmpty()) }
     var expert by remember { mutableStateOf(initial?.command?.isNotBlank() == true) }
+    var targetStrategy by remember { mutableStateOf(initial?.targetStrategy ?: "AsIs") }
+    var psiphonBundledList by remember { mutableStateOf(initial?.psiphonBundledList ?: true) }
     var command by remember { mutableStateOf(initial?.command.orEmpty()) }
     var saving by remember { mutableStateOf(false) }
 
     var showIdentity by remember { mutableStateOf(false) }
     val aether = LocalAetherActions.current
     val scope = rememberCoroutineScope()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     // The scanner's state: idle, running, or what it ended with.
     var scanning by remember { mutableStateOf(false) }
@@ -147,13 +158,28 @@ fun AetherSheet(
             psiphonCdnIps = psiphonCdnIps.trim(),
             psiphonCdnSni = psiphonCdnSni.trim(),
             psiphonCdnSets = psiphonCdnSets.trim(),
+            psiphonBundledList = psiphonBundledList,
             finalMask = finalMask.trim(),
             dialMode = dialMode.trim(),
+            targetStrategy = targetStrategy,
             command = if (expert) command.trim() else "",
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = if (isDark) androidx.compose.ui.graphics.Color(0xF20B1C38) else androidx.compose.ui.graphics.Color(0xF8F8FAFD),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            androidx.compose.foundation.layout.Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f) else androidx.compose.ui.graphics.Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -163,240 +189,158 @@ fun AetherSheet(
         ) {
             Text(
                 stringResource(Res.string.aether_add_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                color = if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF0F172A),
+                modifier = Modifier.padding(vertical = 4.dp),
             )
             Text(
                 stringResource(Res.string.aether_intro),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isDark) androidx.compose.ui.graphics.Color(0xFFA0B0C4) else androidx.compose.ui.graphics.Color(0xFF64748B),
             )
 
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(Res.string.vault_form_name)) },
+                label = { Text(stringResource(Res.string.manual_remark)) },
                 singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
-
-            PickerField(
-                label = stringResource(Res.string.aether_lab_protocol),
-                options = AetherProfile.protocols.map { it to it.uppercase() },
-                selected = protocol,
-                onSelect = { protocol = it },
-            )
-
-            if (twoHops) {
-                OutlinedTextField(
-                    value = wiwOuter,
-                    onValueChange = { wiwOuter = it },
-                    label = { Text(stringResource(Res.string.aether_lab_wiw_outer)) },
-                    placeholder = { Text(stringResource(Res.string.aether_hint_endpoint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = wiwInner,
-                    onValueChange = { wiwInner = it },
-                    label = { Text(stringResource(Res.string.aether_lab_wiw_inner)) },
-                    placeholder = { Text(stringResource(Res.string.aether_hint_endpoint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                OutlinedTextField(
-                    value = server,
-                    onValueChange = { server = it },
-                    label = { Text(stringResource(Res.string.aether_lab_endpoint)) },
-                    placeholder = { Text(stringResource(Res.string.aether_hint_endpoint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = port,
-                    onValueChange = { port = it.filter(Char::isDigit).take(5) },
-                    label = { Text(stringResource(Res.string.aether_lab_port)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            if (aether != null) {
-                FilledTonalButton(
-                    onClick = {
-                        val current = build() ?: return@FilledTonalButton
-                        scanning = true
-                        scanOutcome = null
-                        scope.launch {
-                            val result = aether.scan(current)
-                            scanning = false
-                            scanOutcome = if (result == null) ScanOutcome.Failed else {
-                                if (twoHops && result.innerHop != null) {
-                                    wiwOuter = result.endpoint
-                                    wiwInner = result.innerHop
-                                } else {
-                                    val text = result.endpoint
-                                    val separator = text.lastIndexOf(':')
-                                    if (separator > 0) {
-                                        server = text.substring(0, separator).removeSurrounding("[", "]")
-                                        port = text.substring(separator + 1)
-                                    }
-                                }
-                                ScanOutcome.Found
-                            }
-                        }
-                    },
-                    enabled = !scanning,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (scanning) {
-                        CircularProgressIndicator(Modifier.width(18.dp).height(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(10.dp))
-                        Text(stringResource(Res.string.aether_scanning))
-                    } else {
-                        Text(stringResource(Res.string.aether_scan))
-                    }
-                }
-                when (scanOutcome) {
-                    ScanOutcome.Failed -> Text(
-                        stringResource(Res.string.aether_scan_failed),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    ScanOutcome.Found -> Text(
-                        stringResource(Res.string.aether_scan_found),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-
-                    null -> Unit
-                }
-            }
-
-            PickerField(
-                label = stringResource(Res.string.aether_lab_scan_mode),
-                options = AetherProfile.scanModes.map { it to it.replaceFirstChar(Char::uppercase) },
-                selected = scanMode,
-                onSelect = { scanMode = it },
-            )
-
-            if (overMasque) {
-                PickerField(
-                    label = stringResource(Res.string.aether_lab_transport),
-                    options = AetherProfile.transports.map { it to it.uppercase() },
-                    selected = transport,
-                    onSelect = { transport = it },
-                )
-            }
-
-            PickerField(
-                label = stringResource(Res.string.aether_lab_obfuscation),
-                options = AetherProfile.obfuscations.map { it to it.replaceFirstChar(Char::uppercase) },
-                selected = obfuscation,
-                onSelect = { obfuscation = it },
-            )
-
-            PickerField(
-                label = stringResource(Res.string.aether_lab_ip_version),
-                options = AetherProfile.ipVersions.map { it to it.uppercase() },
-                selected = ipVersion,
-                onSelect = { ipVersion = it },
-            )
-
-            OutlinedTextField(
-                value = dns,
-                onValueChange = { dns = it },
-                label = { Text(stringResource(Res.string.aether_lab_dns)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = exitLoc,
-                onValueChange = { exitLoc = it },
-                label = { Text(stringResource(Res.string.aether_lab_exit_location)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            if (overMasque) {
-                PickerField(
-                    label = stringResource(Res.string.aether_lab_fingerprint),
-                    options = AetherProfile.fingerprints.map { it to it.replaceFirstChar(Char::uppercase) },
-                    selected = fingerprint,
-                    onSelect = { fingerprint = it },
-                )
-
-                SettingRow(
-                    label = stringResource(Res.string.aether_lab_fragment),
-                    checked = fragment,
-                    enabled = transport == AetherProfile.TRANSPORT_H2,
-                    onChecked = { fragment = it },
-                )
-                if (fragment && transport == AetherProfile.TRANSPORT_H2) {
-                    OutlinedTextField(
-                        value = fragmentSize,
-                        onValueChange = { fragmentSize = it.filter(Char::isDigit).take(4) },
-                        label = { Text(stringResource(Res.string.aether_lab_fragment_size)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = fragmentDelay,
-                        onValueChange = { fragmentDelay = it.filter(Char::isDigit).take(4) },
-                        label = { Text(stringResource(Res.string.aether_lab_fragment_delay)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
-                SettingRow(
-                    label = stringResource(Res.string.aether_lab_ech),
-                    checked = ech,
-                    enabled = true,
-                    onChecked = { ech = it },
-                )
-                if (ech) {
-                    OutlinedTextField(
-                        value = echDns,
-                        onValueChange = { echDns = it },
-                        label = { Text(stringResource(Res.string.aether_lab_ech_dns)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = echDomain,
-                        onValueChange = { echDomain = it },
-                        label = { Text(stringResource(Res.string.aether_lab_ech_domain)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
 
             if (carriersUsed || aether != null) {
-                HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                Text(
-                    stringResource(Res.string.aether_group_carriers),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                PickerField(
+                    label = stringResource(Res.string.aether_lab_protocol),
+                    options = AetherProfile.protocols.map { it to it.uppercase() },
+                    selected = protocol,
+                    onSelect = { protocol = it },
                 )
+                
+                if (overMasque) {
+                    PickerField(
+                        label = stringResource(Res.string.aether_lab_transport),
+                        options = AetherProfile.transports.map { it to it.uppercase() },
+                        selected = transport,
+                        onSelect = { transport = it },
+                    )
+                }
+                if (overMasque && transport == AetherProfile.TRANSPORT_H2) {
+                    SettingRow(
+                        label = stringResource(Res.string.aether_lab_fragment),
+                        checked = fragment,
+                        enabled = true,
+                        onChecked = { fragment = it },
+                    )
+                    if (fragment) {
+                        OutlinedTextField(
+                            value = fragmentSize,
+                            onValueChange = { fragmentSize = it.filter(Char::isDigit).take(4) },
+                            label = { Text(stringResource(Res.string.aether_lab_fragment_size)) },
+                            placeholder = { Text(stringResource(Res.string.aether_hint_fragment_size)) },
+                            singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = fragmentDelay,
+                            onValueChange = { fragmentDelay = it.filter(Char::isDigit).take(4) },
+                            label = { Text(stringResource(Res.string.aether_lab_fragment_delay)) },
+                            placeholder = { Text(stringResource(Res.string.aether_hint_fragment_delay)) },
+                            singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                
+                if (overMasque) {
+                    SettingRow(
+                        label = stringResource(Res.string.aether_lab_ech),
+                        checked = ech,
+                        enabled = true,
+                        onChecked = { ech = it },
+                    )
+                    if (ech) {
+                        OutlinedTextField(
+                            value = echDns,
+                            onValueChange = { echDns = it },
+                            label = { Text(stringResource(Res.string.aether_lab_ech_dns)) },
+                            singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = echDomain,
+                            onValueChange = { echDomain = it },
+                            label = { Text(stringResource(Res.string.aether_lab_ech_domain)) },
+                            singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                
+                PickerField(
+                    label = stringResource(Res.string.aether_lab_scan_mode),
+                    options = AetherProfile.scanModes.map { it to it.replaceFirstChar(Char::uppercase) },
+                    selected = scanMode,
+                    onSelect = { scanMode = it },
+                )
+                
+                if (transport != AetherProfile.TRANSPORT_H2 || !overMasque) {
+                    PickerField(
+                        label = stringResource(Res.string.aether_lab_obfuscation),
+                        options = AetherProfile.obfuscations.map { it to it.replaceFirstChar(Char::uppercase) },
+                        selected = obfuscation,
+                        onSelect = { obfuscation = it },
+                    )
+                }
+                
+                if (overMasque) {
+                    PickerField(
+                        label = stringResource(Res.string.aether_lab_fingerprint),
+                        options = AetherProfile.fingerprints.map { it to it.replaceFirstChar(Char::uppercase) },
+                        selected = fingerprint,
+                        onSelect = { fingerprint = it },
+                    )
+                }
             }
+
+            dev.cluvex.zedsecure.ui.components.SectionTitle(stringResource(Res.string.aether_lab_exit_loc))
+
+            OutlinedTextField(
+                value = finalMask,
+                onValueChange = { finalMask = it },
+                label = { Text(stringResource(Res.string.aether_lab_exit_final_mask)) },
+                minLines = 1,
+                maxLines = 4,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = dialMode,
+                onValueChange = { dialMode = it },
+                label = { Text(stringResource(Res.string.aether_lab_exit_dial_mode)) },
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            dev.cluvex.zedsecure.ui.components.SectionTitle(stringResource(Res.string.aether_group_carriers))
 
             if (tor != AetherProfile.CARRIER_OFF || aether != null) {
                 PickerField(
-                    label = stringResource(Res.string.aether_tor),
+                    label = stringResource(Res.string.aether_lab_tor),
                     options = AetherProfile.carriers.map { it to it.replaceFirstChar(Char::uppercase) },
                     selected = tor,
                     onSelect = { tor = it },
                 )
                 if (tor != AetherProfile.CARRIER_OFF) {
                     PickerField(
-                        label = stringResource(Res.string.aether_tor_bridges),
+                        label = stringResource(Res.string.aether_lab_tor_bridges),
                         options = AetherProfile.torBridgeModes.map { it to it.replaceFirstChar(Char::uppercase) },
                         selected = torBridges,
                         onSelect = { torBridges = it },
@@ -405,15 +349,17 @@ fun AetherSheet(
                         OutlinedTextField(
                             value = torBridgeLines,
                             onValueChange = { torBridgeLines = it },
-                            label = { Text(stringResource(Res.string.aether_tor_bridge_lines)) },
+                            label = { Text(stringResource(Res.string.aether_lab_tor_bridge_lines)) },
+                            placeholder = { Text(stringResource(Res.string.aether_hint_tor_bridge_lines)) },
                             minLines = 2,
                             maxLines = 6,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                     if (torBridges == AetherProfile.TOR_BRIDGES_AUTO || torBridges == AetherProfile.TOR_BRIDGES_FIRST) {
                         PickerField(
-                            label = stringResource(Res.string.aether_tor_relays),
+                            label = stringResource(Res.string.aether_lab_tor_relays),
                             options = AetherProfile.torRelayModes.map { it to it.replaceFirstChar(Char::uppercase) },
                             selected = torRelays,
                             onSelect = { torRelays = it },
@@ -424,14 +370,14 @@ fun AetherSheet(
 
             if (psiphon != AetherProfile.CARRIER_OFF || aether != null) {
                 PickerField(
-                    label = stringResource(Res.string.aether_psiphon),
+                    label = stringResource(Res.string.aether_lab_psiphon),
                     options = AetherProfile.carriers.map { it to it.replaceFirstChar(Char::uppercase) },
                     selected = psiphon,
                     onSelect = { psiphon = it },
                 )
                 if (psiphon != AetherProfile.CARRIER_OFF) {
                     PickerField(
-                        label = stringResource(Res.string.aether_psiphon_connection),
+                        label = stringResource(Res.string.aether_lab_psiphon_mode),
                         options = AetherProfile.psiphonModes.map { it to it.replaceFirstChar(Char::uppercase) },
                         selected = psiphonMode,
                         onSelect = { psiphonMode = it },
@@ -439,60 +385,185 @@ fun AetherSheet(
                     OutlinedTextField(
                         value = psiphonRegion,
                         onValueChange = { psiphonRegion = it },
-                        label = { Text(stringResource(Res.string.aether_psiphon_region)) },
+                        label = { Text("Psiphon Region") },
                         singleLine = true,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     if (psiphonMode != AetherProfile.PSIPHON_MODE_DIRECT) {
                         OutlinedTextField(
                             value = psiphonCdnIps,
                             onValueChange = { psiphonCdnIps = it },
-                            label = { Text(stringResource(Res.string.aether_psiphon_cdn_ips)) },
+                            label = { Text(stringResource(Res.string.aether_lab_psiphon_cdn_ips)) },
                             singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
                             value = psiphonCdnSni,
                             onValueChange = { psiphonCdnSni = it },
-                            label = { Text(stringResource(Res.string.aether_psiphon_cdn_sni)) },
+                            label = { Text(stringResource(Res.string.aether_lab_psiphon_cdn_sni)) },
                             singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
                             value = psiphonCdnSets,
                             onValueChange = { psiphonCdnSets = it },
-                            label = { Text(stringResource(Res.string.aether_psiphon_cdn_sets)) },
+                            label = { Text(stringResource(Res.string.aether_lab_psiphon_cdn_sets)) },
                             singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
+                    SettingRow(
+                        label = stringResource(Res.string.aether_lab_psiphon_bundled_list),
+                        checked = psiphonBundledList,
+                        enabled = true,
+                        onChecked = { psiphonBundledList = it },
+                    )
                 }
             }
 
-            OutlinedTextField(
-                value = finalMask,
-                onValueChange = { finalMask = it },
-                label = { Text(stringResource(Res.string.aether_final_mask)) },
-                minLines = 1,
-                maxLines = 4,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = dialMode,
-                onValueChange = { dialMode = it },
-                label = { Text(stringResource(Res.string.aether_dial_mode)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+            dev.cluvex.zedsecure.ui.components.SectionTitle("Endpoint")
+
+            if (twoHops) {
+                OutlinedTextField(
+                    value = wiwOuter,
+                    onValueChange = { wiwOuter = it },
+                    label = { Text(stringResource(Res.string.aether_lab_wiw_outer)) },
+                    placeholder = { Text(stringResource(Res.string.aether_hint_endpoint)) },
+                    singleLine = true,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = wiwInner,
+                    onValueChange = { wiwInner = it },
+                    label = { Text(stringResource(Res.string.aether_lab_wiw_inner)) },
+                    placeholder = { Text(stringResource(Res.string.aether_hint_endpoint)) },
+                    singleLine = true,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                OutlinedTextField(
+                    value = server,
+                    onValueChange = { server = it },
+                    label = { Text(stringResource(Res.string.aether_lab_endpoint)) },
+                    placeholder = { Text(stringResource(Res.string.aether_hint_endpoint)) },
+                    singleLine = true,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = port,
+                    onValueChange = { port = it.filter(Char::isDigit).take(5) },
+                    label = { Text(stringResource(Res.string.aether_lab_port)) },
+                    singleLine = true,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            PickerField(
+                label = stringResource(Res.string.aether_lab_ip_version),
+                options = AetherProfile.ipVersions.map { it to it.uppercase() },
+                selected = ipVersion,
+                onSelect = { ipVersion = it },
             )
 
             if (aether != null) {
-                FilledTonalButton(
-                    onClick = { showIdentity = true },
-                    modifier = Modifier.fillMaxWidth(),
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(Res.string.aether_identity))
+                    FilledTonalButton(
+                        onClick = {
+                            val current = build() ?: return@FilledTonalButton
+                            scanning = true
+                            scanOutcome = null
+                            scope.launch {
+                                val result = aether.scan(current)
+                                scanning = false
+                                scanOutcome = if (result == null) ScanOutcome.Failed else {
+                                    if (twoHops && result.innerHop != null) {
+                                        wiwOuter = result.endpoint
+                                        wiwInner = result.innerHop
+                                    } else {
+                                        val text = result.endpoint
+                                        val separator = text.lastIndexOf(':')
+                                        if (separator > 0) {
+                                            server = text.substring(0, separator).removeSurrounding("[", "]")
+                                            port = text.substring(separator + 1)
+                                        }
+                                    }
+                                    ScanOutcome.Found
+                                }
+                            }
+                        },
+                        enabled = !scanning,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        if (scanning) {
+                            CircularProgressIndicator(Modifier.width(18.dp).height(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(stringResource(Res.string.aether_scanning))
+                        } else {
+                            Text(stringResource(Res.string.aether_action_scan))
+                        }
+                    }
+                    if (scanning) {
+                        TextButton(onClick = { /* ViewModel cancellation would go here */ }) {
+                            Text(stringResource(Res.string.action_cancel))
+                        }
+                    }
+                }
+                when (scanOutcome) {
+                    ScanOutcome.Failed -> Text(
+                        stringResource(Res.string.aether_scan_failed),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                    ScanOutcome.Found -> Text(
+                        stringResource(Res.string.aether_scan_success),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                    null -> Unit
                 }
             }
+
+            dev.cluvex.zedsecure.ui.components.SectionTitle(stringResource(Res.string.aether_lab_other_settings))
+            
+            OutlinedTextField(
+                value = dns,
+                onValueChange = { dns = it },
+                label = { Text(stringResource(Res.string.aether_lab_dns)) },
+                placeholder = { Text(stringResource(Res.string.aether_hint_dns)) },
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = exitLoc,
+                onValueChange = { exitLoc = it },
+                label = { Text(stringResource(Res.string.aether_lab_exit_loc)) },
+                placeholder = { Text(stringResource(Res.string.aether_hint_exit_loc)) },
+                singleLine = true,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            PickerField(
+                label = stringResource(Res.string.aether_lab_target_strategy),
+                options = AetherProfile.targetStrategies.map { it to it },
+                selected = targetStrategy,
+                onSelect = { targetStrategy = it },
+            )
 
             SettingRow(
                 label = stringResource(Res.string.aether_lab_expert),
@@ -505,11 +576,21 @@ fun AetherSheet(
                     value = command,
                     onValueChange = { command = it },
                     label = { Text(stringResource(Res.string.aether_lab_command)) },
-                    supportingText = { Text(stringResource(Res.string.aether_command_hint)) },
+                    supportingText = { Text(stringResource(Res.string.aether_command_custom)) },
                     minLines = 2,
                     maxLines = 6,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+
+            if (aether != null) {
+                FilledTonalButton(
+                    onClick = { showIdentity = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(Res.string.aether_action_renew_key))
+                }
             }
 
             Button(
@@ -519,6 +600,11 @@ fun AetherSheet(
                     onSave(name, settings)
                 },
                 enabled = !saving,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else androidx.compose.ui.graphics.Color(0xFF0D9488),
+                    contentColor = androidx.compose.ui.graphics.Color.White,
+                ),
                 modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
                 if (saving) {
@@ -549,7 +635,21 @@ private fun AetherIdentitySheet(actions: AetherActions, onDismiss: () -> Unit) {
         entries = actions.keys()
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = if (isDark) androidx.compose.ui.graphics.Color(0xF20B1C38) else androidx.compose.ui.graphics.Color(0xF8F8FAFD),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            androidx.compose.foundation.layout.Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(if (isDark) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f) else androidx.compose.ui.graphics.Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -558,8 +658,10 @@ private fun AetherIdentitySheet(actions: AetherActions, onDismiss: () -> Unit) {
         ) {
             Text(
                 stringResource(Res.string.aether_identity),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
+                color = if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF0F172A),
+                modifier = Modifier.padding(vertical = 4.dp),
             )
 
             if (entries.isEmpty()) {

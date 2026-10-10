@@ -39,6 +39,8 @@ data class AetherProfile(
     val psiphonCdnSets: String = "",
     val finalMask: String = "",
     val dialMode: String = "",
+    val targetStrategy: String = "",
+    val psiphonBundledList: Boolean = true,
     val command: String = "",
 ) {
     companion object {
@@ -46,6 +48,7 @@ data class AetherProfile(
         const val PROTO_WG = "wg"
         const val PROTO_GOOL = "gool"
         const val PROTO_MIM = "mim"
+        const val PROTO_WG_OVER_MASQUE = "wg-over-masque"
 
         const val TRANSPORT_H3 = "h3"
         const val TRANSPORT_H2 = "h2"
@@ -95,9 +98,10 @@ data class AetherProfile(
         const val DEFAULT_ECH_DOMAIN = "cloudflare-ech.com"
         const val DEFAULT_ENROLL_ADDRESS = "api.cloudflareclient.com"
 
-        val protocols = listOf(PROTO_WG, PROTO_MASQUE, PROTO_GOOL, PROTO_MIM)
+        val protocols = listOf(PROTO_MASQUE, PROTO_WG, PROTO_GOOL, PROTO_MIM, PROTO_WG_OVER_MASQUE)
         val transports = listOf(TRANSPORT_H3, TRANSPORT_H2)
         val scanModes = listOf(SCAN_TURBO, SCAN_BALANCED, SCAN_THOROUGH, SCAN_VERIFIED, SCAN_IRONCLAD)
+        val targetStrategies = listOf("AsIs", "UseIP", "UseIPv4", "UseIPv6", "UseIPv4v6", "UseIPv6v4", "ForceIP", "ForceIPv4", "ForceIPv6", "ForceIPv4v6", "ForceIPv6v4")
         val obfuscations = listOf(OBF_AUTO, OBF_OFF, OBF_LIGHT, OBF_FIREWALL, OBF_BALANCED, OBF_GFW, OBF_AGGRESSIVE)
         val ipVersions = listOf(IP_V4, IP_V6, IP_DUAL)
         val fingerprints = listOf(FINGERPRINT_CHROME, FINGERPRINT_FIREFOX, FINGERPRINT_SEMI_PYTHON, FINGERPRINT_GO)
@@ -108,7 +112,7 @@ data class AetherProfile(
     }
 
     val isTwoHops: Boolean get() = protocol == PROTO_GOOL || protocol == PROTO_MIM
-    val overMasque: Boolean get() = protocol == PROTO_MASQUE || protocol == PROTO_MIM
+    val overMasque: Boolean get() = protocol == PROTO_MASQUE || protocol == PROTO_MIM || protocol == PROTO_WG_OVER_MASQUE
 
     fun endpointText(): String? {
         val host = server.trim()
@@ -195,6 +199,7 @@ object AetherCommands {
                 addAll(listOf("--ip", profile.ipVersion))
                 settingValue(profile.dns)?.let { addAll(listOf("--dns", it)) }
                 settingValue(profile.exitLoc)?.let { addAll(listOf("--exit-loc", it)) }
+                settingValue(profile.targetStrategy)?.let { addAll(listOf("--target-strategy", it)) }
 
                 if (profile.overMasque && profile.transport == AetherProfile.TRANSPORT_H2) {
                     add("--h2")
@@ -233,6 +238,9 @@ object AetherCommands {
                 AetherProfile.CARRIER_REVERSE -> add("--tor-reverse")
                 AetherProfile.CARRIER_ONLY -> add("--tor-only")
             }
+            settingValue(profile.finalMask)?.let { addAll(listOf("--final-mask", it)) }
+            settingValue(profile.dialMode)?.let { addAll(listOf("--dial-mode", it)) }
+
             torBind?.let { addAll(listOf(TOR_BIND, "127.0.0.1:$it")) }
             if (tor != AetherProfile.CARRIER_OFF) {
                 when (profile.torBridges) {
@@ -268,6 +276,7 @@ object AetherCommands {
                     settingValue(profile.psiphonCdnSets)?.let { addAll(listOf("--psiphon-cdn-sets", it)) }
                 }
                 settingValue(profile.psiphonRegion)?.let { addAll(listOf("--psiphon-region", it)) }
+                if (profile.psiphonBundledList) add("--psiphon-bundled-list")
             }
             addAll(listOf(LOG_LEVEL, logLevel))
         }
