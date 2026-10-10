@@ -25,13 +25,13 @@ class AetherActionsAndroid(private val context: Context) : AetherActions {
         AetherScanner.cancel()
     }
 
-    override suspend fun registerKeys(protocol: String, onOutput: (String) -> Unit): Boolean {
+    override suspend fun registerKeys(kind: String, onOutput: (String) -> Unit): Boolean {
         val workDir = AetherSupport.workDir(context).apply { mkdirs() }
         val upstream = AetherSupport.startExitProxy(AetherProfile())
         return try {
             AetherIdentityStore.register(
                 context = context,
-                protocol = protocol,
+                kind = kind,
                 upstreamPort = upstream,
                 workDir = workDir,
             ) { line ->

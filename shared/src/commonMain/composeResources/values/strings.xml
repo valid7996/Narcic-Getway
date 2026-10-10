@@ -1459,4 +1459,7 @@
     <string name="aether_lab_target_strategy">Target Strategy</string>
     <string name="aether_action_use_settings">Revert to Settings</string>
     <string name="aether_command_custom">Using custom command</string>
+    <string name="aether_keys_hint_ech">ECH uses the key of the HTTPS record of the domain, asked of the DNS</string>
+    <string name="aether_hint_fragment_size">8-16</string>
+    <string name="aether_hint_fragment_delay">2-10</string>
 </resources>

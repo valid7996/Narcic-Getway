@@ -69,7 +69,7 @@ class AetherController(
                     LogBus.append("I/aether registering missing WARP keys: ${missing.joinToString()}")
                     val registered = AetherIdentityStore.registerBlocking(
                         context = context,
-                        protocol = profile.protocol,
+                        kind = AetherProfile.registerKindOf(profile.protocol),
                         upstreamPort = upstream,
                         workDir = workDir,
                         onOutput = ::relayOutput,
@@ -113,9 +113,10 @@ class AetherController(
             }, "aether-log").apply { isDaemon = true }
             reader.start()
 
-            val deadline = System.currentTimeMillis() + START_TIMEOUT_MS
+            // PattNG waits for the listener as long as the core lives: a scan of a hard network,
+            // and a Psiphon or Tor carrier, takes minutes. The stop flag and the process death end it.
             var ready = false
-            while (!stopped && System.currentTimeMillis() < deadline) {
+            while (!stopped) {
                 if (answersSocks()) {
                     ready = true
                     break
@@ -127,7 +128,7 @@ class AetherController(
             if (!ready || stopped) {
                 p.destroy()
                 AetherSupport.stopExitProxy()
-                onStopped(if (stopped) null else "Aether core listener did not respond within ${START_TIMEOUT_MS / 1000}s")
+                onStopped(if (stopped) null else "Aether core listener did not come up")
                 return
             }
 
@@ -153,7 +154,6 @@ class AetherController(
     private fun answersSocks(): Boolean = AetherSupport.answersSocks(socksPort)
 
     companion object {
-        private const val START_TIMEOUT_MS = 60_000L
         private const val POLL_INTERVAL_MS = 300L
     }
 }
@@ -347,6 +347,7 @@ object AetherIdentityStore {
     const val MASQUE_INNER_FILE = "aether-masque-secondary.toml"
     const val WIREGUARD_FILE = "aether-wg.toml"
     const val WIREGUARD_INNER_FILE = "aether-wg-secondary.toml"
+    const val MASQUE_GOOL_FILE = "aether-masque-gool.toml"
 
     private val identityField = Regex("""^(device_id|ipv4|ipv6)\s*=\s*"([^"]*)"$""")
 
@@ -358,7 +359,7 @@ object AetherIdentityStore {
         AetherProfile.PROTO_WG -> listOf(WIREGUARD_FILE)
         AetherProfile.PROTO_GOOL -> listOf(WIREGUARD_FILE, WIREGUARD_INNER_FILE)
         AetherProfile.PROTO_MIM -> listOf(MASQUE_FILE, MASQUE_INNER_FILE)
-        AetherProfile.PROTO_WG_OVER_MASQUE -> listOf(WIREGUARD_FILE, MASQUE_FILE)
+        AetherProfile.PROTO_WG_OVER_MASQUE -> listOf(MASQUE_FILE, MASQUE_GOOL_FILE)
         else -> listOf(WIREGUARD_FILE)
     }
 
@@ -381,7 +382,7 @@ object AetherIdentityStore {
 
     fun keys(context: Context): List<KeyEntry> {
         val workDir = AetherSupport.workDir(context)
-        return listOf(WIREGUARD_FILE, WIREGUARD_INNER_FILE, MASQUE_FILE, MASQUE_INNER_FILE).map { name ->
+        return listOf(WIREGUARD_FILE, WIREGUARD_INNER_FILE, MASQUE_FILE, MASQUE_INNER_FILE, MASQUE_GOOL_FILE).map { name ->
             KeyEntry(name, read(File(workDir, name)))
         }
     }
@@ -391,22 +392,22 @@ object AetherIdentityStore {
 
     suspend fun register(
         context: Context,
-        protocol: String,
+        kind: String,
         upstreamPort: Int?,
         workDir: File,
         onOutput: (String) -> Unit,
     ): Boolean = withContext(Dispatchers.IO) {
-        registerBlocking(context, protocol, upstreamPort, workDir, onOutput)
+        registerBlocking(context, kind, upstreamPort, workDir, onOutput)
     }
 
     fun registerBlocking(
         context: Context,
-        protocol: String,
+        kind: String,
         upstreamPort: Int?,
         workDir: File,
         onOutput: (String) -> Unit,
     ): Boolean {
-        var arguments = listOf(AetherCommands.REGISTER, protocol, "--log-level", "info")
+        var arguments = listOf(AetherCommands.REGISTER, kind, "--log-level", "info")
         if (upstreamPort != null) {
             arguments = arguments + listOf(AetherCommands.UPSTREAM, "socks5://127.0.0.1:$upstreamPort")
         }
@@ -474,7 +475,7 @@ object AetherIdentityStore {
         val renewalDir = File(workDir.parentFile, "aether-renewal")
         if (!File(renewalDir, "ready").isFile) return
         workDir.mkdirs()
-        for (name in listOf(WIREGUARD_FILE, WIREGUARD_INNER_FILE, MASQUE_FILE, MASQUE_INNER_FILE)) {
+        for (name in listOf(WIREGUARD_FILE, WIREGUARD_INNER_FILE, MASQUE_FILE, MASQUE_INNER_FILE, MASQUE_GOOL_FILE)) {
             val renewed = File(renewalDir, name)
             if (renewed.isFile) runCatching { renewed.renameTo(File(workDir, name)) }
         }

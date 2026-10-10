@@ -15,8 +15,8 @@ interface AetherActions {
     /** Cancels an ongoing scan process. */
     fun cancelScan()
 
-    /** Registers WARP keys anew, streaming progress to [onOutput]. */
-    suspend fun registerKeys(protocol: String, onOutput: (String) -> Unit): Boolean
+    /** Registers WARP keys of [kind] (the word the core's --register takes), streaming progress to [onOutput]. */
+    suspend fun registerKeys(kind: String, onOutput: (String) -> Unit): Boolean
 
     /** Lists key files with their parsed identities (device_id, IPv4, IPv6). */
     suspend fun keys(): List<AetherKeyUiEntry>

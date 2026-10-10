@@ -27,7 +27,7 @@ object AetherCommands {
         transport: String,
         tor: String,
         psiphon: String,
-    ): Boolean = (protocol == AetherProfile.PROTO_MASQUE || protocol == AetherProfile.PROTO_MIM || protocol == AetherProfile.PROTO_WG_OVER_MASQUE) &&
+    ): Boolean = AetherProfile.overMasque(protocol) &&
         (transport == AetherProfile.TRANSPORT_H2 || tor == AetherProfile.CARRIER_REVERSE || psiphon == AetherProfile.CARRIER_REVERSE)
 
     private fun fingerprintArguments(fingerprint: String): List<String> {
@@ -117,7 +117,8 @@ object AetherCommands {
         return buildList {
             addAll(listOf(BIND, "127.0.0.1:$own"))
             if (psiphon != AetherProfile.CARRIER_ONLY && tor != AetherProfile.CARRIER_ONLY) {
-                addAll(listOf("--protocol", profile.protocol))
+                // wg-over-masque runs on the core's gool protocol, with the MASQUE + masque-gool keys.
+                addAll(listOf("--protocol", AetherProfile.coreNameOf(profile.protocol)))
                 addAll(listOf("--scan", profile.scanMode))
                 masqueOverHttp2(profile.protocol, profile.transport, tor, psiphon).let { overHttp2 ->
                     if (profile.obfuscation != AetherProfile.OBF_AUTO && !overHttp2) {
@@ -129,7 +130,7 @@ object AetherCommands {
                 // A scan keeps the exit rule as well, so that it ends on an endpoint the session will accept.
                 settingValue(profile.exitLoc)?.let { addAll(listOf("--exit-loc", it)) }
 
-                if (profile.overMasque && profile.transport == AetherProfile.TRANSPORT_H2) {
+                if (AetherProfile.overMasque(profile.protocol) && profile.transport == AetherProfile.TRANSPORT_H2) {
                     add("--h2")
                     if (profile.fragment) {
                         add("--fragment")
@@ -139,17 +140,17 @@ object AetherCommands {
                             ?.let { addAll(listOf("--fragment-delay", rangeText(it))) }
                     }
                 }
-                if (profile.overMasque && profile.ech) {
+                if (AetherProfile.overMasque(profile.protocol) && profile.ech) {
                     addAll(listOf("--ech", "auto"))
                     addAll(listOf("--ech-dns", settingValue(profile.echDns) ?: AetherProfile.DEFAULT_ECH_DNS))
                     addAll(listOf("--ech-domain", settingValue(profile.echDomain) ?: AetherProfile.DEFAULT_ECH_DOMAIN))
                 }
-                if (profile.overMasque) {
+                if (AetherProfile.overMasque(profile.protocol)) {
                     settingValue(profile.masqueSni)?.let { addAll(listOf("--masque-sni", it)) }
                     addAll(fingerprintArguments(profile.fingerprint))
                 }
 
-                if (profile.isTwoHops) {
+                if (AetherProfile.isTwoHops(profile.protocol)) {
                     val hop = if (profile.protocol == AetherProfile.PROTO_MIM) "--mim" else "--wiw"
                     val outer = profile.wiwOuter.trim().takeUnless { scan }
                     val inner = profile.wiwInner.trim().takeUnless { scan }

@@ -1452,4 +1452,7 @@
     <string name="aether_lab_target_strategy">استراتژی هدف (Target Strategy)</string>
     <string name="aether_action_use_settings">بازگشت به تنظیمات خودکار</string>
     <string name="aether_command_custom">در حال استفاده از فرمان سفارشی</string>
+    <string name="aether_keys_hint_ech">ECH از کلید HTTPS رکورد دامنه استفاده می‌کند که از DNS پرسیده می‌شود</string>
+    <string name="aether_hint_fragment_size">8-16</string>
+    <string name="aether_hint_fragment_delay">2-10</string>
 </resources>

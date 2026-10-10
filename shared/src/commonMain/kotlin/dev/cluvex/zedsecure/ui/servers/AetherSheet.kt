@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -135,7 +136,7 @@ fun AetherSheet(
     var psiphonBundledList by remember { mutableStateOf(initial?.psiphonBundledList ?: true) }
     var finalMask by remember { mutableStateOf(initial?.finalMask.orEmpty()) }
     var dialMode by remember { mutableStateOf(initial?.dialMode.orEmpty()) }
-    var masqueSni by remember { mutableStateOf(initial?.masqueSni.orEmpty()) }
+    var masqueSni by remember { mutableStateOf(initial?.masqueSni ?: AetherProfile.DEFAULT_MASQUE_SNI) }
     var command by remember { mutableStateOf(initial?.command.orEmpty()) }
     var showOther by remember { mutableStateOf(dns.isNotBlank() || exitLoc.isNotBlank() || targetStrategy.isNotBlank()) }
     var showCdnSets by remember { mutableStateOf(psiphonCdnSets.isNotBlank()) }
@@ -158,7 +159,7 @@ fun AetherSheet(
     // Keys dialog
     var showKeysDialog by remember { mutableStateOf(false) }
 
-    val twoHops = protocol == AetherProfile.PROTO_GOOL || protocol == AetherProfile.PROTO_MIM
+    val twoHops = AetherProfile.isTwoHops(protocol)
     val overMasque = protocol == AetherProfile.PROTO_MASQUE || protocol == AetherProfile.PROTO_MIM || protocol == AetherProfile.PROTO_WG_OVER_MASQUE
     val warpUsed = psiphon != AetherProfile.CARRIER_ONLY && tor != AetherProfile.CARRIER_ONLY
     val overHttp2 = overMasque && transport == AetherProfile.TRANSPORT_H2
@@ -284,16 +285,19 @@ fun AetherSheet(
                     )
                 }
 
-                // MASQUE SNI: the server name the MASQUE handshakes put in their ClientHello
-                OutlinedTextField(
-                    value = masqueSni,
-                    onValueChange = { masqueSni = it },
-                    label = { Text("MASQUE SNI") },
-                    placeholder = { Text("www.cloudflare.com") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                // MASQUE SNI: the server name the MASQUE handshakes put in their ClientHello.
+                // Only the MASQUE protocol takes it.
+                if (protocol == AetherProfile.PROTO_MASQUE) {
+                    OutlinedTextField(
+                        value = masqueSni,
+                        onValueChange = { masqueSni = it },
+                        label = { Text("MASQUE SNI") },
+                        placeholder = { Text(AetherProfile.DEFAULT_MASQUE_SNI) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
 
                 if (overHttp2) {
                     SettingToggleRow(
@@ -785,9 +789,9 @@ fun AetherSheet(
         }
     }
 
-    // WARP Keys Renewal Dialog
+    // WARP Keys Page (PattNG-faithful full page)
     if (showKeysDialog && aether != null) {
-        AetherKeysDialog(
+        AetherKeysPage(
             actions = aether,
             onDismiss = { showKeysDialog = false },
             onLog = { prio, line -> addLog(prio, line) },
@@ -1016,5 +1020,308 @@ private fun SettingToggleRow(
             }
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+/**
+ * The WARP keys page, faithful to PattNG's ServerAetherKeysActivity: a radio group for the key
+ * kind, the enroll address, fragment / ECH / fingerprint settings, the exit-node fields, a live
+ * log panel and the renew button. Its settings are its own: no profile's settings reach them.
+ */
+@Composable
+private fun AetherKeysPage(
+    actions: AetherActions,
+    onDismiss: () -> Unit,
+    onLog: (Int, String) -> Unit,
+    isDark: Boolean,
+) {
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    // Key settings (PattNG AetherKeysSettings)
+    var keyKind by remember { mutableStateOf("all") }
+    var enrollAddress by remember { mutableStateOf(AetherProfile.DEFAULT_ENROLL_ADDRESS) }
+    var keyFragment by remember { mutableStateOf(false) }
+    var keyFragmentSize by remember { mutableStateOf("") }
+    var keyFragmentDelay by remember { mutableStateOf("") }
+    var keyEch by remember { mutableStateOf(false) }
+    var keyEchDns by remember { mutableStateOf(AetherProfile.DEFAULT_ECH_DNS) }
+    var keyEchDomain by remember { mutableStateOf(AetherProfile.DEFAULT_ECH_DOMAIN) }
+    var keyFingerprint by remember { mutableStateOf(AetherProfile.FINGERPRINT_CHROME) }
+    var keyFinalMask by remember { mutableStateOf("") }
+    var keyDialMode by remember { mutableStateOf("") }
+    var showKeyFinalMaskPresets by remember { mutableStateOf(false) }
+
+    var isRenewing by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf<String?>(null) }
+    var keysList by remember { mutableStateOf<List<AetherKeyUiEntry>>(emptyList()) }
+
+    val platform = LocalPlatform.current
+    val logEntries = remember { mutableStateListOf<AetherLogUiEntry>() }
+    var nextLogId by remember { mutableStateOf(1L) }
+    fun keyLog(priority: Int, text: String) {
+        logEntries.add(AetherLogUiEntry(nextLogId++, priority, text))
+        if (logEntries.size > 500) logEntries.removeAt(0)
+    }
+
+    LaunchedEffect(Unit) {
+        keysList = actions.keys()
+    }
+
+    val kindLabels = listOf(
+        "all" to "All",
+        AetherProfile.PROTO_WG to "WireGuard",
+        AetherProfile.PROTO_MASQUE to "MASQUE",
+        "gool-classic" to "WARP-in-WARP",
+        AetherProfile.PROTO_MIM to "MASQUE-in-MASQUE",
+        "gool" to "WireGuard over MASQUE",
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+            )
+        },
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                stringResource(Res.string.aether_action_renew_key),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
+
+            // Current key status
+            if (keysList.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        keysList.forEach { entry ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(entry.file, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    if (entry.deviceId != null) "Ready" else "Missing",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (entry.deviceId != null) (if (isDark) Color(0xFF60E0B0) else Color(0xFF059669)) else MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Key kind radio group
+            SectionTitle("Key Kind")
+            Column {
+                kindLabels.forEach { (kind, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !isRenewing) { keyKind = kind }
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = keyKind == kind,
+                            onClick = null,
+                            enabled = !isRenewing,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(label, style = MaterialTheme.typography.bodyLarge, color = if (isDark) Color(0xFFE0E0F0) else Color(0xFF0F172A))
+                    }
+                }
+            }
+
+            // Enroll address
+            OutlinedTextField(
+                value = enrollAddress,
+                onValueChange = { enrollAddress = it },
+                label = { Text("Enroll Address") },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // Fragment
+            SettingToggleRow(
+                title = stringResource(Res.string.aether_lab_fragment),
+                checked = keyFragment,
+                onCheckedChange = { keyFragment = it },
+            )
+            if (keyFragment) {
+                OutlinedTextField(
+                    value = keyFragmentSize,
+                    onValueChange = { keyFragmentSize = it },
+                    label = { Text(stringResource(Res.string.aether_lab_fragment_size)) },
+                    placeholder = { Text(stringResource(Res.string.aether_hint_fragment_size)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = keyFragmentDelay,
+                    onValueChange = { keyFragmentDelay = it },
+                    label = { Text(stringResource(Res.string.aether_lab_fragment_delay)) },
+                    placeholder = { Text(stringResource(Res.string.aether_hint_fragment_delay)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            // ECH
+            SettingToggleRow(
+                title = stringResource(Res.string.aether_lab_ech),
+                summary = stringResource(Res.string.aether_keys_hint_ech),
+                checked = keyEch,
+                onCheckedChange = { keyEch = it },
+            )
+            if (keyEch) {
+                PickerField(
+                    label = stringResource(Res.string.aether_lab_ech_dns),
+                    options = AetherProfile.defaultEchDnsOptions.map { it to it },
+                    selected = keyEchDns,
+                    onSelect = { keyEchDns = it },
+                )
+                PickerField(
+                    label = stringResource(Res.string.aether_lab_ech_domain),
+                    options = AetherProfile.defaultEchDomainOptions.map { it to it },
+                    selected = keyEchDomain,
+                    onSelect = { keyEchDomain = it },
+                )
+            }
+
+            // Fingerprint
+            PickerField(
+                label = stringResource(Res.string.aether_lab_fingerprint),
+                options = AetherProfile.fingerprints,
+                selected = keyFingerprint,
+                onSelect = { keyFingerprint = it },
+            )
+
+            // Exit-node
+            SectionTitle("Exit-node")
+            Box(Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = keyFinalMask,
+                    onValueChange = { keyFinalMask = it },
+                    label = { Text(stringResource(Res.string.aether_final_mask)) },
+                    minLines = 1,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(16.dp),
+                    trailingIcon = {
+                        IconButton(onClick = { showKeyFinalMaskPresets = true }) {
+                            Icon(painterResource(Res.drawable.ic_keyboard_arrow_down), null)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                DropdownMenu(
+                    expanded = showKeyFinalMaskPresets,
+                    onDismissRequest = { showKeyFinalMaskPresets = false },
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    AetherProfile.finalMaskPresets.forEach { (label, value) ->
+                        DropdownMenuItem(
+                            text = { Text(label, style = MaterialTheme.typography.bodyMedium) },
+                            onClick = {
+                                keyFinalMask = value
+                                showKeyFinalMaskPresets = false
+                            },
+                        )
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = keyDialMode,
+                onValueChange = { keyDialMode = it },
+                label = { Text(stringResource(Res.string.aether_dial_mode)) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // Renew button
+            Button(
+                onClick = {
+                    isRenewing = true
+                    statusMessage = null
+                    keyLog(4, "Renewing $keyKind WARP keys...")
+                    scope.launch {
+                        val ok = actions.registerKeys(keyKind) { line ->
+                            keyLog(4, line)
+                            onLog(4, line)
+                        }
+                        isRenewing = false
+                        keysList = actions.keys()
+                        if (ok) {
+                            keyLog(4, "The new keys are ready")
+                            statusMessage = "Key registered successfully"
+                            onLog(4, "WARP registration finished successfully")
+                        } else {
+                            keyLog(6, "The registration did not finish")
+                            statusMessage = "Registration failed"
+                            onLog(6, "WARP registration failed")
+                        }
+                    }
+                },
+                enabled = !isRenewing,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) ZedGreen else Color(0xFF0D9488),
+                    contentColor = Color.White,
+                ),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                if (isRenewing) {
+                    CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Registering with Cloudflare…")
+                } else {
+                    Text(stringResource(Res.string.aether_action_renew_key), fontWeight = FontWeight.Bold)
+                }
+            }
+
+            statusMessage?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDark) Color(0xFF60E0B0) else Color(0xFF059669),
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
+
+            // Log panel (PattNG-faithful)
+            AetherLiveLogPanel(
+                entries = logEntries,
+                onCopy = {
+                    val full = logEntries.joinToString("\n") { it.text }
+                    platform.copyToClipboard(full)
+                },
+                isDark = isDark,
+            )
+
+            Spacer(Modifier.height(8.dp))
+        }
     }
 }

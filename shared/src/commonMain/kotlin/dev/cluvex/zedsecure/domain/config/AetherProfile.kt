@@ -25,6 +25,7 @@ data class AetherProfile(
     val ech: Boolean = false,
     val echDns: String = "",
     val echDomain: String = "",
+    val masqueSni: String = "",
     val wiwOuter: String = "",
     val wiwInner: String = "",
     val tor: String = CARRIER_OFF,
@@ -38,20 +39,19 @@ data class AetherProfile(
     val psiphonCdnSni: String = "",
     val psiphonCdnSets: String = "",
     val psiphonBundledList: Boolean = true,
-    val masqueSni: String = "",
     val finalMask: String = "",
     val dialMode: String = "",
     val targetStrategy: String = "",
-    val command: String = "",
-) {
-    val isTwoHops: Boolean get() = protocol == PROTO_GOOL || protocol == PROTO_MIM
-    val overMasque: Boolean get() = protocol == PROTO_MASQUE || protocol == PROTO_MIM || protocol == PROTO_WG_OVER_MASQUE
+        val command: String = "",
+    ) {
+        val isTwoHops: Boolean get() = isTwoHops(protocol)
+        val overMasque: Boolean get() = overMasque(protocol)
 
-    fun endpointText(): String? {
-        val host = server.trim()
-        if (host.isEmpty() || serverPort !in 1..65535) return null
-        return if (':' in host) "[$host]:$serverPort" else "$host:$serverPort"
-    }
+        fun endpointText(): String? {
+            val host = server.trim()
+            if (host.isEmpty() || serverPort !in 1..65535) return null
+            return if (':' in host) "[$host]:$serverPort" else "$host:$serverPort"
+        }
 
     companion object {
         const val PROTO_MASQUE = "masque"
@@ -104,9 +104,15 @@ data class AetherProfile(
         const val PSIPHON_MODE_CDN = "cdn"
         const val PSIPHON_MODE_DIRECT = "direct"
 
+        const val DEFAULT_MASQUE_SNI = "www.cloudflare.com"
         const val DEFAULT_ECH_DNS = "udp://1.1.1.1"
         const val DEFAULT_ECH_DOMAIN = "cloudflare-ech.com"
+        const val DEFAULT_ENROLL_ADDRESS = "api.cloudflareclient.com"
 
+        /**
+         * The protocols as PattNG's dropdown offers them: [first] is what a profile and a link hold,
+         * [second] the word the core's --protocol takes for it.
+         */
         val protocols = listOf(
             PROTO_MASQUE to "MASQUE",
             PROTO_WG to "WireGuard",
@@ -114,6 +120,21 @@ data class AetherProfile(
             PROTO_MIM to "MASQUE-in-MASQUE",
             PROTO_WG_OVER_MASQUE to "WireGuard over MASQUE",
         )
+
+        /** The word the core's --protocol takes for a profile protocol; gool serves wg-over-masque. */
+        fun coreNameOf(protocol: String): String = when (protocol) {
+            PROTO_WG_OVER_MASQUE -> "gool"
+            else -> protocol
+        }
+
+        fun isTwoHops(protocol: String): Boolean =
+            protocol == PROTO_GOOL || protocol == PROTO_MIM || protocol == PROTO_WG_OVER_MASQUE
+
+        fun overMasque(protocol: String): Boolean =
+            protocol == PROTO_MASQUE || protocol == PROTO_MIM || protocol == PROTO_WG_OVER_MASQUE
+
+        /** Whether the two hops must be different addresses, as the core requires of WARP-in-WARP and MASQUE-in-MASQUE. */
+        fun distinctHops(protocol: String): Boolean = protocol == PROTO_GOOL || protocol == PROTO_MIM
 
         val transports = listOf(
             TRANSPORT_H3 to "HTTP/3",
@@ -217,5 +238,22 @@ data class AetherProfile(
             "consumer-masque.cloudflareclient.com",
             "consumer-masque-proxy.cloudflareclient.com",
         )
+
+        /** The WARP key kinds the keys page registers, with the word the core's --register takes. */
+        val keyKinds = listOf(
+            "all" to "All",
+            PROTO_WG to "WireGuard",
+            PROTO_MASQUE to "MASQUE",
+            "gool-classic" to "WARP-in-WARP",
+            PROTO_MIM to "MASQUE-in-MASQUE",
+            "gool" to "WireGuard over MASQUE",
+        )
+
+        /** The word the core's --register takes for a protocol's keys: gool serves wg-over-masque. */
+        fun registerKindOf(protocol: String): String = when (protocol) {
+            PROTO_GOOL -> "gool-classic"
+            PROTO_WG_OVER_MASQUE -> "gool"
+            else -> protocol
+        }
     }
 }
