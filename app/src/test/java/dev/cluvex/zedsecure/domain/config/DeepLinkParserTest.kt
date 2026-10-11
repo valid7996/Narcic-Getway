@@ -112,7 +112,11 @@ class DeepLinkParserTest {
         assertEquals(DeepLinkRequest.ConfigText(shared), DeepLinkParser.parse(shared))
     }
 
-
+    @Test
+    fun `zedsecure links are completely rejected`() {
+        assertEquals(null, DeepLinkParser.parse("zedsecure://import?url=${enc("https://sub.example/z")}&name=Mine"))
+        assertEquals(null, DeepLinkParser.parse("zedsecure://sub?url=https://sub.example/z2"))
+    }
     @Test
     fun `raw config schemes are config text`() {
         assertEquals(DeepLinkRequest.ConfigText(vless), DeepLinkParser.parse(vless))

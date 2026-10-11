@@ -55,7 +55,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="narcicgeteway" />
                 <data android:scheme="narcicgetway" />
-                <data android:scheme="zedsecure" />
                 <data android:scheme="v2rayng" />
                 <data android:scheme="hiddify" />
                 <data android:scheme="sing-box" />

@@ -111,12 +111,13 @@ class ZedLinkTest {
     }
 
     @Test
-    fun `legacy zedsecure links still parse`() {
+    fun `zedsecure links are rejected`() {
         val legacy = ZedLink.build("Tor", ProfileSource.Tor)!!
             .replaceFirst("narcicgeteway://", "zedsecure://")
-        assertTrue(ZedLink.isZedLink(legacy))
-        assertEquals("Tor", ZedLink.parse(legacy)!!.name)
+        assertFalse(ZedLink.isZedLink(legacy))
+        assertNull(ZedLink.parse(legacy))
     }
+
 
     @Test
     fun `a sealed profile exposes nothing`() {
