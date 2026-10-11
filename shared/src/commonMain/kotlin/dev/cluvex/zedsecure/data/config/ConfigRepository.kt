@@ -12,6 +12,7 @@ import dev.cluvex.zedsecure.crypto.ZsxCrypto
 import dev.cluvex.zedsecure.crypto.ZsxExpiredException
 import dev.cluvex.zedsecure.crypto.ZsxMetadata
 import dev.cluvex.zedsecure.crypto.ZsxSealRequest
+import dev.cluvex.zedsecure.domain.config.AetherLink
 import dev.cluvex.zedsecure.domain.config.AmneziaLink
 import dev.cluvex.zedsecure.domain.config.AutoMember
 import dev.cluvex.zedsecure.domain.config.AutoSelectBuild
