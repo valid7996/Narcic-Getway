@@ -72,7 +72,7 @@ class AetherCommandsTest {
             AetherCommands.KeysRequest(kind = "masque", enrollAddress = "1.2.3.4:443", fragment = true, fragmentSize = "8-16", ech = true),
         )
         assertEquals(listOf(AetherCommands.REGISTER, "masque"), arguments.take(2))
-        assertEquals("1.2.3.4:443", arguments[arguments.indexOf("--api-address") + 1])
+        assertEquals("1.2.3.4:443", arguments[arguments.indexOf("--enroll-address") + 1])
         assertEquals("8-16", arguments[arguments.indexOf("--fragment-size") + 1])
         assertTrue("--ech" in arguments)
     }

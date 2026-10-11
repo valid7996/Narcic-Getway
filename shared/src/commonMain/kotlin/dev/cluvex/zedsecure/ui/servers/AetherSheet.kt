@@ -305,20 +305,6 @@ fun AetherSheet(
                     )
                 }
 
-                // MASQUE SNI: the server name the MASQUE handshakes put in their ClientHello.
-                // Only the MASQUE protocol takes it.
-                if (protocol == AetherProfile.PROTO_MASQUE) {
-                    OutlinedTextField(
-                        value = masqueSni,
-                        onValueChange = { masqueSni = it },
-                        label = { Text(stringResource(Res.string.aether_masque_sni)) },
-                        placeholder = { Text(AetherProfile.DEFAULT_MASQUE_SNI) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-
                 if (overHttp2) {
                     SettingToggleRow(
                         title = stringResource(Res.string.aether_lab_fragment),

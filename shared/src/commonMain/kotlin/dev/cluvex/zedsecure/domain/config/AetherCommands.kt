@@ -146,7 +146,7 @@ object AetherCommands {
                     addAll(listOf("--ech-domain", settingValue(profile.echDomain) ?: AetherProfile.DEFAULT_ECH_DOMAIN))
                 }
                 if (AetherProfile.overMasque(profile.protocol)) {
-                    settingValue(profile.masqueSni)?.let { addAll(listOf("--masque-sni", it)) }
+                    // No --masque-sni: the bundled core (libaether.so) does not know it and refuses to start.
                     addAll(fingerprintArguments(profile.fingerprint))
                 }
 
@@ -371,7 +371,7 @@ object AetherCommands {
      */
     fun keysArguments(request: KeysRequest, logLevel: String = DEFAULT_LOG_LEVEL): List<String> = buildList {
         addAll(listOf(REGISTER, request.kind))
-        request.enrollAddress.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf("--api-address", it)) }
+        request.enrollAddress.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf("--enroll-address", it)) }
         if (request.fragment) {
             add("--fragment")
             parseRange(request.fragmentSize, 1..4096)?.let { addAll(listOf("--fragment-size", rangeText(it))) }
