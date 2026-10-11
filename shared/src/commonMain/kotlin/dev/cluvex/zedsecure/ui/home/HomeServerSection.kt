@@ -245,7 +245,7 @@ internal fun HomeServerSection(
                 ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.subs_update_all)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_schedule), null) },
+                        leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
                         enabled = subscriptions.isNotEmpty() && !updating,
                         onClick = {
                             overflowOpen = false

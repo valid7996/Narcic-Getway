@@ -262,7 +262,7 @@ fun SubscriptionsSheet(
                                     }
                                 }) {
                                     Icon(
-                                        painterResource(Res.drawable.ic_schedule),
+                                        painterResource(Res.drawable.ic_sync),
                                         contentDescription = stringResource(Res.string.subs_update),
                                     )
                                 }

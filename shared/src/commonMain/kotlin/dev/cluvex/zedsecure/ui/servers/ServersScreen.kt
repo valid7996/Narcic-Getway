@@ -527,7 +527,7 @@ fun ServersScreen(
                     modifier = Modifier,
                 ) {
                     Icon(
-                        painterResource(Res.drawable.ic_add_link),
+                        painterResource(Res.drawable.ic_subscription),
                         contentDescription = stringResource(Res.string.subs_title),
                     )
                 }
@@ -548,7 +548,7 @@ fun ServersScreen(
                     ) {
                         DropdownMenuItem(
                             text = { Text(stringResource(Res.string.subs_update_all)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_schedule), null) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
                             enabled = subscriptions.isNotEmpty() && !updating,
                             onClick = {
                                 overflowOpen = false
@@ -1817,7 +1817,7 @@ internal fun AddServerSheet(
             GlassOptionCard(
                 title = stringResource(Res.string.subs_add),
                 subtitle = stringResource(Res.string.subs_add_sub),
-                icon = Res.drawable.ic_add_link,
+                icon = Res.drawable.ic_subscription,
                 accentColor = Color(0xFF2088FF),
                 iconTint = Color(0xFF38BDF8),
                 gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
