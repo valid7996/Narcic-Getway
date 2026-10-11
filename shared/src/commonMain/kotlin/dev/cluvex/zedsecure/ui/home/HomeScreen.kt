@@ -56,7 +56,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ContainedLoadingIndicator
+import dev.cluvex.zedsecure.ui.components.CyberRadarIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -395,14 +395,33 @@ fun HomeScreen(
                 // The one merged dashboard: location, address and live traffic in a single
                 // green panel. It never collapses; it simply exists while the tunnel is up.
                 AnimatedVisibility(visible = live && showConnectionInfo) {
-                    MergedDashboardCard(
-                        info = info,
-                        downloadBps = ui.downloadBps,
-                        uploadBps = ui.uploadBps,
-                        totalDownload = ui.totalDownload,
-                        totalUpload = ui.totalUpload,
-                        onRefresh = homeVm::refresh,
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        ConnectionMapTriggerButton(
+                            expanded = infoExpanded,
+                            destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
+                            onClick = homeVm::toggleExpanded,
+                        )
+                        AnimatedVisibility(visible = infoExpanded) {
+                            ConnectionRouteMapCard(
+                                info = info,
+                                activeConfigName = activeConfigName,
+                                fallbackCountryCode = activeCountryCode,
+                                onClose = homeVm::toggleExpanded,
+                            )
+                        }
+                        MergedDashboardCard(
+                            info = info,
+                            downloadBps = ui.downloadBps,
+                            uploadBps = ui.uploadBps,
+                            totalDownload = ui.totalDownload,
+                            totalUpload = ui.totalUpload,
+                            onRefresh = homeVm::refresh,
+                            onToggleMap = homeVm::toggleExpanded,
+                        )
+                    }
                 }
 
 
@@ -702,20 +721,13 @@ private fun Hero(
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "hero-center",
         ) { s ->
-            when {
-                s.isTransitioning -> ContainedLoadingIndicator(
-                    modifier = Modifier.size(size * 0.39f),
-                    containerColor = Color.Transparent,
+            if (s == ConnectionState.Error) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_lock_open),
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.92f),
+                    modifier = Modifier.size(size * 0.32f),
                 )
-
-                else -> if (s == ConnectionState.Error) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_lock_open),
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.92f),
-                        modifier = Modifier.size(size * 0.32f),
-                    )
-                }
             }
         }
     }
@@ -1158,9 +1170,8 @@ private fun ConnectButton(
             ) { busy ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (busy) {
-                        ContainedLoadingIndicator(
-                            modifier = Modifier.size(28.dp),
-                            containerColor = Color.Transparent,
+                        CyberRadarIndicator(
+                            modifier = Modifier.size(26.dp),
                         )
                     } else {
                         Icon(
@@ -1361,6 +1372,7 @@ private fun MergedDashboardCard(
     totalDownload: Long,
     totalUpload: Long,
     onRefresh: () -> Unit,
+    onToggleMap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(24.dp)
@@ -1412,11 +1424,20 @@ private fun MergedDashboardCard(
                             },
                         )
                     }
+                    if (onToggleMap != null) {
+                        IconButton(onClick = onToggleMap) {
+                            Icon(
+                                painterResource(Res.drawable.ic_map),
+                                contentDescription = "Map",
+                                tint = Color(0xFFFFE066),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
                     IconButton(onClick = onRefresh, enabled = !info.loading) {
                         if (info.loading) {
-                            ContainedLoadingIndicator(
+                            CyberRadarIndicator(
                                 modifier = Modifier.size(18.dp),
-                                containerColor = Color.Transparent,
                             )
                         } else {
                             Icon(

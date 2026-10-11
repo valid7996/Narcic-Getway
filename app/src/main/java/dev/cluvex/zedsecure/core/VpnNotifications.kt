@@ -97,9 +97,9 @@ class VpnNotifications(private val ctx: Context) {
                 },
             )
             .setProgress(progress)
-            .setProgressTrackerIcon(IconCompat.createWithResource(ctx, R.drawable.ic_bolt))
-            .setProgressStartIcon(IconCompat.createWithResource(ctx, R.drawable.ic_home))
-            .setProgressEndIcon(IconCompat.createWithResource(ctx, R.drawable.ic_public))
+            .setProgressTrackerIcon(IconCompat.createWithResource(ctx, R.drawable.ic_notif_rocket))
+            .setProgressStartIcon(IconCompat.createWithResource(ctx, R.drawable.ic_notif_origin))
+            .setProgressEndIcon(IconCompat.createWithResource(ctx, R.drawable.ic_notif_gateway))
 
         return setContentText(stageText)
             .setStyle(style)
@@ -287,12 +287,12 @@ class VpnNotifications(private val ctx: Context) {
 
         private const val BRAND = 0xFF0F9D6C.toInt()
         private const val ERROR_COLOR = 0xFFB3261E.toInt()
-        private const val POINT_COLOR = 0xFFFFFFFF.toInt()
+        private const val POINT_COLOR = 0xFFFFE066.toInt()
         private val SEGMENT_COLORS = listOf(
-            0xFF05523A.toInt(),
-            0xFF0A7B58.toInt(),
             0xFF0F9D6C.toInt(),
             0xFF3FD898.toInt(),
+            0xFFA7F3D0.toInt(),
+            0xFFFFE066.toInt(),
         )
     }
 }

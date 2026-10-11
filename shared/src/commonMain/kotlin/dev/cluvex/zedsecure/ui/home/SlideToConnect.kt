@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ContainedLoadingIndicator
+import dev.cluvex.zedsecure.ui.components.CyberRadarIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -255,9 +255,8 @@ internal fun SlideToConnect(
                 contentAlignment = Alignment.Center,
             ) {
                 if (transition) {
-                    ContainedLoadingIndicator(
+                    CyberRadarIndicator(
                         modifier = Modifier.size(knobSize * 0.55f),
-                        containerColor = Color.Transparent,
                     )
                 } else {
                     Icon(

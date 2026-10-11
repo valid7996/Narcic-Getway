@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,6 +48,7 @@ import dev.cluvex.zedsecure.shared.resources.ic_bolt
 import dev.cluvex.zedsecure.shared.resources.ic_close
 import dev.cluvex.zedsecure.shared.resources.state_connecting
 import dev.cluvex.zedsecure.shared.resources.state_disconnecting
+import dev.cluvex.zedsecure.ui.components.CyberRadarIndicator
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -143,7 +143,7 @@ private fun RingConnect(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (state.isTransitioning) {
-                    ContainedLoadingIndicator(Modifier.size(if (compact) 32.dp else 38.dp))
+                    CyberRadarIndicator(Modifier.size(if (compact) 32.dp else 38.dp))
                 } else {
                     Icon(
                         painterResource(if (state.isActive) Res.drawable.ic_close else Res.drawable.ic_bolt),
@@ -182,7 +182,7 @@ private fun BarConnect(
             horizontalArrangement = Arrangement.Center,
         ) {
             if (state.isTransitioning) {
-                ContainedLoadingIndicator(Modifier.size(20.dp))
+                CyberRadarIndicator(Modifier.size(20.dp))
             } else {
                 Box(
                     Modifier
@@ -228,7 +228,7 @@ private fun IconConnect(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (state.isTransitioning) {
-                    ContainedLoadingIndicator(Modifier.size(26.dp))
+                    CyberRadarIndicator(Modifier.size(26.dp))
                 } else {
                     Icon(
                         painterResource(if (state.isActive) Res.drawable.ic_close else Res.drawable.ic_bolt),
@@ -275,7 +275,7 @@ private fun SwitchConnect(
                     contentAlignment = Alignment.Center,
                 ) {
                     if (state.isTransitioning) {
-                        ContainedLoadingIndicator(Modifier.size(22.dp))
+                        CyberRadarIndicator(Modifier.size(22.dp))
                     } else {
                         Icon(
                             painterResource(

@@ -23,7 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ContainedLoadingIndicator
+import dev.cluvex.zedsecure.ui.components.CyberRadarIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -176,7 +176,7 @@ fun AssetsScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ContainedLoadingIndicator()
+                    CyberRadarIndicator()
                     Spacer(Modifier.width(12.dp))
                     Text(stringResource(Res.string.assets_downloading))
                 }

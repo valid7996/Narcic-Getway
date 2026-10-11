@@ -25,7 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ContainedLoadingIndicator
+import dev.cluvex.zedsecure.ui.components.CyberRadarIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -222,7 +222,7 @@ fun PerAppProxyScreen(
 
         if (apps == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                ContainedLoadingIndicator()
+                CyberRadarIndicator()
             }
         } else {
             LazyColumn(
