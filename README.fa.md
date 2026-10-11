@@ -70,8 +70,7 @@
 
 ## 🤝 توسعه‌دهندگان و تشکر
 
-- **توسعه و نگه‌داری:** [valid7996](https://github.com/valid7996)
-- **تشکر ویژه:** [RobinHood](https://github.com/RobinHood)
+- **توسعه‌دهنده و سازنده:** [رابین هود / Rabin Hood (valid7996)](https://github.com/valid7996)
 - **کانال رسمی تلگرام:** [@Narcic_team](https://t.me/Narcic_team)
 
 ---

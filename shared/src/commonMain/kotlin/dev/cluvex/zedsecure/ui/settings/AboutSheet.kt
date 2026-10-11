@@ -153,14 +153,14 @@ fun AboutSheet(onDismiss: () -> Unit) {
                 LinkRow(
                     iconRes = Res.drawable.ic_description,
                     title = stringResource(Res.string.about_source_xray),
-                    subtitle = "github.com/RobinHood/Xray-core",
+                    subtitle = "github.com/valid7996/Xray-core",
                     isDark = isDark,
                     onClick = { platform.openUri(XRAY_SOURCE_URL) },
                 )
                 LinkRow(
                     iconRes = Res.drawable.ic_description,
                     title = stringResource(Res.string.about_source_lib),
-                    subtitle = "github.com/RobinHood/AndroidLibXrayLite",
+                    subtitle = "github.com/valid7996/AndroidLibXrayLite",
                     isDark = isDark,
                     onClick = { platform.openUri(LIB_SOURCE_URL) },
                 )

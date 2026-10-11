@@ -69,8 +69,7 @@
 
 ## 🤝 Community & Credits
 
-- **Author & Maintainer:** [valid7996](https://github.com/valid7996)
-- **Special Thanks:** [RobinHood](https://github.com/RobinHood)
+- **Author & Maintainer:** [Rabin Hood (valid7996)](https://github.com/valid7996)
 - **Official Telegram Channel:** [@Narcic_team](https://t.me/Narcic_team)
 
 ---
