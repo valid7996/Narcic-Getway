@@ -14,10 +14,6 @@
 
 [**فارسی (Persian Documentation)**](README.fa.md) • [**Download APK**](https://github.com/valid7996/Narcic-Getway/releases/latest) • [**Report Issue**](https://github.com/valid7996/Narcic-Getway/issues)
 
-<br/>
-
-<img src="docs/assets/showcase.png" alt="Narcic Gateway Showcase" width="100%" />
-
 </div>
 
 ---

@@ -14,10 +14,6 @@
 
 [**English Documentation (مستندات انگلیسی)**](README.md) • [**دانلود آخرین نسخه APK**](https://github.com/valid7996/Narcic-Getway/releases/latest) • [**گزارش مشکل / باگ**](https://github.com/valid7996/Narcic-Getway/issues)
 
-<br/>
-
-<img src="docs/assets/showcase.png" alt="نمای برنامه نرسیس گیت‌وی" width="100%" />
-
 </div>
 
 ---
