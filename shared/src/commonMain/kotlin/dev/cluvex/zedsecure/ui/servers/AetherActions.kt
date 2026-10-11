@@ -1,6 +1,7 @@
 package dev.cluvex.zedsecure.ui.servers
 
 import androidx.compose.runtime.compositionLocalOf
+import dev.cluvex.zedsecure.domain.config.AetherCommands
 import dev.cluvex.zedsecure.domain.config.AetherProfile
 
 /**
@@ -15,8 +16,8 @@ interface AetherActions {
     /** Cancels an ongoing scan process. */
     fun cancelScan()
 
-    /** Registers WARP keys of [kind] (the word the core's --register takes), streaming progress to [onOutput]. */
-    suspend fun registerKeys(kind: String, onOutput: (String) -> Unit): Boolean
+    /** Registers the WARP keys [request] asks for, with the settings of the keys page, streaming progress to [onOutput]. */
+    suspend fun registerKeys(request: AetherCommands.KeysRequest, onOutput: (String) -> Unit): Boolean
 
     /** Lists key files with their parsed identities (device_id, IPv4, IPv6). */
     suspend fun keys(): List<AetherKeyUiEntry>

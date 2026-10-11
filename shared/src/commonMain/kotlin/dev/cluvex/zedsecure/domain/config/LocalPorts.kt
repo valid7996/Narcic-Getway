@@ -30,11 +30,18 @@ object LocalPorts {
 
     const val AETHER_SOCKS = 10890
 
+    /**
+     * The loopback SOCKS inbound of the minimal Xray exit the Aether core dials out through. It sits three
+     * above [AETHER_SOCKS], past the two ports after it that the core's own, Tor's and Psiphon's listeners
+     * may take (see AetherCommands.buildArguments): on 10891 it collided with them whenever a carrier ran.
+     */
+    const val AETHER_EXIT = AETHER_SOCKS + 3
+
     const val LAN_SOCKS = 10880
 
     fun isInternal(port: Int): Boolean =
         port == XRAY_SOCKS || port == XRAY_HTTP || port == SNI_SPOOF || port == DESKTOP_METRICS ||
-            port == SHIM || port == PSIPHON_SOCKS || port == PSIPHON_HTTP || port == TOR_SOCKS || port == AETHER_SOCKS ||
+            port == SHIM || port == PSIPHON_SOCKS || port == PSIPHON_HTTP || port == TOR_SOCKS || port in AETHER_SOCKS..AETHER_EXIT ||
             port in SSH..SSH_MAX || port in DNS_TUNNEL..DNS_TUNNEL_MAX ||
             port in MASTER_DNS..MASTER_DNS_MAX || port in SSH_OVER_DNS..SSH_OVER_DNS_MAX
 

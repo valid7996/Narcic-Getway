@@ -34,6 +34,9 @@ class AetherController(
     @Volatile private var stopped = false
     @Volatile private var worker: Thread? = null
 
+    /** True once the core has said that Psiphon carries traffic; only a Psiphon session waits for it. */
+    @Volatile private var readyWordSeen = false
+
     val isRunning: Boolean get() = worker?.isAlive == true && !stopped
 
     fun start(): Boolean {
@@ -92,9 +95,16 @@ class AetherController(
             if (upstream != null) {
                 arguments = arguments + listOf(AetherCommands.UPSTREAM, "socks5://127.0.0.1:$upstream")
             }
+            // Psiphon's listener answers the SOCKS greeting before it has a tunnel; its readiness is the core's
+            // word, an info line, which a quieter level of a hand-written command would never print.
+            val needsWord = AetherCommands.readyNeedsWord(arguments)
+            if (needsWord) arguments = AetherCommands.withInfoLines(arguments)
+            // The listener the app dials: the one the arguments name (a command of the profile may name another).
+            val listenPort = AetherCommands.listenerPortOf(arguments) ?: socksPort
+            readyWordSeen = false
 
             val p = try {
-                AetherSupport.startProcess(context, arguments, workDir)
+                AetherSupport.startProcess(context, arguments, workDir, session = true)
             } catch (e: Exception) {
                 Log.e("AetherController", "failed to spawn core", e)
                 AetherSupport.stopExitProxy()
@@ -117,7 +127,7 @@ class AetherController(
             // and a Psiphon or Tor carrier, takes minutes. The stop flag and the process death end it.
             var ready = false
             while (!stopped) {
-                if (answersSocks()) {
+                if ((!needsWord || readyWordSeen) && AetherSupport.answersSocks(listenPort)) {
                     ready = true
                     break
                 }
@@ -147,11 +157,11 @@ class AetherController(
     private fun relayOutput(line: String) {
         val clean = line.trim()
         if (clean.isNotEmpty()) {
+            if (AetherCommands.isReadyWord(clean)) readyWordSeen = true
+            PsiphonServerList.regionsOf(clean)?.let(PsiphonServerList::remember)
             LogBus.append("${AetherSupport.levelOf(clean)}/aether $clean")
         }
     }
-
-    private fun answersSocks(): Boolean = AetherSupport.answersSocks(socksPort)
 
     companion object {
         private const val POLL_INTERVAL_MS = 300L
@@ -190,16 +200,20 @@ object AetherSupport {
 
     fun workDir(context: Context): File = File(context.filesDir, "aether")
 
+    /** Where the Psiphon client of the session keeps its datastore: the servers it was given, fetched and discovered. */
     fun psiphonDir(context: Context): File = File(context.filesDir, "aether-psiphon")
 
-    fun environment(context: Context, workDir: File): MutableMap<String, String> = mutableMapOf(
+    /** The datastore of a scan or a key registration: apart from the session's, which holds a lock on its own. */
+    fun psiphonProbeDir(context: Context): File = File(context.filesDir, "aether-psiphon-probe")
+
+    fun environment(context: Context, workDir: File, session: Boolean = false): MutableMap<String, String> = mutableMapOf(
         "HOME" to workDir.absolutePath,
         "TMPDIR" to context.cacheDir.absolutePath,
         "AETHER_CONFIG" to File(workDir, AetherIdentityStore.BASE_FILE).absolutePath,
         "AETHER_MASQUE_CONFIG" to File(workDir, AetherIdentityStore.MASQUE_FILE).absolutePath,
         "AETHER_WG_CONFIG" to File(workDir, AetherIdentityStore.WIREGUARD_FILE).absolutePath,
         OWNER_ENV to android.os.Process.myPid().toString(),
-        PSIPHON_DIR_ENV to psiphonDir(context).apply { mkdirs() }.absolutePath,
+        PSIPHON_DIR_ENV to (if (session) psiphonDir(context) else psiphonProbeDir(context)).apply { mkdirs() }.absolutePath,
     ).apply {
         certificateDirectories()?.let { put(CERT_DIR_ENV, it) }
         psiphonBinary(context).takeIf { it.canExecute() }?.let { put(PSIPHON_BIN_ENV, it.absolutePath) }
@@ -209,11 +223,26 @@ object AetherSupport {
         psiphonOverlay(workDir)?.let { put(PSIPHON_CONFIG_ENV, it.absolutePath) }
     }
 
-    fun startProcess(context: Context, arguments: List<String>, workDir: File): Process {
-        val builder = ProcessBuilder(listOf(binary(context).absolutePath) + arguments)
+    /**
+     * Starts the core on [arguments]. The word `shipped` the profile writes after `--psiphon-server-entries` is
+     * replaced by the unpacked list of Psiphon servers, or the flag dropped when the app holds none: the core would
+     * otherwise be told to read a file called "shipped" and the Psiphon client would start without servers.
+     */
+    fun startProcess(context: Context, arguments: List<String>, workDir: File, session: Boolean = false): Process {
+        val entries = if (AetherCommands.PSIPHON_SERVER_ENTRIES in arguments) {
+            PsiphonServerList.entriesFile(context, workDir) { problem ->
+                LogBus.append("W/aether the Psiphon server list is not usable (${problem.message}); the entries kept from before stay")
+            }
+        } else {
+            null
+        }
+        if (AetherCommands.PSIPHON_SERVER_ENTRIES in arguments && entries == null) {
+            LogBus.append("W/aether no Psiphon server list is bundled; Psiphon fetches its own")
+        }
+        val builder = ProcessBuilder(listOf(binary(context).absolutePath) + AetherCommands.withShippedList(arguments, entries?.absolutePath))
             .directory(workDir)
             .redirectErrorStream(true)
-        builder.environment().putAll(environment(context, workDir))
+        builder.environment().putAll(environment(context, workDir, session))
         return builder.start()
     }
 
@@ -392,12 +421,12 @@ object AetherIdentityStore {
 
     suspend fun register(
         context: Context,
-        kind: String,
+        request: AetherCommands.KeysRequest,
         upstreamPort: Int?,
         workDir: File,
         onOutput: (String) -> Unit,
     ): Boolean = withContext(Dispatchers.IO) {
-        registerBlocking(context, kind, upstreamPort, workDir, onOutput)
+        registerBlocking(context, request, upstreamPort, workDir, onOutput)
     }
 
     fun registerBlocking(
@@ -406,8 +435,23 @@ object AetherIdentityStore {
         upstreamPort: Int?,
         workDir: File,
         onOutput: (String) -> Unit,
+    ): Boolean = registerBlocking(
+        context = context,
+        request = AetherCommands.KeysRequest(kind = kind),
+        upstreamPort = upstreamPort,
+        workDir = workDir,
+        onOutput = onOutput,
+    )
+
+    /** Registers the keys the page's [request] asks for, through the settings it carries. */
+    fun registerBlocking(
+        context: Context,
+        request: AetherCommands.KeysRequest,
+        upstreamPort: Int?,
+        workDir: File,
+        onOutput: (String) -> Unit,
     ): Boolean {
-        var arguments = listOf(AetherCommands.REGISTER, kind, "--log-level", "info")
+        var arguments = AetherCommands.keysArguments(request)
         if (upstreamPort != null) {
             arguments = arguments + listOf(AetherCommands.UPSTREAM, "socks5://127.0.0.1:$upstreamPort")
         }

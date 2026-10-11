@@ -246,12 +246,169 @@ object AetherCommands {
         return if (words.firstOrNull()?.startsWith("-") == false) words.drop(1) else words
     }
 
+    /**
+     * The arguments a session or a scan runs on. A command the profile carries runs as written, except that
+     * it gets what the app depends on when it names none of it: a listener on [port] for the app to dial
+     * (Psiphon's or Tor's when one of them runs inside the tunnel, see [listenerFlagOf]) and a log level
+     * that writes the core's info lines, which the readiness check of a Psiphon session waits on.
+     */
     fun runArguments(
         profile: AetherProfile,
         port: Int,
         scan: Boolean = false,
         logLevel: String = DEFAULT_LOG_LEVEL,
-    ): List<String> =
-        if (isCustom(profile)) argumentsOf(profile.command)
-        else buildArguments(profile, port, scan, logLevel)
+    ): List<String> {
+        if (!isCustom(profile)) return buildArguments(profile, port, scan, logLevel)
+        var arguments = argumentsOf(profile.command)
+        val listener = listenerFlagOf(arguments)
+        if (listener !in arguments) arguments = withListener(arguments, listener, port)
+        if (LOG_LEVEL !in arguments && "--verbose" !in arguments) arguments = arguments + listOf(LOG_LEVEL, logLevel)
+        return arguments
+    }
+
+    /** Where Tor stands in the tunnel [argv] runs, read the way the core reads it: the last mode flag wins. */
+    fun torModeOf(argv: List<String>): String = argv.fold(AetherProfile.CARRIER_OFF) { mode, word ->
+        when (word) {
+            "--tor" -> AetherProfile.CARRIER_CHAIN
+            "--tor-reverse" -> AetherProfile.CARRIER_REVERSE
+            "--tor-only" -> AetherProfile.CARRIER_ONLY
+            else -> mode
+        }
+    }
+
+    /** Where Psiphon stands in the tunnel [argv] runs, read the way the core reads it: the last mode flag wins. */
+    fun psiphonModeOf(argv: List<String>): String = argv.fold(AetherProfile.CARRIER_OFF) { mode, word ->
+        when (word) {
+            "--psiphon" -> AetherProfile.CARRIER_CHAIN
+            "--psiphon-reverse" -> AetherProfile.CARRIER_REVERSE
+            "--psiphon-only" -> AetherProfile.CARRIER_ONLY
+            else -> mode
+        }
+    }
+
+    /** The option naming the listener the app dials: Psiphon's when Psiphon runs inside the tunnel, Tor's when Tor does, else the core's own. */
+    fun listenerFlagOf(argv: List<String>): String = when {
+        psiphonModeOf(argv) == AetherProfile.CARRIER_CHAIN -> PSIPHON_BIND
+        torModeOf(argv) == AetherProfile.CARRIER_CHAIN -> TOR_BIND
+        else -> BIND
+    }
+
+    /** The loopback port the app dials on a core started with [argv]; null when the listener names none that reads as a port. */
+    fun listenerPortOf(argv: List<String>): Int? =
+        valueAfter(argv, listenerFlagOf(argv))?.substringAfterLast(':', "")?.toIntOrNull()
+
+    /** [arguments] without every [flag] and the value after it. */
+    fun withoutOption(arguments: List<String>, flag: String): List<String> {
+        val kept = mutableListOf<String>()
+        var index = 0
+        while (index < arguments.size) {
+            if (arguments[index] == flag) index += 2 else kept.add(arguments[index++])
+        }
+        return kept
+    }
+
+    /** [arguments] with the listener [flag] names on the loopback port [port], in place of whatever they named for it. */
+    fun withListener(arguments: List<String>, flag: String, port: Int): List<String> =
+        withoutOption(arguments, flag) + listOf(flag, "127.0.0.1:$port")
+
+    private fun valueAfter(argv: List<String>, flag: String): String? =
+        argv.lastIndexOf(flag).takeIf { it >= 0 }?.let { argv.getOrNull(it + 1) }
+
+    /**
+     * True when the listener the app dials is Psiphon's, inside the tunnel or alone. It answers the SOCKS greeting as
+     * soon as it is bound and closes every connection until Psiphon has a tunnel, so the greeting alone says nothing
+     * and readiness needs the core's word [PSIPHON_READY] as well.
+     */
+    fun readyNeedsWord(argv: List<String>): Boolean =
+        psiphonModeOf(argv).let { it == AetherProfile.CARRIER_CHAIN || it == AetherProfile.CARRIER_ONLY }
+
+    /** True when a core started with [argv] writes its info lines, the ready word among them. */
+    fun showsInfo(argv: List<String>): Boolean =
+        "--verbose" in argv || (valueAfter(argv, LOG_LEVEL) ?: DEFAULT_LOG_LEVEL) in setOf("info", "debug", "trace")
+
+    /** [argv] at a level that writes the info lines: as they are, unless they name a quieter level, which gives way to the default. */
+    fun withInfoLines(argv: List<String>): List<String> =
+        if (showsInfo(argv)) argv else withoutOption(argv, LOG_LEVEL) + listOf(LOG_LEVEL, DEFAULT_LOG_LEVEL)
+
+    /** The core's word that Psiphon has a tunnel. */
+    val PSIPHON_READY = Regex("""psiphon is ready""")
+
+    fun isReadyWord(line: String): Boolean = PSIPHON_READY.containsMatchIn(line)
+
+    /**
+     * [arguments] as the core is started with them: the word [SHIPPED_LIST] after [PSIPHON_SERVER_ENTRIES] gives way
+     * to [entries], the app's unpacked list, or the flag goes when there is no such file, so that the core never
+     * reads a file called "shipped". A file of the command's own is left as written.
+     */
+    fun withShippedList(arguments: List<String>, entries: String?): List<String> {
+        val at = arguments.indexOf(PSIPHON_SERVER_ENTRIES)
+        if (at < 0 || arguments.getOrNull(at + 1) != SHIPPED_LIST) return arguments
+        return if (entries == null) {
+            arguments.filterIndexed { index, _ -> index != at && index != at + 1 }
+        } else {
+            arguments.toMutableList().also { it[at + 1] = entries }
+        }
+    }
+
+    /** The settings of the WARP keys page: they are that page's alone, no profile's settings reach them. */
+    data class KeysRequest(
+        val kind: String = "all",
+        val enrollAddress: String = AetherProfile.DEFAULT_ENROLL_ADDRESS,
+        val fragment: Boolean = false,
+        val fragmentSize: String = "",
+        val fragmentDelay: String = "",
+        val ech: Boolean = false,
+        val echDns: String = AetherProfile.DEFAULT_ECH_DNS,
+        val echDomain: String = AetherProfile.DEFAULT_ECH_DOMAIN,
+        val fingerprint: String = AetherProfile.FINGERPRINT_CHROME,
+        val finalMask: String = "",
+        val dialMode: String = "",
+    )
+
+    /**
+     * The run that registers the keys of [request] and ends: where the calls to the WARP API go, whether they hide
+     * their server name with ECH, whether the ClientHello goes in pieces, and the cipher suites of the fingerprint.
+     */
+    fun keysArguments(request: KeysRequest, logLevel: String = DEFAULT_LOG_LEVEL): List<String> = buildList {
+        addAll(listOf(REGISTER, request.kind))
+        request.enrollAddress.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf("--api-address", it)) }
+        if (request.fragment) {
+            add("--fragment")
+            parseRange(request.fragmentSize, 1..4096)?.let { addAll(listOf("--fragment-size", rangeText(it))) }
+            parseRange(request.fragmentDelay, 0..1000)?.let { addAll(listOf("--fragment-delay", rangeText(it))) }
+        }
+        if (request.ech) {
+            addAll(listOf("--ech", "auto"))
+            addAll(listOf("--ech-dns", settingValue(request.echDns) ?: AetherProfile.DEFAULT_ECH_DNS))
+            addAll(listOf("--ech-domain", settingValue(request.echDomain) ?: AetherProfile.DEFAULT_ECH_DOMAIN))
+        }
+        addAll(fingerprintArguments(request.fingerprint))
+        addAll(listOf(LOG_LEVEL, logLevel))
+    }
+
+    /** Why [profile] cannot run, as the rules of PattNG's editor say; null when it can. */
+    enum class Problem { CARRIER_NEEDS_MASQUE, TOR_PSIPHON_CONFLICT, TOR_BRIDGES_MISSING }
+
+    fun problemOf(profile: AetherProfile): Problem? {
+        val tor = profile.tor
+        val psiphon = profile.psiphon
+        // Tor and Psiphon carry TCP alone and WARP's WireGuard endpoints answer on UDP: the core refuses the pair.
+        // WireGuard over MASQUE goes, as its WireGuard rides inside the MASQUE tunnel.
+        if ((tor == AetherProfile.CARRIER_REVERSE || psiphon == AetherProfile.CARRIER_REVERSE) &&
+            !AetherProfile.overMasque(profile.protocol)
+        ) {
+            return Problem.CARRIER_NEEDS_MASQUE
+        }
+        // Both go together only nested, one inside the tunnel and the other around it.
+        val nested = tor == AetherProfile.CARRIER_OFF || psiphon == AetherProfile.CARRIER_OFF ||
+            (tor == AetherProfile.CARRIER_CHAIN && psiphon == AetherProfile.CARRIER_REVERSE) ||
+            (tor == AetherProfile.CARRIER_REVERSE && psiphon == AetherProfile.CARRIER_CHAIN)
+        if (!nested) return Problem.TOR_PSIPHON_CONFLICT
+        if (tor != AetherProfile.CARRIER_OFF && profile.torBridges == AetherProfile.TOR_BRIDGES_OWN &&
+            profile.torBridgeLines.lines().none { it.isNotBlank() }
+        ) {
+            return Problem.TOR_BRIDGES_MISSING
+        }
+        return null
+    }
 }

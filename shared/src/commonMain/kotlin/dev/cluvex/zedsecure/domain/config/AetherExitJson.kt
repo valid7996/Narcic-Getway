@@ -15,7 +15,7 @@ import kotlinx.serialization.json.putJsonObject
  */
 object AetherExitJson {
 
-    const val EXIT_SOCKS_PORT = 10891
+    const val EXIT_SOCKS_PORT = LocalPorts.AETHER_EXIT
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 

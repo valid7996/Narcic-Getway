@@ -71,6 +71,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.domain.config.AetherCommands
 import dev.cluvex.zedsecure.domain.config.AetherProfile
+import dev.cluvex.zedsecure.domain.config.LocalPorts
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.components.PickerField
@@ -78,6 +79,7 @@ import dev.cluvex.zedsecure.ui.components.SectionTitle
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
 import dev.cluvex.zedsecure.ui.theme.ZedGreen
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -159,12 +161,14 @@ fun AetherSheet(
     // Keys dialog
     var showKeysDialog by remember { mutableStateOf(false) }
 
+    val logCopiedText = stringResource(Res.string.aether_log_copied)
+
     val twoHops = AetherProfile.isTwoHops(protocol)
     val overMasque = protocol == AetherProfile.PROTO_MASQUE || protocol == AetherProfile.PROTO_MIM || protocol == AetherProfile.PROTO_WG_OVER_MASQUE
     val warpUsed = psiphon != AetherProfile.CARRIER_ONLY && tor != AetherProfile.CARRIER_ONLY
     val overHttp2 = overMasque && transport == AetherProfile.TRANSPORT_H2
 
-    fun buildProfile(): AetherProfile = AetherProfile(
+    fun baseProfile(): AetherProfile = AetherProfile(
         protocol = protocol,
         server = server.trim(),
         serverPort = port.trim().toIntOrNull() ?: 0,
@@ -197,8 +201,24 @@ fun AetherSheet(
         finalMask = finalMask.trim(),
         dialMode = dialMode.trim(),
         targetStrategy = targetStrategy.trim(),
-        command = command.trim(),
+        masqueSni = masqueSni.trim(),
     )
+
+    // The command the settings give, as the editor shows it. It is worked out on every recomposition: it used to be
+    // remembered on a handful of fields, so a changed fragment, ECH or Psiphon setting left it (and the "custom"
+    // flag) stale. A command equal to the one the settings give is no custom command and is not stored as one.
+    val builtCmd = AetherCommands.buildArguments(baseProfile(), LocalPorts.AETHER_SOCKS).joinToString(" ")
+    val isCustom = command.isNotBlank() && command.trim() != builtCmd
+    fun buildProfile(): AetherProfile = baseProfile().copy(command = if (isCustom) command.trim() else "")
+
+    // PattNG's editor refuses what the core would refuse; so does this one, with the reason.
+    val problem = AetherCommands.problemOf(buildProfile())
+    val problemText = when (problem) {
+        AetherCommands.Problem.CARRIER_NEEDS_MASQUE -> stringResource(Res.string.aether_problem_carrier_masque)
+        AetherCommands.Problem.TOR_PSIPHON_CONFLICT -> stringResource(Res.string.aether_problem_tor_psiphon)
+        AetherCommands.Problem.TOR_BRIDGES_MISSING -> stringResource(Res.string.aether_problem_bridges_missing)
+        null -> null
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -291,7 +311,7 @@ fun AetherSheet(
                     OutlinedTextField(
                         value = masqueSni,
                         onValueChange = { masqueSni = it },
-                        label = { Text("MASQUE SNI") },
+                        label = { Text(stringResource(Res.string.aether_masque_sni)) },
                         placeholder = { Text(AetherProfile.DEFAULT_MASQUE_SNI) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp),
@@ -487,18 +507,14 @@ fun AetherSheet(
                     }
                 }
 
-                OutlinedTextField(
-                    value = psiphonRegion,
-                    onValueChange = { psiphonRegion = it },
-                    label = { Text("Psiphon Region (e.g. US, DE)") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                PsiphonCountryField(
+                    selected = psiphonRegion,
+                    onSelect = { psiphonRegion = it },
                 )
 
                 SettingToggleRow(
-                    title = "Bundled Server List",
-                    summary = "Use default built-in server list",
+                    title = stringResource(Res.string.aether_psiphon_bundled_list),
+                    summary = stringResource(Res.string.aether_psiphon_bundled_list_summary),
                     checked = psiphonBundledList,
                     onCheckedChange = { psiphonBundledList = it },
                 )
@@ -507,13 +523,16 @@ fun AetherSheet(
                     onClick = {
                         scope.launch {
                             val ok = aether?.clearPsiphonData() ?: false
-                            addLog(if (ok) 4 else 6, if (ok) "Psiphon cache cleared" else "Failed to clear Psiphon cache")
+                            addLog(
+                                if (ok) 4 else 6,
+                                getString(if (ok) Res.string.aether_psiphon_cache_cleared else Res.string.aether_psiphon_cache_clear_failed),
+                            )
                         }
                     },
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Clear Psiphon Cache")
+                    Text(stringResource(Res.string.aether_psiphon_clear_cache))
                 }
             }
 
@@ -545,7 +564,7 @@ fun AetherSheet(
                         value = torBridgeLines,
                         onValueChange = { torBridgeLines = it },
                         label = { Text(stringResource(Res.string.aether_tor_bridge_lines)) },
-                        placeholder = { Text("Enter bridge lines") },
+                        placeholder = { Text(stringResource(Res.string.aether_tor_bridge_lines_hint)) },
                         minLines = 2,
                         maxLines = 6,
                         shape = RoundedCornerShape(16.dp),
@@ -617,8 +636,8 @@ fun AetherSheet(
                             isScanning = true
                             scanSuccess = null
                             scanStatusText = null
-                            addLog(4, "Scan started for ${current.protocol.uppercase()}...")
                             scope.launch {
+                                addLog(4, getString(Res.string.aether_scan_started, current.protocol.uppercase()))
                                 val result = aether?.scan(current) { line ->
                                     val prio = when {
                                         line.startsWith("E/") || line.startsWith("Error:") -> 6
@@ -630,8 +649,9 @@ fun AetherSheet(
                                 isScanning = false
                                 if (result != null) {
                                     scanSuccess = true
-                                    scanStatusText = "Endpoint found: ${result.endpoint}"
-                                    addLog(4, "Endpoint found: ${result.endpoint}")
+                                    val found = getString(Res.string.aether_scan_found, result.endpoint)
+                                    scanStatusText = found
+                                    addLog(4, found)
                                     if (twoHops && result.innerHop != null) {
                                         wiwOuter = result.endpoint
                                         wiwInner = result.innerHop
@@ -645,8 +665,9 @@ fun AetherSheet(
                                     }
                                 } else {
                                     scanSuccess = false
-                                    scanStatusText = "No endpoint found"
-                                    addLog(5, "Scan finished: no endpoint found")
+                                    val none = getString(Res.string.aether_scan_none)
+                                    scanStatusText = none
+                                    addLog(5, none)
                                 }
                             }
                         },
@@ -674,7 +695,7 @@ fun AetherSheet(
                             onClick = {
                                 aether?.cancelScan()
                                 isScanning = false
-                                addLog(5, "Scan cancelled by user")
+                                scope.launch { addLog(5, getString(Res.string.aether_scan_cancelled)) }
                             },
                             shape = RoundedCornerShape(18.dp),
                             modifier = Modifier.height(48.dp),
@@ -697,7 +718,7 @@ fun AetherSheet(
 
             // Other Settings Collapsible
             SettingToggleRow(
-                title = "Other Settings",
+                title = stringResource(Res.string.aether_other_settings),
                 checked = showOther,
                 onCheckedChange = { showOther = it },
             )
@@ -723,7 +744,7 @@ fun AetherSheet(
                     )
                 }
                 PickerField(
-                    label = "Target Strategy",
+                    label = stringResource(Res.string.aether_target_strategy),
                     options = AetherProfile.targetStrategies.map { it to it },
                     selected = targetStrategy.ifBlank { "AsIs" },
                     onSelect = { targetStrategy = it },
@@ -731,10 +752,6 @@ fun AetherSheet(
             }
 
             // Custom command (Expert mode)
-            val builtCmd = remember(protocol, server, port, scanMode, transport, obfuscation, ipVersion, psiphon, tor) {
-                AetherCommands.buildArguments(buildProfile(), 10890).joinToString(" ")
-            }
-            val isCustom = command.isNotBlank() && command != builtCmd
             OutlinedTextField(
                 value = command.ifBlank { builtCmd },
                 onValueChange = { command = it },
@@ -756,25 +773,34 @@ fun AetherSheet(
                 }
             }
 
-            // 🌟 PattNG AetherLogPanel (Live color-coded log panel!)
-            SectionTitle(stringResource(Res.string.aether_log_title))
+            // The panel carries its own title and copy button.
             AetherLiveLogPanel(
                 entries = logEntries,
                 onCopy = {
                     val full = logEntries.joinToString("\n") { it.text }
                     platform.copyToClipboard(full)
-                    platform.toast("Log copied")
+                    platform.toast(logCopiedText)
                 },
                 isDark = isDark,
             )
 
             Spacer(Modifier.height(8.dp))
 
+            problemText?.let { text ->
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+
             // Save button
             Button(
                 onClick = {
-                    onSave(name, buildProfile())
+                    onSave(name.trim(), buildProfile())
                 },
+                enabled = problem == null,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isDark) ZedGreen else Color(0xFF0D9488),
@@ -879,126 +905,6 @@ private fun AetherLiveLogPanel(
     }
 }
 
-/**
- * Dedicated WARP Keys Renewal Dialog.
- */
-@Composable
-private fun AetherKeysDialog(
-    actions: AetherActions,
-    onDismiss: () -> Unit,
-    onLog: (Int, String) -> Unit,
-    isDark: Boolean,
-) {
-    val scope = rememberCoroutineScope()
-    var selectedKind by remember { mutableStateOf(AetherProfile.PROTO_WG) }
-    var isRenewing by remember { mutableStateOf(false) }
-    var statusMessage by remember { mutableStateOf<String?>(null) }
-    var keysList by remember { mutableStateOf<List<AetherKeyUiEntry>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        keysList = actions.keys()
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-    ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                stringResource(Res.string.aether_action_renew_key),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = if (isDark) Color.White else Color(0xFF0F172A),
-            )
-
-            // Current keys status
-            if (keysList.isNotEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        keysList.forEach { entry ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(entry.file, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                                Text(
-                                    if (entry.deviceId != null) "Ready (${entry.deviceId.take(8)})" else "Missing",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (entry.deviceId != null) (if (isDark) Color(0xFF60E0B0) else Color(0xFF059669)) else MaterialTheme.colorScheme.error,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            PickerField(
-                label = stringResource(Res.string.aether_lab_protocol),
-                options = listOf(
-                    AetherProfile.PROTO_WG to "WireGuard",
-                    AetherProfile.PROTO_MASQUE to "MASQUE",
-                ),
-                selected = selectedKind,
-                onSelect = { selectedKind = it },
-            )
-
-            Button(
-                onClick = {
-                    isRenewing = true
-                    statusMessage = null
-                    onLog(4, "Renewing WARP key for ${selectedKind.uppercase()}...")
-                    scope.launch {
-                        val ok = actions.registerKeys(selectedKind) { line ->
-                            onLog(4, line)
-                        }
-                        isRenewing = false
-                        keysList = actions.keys()
-                        if (ok) {
-                            statusMessage = "Key registered successfully"
-                            onLog(4, "WARP registration finished successfully")
-                        } else {
-                            statusMessage = "Registration failed"
-                            onLog(6, "WARP registration failed")
-                        }
-                    }
-                },
-                enabled = !isRenewing,
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) ZedGreen else Color(0xFF0D9488),
-                    contentColor = Color.White,
-                ),
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-            ) {
-                if (isRenewing) {
-                    CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Registering with Cloudflare…")
-                } else {
-                    Text("Register Key Now", fontWeight = FontWeight.Bold)
-                }
-            }
-
-            statusMessage?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isDark) Color(0xFF60E0B0) else Color(0xFF059669),
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun SettingToggleRow(
     title: String,
@@ -1068,14 +974,11 @@ private fun AetherKeysPage(
         keysList = actions.keys()
     }
 
-    val kindLabels = listOf(
-        "all" to "All",
-        AetherProfile.PROTO_WG to "WireGuard",
-        AetherProfile.PROTO_MASQUE to "MASQUE",
-        "gool-classic" to "WARP-in-WARP",
-        AetherProfile.PROTO_MIM to "MASQUE-in-MASQUE",
-        "gool" to "WireGuard over MASQUE",
-    )
+    val kindLabels = AetherProfile.keyKinds.map { (kind, label) ->
+        kind to if (kind == "all") stringResource(Res.string.aether_key_kind_all) else label
+    }
+    val statusReady = stringResource(Res.string.aether_key_ready)
+    val statusMissing = stringResource(Res.string.aether_key_missing)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1096,6 +999,7 @@ private fun AetherKeysPage(
             Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(start = 20.dp, end = 20.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -1119,7 +1023,7 @@ private fun AetherKeysPage(
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(entry.file, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                                 Text(
-                                    if (entry.deviceId != null) "Ready" else "Missing",
+                                    if (entry.deviceId != null) statusReady else statusMissing,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (entry.deviceId != null) (if (isDark) Color(0xFF60E0B0) else Color(0xFF059669)) else MaterialTheme.colorScheme.error,
                                 )
@@ -1130,7 +1034,7 @@ private fun AetherKeysPage(
             }
 
             // Key kind radio group
-            SectionTitle("Key Kind")
+            SectionTitle(stringResource(Res.string.aether_key_kind))
             Column {
                 kindLabels.forEach { (kind, label) ->
                     Row(
@@ -1155,7 +1059,7 @@ private fun AetherKeysPage(
             OutlinedTextField(
                 value = enrollAddress,
                 onValueChange = { enrollAddress = it },
-                label = { Text("Enroll Address") },
+                label = { Text(stringResource(Res.string.aether_enroll_address)) },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -1220,7 +1124,7 @@ private fun AetherKeysPage(
             )
 
             // Exit-node
-            SectionTitle("Exit-node")
+            SectionTitle(stringResource(Res.string.aether_exit_node))
             Box(Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = keyFinalMask,
@@ -1266,22 +1170,38 @@ private fun AetherKeysPage(
                 onClick = {
                     isRenewing = true
                     statusMessage = null
-                    keyLog(4, "Renewing $keyKind WARP keys...")
                     scope.launch {
-                        val ok = actions.registerKeys(keyKind) { line ->
+                        keyLog(4, getString(Res.string.aether_key_renewing, keyKind))
+                        // Every setting of the page reaches the run: they were collected here and never sent.
+                        val request = AetherCommands.KeysRequest(
+                            kind = keyKind,
+                            enrollAddress = enrollAddress,
+                            fragment = keyFragment,
+                            fragmentSize = keyFragmentSize,
+                            fragmentDelay = keyFragmentDelay,
+                            ech = keyEch,
+                            echDns = keyEchDns,
+                            echDomain = keyEchDomain,
+                            fingerprint = keyFingerprint,
+                            finalMask = keyFinalMask,
+                            dialMode = keyDialMode,
+                        )
+                        val ok = actions.registerKeys(request) { line ->
                             keyLog(4, line)
                             onLog(4, line)
                         }
                         isRenewing = false
                         keysList = actions.keys()
                         if (ok) {
-                            keyLog(4, "The new keys are ready")
-                            statusMessage = "Key registered successfully"
-                            onLog(4, "WARP registration finished successfully")
+                            val ready = getString(Res.string.aether_keys_new_ready)
+                            keyLog(4, ready)
+                            onLog(4, ready)
+                            statusMessage = getString(Res.string.aether_key_ok)
                         } else {
-                            keyLog(6, "The registration did not finish")
-                            statusMessage = "Registration failed"
-                            onLog(6, "WARP registration failed")
+                            val unfinished = getString(Res.string.aether_keys_not_finished)
+                            keyLog(6, unfinished)
+                            onLog(6, unfinished)
+                            statusMessage = getString(Res.string.aether_key_failed)
                         }
                     }
                 },
@@ -1296,7 +1216,7 @@ private fun AetherKeysPage(
                 if (isRenewing) {
                     CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
                     Spacer(Modifier.width(8.dp))
-                    Text("Registering with Cloudflare…")
+                    Text(stringResource(Res.string.aether_registering))
                 } else {
                     Text(stringResource(Res.string.aether_action_renew_key), fontWeight = FontWeight.Bold)
                 }

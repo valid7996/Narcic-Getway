@@ -5,6 +5,8 @@ import dev.cluvex.zedsecure.core.AetherIdentityStore
 import dev.cluvex.zedsecure.core.AetherScanner
 import dev.cluvex.zedsecure.core.AetherSupport
 import dev.cluvex.zedsecure.core.LogBus
+import dev.cluvex.zedsecure.core.PsiphonServerList
+import dev.cluvex.zedsecure.domain.config.AetherCommands
 import dev.cluvex.zedsecure.domain.config.AetherProfile
 import dev.cluvex.zedsecure.ui.servers.AetherActions
 import dev.cluvex.zedsecure.ui.servers.AetherKeyUiEntry
@@ -25,13 +27,16 @@ class AetherActionsAndroid(private val context: Context) : AetherActions {
         AetherScanner.cancel()
     }
 
-    override suspend fun registerKeys(kind: String, onOutput: (String) -> Unit): Boolean {
+    override suspend fun registerKeys(request: AetherCommands.KeysRequest, onOutput: (String) -> Unit): Boolean {
         val workDir = AetherSupport.workDir(context).apply { mkdirs() }
-        val upstream = AetherSupport.startExitProxy(AetherProfile())
+        // The calls to the WARP API leave through the exit of the page's own finalMask and dialMode.
+        val upstream = AetherSupport.startExitProxy(
+            AetherProfile(finalMask = request.finalMask.trim(), dialMode = request.dialMode.trim()),
+        )
         return try {
             AetherIdentityStore.register(
                 context = context,
-                kind = kind,
+                request = request,
                 upstreamPort = upstream,
                 workDir = workDir,
             ) { line ->
@@ -48,11 +53,21 @@ class AetherActionsAndroid(private val context: Context) : AetherActions {
     }
 
     override suspend fun clearPsiphonData(): Boolean = withContext(Dispatchers.IO) {
-        val dir = AetherSupport.psiphonDir(context)
-        dir.deleteRecursively()
+        val session = AetherSupport.psiphonDir(context).deleteRecursively()
+        val probe = AetherSupport.psiphonProbeDir(context).deleteRecursively()
+        PsiphonServerList.remember(emptyList())
+        session && probe
     }
 
-    override suspend fun psiphonRegions(): List<String> = emptyList()
+    /** The countries Psiphon can leave from: what its client last reported, else what the servers of the bundled list offer. */
+    override suspend fun psiphonRegions(): List<String> = withContext(Dispatchers.IO) {
+        PsiphonServerList.remembered().ifEmpty {
+            val workDir = AetherSupport.workDir(context).apply { mkdirs() }
+            PsiphonServerList.entriesFile(context, workDir)?.let { file ->
+                runCatching { PsiphonServerList.regions(file.readText()) }.getOrDefault(emptySet())
+            }.orEmpty()
+        }.toList()
+    }
 
     override fun isCoreAvailable(): Boolean = AetherSupport.isCoreSupported(context)
 
