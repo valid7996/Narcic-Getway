@@ -95,23 +95,23 @@ class DeepLinkParserTest {
     }
 
     @Test
-    fun `narcicgetway import and payload forms`() {
+    fun `narcicgeteway import and payload forms`() {
         assertEquals(
             DeepLinkRequest.Subscription("https://sub.example/z", "Mine"),
-            DeepLinkParser.parse("narcicgetway://import?url=${enc("https://sub.example/z")}&name=Mine"),
+            DeepLinkParser.parse("narcicgeteway://import?url=${enc("https://sub.example/z")}&name=Mine"),
         )
         assertEquals(
             DeepLinkRequest.Subscription("https://sub.example/z2", null),
-            DeepLinkParser.parse("narcicgetway://sub?url=https://sub.example/z2"),
+            DeepLinkParser.parse("narcicgeteway://sub?url=https://sub.example/z2"),
+        )
+        assertEquals(
+            DeepLinkRequest.Subscription("https://sub.example/z", "Mine"),
+            DeepLinkParser.parse("narcicgetway://import?url=${enc("https://sub.example/z")}&name=Mine"),
         )
         val shared = ZedLink.build("Tor here", ProfileSource.Tor)!!
         assertEquals(DeepLinkRequest.ConfigText(shared), DeepLinkParser.parse(shared))
     }
 
-    @Test
-    fun `legacy zedsecure links are no longer accepted`() {
-        assertEquals(null, DeepLinkParser.parse("zedsecure://import?url=${enc("https://sub.example/z")}&name=Mine"))
-    }
 
     @Test
     fun `raw config schemes are config text`() {

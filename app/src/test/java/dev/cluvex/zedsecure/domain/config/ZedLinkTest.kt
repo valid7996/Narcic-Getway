@@ -105,14 +105,15 @@ class ZedLinkTest {
     @Test
     fun `garbage does not parse`() {
         assertNull(ZedLink.parse("vless://x@y:443"))
+        assertNull(ZedLink.parse("narcicgeteway://"))
+        assertNull(ZedLink.parse("narcicgeteway://!!!not-base64!!!"))
         assertNull(ZedLink.parse("narcicgetway://"))
-        assertNull(ZedLink.parse("narcicgetway://!!!not-base64!!!"))
     }
 
     @Test
     fun `legacy zedsecure links still parse`() {
         val legacy = ZedLink.build("Tor", ProfileSource.Tor)!!
-            .replaceFirst("narcicgetway://", "zedsecure://")
+            .replaceFirst("narcicgeteway://", "zedsecure://")
         assertTrue(ZedLink.isZedLink(legacy))
         assertEquals("Tor", ZedLink.parse(legacy)!!.name)
     }

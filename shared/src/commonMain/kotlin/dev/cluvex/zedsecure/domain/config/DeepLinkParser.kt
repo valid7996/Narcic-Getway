@@ -8,7 +8,7 @@ sealed interface DeepLinkRequest {
 
 object DeepLinkParser {
     val SCHEMES: Set<String> = setOf(
-        "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
+        "narcicgeteway", "narcicgetway", "zedsecure", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
         "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard",
         "socks", "socks5", "snispoof", "aether",
     )
@@ -39,7 +39,7 @@ object DeepLinkParser {
         val query = beforeFragment.substringAfter('?', "")
 
         return when (scheme) {
-            "narcicgetway" -> when (action) {
+            "narcicgeteway", "narcicgetway", "zedsecure" -> when (action) {
                 "import", "sub", "subscription", "install-config", "install-sub" ->
                     queryUrl(query)?.let { payload(it, queryName(query) ?: fragment, rawFragment) }
                         ?: payload(rawRemainder(rest, "$action/"), queryName(query))

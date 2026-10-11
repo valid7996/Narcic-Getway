@@ -8,7 +8,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
 object ZedLink {
-    const val SCHEME = "narcicgetway://"
+    const val SCHEME = "narcicgeteway://"
+    const val ALIAS_SCHEME = "narcicgetway://"
     const val LEGACY_SCHEME = "zedsecure://"
 
     private val json = Json {
@@ -27,7 +28,9 @@ object ZedLink {
 
     fun isZedLink(text: String): Boolean {
         val t = text.trim()
-        return t.startsWith(SCHEME, ignoreCase = true) || t.startsWith(LEGACY_SCHEME, ignoreCase = true)
+        return t.startsWith(SCHEME, ignoreCase = true) ||
+            t.startsWith(ALIAS_SCHEME, ignoreCase = true) ||
+            t.startsWith(LEGACY_SCHEME, ignoreCase = true)
     }
 
     fun build(name: String, source: ProfileSource, members: List<String> = emptyList()): String? {
@@ -42,6 +45,7 @@ object ZedLink {
         val trimmed = uri.trim()
         val scheme = when {
             trimmed.startsWith(SCHEME, ignoreCase = true) -> SCHEME
+            trimmed.startsWith(ALIAS_SCHEME, ignoreCase = true) -> ALIAS_SCHEME
             trimmed.startsWith(LEGACY_SCHEME, ignoreCase = true) -> LEGACY_SCHEME
             else -> return null
         }

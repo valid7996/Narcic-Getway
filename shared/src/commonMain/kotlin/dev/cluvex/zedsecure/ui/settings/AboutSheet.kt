@@ -107,6 +107,36 @@ fun AboutSheet(onDismiss: () -> Unit) {
 
             Spacer(Modifier.size(8.dp))
 
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = if (isDark) Color(0xFF0F243A).copy(alpha = 0.70f) else Color.White.copy(alpha = 0.90f),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isDark) Color(0xFF2088FF).copy(alpha = 0.25f) else Color(0xFF3B82F6).copy(alpha = 0.15f),
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        stringResource(Res.string.about_app_description_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488),
+                    )
+                    Text(
+                        stringResource(Res.string.about_app_description_body),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF475569),
+                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.25,
+                    )
+                }
+            }
+
+            Spacer(Modifier.size(8.dp))
+
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
                 Text(
                     stringResource(Res.string.about_source_title),
@@ -123,14 +153,14 @@ fun AboutSheet(onDismiss: () -> Unit) {
                 LinkRow(
                     iconRes = Res.drawable.ic_description,
                     title = stringResource(Res.string.about_source_xray),
-                    subtitle = "github.com/CluvexStudio/Xray-core",
+                    subtitle = "github.com/RobinHood/Xray-core",
                     isDark = isDark,
                     onClick = { platform.openUri(XRAY_SOURCE_URL) },
                 )
                 LinkRow(
                     iconRes = Res.drawable.ic_description,
                     title = stringResource(Res.string.about_source_lib),
-                    subtitle = "github.com/CluvexStudio/AndroidLibXrayLite",
+                    subtitle = "github.com/RobinHood/AndroidLibXrayLite",
                     isDark = isDark,
                     onClick = { platform.openUri(LIB_SOURCE_URL) },
                 )

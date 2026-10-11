@@ -277,7 +277,9 @@
     <string name="about_built_on">ساخته شده بر پایهٔ هستهٔ Xray، همراه با Psiphon، Tor، Snowflake، obfs4، Conjure، DNSTT، VayDNS، MasterDNS، AmneziaWG، OpenConnect و IKEv2.</string>
     <string name="about_telegram">کانال تلگرام</string>
     <string name="about_github">گیت‌هاب</string>
-    <string name="about_thanks_cluvex">تشکر ویژه از CluvexStudio</string>
+    <string name="about_thanks_cluvex">تشکر ویژه از RobinHood</string>
+    <string name="about_app_description_title">توضیحات و راهنمای برنامه</string>
+    <string name="about_app_description_body">نرسیس گیت‌وی (Narcic Gateway) یک کلاینت پیشرفته چند‌هسته‌ای فیلترشکن و تونل امن است که از پروتکل‌های مختلف نظیر V2Ray (VLESS، VMess، Trojan، Shadowsocks)، Aether، هیستریا ۲، سایفون، وایرگارد و تونل‌های DNS پشتیبانی می‌کند. می‌توانید لینک‌های کانفیگ و اشتراک را با فرمت narcicgeteway://، کلیپ‌بورد یا اسکن بارکد QR وارد کرده و از اینترنت پرسرعت، پایدار و ایمن لذت ببرید.</string>
     <string name="about_source_title">هستهٔ اوپن‌سورس</string>
     <string name="about_source_body">هسته‌ای که ترافیک شما را می‌برد روی پروژه‌های اوپن‌سورس با لایسنس‌های GPL-3.0، LGPL-3.0 و MPL-2.0 ساخته شده. سورس پچ‌شدهٔ ما، همان‌طور که این لایسنس‌ها لازم دارند، منتشر شده است.</string>
     <string name="about_source_xray">هستهٔ Xray — پچ‌های ما</string>
