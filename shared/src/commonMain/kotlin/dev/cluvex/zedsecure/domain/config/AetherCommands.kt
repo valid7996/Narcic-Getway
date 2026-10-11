@@ -11,6 +11,11 @@ object AetherCommands {
     const val TOR_BIND = "--tor-bind"
     const val PSIPHON_BIND = "--psiphon-bind"
     const val REGISTER = "--register"
+    const val GOOL_CLASSIC = "--gool-classic"
+    const val MASQUE_SNI = "--masque-sni"
+    const val API_ADDRESS = "--api-address"
+    const val ENROLL_ADDRESS = "--enroll-address"
+    const val GOOL_PEER = "--gool-peer"
     const val LOG_LEVEL = "--log-level"
     const val DEFAULT_LOG_LEVEL = "info"
 
@@ -119,6 +124,10 @@ object AetherCommands {
             if (psiphon != AetherProfile.CARRIER_ONLY && tor != AetherProfile.CARRIER_ONLY) {
                 // wg-over-masque runs on the core's gool protocol, with the MASQUE + masque-gool keys.
                 addAll(listOf("--protocol", AetherProfile.coreNameOf(profile.protocol)))
+                // gool has meant WireGuard over MASQUE since aether 2.3.0; WARP-in-WARP is the classic gool, asked for
+                // by name rather than left to the hop settings that select it as well. A core older than that does not
+                // know the flag, and its gool is the classic one already: AetherSupport.adapt drops it there.
+                if (profile.protocol == AetherProfile.PROTO_GOOL) add(GOOL_CLASSIC)
                 addAll(listOf("--scan", profile.scanMode))
                 masqueOverHttp2(profile.protocol, profile.transport, tor, psiphon).let { overHttp2 ->
                     if (profile.obfuscation != AetherProfile.OBF_AUTO && !overHttp2) {
@@ -146,11 +155,25 @@ object AetherCommands {
                     addAll(listOf("--ech-domain", settingValue(profile.echDomain) ?: AetherProfile.DEFAULT_ECH_DOMAIN))
                 }
                 if (AetherProfile.overMasque(profile.protocol)) {
-                    // No --masque-sni: the bundled core (libaether.so) does not know it and refuses to start.
+                    // The server name the MASQUE handshakes put in their ClientHello, on either carrier and both
+                    // hops, the default named as well so that the command shows what is sent. A core that does not
+                    // know the flag (older than 2.3) has it dropped by AetherSupport.adapt.
+                    addAll(listOf(MASQUE_SNI, settingValue(profile.masqueSni) ?: AetherProfile.DEFAULT_MASQUE_SNI))
                     addAll(fingerprintArguments(profile.fingerprint))
                 }
 
-                if (AetherProfile.isTwoHops(profile.protocol)) {
+                if (profile.protocol == AetherProfile.PROTO_WG_OVER_MASQUE) {
+                    // The outer hop is a MASQUE gateway, which a scan looks for afresh. The inner one is the WireGuard
+                    // endpoint dialled inside the tunnel, the one WARP assigned the key unless one is named; no scan
+                    // looks for it, so a scan keeps the profile's own and finds a gateway that works with it.
+                    // (It used to be passed as --wiw-scan / --wiw-outer, which is WARP-in-WARP, not this tunnel.)
+                    parseEndpoint(profile.wiwOuter).takeUnless { scan }?.let { (host, p) ->
+                        addAll(listOf("--peer", endpointOf(host, p.toString()) ?: "$host:$p"))
+                    }
+                    parseEndpoint(profile.wiwInner)?.let { (host, p) ->
+                        addAll(listOf(GOOL_PEER, endpointOf(host, p.toString()) ?: "$host:$p"))
+                    }
+                } else if (AetherProfile.isTwoHops(profile.protocol)) {
                     val hop = if (profile.protocol == AetherProfile.PROTO_MIM) "--mim" else "--wiw"
                     val outer = profile.wiwOuter.trim().takeUnless { scan }
                     val inner = profile.wiwInner.trim().takeUnless { scan }
@@ -371,7 +394,7 @@ object AetherCommands {
      */
     fun keysArguments(request: KeysRequest, logLevel: String = DEFAULT_LOG_LEVEL): List<String> = buildList {
         addAll(listOf(REGISTER, request.kind))
-        request.enrollAddress.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf("--enroll-address", it)) }
+        request.enrollAddress.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf(API_ADDRESS, it)) }
         if (request.fragment) {
             add("--fragment")
             parseRange(request.fragmentSize, 1..4096)?.let { addAll(listOf("--fragment-size", rangeText(it))) }

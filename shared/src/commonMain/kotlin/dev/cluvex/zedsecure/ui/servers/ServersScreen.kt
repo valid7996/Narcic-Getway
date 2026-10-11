@@ -527,7 +527,7 @@ fun ServersScreen(
                     modifier = Modifier,
                 ) {
                     Icon(
-                        painterResource(Res.drawable.ic_subscription),
+                        painterResource(Res.drawable.ic_add_link),
                         contentDescription = stringResource(Res.string.subs_title),
                     )
                 }
@@ -548,7 +548,7 @@ fun ServersScreen(
                     ) {
                         DropdownMenuItem(
                             text = { Text(stringResource(Res.string.subs_update_all)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_schedule), null) },
                             enabled = subscriptions.isNotEmpty() && !updating,
                             onClick = {
                                 overflowOpen = false
@@ -833,8 +833,16 @@ fun ServersScreen(
                         onPingTcp = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
-                                val ms = PingService.tcpPing(profile.address, profile.port)
-                                val cc = if (ms > 0) GeoLookup.countryOf(profile.address) else null
+                                // An Aether profile has no server to knock on: only a core started for it can be timed.
+                                val ms = if (profile.isAether) {
+                                    PingService.realDelay(
+                                        profile,
+                                        url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
+                                    )
+                                } else {
+                                    PingService.tcpPing(profile.address, profile.port)
+                                }
+                                val cc = if (ms > 0 && !profile.isAether) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
@@ -845,7 +853,7 @@ fun ServersScreen(
                                     profile,
                                     url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
                                 )
-                                val cc = if (ms > 0) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !profile.isAether) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
@@ -1817,7 +1825,7 @@ internal fun AddServerSheet(
             GlassOptionCard(
                 title = stringResource(Res.string.subs_add),
                 subtitle = stringResource(Res.string.subs_add_sub),
-                icon = Res.drawable.ic_subscription,
+                icon = Res.drawable.ic_add_link,
                 accentColor = Color(0xFF2088FF),
                 iconTint = Color(0xFF38BDF8),
                 gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),

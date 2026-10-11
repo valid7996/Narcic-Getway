@@ -163,6 +163,10 @@ fun AetherSheet(
 
     val logCopiedText = stringResource(Res.string.aether_log_copied)
 
+    // What the bundled core understands: an old one takes neither MASQUE SNI nor WireGuard over MASQUE.
+    var coreInfo by remember { mutableStateOf<AetherCoreInfo?>(null) }
+    LaunchedEffect(aether) { coreInfo = aether?.coreInfo() }
+
     val twoHops = AetherProfile.isTwoHops(protocol)
     val overMasque = protocol == AetherProfile.PROTO_MASQUE || protocol == AetherProfile.PROTO_MIM || protocol == AetherProfile.PROTO_WG_OVER_MASQUE
     val warpUsed = psiphon != AetherProfile.CARRIER_ONLY && tor != AetherProfile.CARRIER_ONLY
@@ -275,6 +279,15 @@ fun AetherSheet(
                 Text(stringResource(Res.string.aether_action_renew_key), fontWeight = FontWeight.SemiBold)
             }
 
+            coreInfo?.takeIf { !it.masqueSni || !it.wgOverMasque }?.let { info ->
+                Text(
+                    stringResource(Res.string.aether_core_old_note, info.version.ifEmpty { "?" }),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (protocol == AetherProfile.PROTO_WG_OVER_MASQUE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+
             // Remarks field
             OutlinedTextField(
                 value = name,
@@ -302,6 +315,20 @@ fun AetherSheet(
                         options = AetherProfile.transports,
                         selected = transport,
                         onSelect = { transport = it },
+                    )
+                }
+
+                // MASQUE SNI: the server name the MASQUE handshakes put in their ClientHello, on either carrier and
+                // both hops. Cores older than 2.3 do not take it; the note above says so.
+                if (overMasque) {
+                    OutlinedTextField(
+                        value = masqueSni,
+                        onValueChange = { masqueSni = it },
+                        label = { Text(stringResource(Res.string.aether_masque_sni)) },
+                        placeholder = { Text(AetherProfile.DEFAULT_MASQUE_SNI) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
@@ -638,9 +665,11 @@ fun AetherSheet(
                                     val found = getString(Res.string.aether_scan_found, result.endpoint)
                                     scanStatusText = found
                                     addLog(4, found)
-                                    if (twoHops && result.innerHop != null) {
+                                    if (twoHops) {
+                                        // WireGuard over MASQUE names its gateway alone: the WireGuard endpoint inside
+                                        // it is the profile's own, so only the outer field is filled then.
                                         wiwOuter = result.endpoint
-                                        wiwInner = result.innerHop
+                                        result.innerHop?.let { wiwInner = it }
                                     } else {
                                         val text = result.endpoint
                                         val sep = text.lastIndexOf(':')

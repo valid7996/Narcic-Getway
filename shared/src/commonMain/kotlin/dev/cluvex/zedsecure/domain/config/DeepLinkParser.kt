@@ -10,12 +10,12 @@ object DeepLinkParser {
     val SCHEMES: Set<String> = setOf(
         "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
         "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard",
-        "socks", "socks5", "snispoof",
+        "socks", "socks5", "snispoof", "aether",
     )
 
     private val CONFIG_SCHEMES = setOf(
         "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "socks", "socks5",
-        "snispoof",
+        "snispoof", "aether",
     )
 
     private const val MAX_LENGTH = 64 * 1024
@@ -87,7 +87,7 @@ object DeepLinkParser {
     private fun configText(text: String): DeepLinkRequest? {
         val t = text.trim()
         val readable = ConfigParser.isSupportedLink(t) && !t.startsWith("http", ignoreCase = true) ||
-            SniSpoofLink.isSniSpoofLink(t) || ZedLink.isZedLink(t)
+            SniSpoofLink.isSniSpoofLink(t) || ZedLink.isZedLink(t) || AetherLink.isAetherLink(t)
         return if (readable) DeepLinkRequest.ConfigText(t) else null
     }
 
@@ -168,6 +168,9 @@ data class DeepLinkPreview(
             }
             if (SniSpoofLink.isSniSpoofLink(text)) {
                 return DeepLinkPreview(SniSpoofLink.parse(text)?.first?.takeIf { it.isNotBlank() }, "SNI spoof")
+            }
+            if (AetherLink.isAetherLink(text)) {
+                return DeepLinkPreview(AetherLink.parse(text)?.first?.takeIf { it.isNotBlank() }, "Aether")
             }
             if (SingBoxLinks.handles(text)) {
                 val singBox = runCatching { SingBoxLinks.parse(text) }.getOrNull()

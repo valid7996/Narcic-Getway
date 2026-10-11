@@ -7,7 +7,9 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.svg.SvgDecoder
+import dev.cluvex.zedsecure.core.AetherDelayProbe
 import dev.cluvex.zedsecure.core.XrayController
+import dev.cluvex.zedsecure.data.net.PingService
 import dev.cluvex.zedsecure.core.platform.LocaleManager
 import dev.cluvex.zedsecure.data.settings.SettingsRepository
 import dev.cluvex.zedsecure.di.AppContainer
@@ -31,6 +33,7 @@ class ZedSecureApp : Application(), SingletonImageLoader.Factory {
         container = AppContainer(this)
 
         XrayController.warmUp(this)
+        PingService.aetherTunnel = { profile, measure -> AetherDelayProbe.run(this, profile, measure) }
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =

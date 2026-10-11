@@ -1483,4 +1483,5 @@
     <string name="aether_problem_carrier_masque">Tor یا سایفون در حالت دور تونل فقط TCP حمل می‌کند؛ پس پروتکل باید روی MASQUE باشد.</string>
     <string name="aether_problem_tor_psiphon">Tor و سایفون فقط تو در تو کنار هم کار می‌کنند: یکی داخل تونل (Chain) و دیگری دور آن (Reverse).</string>
     <string name="aether_problem_bridges_missing">دست‌کم یک خط پل Tor وارد کنید یا حالت دیگری برای پل انتخاب کنید.</string>
+    <string name="aether_core_old_note">هسته‌ی Aether همراه برنامه (نسخه‌ی %1$s) قدیمی‌تر از ۲.۳ است: MASQUE SNI نادیده گرفته می‌شود و WireGuard over MASQUE اجرا نمی‌شود. فایل libaether.so را با نسخه‌ی یک بیلد جدید PattNG عوض کنید.</string>
 </resources>

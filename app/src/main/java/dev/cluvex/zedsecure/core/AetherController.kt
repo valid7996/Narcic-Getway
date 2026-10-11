@@ -47,7 +47,15 @@ class AetherController(
             return false
         }
         stopped = false
-        val t = Thread({ runSession(binary) }, "aether-worker").apply { isDaemon = true }
+        val t = Thread({
+            if (profile.protocol == AetherProfile.PROTO_WG_OVER_MASQUE && !AetherSupport.capabilities(context).wgOverMasque) {
+                val caps = AetherSupport.capabilities(context)
+                LogBus.append("E/aether WireGuard over MASQUE needs aether 2.3 or newer; this build ships ${caps.version.ifEmpty { "an older core" }}. Replace libaether.so with the one of a current PattNG build.")
+                onStopped("The Aether core is too old for WireGuard over MASQUE")
+            } else {
+                runSession(binary)
+            }
+        }, "aether-worker").apply { isDaemon = true }
         worker = t
         t.start()
         return true
@@ -60,6 +68,7 @@ class AetherController(
     }
 
     private fun runSession(binary: File) {
+        AetherSupport.sessionRunning = true
         try {
             AetherSupport.reapStale(context, "127.0.0.1:$socksPort")
             val workDir = AetherSupport.workDir(context).apply { mkdirs() }
@@ -151,6 +160,8 @@ class AetherController(
             Log.e("AetherController", "worker threw", t)
             AetherSupport.stopExitProxy()
             if (!stopped) onStopped(t.message)
+        } finally {
+            AetherSupport.sessionRunning = false
         }
     }
 
@@ -228,6 +239,76 @@ object AetherSupport {
      * replaced by the unpacked list of Psiphon servers, or the flag dropped when the app holds none: the core would
      * otherwise be told to read a file called "shipped" and the Psiphon client would start without servers.
      */
+    /** What the bundled core (libaether.so) understands. Cores differ by version: the flags changed names and came and went. */
+    data class CoreCaps(
+        val version: String,
+        val masqueSni: Boolean,
+        val apiAddress: Boolean,
+        val enrollAddress: Boolean,
+        val goolClassic: Boolean,
+    ) {
+        /** gool is WireGuard over MASQUE only from aether 2.3, the core that also names the classic one --gool-classic. */
+        val wgOverMasque: Boolean get() = goolClassic
+    }
+
+    @Volatile private var cachedCaps: CoreCaps? = null
+
+    /**
+     * Asks the core itself: its own --help lists every flag it takes. Run once and kept; blocking, so never on the
+     * main thread. A core that cannot be asked is taken for an old one, which is the safe side (flags it might not know are dropped).
+     */
+    fun capabilities(context: Context): CoreCaps {
+        cachedCaps?.let { return it }
+        val help = try {
+            val p = ProcessBuilder(listOf(binary(context).absolutePath, "--help")).redirectErrorStream(true).start()
+            val out = StringBuilder()
+            val reader = Thread({
+                try { p.inputStream.bufferedReader().forEachLine { out.appendLine(it) } } catch (_: IOException) {}
+            }, "aether-help").apply { isDaemon = true }
+            reader.start()
+            reader.join(5_000)
+            p.destroy()
+            out.toString()
+        } catch (_: Exception) {
+            ""
+        }
+        val caps = CoreCaps(
+            version = Regex("""Aether v?(\d+\.\d+\.\d+)""").find(help)?.groupValues?.get(1).orEmpty(),
+            masqueSni = "--masque-sni" in help,
+            apiAddress = "--api-address" in help,
+            enrollAddress = "--enroll-address" in help,
+            goolClassic = "--gool-classic" in help,
+        )
+        if (help.isNotBlank()) cachedCaps = caps
+        return caps
+    }
+
+    /** [arguments] as the bundled core takes them: a flag it does not know makes it print its help and exit, so it is dropped or renamed. */
+    fun adapt(context: Context, arguments: List<String>): List<String> {
+        if (arguments.none { it in ADAPTED_FLAGS || it == "gool-classic" }) return arguments
+        val caps = capabilities(context)
+        var out = arguments
+        if (!caps.masqueSni) out = AetherCommands.withoutOption(out, AetherCommands.MASQUE_SNI)
+        if (!caps.goolClassic) out = out.filter { it != AetherCommands.GOOL_CLASSIC }
+        if (AetherCommands.API_ADDRESS in out && !caps.apiAddress) {
+            out = if (caps.enrollAddress) {
+                out.map { if (it == AetherCommands.API_ADDRESS) AetherCommands.ENROLL_ADDRESS else it }
+            } else {
+                AetherCommands.withoutOption(out, AetherCommands.API_ADDRESS)
+            }
+        }
+        // The old core registers WARP-in-WARP as plain gool.
+        val at = out.indexOf(AetherCommands.REGISTER)
+        if (at >= 0 && out.getOrNull(at + 1) == "gool-classic" && !caps.goolClassic) {
+            out = out.toMutableList().also { it[at + 1] = "gool" }
+        }
+        return out
+    }
+
+    private val ADAPTED_FLAGS = setOf(
+        AetherCommands.MASQUE_SNI, AetherCommands.GOOL_CLASSIC, AetherCommands.API_ADDRESS, AetherCommands.REGISTER,
+    )
+
     fun startProcess(context: Context, arguments: List<String>, workDir: File, session: Boolean = false): Process {
         val entries = if (AetherCommands.PSIPHON_SERVER_ENTRIES in arguments) {
             PsiphonServerList.entriesFile(context, workDir) { problem ->
@@ -239,7 +320,8 @@ object AetherSupport {
         if (AetherCommands.PSIPHON_SERVER_ENTRIES in arguments && entries == null) {
             LogBus.append("W/aether no Psiphon server list is bundled; Psiphon fetches its own")
         }
-        val builder = ProcessBuilder(listOf(binary(context).absolutePath) + AetherCommands.withShippedList(arguments, entries?.absolutePath))
+        val finalArguments = adapt(context, AetherCommands.withShippedList(arguments, entries?.absolutePath))
+        val builder = ProcessBuilder(listOf(binary(context).absolutePath) + finalArguments)
             .directory(workDir)
             .redirectErrorStream(true)
         builder.environment().putAll(environment(context, workDir, session))
@@ -279,6 +361,9 @@ object AetherSupport {
         if (profile.tor == AetherProfile.CARRIER_REVERSE) findFreePort() else 0
 
     @Volatile private var exitRunning = false
+
+    /** True while a session of Aether runs; a ping of another profile cannot start a second core then. */
+    @Volatile var sessionRunning = false
 
     fun startExitProxy(profile: AetherProfile): Int? {
         if (exitRunning) return AetherExitJson.EXIT_SOCKS_PORT
@@ -541,6 +626,7 @@ object AetherScanner {
     private val wireguardEndpoint = Regex("""selected WireGuard endpoint (\S+)""")
     private val goolHops = Regex("""using cloudflare edge (\S+) \(outer\) and (\S+) \(inner\)""")
     private val mimHops = Regex("""masque-in-masque ready: (\S+) \(outer\) and (\S+) \(inner\)""")
+    private val goolOverMasqueReady = Regex("""gool ready: masque (\S+) carries wireguard (\S+)""")
     private val exitAccepted = Regex("""exit location \S+ accepted""")
     private val exitRejected = Regex("""exit location \S+ rejected""")
 
@@ -604,7 +690,8 @@ object AetherScanner {
 
     internal fun matcher(profile: AetherProfile, exitRuled: Boolean): (String) -> ScanResult? {
         val plain = { line: String -> parse(profile, line) }
-        if (!exitRuled || profile.protocol == AetherProfile.PROTO_MIM) return plain
+        // MASQUE-in-MASQUE and WireGuard over MASQUE say they are ready after the exit check, so their line stands alone.
+        if (!exitRuled || profile.protocol == AetherProfile.PROTO_MIM || profile.protocol == AetherProfile.PROTO_WG_OVER_MASQUE) return plain
         var named: ScanResult? = null
         return { line ->
             val found = parse(profile, line)
@@ -627,6 +714,8 @@ object AetherScanner {
         AetherProfile.PROTO_GOOL -> hopsOf(goolHops, line)
         AetherProfile.PROTO_MIM -> hopsOf(mimHops, line)
         AetherProfile.PROTO_MASQUE -> masqueGateway.find(line)?.let { ScanResult(it.groupValues[1]) }
+        // Once the whole tunnel carries, the gateway alone: the WireGuard endpoint inside it is the profile's, which the scan kept.
+        AetherProfile.PROTO_WG_OVER_MASQUE -> goolOverMasqueReady.find(line)?.let { ScanResult(it.groupValues[1]) }
         else -> wireguardEndpoint.find(line)?.let { ScanResult(it.groupValues[1]) }
     }
 

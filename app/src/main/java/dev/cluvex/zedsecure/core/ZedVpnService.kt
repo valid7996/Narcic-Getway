@@ -991,6 +991,9 @@ class ZedVpnService : VpnService() {
 
     private fun startStatsLoop() {
         statsJob?.cancel()
+        // The uid counters of an earlier session would show as one huge first tick.
+        lastUidRx = -1L
+        lastUidTx = -1L
         statsJob = scope.launch {
             val startedAt = android.os.SystemClock.elapsedRealtime()
             var ticks = 0
@@ -1012,6 +1015,9 @@ class ZedVpnService : VpnService() {
                     VpnManager.KIND_SSH -> ssh?.isRunning == true
                     VpnManager.KIND_OPENCONNECT -> openConnect?.isRunning == true
                     VpnManager.KIND_SINGBOX -> singBox?.isRunning == true
+                    // Aether had no branch here and fell through to Xray's: with the exit proxy down (or a command
+                    // that dials out on its own) Xray never runs, so the tunnel was torn down at the first tick.
+                    VpnManager.KIND_AETHER -> aether?.isRunning == true
 
                     VpnManager.KIND_CROSS_CHAIN ->
                         engineAlive(crossInnerKind, outer = false) && engineAlive(crossOuterKind, outer = true)
@@ -1033,7 +1039,8 @@ class ZedVpnService : VpnService() {
                 val (down, up) = when (kind) {
                     VpnManager.KIND_XRAY, VpnManager.KIND_SNISPOOF -> XrayController.readTrafficDelta()
 
-                    VpnManager.KIND_PSIPHON -> uidTrafficDelta()
+                    // The core and its carriers are processes of this app, so their sockets are the tunnel's own traffic.
+                    VpnManager.KIND_PSIPHON, VpnManager.KIND_AETHER -> uidTrafficDelta()
                     VpnManager.KIND_OPENCONNECT -> { openConnect?.pokeStats(); openConnect?.trafficDelta() ?: (0L to 0L) }
 
                     VpnManager.KIND_SINGBOX -> singBox?.let { engine ->

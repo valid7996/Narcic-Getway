@@ -28,10 +28,15 @@ interface AetherActions {
     /** Returns available Psiphon region codes. */
     suspend fun psiphonRegions(): List<String>
 
+    /** What the bundled core understands; an old one lacks MASQUE SNI and WireGuard over MASQUE. */
+    suspend fun coreInfo(): AetherCoreInfo
+
     fun isCoreAvailable(): Boolean
     fun isPsiphonAvailable(): Boolean
     fun isTorTransportsAvailable(): Boolean
 }
+
+data class AetherCoreInfo(val version: String, val masqueSni: Boolean, val wgOverMasque: Boolean)
 
 data class AetherScanUiResult(val endpoint: String, val innerHop: String? = null)
 

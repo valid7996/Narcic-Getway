@@ -9,6 +9,7 @@ import dev.cluvex.zedsecure.core.PsiphonServerList
 import dev.cluvex.zedsecure.domain.config.AetherCommands
 import dev.cluvex.zedsecure.domain.config.AetherProfile
 import dev.cluvex.zedsecure.ui.servers.AetherActions
+import dev.cluvex.zedsecure.ui.servers.AetherCoreInfo
 import dev.cluvex.zedsecure.ui.servers.AetherKeyUiEntry
 import dev.cluvex.zedsecure.ui.servers.AetherScanUiResult
 import kotlinx.coroutines.Dispatchers
@@ -27,25 +28,33 @@ class AetherActionsAndroid(private val context: Context) : AetherActions {
         AetherScanner.cancel()
     }
 
-    override suspend fun registerKeys(request: AetherCommands.KeysRequest, onOutput: (String) -> Unit): Boolean {
-        val workDir = AetherSupport.workDir(context).apply { mkdirs() }
-        // The calls to the WARP API leave through the exit of the page's own finalMask and dialMode.
-        val upstream = AetherSupport.startExitProxy(
-            AetherProfile(finalMask = request.finalMask.trim(), dialMode = request.dialMode.trim()),
-        )
-        return try {
-            AetherIdentityStore.register(
-                context = context,
-                request = request,
-                upstreamPort = upstream,
-                workDir = workDir,
-            ) { line ->
-                onOutput(line)
-                relayKey(line)
+    // The exit proxy waits up to ten seconds for Xray to answer, with Thread.sleep: run on the main dispatcher, as the
+    // keys page launches it, that froze the phone. Everything of the registration runs on IO.
+    override suspend fun registerKeys(request: AetherCommands.KeysRequest, onOutput: (String) -> Unit): Boolean =
+        withContext(Dispatchers.IO) {
+            val workDir = AetherSupport.workDir(context).apply { mkdirs() }
+            // The calls to the WARP API leave through the exit of the page's own finalMask and dialMode.
+            val upstream = AetherSupport.startExitProxy(
+                AetherProfile(finalMask = request.finalMask.trim(), dialMode = request.dialMode.trim()),
+            )
+            try {
+                AetherIdentityStore.register(
+                    context = context,
+                    request = request,
+                    upstreamPort = upstream,
+                    workDir = workDir,
+                ) { line ->
+                    onOutput(line)
+                    relayKey(line)
+                }
+            } finally {
+                AetherSupport.stopExitProxy()
             }
-        } finally {
-            AetherSupport.stopExitProxy()
         }
+
+    override suspend fun coreInfo(): AetherCoreInfo = withContext(Dispatchers.IO) {
+        val caps = AetherSupport.capabilities(context)
+        AetherCoreInfo(caps.version, caps.masqueSni, caps.wgOverMasque)
     }
 
     override suspend fun keys(): List<AetherKeyUiEntry> = AetherIdentityStore.keys(context).map { entry ->

@@ -209,7 +209,7 @@ data class VpnProfile(
         is ProfileSource.MasterDns -> ZedLink.build(name, src)
         is ProfileSource.OpenConnect -> ZedLink.build(name, src)
         is ProfileSource.Ikev2 -> ZedLink.build(name, src)
-        is ProfileSource.Aether -> null
+        is ProfileSource.Aether -> AetherLink.build(src.settings, name)
 
         is ProfileSource.ProxyChain -> null
         is ProfileSource.CrossChain -> null

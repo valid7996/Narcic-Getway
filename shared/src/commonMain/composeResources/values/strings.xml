@@ -1490,4 +1490,5 @@
     <string name="aether_problem_carrier_masque">Tor or Psiphon around the tunnel carries TCP only, so the protocol has to run over MASQUE.</string>
     <string name="aether_problem_tor_psiphon">Tor and Psiphon go together only nested: one inside the tunnel (Chain) and the other around it (Reverse).</string>
     <string name="aether_problem_bridges_missing">Enter at least one Tor bridge line, or pick another bridge mode.</string>
+    <string name="aether_core_old_note">The bundled Aether core (version %1$s) is older than 2.3: MASQUE SNI is ignored and WireGuard over MASQUE does not run. Replace libaether.so with the one from a current PattNG build.</string>
 </resources>

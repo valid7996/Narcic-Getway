@@ -101,6 +101,16 @@ class ConfigRepository(private val store: KeyValueStore) {
             throw IllegalArgumentException("no usable ssh:// config found")
         }
 
+        val aetherLines = trimmed.lines().map { it.trim() }.filter { AetherLink.isAetherLink(it) }
+        if (aetherLines.isNotEmpty()) {
+            var added = 0
+            aetherLines.forEach { line ->
+                AetherLink.parse(line)?.let { (nm, prof) -> addAether(prof, nm); added++ }
+            }
+            if (added > 0) return@runCatching added
+            throw IllegalArgumentException("no usable aether:// config found")
+        }
+
         if (ZedLink.isZedLink(trimmed)) return@runCatching importZedLink(trimmed)
 
         if (SniSpoofLink.isSniSpoofLink(trimmed)) {
@@ -773,6 +783,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             is ProfileSource.MasterDns -> { addMasterDns(src.settings, name); 1 }
             is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
             is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }
+            is ProfileSource.Aether -> { addAether(src.settings, name); 1 }
             is ProfileSource.ProxyChain, is ProfileSource.CrossChain -> {
                 val ids = payload.members.map { link ->
                     val before = _profiles.value.map { it.id }.toSet()

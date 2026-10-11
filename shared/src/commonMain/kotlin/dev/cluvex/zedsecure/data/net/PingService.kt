@@ -3,6 +3,7 @@ package dev.cluvex.zedsecure.data.net
 import dev.cluvex.zedsecure.core.CoreProbe
 import dev.cluvex.zedsecure.core.LogBus
 import dev.cluvex.zedsecure.core.VpnManager
+import dev.cluvex.zedsecure.domain.config.AetherProfile
 import dev.cluvex.zedsecure.domain.config.CustomConfig
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.platform.httpTimedTransfer
@@ -20,6 +21,16 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 object PingService {
     private const val TCP_TIMEOUT_MS = 2_500
+
+    /** An Aether profile has no server to knock on: its core is started for the test (see AetherDelayProbe) and timed through. */
+    private const val AETHER_PROBE_TIMEOUT_MS = 150_000L
+
+    /**
+     * Runs a core for an Aether profile and hands the port of its SOCKS listener to the block, whose result it returns.
+     * The platform sets it; without it an Aether profile cannot be pinged.
+     */
+    @Volatile
+    var aetherTunnel: (suspend (AetherProfile, suspend (Int) -> Long) -> Long)? = null
 
     private const val REAL_PING_CONCURRENCY = 16
 
@@ -121,11 +132,21 @@ object PingService {
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
         val targets = profiles.filterNot { (it.isManagedTunnel && !it.isSingBoxConfig) || it.isDnsBasedTunnel }
-        val total = targets.size
+        val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
+        val aetherPermits = Semaphore(1)
+        val total = targets.size + aetherTargets.size
         var done = 0
         val doneLock = Semaphore(1)
         onProgress(0, total)
-        targets.map { profile ->
+        val aetherJobs = aetherTargets.map { profile ->
+            launch(Dispatchers.IO) {
+                // One core at a time: the cores share the exit proxy and the key files.
+                val ms = aetherPermits.withPermit { aetherDelay(profile, url) }
+                onResult(profile.id, if (ms > 0) ms.toInt() else FAILED_PING, profile.countryCode)
+                doneLock.withPermit { onProgress(++done, total) }
+            }
+        }
+        (aetherJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
                 val heavy = useRealDelay || profile.isProxyChain
                 val pool = if (heavy && profile.isCustom) customPermits else permits
@@ -146,7 +167,24 @@ object PingService {
                     }
                 }
             }
-        }.joinAll()
+        }).joinAll()
+    }
+
+    private suspend fun aetherDelay(profile: VpnProfile, url: String): Long {
+        val runner = aetherTunnel ?: return -1L
+        val settings = profile.aetherSettings() ?: return -1L
+        return withTimeoutOrNull(AETHER_PROBE_TIMEOUT_MS) {
+            runner(settings) { port ->
+                var best = -1L
+                repeat(2) {
+                    val ms = runCatching {
+                        httpTimedTransfer(url, port, false, 0, REQUEST_PROBE_TIMEOUT_MS, REQUEST_PROBE_TIMEOUT_MS).ttfbNanos / 1_000_000
+                    }.getOrDefault(-1L)
+                    if (ms > 0 && (best < 0 || ms < best)) best = ms.coerceAtLeast(1)
+                }
+                best
+            }
+        } ?: -1L
     }
 
     private suspend fun measureProfile(
@@ -154,6 +192,7 @@ object PingService {
         url: String,
         chainConfig: (VpnProfile) -> String? = { null },
     ): Long {
+        if (profile.isAether) return aetherDelay(profile, url)
         val config = if (profile.isProxyChain) {
             chainConfig(profile) ?: return -1L
         } else {
