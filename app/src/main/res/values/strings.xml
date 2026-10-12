@@ -177,7 +177,7 @@
     <string name="del_invalid">Delete invalid</string>
     <string name="del_subscriptions">Delete subscription configs</string>
     <string name="del_subscriptions_confirm">Removes all servers from subscriptions (%1$d servers). Manual and locked configs are kept.</string>
-    <string name="del_this_subscription">Delete this subscription's configs</string>
+    <string name="del_this_subscription">Delete this subscription\'s configs</string>
     <string name="del_this_subscription_confirm">Removes all servers from "%1$s" (%2$d servers).</string>
     <string name="del_all">Delete all servers</string>
     <string name="del_all_confirm">This removes every saved server. Locked vault configs are kept.</string>
