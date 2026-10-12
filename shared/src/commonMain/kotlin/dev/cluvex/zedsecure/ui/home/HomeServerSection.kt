@@ -341,9 +341,20 @@ internal fun HomeServerSection(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.del_subscriptions)) },
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (currentSub != null) Res.string.del_this_subscription
+                                    else Res.string.del_subscriptions
+                                )
+                            )
+                        },
                         leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-                        enabled = allServers.any { it.subscriptionId.isNotBlank() },
+                        enabled = if (currentSub != null) {
+                            allServers.any { it.subscriptionId == currentSub.id }
+                        } else {
+                            allServers.any { it.subscriptionId.isNotBlank() }
+                        },
                         onClick = {
                             overflowOpen = false
                             confirmDeleteSubscriptions = true
@@ -565,16 +576,37 @@ internal fun HomeServerSection(
     )
 
     if (confirmDeleteSubscriptions) {
-        val subCount = allServers.count { it.subscriptionId.isNotBlank() }
+        val currentSub = subscriptions.firstOrNull { it.id == group }
+        val targetSubId = currentSub?.id
+        val subCount = if (targetSubId != null) {
+            allServers.count { it.subscriptionId == targetSubId }
+        } else {
+            allServers.count { it.subscriptionId.isNotBlank() }
+        }
         AlertDialog(
             onDismissRequest = { confirmDeleteSubscriptions = false },
             icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = { Text(stringResource(Res.string.del_subscriptions)) },
-            text = { Text(stringResource(Res.string.del_subscriptions_confirm, subCount)) },
+            title = {
+                Text(
+                    stringResource(
+                        if (currentSub != null) Res.string.del_this_subscription
+                        else Res.string.del_subscriptions
+                    )
+                )
+            },
+            text = {
+                Text(
+                    if (currentSub != null) {
+                        stringResource(Res.string.del_this_subscription_confirm, currentSub.name, subCount)
+                    } else {
+                        stringResource(Res.string.del_subscriptions_confirm, subCount)
+                    }
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDeleteSubscriptions = false
-                    val removed = repository.removeSubscriptionConfigs()
+                    val removed = repository.removeSubscriptionConfigs(targetSubId)
                     platform.toast(removedTemplate.format(removed))
                 }) { Text(stringResource(Res.string.action_delete)) }
             },

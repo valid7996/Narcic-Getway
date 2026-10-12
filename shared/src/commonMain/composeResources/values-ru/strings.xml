@@ -204,6 +204,8 @@
     <string name="del_invalid_confirm">Будет удалено серверов: %1$d — те, до которых не дошёл последний тест, и конфигурации, которые не запускаются. Непроверенные останутся.</string>
     <string name="del_subscriptions">Удалить серверы подписок</string>
     <string name="del_subscriptions_confirm">Будут удалены все серверы из подписок (%1$d шт.). Ручные и защищённые сохранятся.</string>
+    <string name="del_this_subscription">Удалить серверы этой подписки</string>
+    <string name="del_this_subscription_confirm">Будут удалены все серверы из «%1$s» (%2$d шт.).</string>
     <string name="del_all">Удалить все серверы</string>
     <string name="del_all_confirm">Будут удалены все сохранённые серверы. Закрытые конфигурации хранилища сохранятся.</string>
     <string name="export_all">Экспортировать все</string>

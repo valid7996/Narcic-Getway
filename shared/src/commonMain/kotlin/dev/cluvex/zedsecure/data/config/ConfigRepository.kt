@@ -968,16 +968,32 @@ class ConfigRepository(private val store: KeyValueStore) {
     }
 
     /**
-     * Removes every profile imported from any subscription (profile.subscriptionId is not blank).
-     * Locked vault profiles are kept. Returns the count of removed profiles.
+     * Removes profiles imported from a specific subscription (if subscriptionId is given) or all
+     * subscriptions (if subscriptionId is null). Locked vault profiles are kept. Returns the count
+     * of removed profiles.
      */
-    fun removeSubscriptionConfigs(): Int {
+    fun removeSubscriptionConfigs(subscriptionId: String? = null): Int {
         val before = _profiles.value.size
-        _profiles.value = _profiles.value.filter { it.isLocked || it.subscriptionId.isBlank() }
+        _profiles.value = _profiles.value.filter {
+            if (it.isLocked) return@filter true
+            if (subscriptionId != null) {
+                it.subscriptionId != subscriptionId
+            } else {
+                it.subscriptionId.isBlank()
+            }
+        }
         val removed = before - _profiles.value.size
         if (removed > 0) {
             if (!activeExists()) setActive(_profiles.value.firstOrNull()?.id)
             persistProfiles()
+            _subscriptions.value = _subscriptions.value.map { sub ->
+                if (subscriptionId == null || sub.id == subscriptionId) {
+                    sub.copy(serverCount = _profiles.value.count { it.subscriptionId == sub.id })
+                } else {
+                    sub
+                }
+            }
+            persistSubscriptions()
         }
         return removed
     }
