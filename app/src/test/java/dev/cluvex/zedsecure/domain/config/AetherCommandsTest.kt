@@ -163,3 +163,35 @@ class AetherCommandsTest {
         assertEquals("", back.server)
     }
 }
+
+class AetherFrontTest {
+
+    private fun json(text: String) = kotlinx.serialization.json.Json.parseToJsonElement(text) as kotlinx.serialization.json.JsonObject
+
+    @Test
+    fun frontIsLeftOutWithoutRoutingAndBuiltWithIt() {
+        assertFalse(AetherFront.needed(XrayJsonBuilder.BuildOptions()))
+        assertTrue(AetherFront.needed(XrayJsonBuilder.BuildOptions(bypassIran = true)))
+    }
+
+    @Test
+    fun frontCarriesTheExitAndSendsTheProxyToTheCore() {
+        val config = json(AetherFront.config(AetherProfile(), XrayJsonBuilder.BuildOptions(bypassIran = true)))
+        val ports = (config["inbounds"] as kotlinx.serialization.json.JsonArray)
+            .map { (it as kotlinx.serialization.json.JsonObject)["port"].toString().trim('"').toInt() }
+        assertTrue(LocalPorts.XRAY_SOCKS in ports)
+        assertTrue(LocalPorts.AETHER_EXIT in ports)
+
+        // The exit's own traffic is the first rule: no rule of the user's can send the core's dialling back into the core.
+        val rules = (config["routing"] as kotlinx.serialization.json.JsonObject)["rules"] as kotlinx.serialization.json.JsonArray
+        val first = rules.first() as kotlinx.serialization.json.JsonObject
+        assertEquals(AetherExitJson.EXIT_OUTBOUND_TAG, first["outboundTag"].toString().trim('"'))
+        assertTrue(first["inboundTag"].toString().contains(AetherExitJson.EXIT_INBOUND_TAG))
+
+        val outbounds = (config["outbounds"] as kotlinx.serialization.json.JsonArray).map { it as kotlinx.serialization.json.JsonObject }
+        val proxy = outbounds.first { it["tag"].toString().trim('"') == "proxy" }
+        assertEquals("socks", proxy["protocol"].toString().trim('"'))
+        assertTrue(proxy.toString().contains("\"port\":${LocalPorts.AETHER_SOCKS}"))
+        assertTrue(outbounds.any { it["tag"].toString().trim('"') == AetherExitJson.EXIT_OUTBOUND_TAG })
+    }
+}

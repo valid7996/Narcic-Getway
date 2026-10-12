@@ -307,7 +307,6 @@ fun ServersScreen(
     var showRealDelayNote by remember { mutableStateOf(false) }
     var overflowOpen by remember { mutableStateOf(false) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
-    var confirmDeleteSubscriptions by remember { mutableStateOf(false) }
 
     var confirmDeleteInvalid by remember { mutableStateOf<Int?>(null) }
     var editTarget by remember { mutableStateOf<VpnProfile?>(null) }
@@ -547,48 +546,8 @@ fun ServersScreen(
                         onDismissRequest = { overflowOpen = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
-                        val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
-                        if (currentSub != null) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.subs_update_this)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
-                                enabled = !updating,
-                                onClick = {
-                                    overflowOpen = false
-                                    updating = true
-
-                                    scope.launch(kotlinx.coroutines.Dispatchers.Default) {
-                                        val result = repository.updateSubscription(currentSub.id)
-                                        val n = result.getOrElse { 0 }
-
-                                        if (autoTestAfterUpdate && n > 0) {
-                                            val all = repository.profiles.value
-                                            repository.clearPings(all.map { it.id }, persist = false)
-                                            PingService.measureAll(
-                                                all,
-                                                useRealDelay = true,
-                                                concurrency = realPingConcurrency,
-                                                delayUrl = delayTestUrl,
-                                                chainConfig = repository::chainProbeConfig,
-                                            ) { id, ms, cc ->
-                                                repository.setPing(id, ms, cc, persist = false)
-                                            }
-                                            repository.flushProfiles()
-                                            if (autoRemoveInvalidAfterTest) repository.removeInvalid()
-                                            if (autoSortAfterTest) repository.sortByTestResults()
-                                        }
-                                        updating = false
-                                        if (result.isSuccess) {
-                                            toastRes(Res.string.subs_updated, n)
-                                        } else {
-                                            toastRes(Res.string.subs_failed)
-                                        }
-                                    }
-                                },
-                            )
-                        }
                         DropdownMenuItem(
-                            text = { Text(stringResource(if (currentSub != null) Res.string.subs_update_all else Res.string.subs_update_only)) },
+                            text = { Text(stringResource(Res.string.subs_update_all)) },
                             leadingIcon = { Icon(painterResource(Res.drawable.ic_schedule), null) },
                             enabled = subscriptions.isNotEmpty() && !updating,
                             onClick = {
@@ -654,26 +613,6 @@ fun ServersScreen(
                                 overflowOpen = false
 
                                 confirmDeleteInvalid = repository.invalidCount()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(
-                                        if (currentSub != null) Res.string.del_this_subscription
-                                        else Res.string.del_subscriptions
-                                    )
-                                )
-                            },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-                            enabled = if (currentSub != null) {
-                                servers.any { it.subscriptionId == currentSub.id }
-                            } else {
-                                servers.any { it.subscriptionId.isNotBlank() }
-                            },
-                            onClick = {
-                                overflowOpen = false
-                                confirmDeleteSubscriptions = true
                             },
                         )
                         DropdownMenuItem(
@@ -1401,49 +1340,6 @@ fun ServersScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmDeleteInvalid = null }) {
-                    Text(stringResource(Res.string.action_cancel))
-                }
-            },
-        )
-    }
-
-    if (confirmDeleteSubscriptions) {
-        val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
-        val targetSubId = currentSub?.id
-        val subCount = if (targetSubId != null) {
-            servers.count { it.subscriptionId == targetSubId }
-        } else {
-            servers.count { it.subscriptionId.isNotBlank() }
-        }
-        AlertDialog(
-            onDismissRequest = { confirmDeleteSubscriptions = false },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = {
-                Text(
-                    stringResource(
-                        if (currentSub != null) Res.string.del_this_subscription
-                        else Res.string.del_subscriptions
-                    )
-                )
-            },
-            text = {
-                Text(
-                    if (currentSub != null) {
-                        stringResource(Res.string.del_this_subscription_confirm, currentSub.name, subCount)
-                    } else {
-                        stringResource(Res.string.del_subscriptions_confirm, subCount)
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmDeleteSubscriptions = false
-                    val removed = repository.removeSubscriptionConfigs(targetSubId)
-                    toastRes(Res.string.removed_count, removed)
-                }) { Text(stringResource(Res.string.action_delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDeleteSubscriptions = false }) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },

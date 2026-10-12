@@ -68,9 +68,7 @@
     <string name="subs_name">Name</string>
     <string name="subs_url">URL</string>
     <string name="subs_update">Update</string>
-    <string name="subs_update_this">Update only this subscription</string>
     <string name="subs_update_all">Update all</string>
-    <string name="subs_update_only">Update subscriptions</string>
     <string name="subs_updated">Updated: %1$d servers</string>
     <string name="subs_failed">Subscription update failed</string>
     <string name="subs_saved_unreachable">Subscription "%1$s" saved, but it couldn't be downloaded right now. Update it once you're connected.</string>
@@ -201,10 +199,6 @@
     <string name="del_duplicates">Delete duplicates</string>
     <string name="del_invalid">Delete invalid</string>
     <string name="del_invalid_confirm">Removes %1$d servers: the ones the last test could not reach, and any config that cannot run. Untested servers are kept.</string>
-    <string name="del_subscriptions">Delete subscription configs</string>
-    <string name="del_subscriptions_confirm">Removes all servers from subscriptions (%1$d servers). Manual and locked configs are kept.</string>
-    <string name="del_this_subscription">Delete this subscription's configs</string>
-    <string name="del_this_subscription_confirm">Removes all servers from "%1$s" (%2$d servers).</string>
     <string name="del_all">Delete all servers</string>
     <string name="del_all_confirm">This removes every saved server. Locked vault configs are kept.</string>
     <string name="export_all">Export all</string>
@@ -322,9 +316,7 @@
     <string name="about_built_on">Built on the Xray core, with Psiphon, Tor, Snowflake, obfs4, Conjure, DNSTT, VayDNS, MasterDNS, AmneziaWG, OpenConnect and IKEv2.</string>
     <string name="about_telegram">Telegram channel</string>
     <string name="about_github">GitHub</string>
-    <string name="about_thanks_cluvex">Special thanks to RobinHood</string>
-    <string name="about_app_description_title">About &amp; Guide</string>
-    <string name="about_app_description_body">Narcic Gateway is an advanced, multi-core secure proxy and VPN client supporting V2Ray (VLESS/VMess/Trojan/Shadowsocks), Aether, Hysteria 2, Psiphon, WireGuard, and DNS tunnels. Import your subscriptions or configs via narcicgeteway:// links, clipboard, or QR codes to enjoy fast, private, and censorship-resistant internet.</string>
+    <string name="about_thanks_cluvex">Special thanks to CluvexStudio</string>
     <string name="about_source_title">Open-source core</string>
     <string name="about_source_body">The core that carries your traffic is built on open-source projects licensed under GPL-3.0, LGPL-3.0 and MPL-2.0. Our patched sources are published, as those licences require.</string>
     <string name="about_source_xray">Xray core — our patches</string>

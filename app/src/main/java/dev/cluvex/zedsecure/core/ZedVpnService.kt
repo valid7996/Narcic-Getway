@@ -757,14 +757,32 @@ class ZedVpnService : VpnService() {
     }
 
     private fun startAether(configJson: String, descriptor: ParcelFileDescriptor, tunMtu: Int) {
+        // With routing settings the planner sends {"aether": profile, "front": xray config}; without, the profile alone.
+        val wrapper = runCatching { JSONObject(configJson) }.getOrNull()
+        val profileJson = wrapper?.optJSONObject("aether")?.toString() ?: configJson
+        val front = wrapper?.optString("front")?.takeIf { it.isNotBlank() }
         val profile = try {
             kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-                .decodeFromString(AetherProfile.serializer(), configJson)
+                .decodeFromString(AetherProfile.serializer(), profileJson)
         } catch (e: Exception) {
             Log.e(TAG, "aether config decode failed", e)
             VpnManager.onError(getString(R.string.config_invalid))
             stopEverything()
             return
+        }
+        // The routing front goes up first: it carries the exit the core dials out through, which the core
+        // starts on its own only when it finds none.
+        val dialPort = if (front != null) {
+            if (!XrayController.start(front)) {
+                VpnManager.onError(coreStartError())
+                stopEverything()
+                return
+            }
+            AetherSupport.adoptExit()
+            Log.i(TAG, "aether: routing front up on ${LocalPorts.XRAY_SOCKS}")
+            LocalPorts.XRAY_SOCKS
+        } else {
+            LocalPorts.AETHER_SOCKS
         }
         val bridged = java.util.concurrent.atomic.AtomicBoolean(false)
         val controller = AetherController(
@@ -772,8 +790,9 @@ class ZedVpnService : VpnService() {
             profile = profile,
             socksPort = LocalPorts.AETHER_SOCKS,
             onEstablished = {
-                if (bridged.compareAndSet(false, true) && bridge(descriptor, LocalPorts.AETHER_SOCKS, tunMtu)) {
-                    VpnManager.activeSocksPort = LocalPorts.AETHER_SOCKS
+                // The tun dials the front when there is one (its rules decide what reaches the core), else the core.
+                if (bridged.compareAndSet(false, true) && bridge(descriptor, dialPort, tunMtu, pipeline = front != null)) {
+                    VpnManager.activeSocksPort = dialPort
                     finishConnected()
                 }
             },
@@ -1231,6 +1250,7 @@ class ZedVpnService : VpnService() {
         stopAutoSelectSession()
         psiphon?.stop(); psiphon = null
         aether?.stop(); aether = null
+        AetherSupport.releaseExit()
         dnsTunnel?.stop(); dnsTunnel = null
         masterDns?.stop(); masterDns = null
         tor?.stop(); tor = null

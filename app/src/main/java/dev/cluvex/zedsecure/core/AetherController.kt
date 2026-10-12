@@ -384,7 +384,23 @@ object AetherSupport {
         return AetherExitJson.EXIT_SOCKS_PORT
     }
 
+    /** True while the exit is part of the routing front's Xray, which the service starts and stops, not this object. */
+    @Volatile private var exitAdopted = false
+
+    /** The front's Xray carries the exit: [startExitProxy] then finds it running, and [stopExitProxy] leaves it be. */
+    fun adoptExit() {
+        exitAdopted = true
+        exitRunning = true
+    }
+
+    /** The service stopped the front's Xray: the exit is gone with it. */
+    fun releaseExit() {
+        exitAdopted = false
+        exitRunning = false
+    }
+
     fun stopExitProxy() {
+        if (exitAdopted) return
         if (exitRunning) {
             exitRunning = false
             runCatching { XrayController.stop() }

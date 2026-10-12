@@ -180,10 +180,18 @@ class StartPlanner(context: Context) {
                 dev.cluvex.zedsecure.domain.config.OpenConnectProfile.serializer(), it,
             )
         }
-        profile.aetherSettings()?.let {
-            return kotlinx.serialization.json.Json.encodeToString(
-                dev.cluvex.zedsecure.domain.config.AetherProfile.serializer(), it,
+        profile.aetherSettings()?.let { aether ->
+            val profileJson = kotlinx.serialization.json.Json.encodeToString(
+                dev.cluvex.zedsecure.domain.config.AetherProfile.serializer(), aether,
             )
+            // The routing settings are rules of Xray: with any set, an Xray applies them in front of the core.
+            val geoReady = GeoAssetsRepository(appContext).allPresent()
+            val options = settingsRepository.settings.value.buildOptions(geoReady)
+            if (!dev.cluvex.zedsecure.domain.config.AetherFront.needed(options)) return profileJson
+            return org.json.JSONObject().apply {
+                put("aether", org.json.JSONObject(profileJson))
+                put("front", dev.cluvex.zedsecure.domain.config.AetherFront.config(aether, options))
+            }.toString()
         }
         profile.ikev2Settings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
