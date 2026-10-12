@@ -70,6 +70,7 @@
     <string name="subs_url">URL</string>
     <string name="subs_update">Обновить</string>
     <string name="subs_update_all">Обновить все</string>
+    <string name="subs_update_only">Обновить подписки</string>
     <string name="subs_updated">Обновлено: %1$d серверов</string>
     <string name="subs_failed">Не удалось обновить подписку</string>
     <string name="subs_saved_unreachable">Подписка «%1$s» сохранена, но сейчас её не удалось загрузить. Обновите её после подключения.</string>
@@ -200,6 +201,8 @@
     <string name="del_duplicates">Удалить дубликаты</string>
     <string name="del_invalid">Удалить нерабочие</string>
     <string name="del_invalid_confirm">Будет удалено серверов: %1$d — те, до которых не дошёл последний тест, и конфигурации, которые не запускаются. Непроверенные останутся.</string>
+    <string name="del_subscriptions">Удалить серверы подписок</string>
+    <string name="del_subscriptions_confirm">Будут удалены все серверы из подписок (%1$d шт.). Ручные и защищённые сохранятся.</string>
     <string name="del_all">Удалить все серверы</string>
     <string name="del_all_confirm">Будут удалены все сохранённые серверы. Закрытые конфигурации хранилища сохранятся.</string>
     <string name="export_all">Экспортировать все</string>

@@ -70,6 +70,7 @@
     <string name="subs_url">URL</string>
     <string name="subs_update">更新</string>
     <string name="subs_update_all">全部更新</string>
+    <string name="subs_update_only">更新订阅</string>
     <string name="subs_updated">已更新：%1$d 个服务器</string>
     <string name="subs_failed">订阅更新失败</string>
     <string name="subs_saved_unreachable">订阅“%1$s”已保存，但暂时无法下载。连接后请更新它。</string>
@@ -200,6 +201,8 @@
     <string name="del_duplicates">删除重复项</string>
     <string name="del_invalid">删除无效项</string>
     <string name="del_invalid_confirm">将删除 %1$d 个服务器：上次测试无法连通的，以及无法运行的配置。未测试的服务器会保留。</string>
+    <string name="del_subscriptions">删除订阅服务器</string>
+    <string name="del_subscriptions_confirm">将删除所有来自订阅的服务器（%1$d 个）。手动添加和锁定的配置会保留。</string>
     <string name="del_all">删除所有服务器</string>
     <string name="del_all_confirm">这将移除所有已保存的服务器。锁定的保险库配置会保留。</string>
     <string name="export_all">全部导出</string>

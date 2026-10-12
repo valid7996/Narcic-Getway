@@ -48,6 +48,7 @@
     <string name="subs_url">URL</string>
     <string name="subs_update">Update</string>
     <string name="subs_update_all">Update all</string>
+    <string name="subs_update_only">Update subscriptions</string>
     <string name="subs_updated">Updated: %1$d servers</string>
     <string name="subs_failed">Subscription update failed</string>
 
@@ -173,6 +174,8 @@
     <string name="sort_by_results">Sort by test results</string>
     <string name="del_duplicates">Delete duplicates</string>
     <string name="del_invalid">Delete invalid</string>
+    <string name="del_subscriptions">Delete subscription configs</string>
+    <string name="del_subscriptions_confirm">Removes all servers from subscriptions (%1$d servers). Manual and locked configs are kept.</string>
     <string name="del_all">Delete all servers</string>
     <string name="del_all_confirm">This removes every saved server. Locked vault configs are kept.</string>
     <string name="export_all">Export all</string>

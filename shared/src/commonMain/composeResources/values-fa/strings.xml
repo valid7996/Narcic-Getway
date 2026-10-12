@@ -80,6 +80,7 @@
     <string name="subs_url">نشانی</string>
     <string name="subs_update">به‌روزرسانی</string>
     <string name="subs_update_all">به‌روزرسانی همه</string>
+    <string name="subs_update_only">به‌روزرسانی سابسکریپشن‌ها</string>
     <string name="subs_updated">به‌روزرسانی شد: %1$d سرور</string>
     <string name="subs_failed">به‌روزرسانی سابسکریپشن ناموفق بود</string>
     <string name="subs_saved_unreachable">سابسکریپشن «%1$s» ذخیره شد، اما الان دانلود نشد. وقتی وصل شدید آن را به‌روز کنید.</string>
@@ -210,6 +211,8 @@
     <string name="del_duplicates">حذف تکراری‌ها</string>
     <string name="del_invalid">حذف نامعتبرها</string>
     <string name="del_invalid_confirm">این کار %1$d سرور را حذف می‌کند: آن‌هایی که آخرین تست نتوانست به آن‌ها برسد و کانفیگ‌هایی که اصلاً اجرا نمی‌شوند. سرورهای تست‌نشده می‌مانند.</string>
+    <string name="del_subscriptions">حذف کانفیگ‌های سابسکریپشن</string>
+    <string name="del_subscriptions_confirm">همه سرورهای دریافتی از سابسکریپشن‌ها حذف می‌شوند (%1$d سرور). کانفیگ‌های دستی و قفل‌شده باقی می‌مانند.</string>
     <string name="del_all">حذف همه سرورها</string>
     <string name="del_all_confirm">همه سرورهای ذخیره‌شده حذف می‌شوند. کانفیگ‌های قفل‌شده باقی می‌مانند.</string>
     <string name="export_all">خروجی گرفتن از همه</string>

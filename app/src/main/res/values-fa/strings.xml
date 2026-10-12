@@ -52,6 +52,7 @@
     <string name="subs_url">نشانی</string>
     <string name="subs_update">به‌روزرسانی</string>
     <string name="subs_update_all">به‌روزرسانی همه</string>
+    <string name="subs_update_only">به‌روزرسانی سابسکریپشن‌ها</string>
     <string name="subs_updated">به‌روزرسانی شد: %1$d سرور</string>
     <string name="subs_failed">به‌روزرسانی سابسکریپشن ناموفق بود</string>
 
@@ -177,6 +178,8 @@
     <string name="sort_by_results">مرتب‌سازی بر پایه نتیجه تست</string>
     <string name="del_duplicates">حذف تکراری‌ها</string>
     <string name="del_invalid">حذف نامعتبرها</string>
+    <string name="del_subscriptions">حذف کانفیگ‌های سابسکریپشن</string>
+    <string name="del_subscriptions_confirm">همه سرورهای دریافتی از سابسکریپشن‌ها حذف می‌شوند (%1$d سرور). کانفیگ‌های دستی و قفل‌شده باقی می‌مانند.</string>
     <string name="del_all">حذف همه سرورها</string>
     <string name="del_all_confirm">همه سرورهای ذخیره‌شده حذف می‌شوند. کانفیگ‌های قفل‌شده باقی می‌مانند.</string>
     <string name="export_all">خروجی گرفتن از همه</string>

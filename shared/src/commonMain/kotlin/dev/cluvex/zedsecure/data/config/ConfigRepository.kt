@@ -967,6 +967,21 @@ class ConfigRepository(private val store: KeyValueStore) {
         persistProfiles()
     }
 
+    /**
+     * Removes every profile imported from any subscription (profile.subscriptionId is not blank).
+     * Locked vault profiles are kept. Returns the count of removed profiles.
+     */
+    fun removeSubscriptionConfigs(): Int {
+        val before = _profiles.value.size
+        _profiles.value = _profiles.value.filter { it.isLocked || it.subscriptionId.isBlank() }
+        val removed = before - _profiles.value.size
+        if (removed > 0) {
+            if (!activeExists()) setActive(_profiles.value.firstOrNull()?.id)
+            persistProfiles()
+        }
+        return removed
+    }
+
     fun removeDuplicates(): Int {
         val seen = HashSet<String>()
         val kept = ArrayList<VpnProfile>()
