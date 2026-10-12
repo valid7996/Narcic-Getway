@@ -111,6 +111,7 @@ internal fun HomeServerSection(
     var moveTarget by remember { mutableStateOf<VpnProfile?>(null) }
     var updating by remember { mutableStateOf(false) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
+    var confirmDeleteSubscriptions by remember { mutableStateOf(false) }
     var showAutoSheet by remember { mutableStateOf(false) }
     var showPsiphon by remember { mutableStateOf(false) }
     var showAether by remember { mutableStateOf(false) }
@@ -243,8 +244,46 @@ internal fun HomeServerSection(
                     onDismissRequest = { overflowOpen = false },
                     shape = MaterialTheme.shapes.largeIncreased,
                 ) {
+                    val currentSub = subscriptions.firstOrNull { it.id == group }
+                    if (currentSub != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.subs_update_this)) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
+                            enabled = !updating,
+                            onClick = {
+                                overflowOpen = false
+                                updating = true
+                                scope.launch(Dispatchers.Default) {
+                                    val result = repository.updateSubscription(currentSub.id)
+                                    val n = result.getOrElse { 0 }
+                                    if (autoTestAfterUpdate && n > 0) {
+                                        val all = repository.profiles.value
+                                        repository.clearPings(all.map { it.id }, persist = false)
+                                        PingService.measureAll(
+                                            all,
+                                            useRealDelay = true,
+                                            concurrency = realPingConcurrency,
+                                            delayUrl = delayTestUrl,
+                                            chainConfig = repository::chainProbeConfig,
+                                        ) { id, ms, cc ->
+                                            repository.setPing(id, ms, cc, persist = false)
+                                        }
+                                        repository.flushProfiles()
+                                        if (autoRemoveInvalidAfterTest) repository.removeInvalid()
+                                        if (autoSortAfterTest) repository.sortByTestResults()
+                                    }
+                                    updating = false
+                                    if (result.isSuccess) {
+                                        platform.toast(updatedTemplate.format(n))
+                                    } else {
+                                        platform.toast(importFailed)
+                                    }
+                                }
+                            },
+                        )
+                    }
                     DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.subs_update_all)) },
+                        text = { Text(stringResource(if (currentSub != null) Res.string.subs_update_all else Res.string.subs_update_only)) },
                         leadingIcon = { Icon(painterResource(Res.drawable.ic_schedule), null) },
                         enabled = subscriptions.isNotEmpty() && !updating,
                         onClick = {
@@ -299,6 +338,26 @@ internal fun HomeServerSection(
                             val n = repository.invalidCount()
                             repository.removeInvalid()
                             platform.toast(removedTemplate.format(n))
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (currentSub != null) Res.string.del_this_subscription
+                                    else Res.string.del_subscriptions
+                                )
+                            )
+                        },
+                        leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+                        enabled = if (currentSub != null) {
+                            allServers.any { it.subscriptionId == currentSub.id }
+                        } else {
+                            allServers.any { it.subscriptionId.isNotBlank() }
+                        },
+                        onClick = {
+                            overflowOpen = false
+                            confirmDeleteSubscriptions = true
                         },
                     )
                     DropdownMenuItem(
@@ -515,6 +574,49 @@ internal fun HomeServerSection(
         onDismissRename = { renameTarget = null },
         onDismissMove = { moveTarget = null },
     )
+
+    if (confirmDeleteSubscriptions) {
+        val currentSub = subscriptions.firstOrNull { it.id == group }
+        val targetSubId = currentSub?.id
+        val subCount = if (targetSubId != null) {
+            allServers.count { it.subscriptionId == targetSubId }
+        } else {
+            allServers.count { it.subscriptionId.isNotBlank() }
+        }
+        AlertDialog(
+            onDismissRequest = { confirmDeleteSubscriptions = false },
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+            title = {
+                Text(
+                    stringResource(
+                        if (currentSub != null) Res.string.del_this_subscription
+                        else Res.string.del_subscriptions
+                    )
+                )
+            },
+            text = {
+                Text(
+                    if (currentSub != null) {
+                        stringResource(Res.string.del_this_subscription_confirm, currentSub.name, subCount)
+                    } else {
+                        stringResource(Res.string.del_subscriptions_confirm, subCount)
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDeleteSubscriptions = false
+                    val removed = repository.removeSubscriptionConfigs(targetSubId)
+                    platform.toast(removedTemplate.format(removed))
+                }) { Text(stringResource(Res.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDeleteSubscriptions = false }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
+            },
+        )
+    }
 
     if (confirmDeleteAll) {
         AlertDialog(
