@@ -47,6 +47,7 @@
     <string name="subs_name">Name</string>
     <string name="subs_url">URL</string>
     <string name="subs_update">Update</string>
+    <string name="subs_update_this">Update only this subscription</string>
     <string name="subs_update_all">Update all</string>
     <string name="subs_update_only">Update subscriptions</string>
     <string name="subs_updated">Updated: %1$d servers</string>

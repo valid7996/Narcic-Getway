@@ -51,6 +51,7 @@
     <string name="subs_name">نام</string>
     <string name="subs_url">نشانی</string>
     <string name="subs_update">به‌روزرسانی</string>
+    <string name="subs_update_this">به‌روزرسانی فقط این سابسکریپشن</string>
     <string name="subs_update_all">به‌روزرسانی همه</string>
     <string name="subs_update_only">به‌روزرسانی سابسکریپشن‌ها</string>
     <string name="subs_updated">به‌روزرسانی شد: %1$d سرور</string>

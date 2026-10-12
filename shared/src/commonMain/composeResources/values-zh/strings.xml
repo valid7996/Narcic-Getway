@@ -69,6 +69,7 @@
     <string name="subs_name">名称</string>
     <string name="subs_url">URL</string>
     <string name="subs_update">更新</string>
+    <string name="subs_update_this">仅更新此订阅</string>
     <string name="subs_update_all">全部更新</string>
     <string name="subs_update_only">更新订阅</string>
     <string name="subs_updated">已更新：%1$d 个服务器</string>

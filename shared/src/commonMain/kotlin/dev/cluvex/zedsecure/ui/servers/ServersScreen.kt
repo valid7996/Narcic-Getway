@@ -550,7 +550,7 @@ fun ServersScreen(
                         val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
                         if (currentSub != null) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.subs_update)) },
+                                text = { Text(stringResource(Res.string.subs_update_this)) },
                                 leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
                                 enabled = !updating,
                                 onClick = {

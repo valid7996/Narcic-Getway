@@ -247,7 +247,7 @@ internal fun HomeServerSection(
                     val currentSub = subscriptions.firstOrNull { it.id == group }
                     if (currentSub != null) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.subs_update)) },
+                            text = { Text(stringResource(Res.string.subs_update_this)) },
                             leadingIcon = { Icon(painterResource(Res.drawable.ic_sync), null) },
                             enabled = !updating,
                             onClick = {

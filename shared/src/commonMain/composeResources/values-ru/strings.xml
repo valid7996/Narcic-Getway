@@ -69,6 +69,7 @@
     <string name="subs_name">Название</string>
     <string name="subs_url">URL</string>
     <string name="subs_update">Обновить</string>
+    <string name="subs_update_this">Обновить только эту подписку</string>
     <string name="subs_update_all">Обновить все</string>
     <string name="subs_update_only">Обновить подписки</string>
     <string name="subs_updated">Обновлено: %1$d серверов</string>
