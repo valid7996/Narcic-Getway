@@ -260,7 +260,7 @@ private fun RootPage(
                 iconTint = Color(0xFF60E0B0),
                 iconTile = true,
             ) { onOpen(SettingsPage.Routing) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_PER_APP) SettingsMenuRow(
                 stringResource(Res.string.per_app_title),
                 if (settings.perAppProxyEnabled) {
                     stringResource(Res.string.per_app_selected, settings.perAppPackages.size)

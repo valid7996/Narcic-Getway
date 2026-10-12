@@ -26,4 +26,7 @@ object NavConfig {
 
     /** The Auto-select (observatory) page. */
     const val SHOW_AUTO_SELECT: Boolean = true
+
+    /** The Per-app proxy page. */
+    const val SHOW_PER_APP: Boolean = true
 }
