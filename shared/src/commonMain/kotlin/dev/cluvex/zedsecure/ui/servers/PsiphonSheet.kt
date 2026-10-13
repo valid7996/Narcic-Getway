@@ -52,6 +52,7 @@ fun PsiphonSheet(
     var mode by remember { mutableStateOf(initial?.mode ?: PsiphonConfigBuilder.MODE_AUTO) }
     var cdnIps by remember { mutableStateOf(initial?.cdnIps ?: "") }
     var cdnSni by remember { mutableStateOf(initial?.cdnSni ?: "") }
+    var beast by remember { mutableStateOf(initial?.beast ?: true) }
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
@@ -103,24 +104,32 @@ fun PsiphonSheet(
                 selected = mode,
                 onSelect = { mode = it },
             )
-            if (mode == PsiphonConfigBuilder.MODE_CDN) {
-                OutlinedTextField(
-                    value = cdnIps,
-                    onValueChange = { cdnIps = it },
-                    label = { Text(stringResource(Res.string.psiphon_cdn_ips)) },
-                    minLines = 2,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = cdnSni,
-                    onValueChange = { cdnSni = it },
-                    label = { Text(stringResource(Res.string.psiphon_cdn_sni)) },
-                    minLines = 2,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            // The edge addresses and names are used in every mode that fronts (auto, direct and CDN), as in
+            // Shirokhorshid; they used to show, and count, in CDN mode alone.
+            OutlinedTextField(
+                value = cdnIps,
+                onValueChange = { cdnIps = it },
+                label = { Text(stringResource(Res.string.psiphon_cdn_ips)) },
+                supportingText = { Text(stringResource(Res.string.psiphon_cdn_hint)) },
+                minLines = 2,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = cdnSni,
+                onValueChange = { cdnSni = it },
+                label = { Text(stringResource(Res.string.psiphon_cdn_sni)) },
+                minLines = 2,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            // Beast mode: every protocol on every server at once; Psiphon also remembers the route that worked.
+            SettingToggleRow(
+                title = stringResource(Res.string.psiphon_beast_title),
+                summary = stringResource(Res.string.psiphon_beast_summary),
+                checked = beast,
+                onCheckedChange = { beast = it },
+            )
 
             Button(
                 onClick = {
@@ -131,6 +140,7 @@ fun PsiphonSheet(
                             mode = mode,
                             cdnIps = cdnIps.trim(),
                             cdnSni = cdnSni.trim(),
+                            beast = beast,
                         ),
                     )
                 },

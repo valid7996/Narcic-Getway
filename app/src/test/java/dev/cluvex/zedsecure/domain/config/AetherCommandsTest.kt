@@ -195,3 +195,44 @@ class AetherFrontTest {
         assertTrue(outbounds.any { it["tag"].toString().trim('"') == AetherExitJson.EXIT_OUTBOUND_TAG })
     }
 }
+
+class PsiphonFrontingTest {
+
+    @Test
+    fun listsAreCleanedTheWayShirokhorshidCleansThem() {
+        assertEquals("1.2.3.4,5.6.7.0/24", PsiphonFronting.ipFlagValue("1.2.3.4\n5.6.7.0/24; bad 999.1.1.1"))
+        assertEquals("a.example.com,b.example.com", PsiphonFronting.sniFlagValue("https://A.example.com/x, b.example.com."))
+        assertNull(PsiphonFronting.sniFlagValue("1.2.3.4"))
+        assertNull(PsiphonFronting.ipFlagValue("not an address"))
+    }
+
+    @Test
+    fun standalonePsiphonCarriesTheOverridesTheEdgesCertificatesNeed() {
+        val json = PsiphonConfigBuilder.build(PsiphonProfile(cdnSni = "front.example.com", cdnIps = "1.2.3.4"), "/d", 1, 2)
+        // A fronted dial is verified against these, not against the name the user typed.
+        assertTrue("a248.e.akamai.net" in json)
+        assertTrue("\"FrontedMeekDialOverridesProbability\":1.0" in json)
+        assertTrue("FrontedMeekCDNScanSpec" in json)
+        assertTrue("FrontedMeekCDNScanUseBuiltInSpec" in json)
+        assertTrue("AggressiveEstablishment" in json)
+        assertFalse("AggressiveEstablishment" in PsiphonConfigBuilder.build(PsiphonProfile(beast = false), "/d", 1, 2))
+    }
+
+    @Test
+    fun aetherAsksForTheOverlayAndKeepsAnSniOnItsOwn() {
+        val profile = AetherProfile(protocol = AetherProfile.PROTO_MASQUE, psiphon = AetherProfile.CARRIER_CHAIN, psiphonCdnSni = "front.example.com")
+        val arguments = AetherCommands.buildArguments(profile, LocalPorts.AETHER_SOCKS)
+        assertEquals("front.example.com", arguments[arguments.indexOf("--psiphon-cdn-sni") + 1])
+        assertFalse("--psiphon-cdn-ips" in arguments)
+        assertEquals(AetherCommands.OVERLAY_BEAST_WORD, arguments[arguments.indexOf(AetherCommands.PSIPHON_CONFIG) + 1])
+        val overlay = AetherCommands.overlayOf(arguments)!!
+        assertTrue("front.example.com" in overlay)
+        assertTrue("AggressiveEstablishment" in overlay)
+        val placed = AetherCommands.withOverlay(arguments, "/x/o.json")
+        assertEquals("/x/o.json", placed[placed.indexOf(AetherCommands.PSIPHON_CONFIG) + 1])
+        assertFalse(AetherCommands.PSIPHON_CONFIG in AetherCommands.withOverlay(arguments, null))
+        // Beast mode off: the overlay still carries the overrides, not the aggressive establishment.
+        val calm = AetherCommands.buildArguments(profile.copy(psiphonBeast = false), LocalPorts.AETHER_SOCKS)
+        assertFalse("AggressiveEstablishment" in AetherCommands.overlayOf(calm)!!)
+    }
+}

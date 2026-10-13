@@ -52,6 +52,7 @@ object AetherLink {
             profile.psiphonCdnSets.takeIf { it.isNotBlank() }?.let { query["cdn_sets"] = it }
             profile.psiphonRegion.takeIf { it.isNotBlank() }?.let { query["region"] = it }
             if (!profile.psiphonBundledList) query["psiphon_bundled"] = "0"
+            if (!profile.psiphonBeast) query["psiphon_beast"] = "0"
         }
         if (profile.tor != AetherProfile.CARRIER_OFF) {
             query["tor"] = profile.tor
@@ -125,6 +126,7 @@ object AetherLink {
             psiphonCdnSni = params["cdn_sni"]?.trim().orEmpty(),
             psiphonCdnSets = params["cdn_sets"]?.trim().orEmpty(),
             psiphonBundledList = params["psiphon_bundled"] != "0",
+            psiphonBeast = params["psiphon_beast"] != "0",
             finalMask = params["fm"]?.trim().orEmpty(),
             dialMode = params["dialMode"]?.trim().orEmpty(),
             targetStrategy = params["target"]?.trim().orEmpty(),

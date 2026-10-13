@@ -135,6 +135,7 @@ fun AetherSheet(
     var psiphonCdnIps by remember { mutableStateOf(initial?.psiphonCdnIps.orEmpty()) }
     var psiphonCdnSni by remember { mutableStateOf(initial?.psiphonCdnSni.orEmpty()) }
     var psiphonCdnSets by remember { mutableStateOf(initial?.psiphonCdnSets.orEmpty()) }
+    var psiphonBeast by remember { mutableStateOf(initial?.psiphonBeast ?: true) }
     var psiphonBundledList by remember { mutableStateOf(initial?.psiphonBundledList ?: true) }
     var finalMask by remember { mutableStateOf(initial?.finalMask.orEmpty()) }
     var dialMode by remember { mutableStateOf(initial?.dialMode.orEmpty()) }
@@ -201,6 +202,7 @@ fun AetherSheet(
         psiphonCdnIps = psiphonCdnIps.trim(),
         psiphonCdnSni = psiphonCdnSni.trim(),
         psiphonCdnSets = psiphonCdnSets.trim(),
+        psiphonBeast = psiphonBeast,
         psiphonBundledList = psiphonBundledList,
         finalMask = finalMask.trim(),
         dialMode = dialMode.trim(),
@@ -473,7 +475,9 @@ fun AetherSheet(
                         value = psiphonCdnIps,
                         onValueChange = { psiphonCdnIps = it },
                         label = { Text(stringResource(Res.string.aether_psiphon_cdn_ips)) },
-                        singleLine = true,
+                        supportingText = { Text(stringResource(Res.string.psiphon_cdn_hint)) },
+                        minLines = 1,
+                        maxLines = 4,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -481,7 +485,8 @@ fun AetherSheet(
                         value = psiphonCdnSni,
                         onValueChange = { psiphonCdnSni = it },
                         label = { Text(stringResource(Res.string.aether_psiphon_cdn_sni)) },
-                        singleLine = true,
+                        minLines = 1,
+                        maxLines = 4,
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -523,6 +528,14 @@ fun AetherSheet(
                 PsiphonCountryField(
                     selected = psiphonRegion,
                     onSelect = { psiphonRegion = it },
+                )
+
+                // Beast mode: every protocol on every server at once; Psiphon also remembers the route that worked.
+                SettingToggleRow(
+                    title = stringResource(Res.string.psiphon_beast_title),
+                    summary = stringResource(Res.string.psiphon_beast_summary),
+                    checked = psiphonBeast,
+                    onCheckedChange = { psiphonBeast = it },
                 )
 
                 SettingToggleRow(
@@ -921,7 +934,7 @@ private fun AetherLiveLogPanel(
 }
 
 @Composable
-private fun SettingToggleRow(
+internal fun SettingToggleRow(
     title: String,
     summary: String? = null,
     checked: Boolean,

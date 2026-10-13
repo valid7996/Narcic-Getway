@@ -246,6 +246,7 @@ object AetherSupport {
         val apiAddress: Boolean,
         val enrollAddress: Boolean,
         val goolClassic: Boolean,
+        val psiphonConfig: Boolean = true,
     ) {
         /** gool is WireGuard over MASQUE only from aether 2.3, the core that also names the classic one --gool-classic. */
         val wgOverMasque: Boolean get() = goolClassic
@@ -278,6 +279,7 @@ object AetherSupport {
             apiAddress = "--api-address" in help,
             enrollAddress = "--enroll-address" in help,
             goolClassic = "--gool-classic" in help,
+            psiphonConfig = "--psiphon-config" in help,
         )
         if (help.isNotBlank()) cachedCaps = caps
         return caps
@@ -290,6 +292,7 @@ object AetherSupport {
         var out = arguments
         if (!caps.masqueSni) out = AetherCommands.withoutOption(out, AetherCommands.MASQUE_SNI)
         if (!caps.goolClassic) out = out.filter { it != AetherCommands.GOOL_CLASSIC }
+        if (!caps.psiphonConfig) out = AetherCommands.withOverlay(out, null)
         if (AetherCommands.API_ADDRESS in out && !caps.apiAddress) {
             out = if (caps.enrollAddress) {
                 out.map { if (it == AetherCommands.API_ADDRESS) AetherCommands.ENROLL_ADDRESS else it }
@@ -307,6 +310,7 @@ object AetherSupport {
 
     private val ADAPTED_FLAGS = setOf(
         AetherCommands.MASQUE_SNI, AetherCommands.GOOL_CLASSIC, AetherCommands.API_ADDRESS, AetherCommands.REGISTER,
+        AetherCommands.PSIPHON_CONFIG,
     )
 
     fun startProcess(context: Context, arguments: List<String>, workDir: File, session: Boolean = false): Process {
@@ -320,11 +324,23 @@ object AetherSupport {
         if (AetherCommands.PSIPHON_SERVER_ENTRIES in arguments && entries == null) {
             LogBus.append("W/aether no Psiphon server list is bundled; Psiphon fetches its own")
         }
-        val finalArguments = adapt(context, AetherCommands.withShippedList(arguments, entries?.absolutePath))
+        // The overlay: the dial overrides of the CDN edges and beast mode, laid over the core's Psiphon configuration.
+        val overlay = AetherCommands.overlayOf(arguments)?.let { json ->
+            File(workDir, "psiphon-fronting.json").also { file ->
+                workDir.mkdirs()
+                file.writeText(json)
+            }
+        }
+        val finalArguments = adapt(
+            context,
+            AetherCommands.withOverlay(AetherCommands.withShippedList(arguments, entries?.absolutePath), overlay?.absolutePath),
+        )
         val builder = ProcessBuilder(listOf(binary(context).absolutePath) + finalArguments)
             .directory(workDir)
             .redirectErrorStream(true)
         builder.environment().putAll(environment(context, workDir, session))
+        // The overlay of the flag holds the resolvers the environment's file does: one of them only.
+        if (overlay != null) builder.environment().remove(PSIPHON_CONFIG_ENV)
         return builder.start()
     }
 

@@ -25,6 +25,9 @@ data class PsiphonProfile(
     val cdnIps: String = "",
 
     val cdnSni: String = "",
+
+    /** Beast mode: the client tries every protocol on every server at once. */
+    val beast: Boolean = true,
 )
 
 object PsiphonConfigBuilder {
@@ -98,6 +101,9 @@ object PsiphonConfigBuilder {
             put("InproxyTunnelProtocolSelectionProbability", 0.0)
 
             putCdnFronting(profile)
+            with(PsiphonFronting) { putBeast(profile.beast) }
+            // Resolvers for the fetch of the server list, which the DNS of a filtered network answers wrongly.
+            putJsonArray("DNSResolverAlternateServers") { PsiphonFronting.RESOLVERS.forEach { add(it) } }
 
             when (mode(profile.mode)) {
                 MODE_CDN -> {
@@ -134,55 +140,10 @@ object PsiphonConfigBuilder {
         }.filter { it.contains("QUIC") }
 
     private fun JsonObjectBuilder.putCdnFronting(profile: PsiphonProfile) {
-        val addresses = ipCandidates(profile.cdnIps)
-        val serverNames = sniCandidates(profile.cdnSni)
-        if (addresses.isEmpty()) {
-            put("FrontedMeekCDNScanUseBuiltInSpec", true)
-        } else {
-            put("FrontedMeekCDNScanSpec", buildJsonObject {
-                putJsonArray("IPCandidates") { addresses.forEach { add(it) } }
-                if (serverNames.isNotEmpty()) putJsonArray("SNIServerNames") { serverNames.forEach { add(it) } }
-            })
-        }
-        val dialAddresses = addresses.ifEmpty { serverNames }
-        if (dialAddresses.isEmpty() || serverNames.isEmpty()) return
-        putJsonArray("FrontedMeekDialOverrides") {
-            addJsonObject {
-                put("OverrideID", "user")
-                putJsonArray("MatchDialAddressRegexes") { add(".*") }
-                putJsonArray("DialAddresses") { dialAddresses.forEach { add(it) } }
-                put("SNIServerName", serverNames.first())
-                putJsonArray("VerifyServerNames") { serverNames.forEach { add(it) } }
-            }
-        }
+        with(PsiphonFronting) { putFronting(profile.cdnIps, profile.cdnSni) }
     }
 
-    private val SEPARATORS = charArrayOf(' ', '\t', '\n', '\r', ',', ';')
+    fun ipCandidates(raw: String): List<String> = PsiphonFronting.ipCandidates(raw)
 
-    fun ipCandidates(raw: String): List<String> = raw.split(*SEPARATORS)
-        .map { it.trim() }.filter { it.isNotEmpty() && (isIpv4(it) || isIpv4Cidr(it)) }.distinct()
-
-    fun sniCandidates(raw: String): List<String> = raw.split(*SEPARATORS)
-        .map { normalizeHostname(it) }.filter { it.isNotEmpty() }.distinct()
-
-    private fun isIpv4(value: String): Boolean {
-        val parts = value.split('.')
-        if (parts.size != 4) return false
-        return parts.all { p -> p.isNotEmpty() && p.length <= 3 && p.all { it.isDigit() } && (p.toIntOrNull() ?: 256) <= 255 }
-    }
-
-    private fun isIpv4Cidr(value: String): Boolean {
-        val parts = value.split('/')
-        if (parts.size != 2) return false
-        return isIpv4(parts[0]) && parts[1].isNotEmpty() && parts[1].all { it.isDigit() } && (parts[1].toIntOrNull() ?: 33) <= 32
-    }
-
-    private fun normalizeHostname(raw: String): String {
-        var v = raw.trim().lowercase()
-        for (prefix in listOf("https://", "http://")) v = v.removePrefix(prefix)
-        v = v.substringBefore('/').trim('.')
-        if (v.isEmpty() || !v.contains('.')) return ""
-        if (v.any { it.code > 127 || !(it.isLetterOrDigit() || it == '.' || it == '-') }) return ""
-        return v
-    }
+    fun sniCandidates(raw: String): List<String> = PsiphonFronting.sniCandidates(raw)
 }

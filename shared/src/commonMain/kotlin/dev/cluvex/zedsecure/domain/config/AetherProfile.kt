@@ -39,6 +39,9 @@ data class AetherProfile(
     val psiphonCdnSni: String = "",
     val psiphonCdnSets: String = "",
     val psiphonBundledList: Boolean = true,
+
+    /** Beast mode of the Psiphon client: every protocol on every server at once. */
+    val psiphonBeast: Boolean = true,
     val finalMask: String = "",
     val dialMode: String = "",
     val targetStrategy: String = "",

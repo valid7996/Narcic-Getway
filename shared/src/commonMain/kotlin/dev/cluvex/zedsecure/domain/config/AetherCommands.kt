@@ -22,6 +22,14 @@ object AetherCommands {
     /** The marker that asks the core to load the shipped Psiphon server entries file. */
     const val PSIPHON_SERVER_ENTRIES = "--psiphon-server-entries"
     const val SHIPPED_LIST = "shipped"
+    const val PSIPHON_CONFIG = "--psiphon-config"
+
+    /**
+     * The words the profile writes after --psiphon-config: the file is the overlay of [PsiphonFronting.overlay], which the
+     * app writes at start (see [withOverlay]); the second word says the overlay holds beast mode as well.
+     */
+    const val OVERLAY_WORD = "overlay"
+    const val OVERLAY_BEAST_WORD = "overlay-beast"
 
     private fun settingValue(value: String?): String? =
         value?.trim()?.takeUnless { it.isEmpty() || it.startsWith('-') }
@@ -221,15 +229,20 @@ object AetherCommands {
             psiphonBind?.let { addAll(listOf(PSIPHON_BIND, "127.0.0.1:$it")) }
             if (psiphon != AetherProfile.CARRIER_OFF) {
                 addAll(listOf("--psiphon-mode", profile.psiphonMode))
-                val cdnIps = settingValue(profile.psiphonCdnIps)?.takeIf { profile.psiphonMode != AetherProfile.PSIPHON_MODE_DIRECT }
+                // The addresses and names are cleaned the way Shirokhorshid cleans them (separators, schemes, junk); a list
+                // as typed, with new lines or a "https://" in it, was not read by the core. A name alone is allowed: it
+                // is then presented to the built-in edges.
+                val cdnIps = PsiphonFronting.ipFlagValue(profile.psiphonCdnIps)?.takeIf { profile.psiphonMode != AetherProfile.PSIPHON_MODE_DIRECT }
                 cdnIps?.let { addAll(listOf("--psiphon-cdn-ips", it)) }
-                if (cdnIps != null) settingValue(profile.psiphonCdnSni)?.let { addAll(listOf("--psiphon-cdn-sni", it)) }
+                PsiphonFronting.sniFlagValue(profile.psiphonCdnSni)?.let { addAll(listOf("--psiphon-cdn-sni", it)) }
                 if (profile.psiphonMode != AetherProfile.PSIPHON_MODE_DIRECT) {
                     settingValue(profile.psiphonCdnSets)?.let { addAll(listOf("--psiphon-cdn-sets", it)) }
                 }
                 settingValue(profile.psiphonRegion)?.let { addAll(listOf("--psiphon-region", it)) }
                 // The bundled list, unless the profile wants Psiphon to fetch a fresh one before it dials anything.
                 if (profile.psiphonBundledList) addAll(listOf(PSIPHON_SERVER_ENTRIES, SHIPPED_LIST))
+                // Dial overrides of the CDN edges and beast mode, laid over the core's own Psiphon configuration.
+                addAll(listOf(PSIPHON_CONFIG, if (profile.psiphonBeast) OVERLAY_BEAST_WORD else OVERLAY_WORD))
             }
             addAll(listOf(LOG_LEVEL, logLevel))
         }
@@ -371,6 +384,29 @@ object AetherCommands {
         } else {
             arguments.toMutableList().also { it[at + 1] = entries }
         }
+    }
+
+    /**
+     * [arguments] with the overlay word after --psiphon-config replaced by [path], the file the app wrote; the flag goes
+     * when there is no file. A file of the command's own is left as written.
+     */
+    fun withOverlay(arguments: List<String>, path: String?): List<String> {
+        val at = arguments.indexOf(PSIPHON_CONFIG)
+        val word = arguments.getOrNull(at + 1)
+        if (at < 0 || (word != OVERLAY_WORD && word != OVERLAY_BEAST_WORD)) return arguments
+        return if (path == null) {
+            arguments.filterIndexed { index, _ -> index != at && index != at + 1 }
+        } else {
+            arguments.toMutableList().also { it[at + 1] = path }
+        }
+    }
+
+    /** The overlay a run of [arguments] asks for: the first of its CDN server names and beast mode; null when it asks for none. */
+    fun overlayOf(arguments: List<String>): String? {
+        val at = arguments.indexOf(PSIPHON_CONFIG)
+        val word = arguments.getOrNull(at + 1)
+        if (at < 0 || (word != OVERLAY_WORD && word != OVERLAY_BEAST_WORD)) return null
+        return PsiphonFronting.overlay(valueAfter(arguments, "--psiphon-cdn-sni").orEmpty(), word == OVERLAY_BEAST_WORD)
     }
 
     /** The settings of the WARP keys page: they are that page's alone, no profile's settings reach them. */

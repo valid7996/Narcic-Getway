@@ -33,3 +33,15 @@
 - بدون هیچ قانون مسیریابی، Xray جلویی بالا نمی‌آید (فقط یک hop اضافه است).
 - حالت per-app و bypass LAN که در سطح TUN اعمال می‌شد، همان‌طور که بود کار می‌کند.
 - اگر rule شما geoip/geosite دارد، فایل‌های geo باید دانلود شده باشند (همان رفتار پروفایل‌های Xray).
+
+## CDN fronting و Beast Mode (دور چهارم، با مرجع Shirokhorshid)
+علت کار نکردن IP و SNI دلخواه:
+1. `VerifyServerNames` فقط SNI خودتان بود؛ ولی در fronting گواهی را edge می‌دهد (Akamai/Fastly) و با SNI شما نمی‌خواند، پس هر handshake رد می‌شد. حالا overrideهای Shirokhorshid (Fastly + ۹ edge Akamai با نام گواهی‌های Akamai، ALPN و TLSProfile مرورگر) ساخته می‌شود.
+2. `FrontedMeekDialOverridesProbability` نبود (پیش‌فرض صفر یعنی overrideها اصلاً استفاده نمی‌شدند). حالا 1.0.
+3. وقتی IP سفارشی بود `FrontedMeekCDNScanUseBuiltInSpec` برداشته می‌شد؛ حالا لیست داخلی کنار IPهای شما می‌ماند.
+4. در Aether فقط وقتی IP می‌دادید SNI فرستاده می‌شد؛ SNI تنها هم معتبر است. لیست‌ها قبل از ارسال تمیز می‌شوند (جداکننده، `https://`، مقدار نامعتبر).
+5. در صفحه‌ی Psiphon مستقل فیلدها فقط در حالت CDN دیده می‌شدند؛ حالا در Auto/Direct/CDN.
+- **Beast Mode** (`AggressiveEstablishment`): کلید جدید در هر دو بخش، پیش‌فرض روشن.
+- **تشخیص هوشمند مسیر قبلی**: این خود Psiphon است (replay) و به datastore پایدار نیاز دارد؛ پوشه‌ی `psiphon` و `aether-psiphon` پایدار هستند. «پاک‌کردن حافظه‌ی سایفون» آن را پاک می‌کند.
+- Aether: `AetherCommands` حالا `--psiphon-config` را می‌فرستد (فایل `psiphon-fronting.json`) که روی کانفیگ داخلی هسته گذاشته می‌شود.
+- **محدودیت**: Psiphon مستقل از `zedcore.aar` می‌آید و من آن را ندیدم. اگر هسته‌ی Psiphon داخلش stock باشد، `AggressiveEstablishment` و overrideها را نمی‌شناسد (نادیده گرفته می‌شود). هسته‌ی `libpsiphon-tunnel-core.so` که از PattNG گرفتیم این کلیدها را دارد.
