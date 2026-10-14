@@ -46,6 +46,9 @@ import dev.cluvex.zedsecure.domain.config.LocalPorts
 import dev.cluvex.zedsecure.domain.config.SingBoxTuning
 import dev.cluvex.zedsecure.domain.config.effectiveLanSocksPort
 import dev.cluvex.zedsecure.platform.secureRandomToken
+import dev.cluvex.zedsecure.domain.model.ConnectButtonStyle
+import dev.cluvex.zedsecure.ui.theme.applyThemeProfile
+import dev.cluvex.zedsecure.ui.theme.resetPersonalization
 
 enum class SettingsPage {
     Root, Ui, Vpn, Core, Routing, PerApp, Mux, Fragment, Observatory, Advanced, Mode, Assets, SingBox,
@@ -789,6 +792,30 @@ private fun UiPage(
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
         }
+
+        ThemeProfileRow(
+            label = stringResource(Res.string.theme_profile_title),
+            subtitle = stringResource(Res.string.theme_profile_sub),
+            defaultLabel = stringResource(Res.string.theme_profile_none),
+            selectedId = s.themeProfileId,
+            onSelect = { profile ->
+                onUpdate { settings ->
+                    if (profile != null) {
+                        settings.applyThemeProfile(profile)
+                    } else {
+                        settings.resetPersonalization()
+                    }
+                }
+            },
+        )
+
+        ConnectStyleRow(
+            label = stringResource(Res.string.connect_style_title),
+            subtitle = stringResource(Res.string.connect_style_sub),
+            selected = s.connectButtonStyle,
+            nameOf = { style -> stringResource(style.labelRes()) },
+            onSelect = { style -> onUpdate { it.copy(connectButtonStyle = style) } },
+        )
     }
 }
 
