@@ -356,7 +356,7 @@ class ZedVpnService : VpnService() {
                         stopEverything(); return@launch
                     }
                 }
-                writeProxyOutbound(xray, "127.0.0.1", listenPort)
+                writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost)
 
                 if (!XrayController.start(xray.toString())) {
                     VpnManager.onError(coreStartError())
@@ -394,12 +394,27 @@ class ZedVpnService : VpnService() {
         return host to port
     }
 
-    private fun writeProxyOutbound(xray: JSONObject, host: String, port: Int) {
+    private fun writeProxyOutbound(xray: JSONObject, host: String, port: Int, origHost: String) {
         val ob = proxyOutbound(xray) ?: return
         val settings = ob.optJSONObject("settings") ?: return
         val node = settings.optJSONArray("vnext")?.optJSONObject(0)
             ?: settings.optJSONArray("servers")?.optJSONObject(0) ?: return
         node.put("address", host); node.put("port", port)
+
+        // Make sure streamSettings SNI is explicitly kept to the real remote host
+        val stream = ob.optJSONObject("streamSettings")
+        if (stream != null) {
+            val tlsSettings = stream.optJSONObject("tlsSettings")
+            if (tlsSettings != null && tlsSettings.optString("serverName").isBlank()) {
+                tlsSettings.put("serverName", origHost)
+            }
+            val realitySettings = stream.optJSONObject("realitySettings")
+            if (realitySettings != null && realitySettings.optString("serverName").isBlank()) {
+                realitySettings.put("serverName", origHost)
+            }
+            // Remove domainStrategy UseIP since destination is 127.0.0.1
+            stream.optJSONObject("sockopt")?.remove("domainStrategy")
+        }
     }
 
     private fun proxyOutbound(xray: JSONObject): JSONObject? {

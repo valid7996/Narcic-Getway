@@ -8,11 +8,12 @@ public final class GoNativeBridge {
 
     static {
         try {
+            try {
+                System.loadLibrary("snispf");
+            } catch (Throwable ignored) {}
             System.loadLibrary("androidasdd_jni");
             libraryLoaded = true;
         } catch (Throwable t) {
-            
-            
             loadError = t;
             libraryLoaded = false;
         }
