@@ -19,6 +19,9 @@ object ServersUiConfig {
     /** The Psiphon engine option of the add sheet. */
     const val SHOW_PSIPHON: Boolean = true
 
+    /** The SNI spoof (no root) engine option of the add sheet. */
+    const val SHOW_SNI_SPOOF_NO_ROOT: Boolean = true
+
     /** The Tor engine option of the add sheet. */
     const val SHOW_TOR: Boolean = false
 

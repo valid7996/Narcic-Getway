@@ -1886,7 +1886,7 @@ internal fun AddServerSheet(
                     onClick = onCrossChain,
                 )
             } else {
-                if (ServersUiConfig.SHOW_PSIPHON || ServersUiConfig.SHOW_TOR) {
+                if (ServersUiConfig.SHOW_PSIPHON || ServersUiConfig.SHOW_TOR || ServersUiConfig.SHOW_SNI_SPOOF_NO_ROOT) {
                     OptionGroup(Res.string.add_group_tunnels)
                     if (ServersUiConfig.SHOW_PSIPHON) {
                         GlassOptionCard(
@@ -1898,6 +1898,18 @@ internal fun AddServerSheet(
                             gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
                             gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
                             onClick = onPsiphon,
+                        )
+                    }
+                    if (ServersUiConfig.SHOW_SNI_SPOOF_NO_ROOT) {
+                        GlassOptionCard(
+                            title = stringResource(Res.string.snispoof_noroot_add_title),
+                            subtitle = "",
+                            icon = Res.drawable.ic_bolt,
+                            accentColor = Color(0xFF5FE6B0),
+                            iconTint = Color(0xFFB4F4DC),
+                            gradientStart = Color(0xFF123B2E).copy(alpha = 0.90f),
+                            gradientEnd = Color(0xFF0B1E19).copy(alpha = 0.75f),
+                            onClick = onSniSpoofNoRoot,
                         )
                     }
                     if (ServersUiConfig.SHOW_TOR) {

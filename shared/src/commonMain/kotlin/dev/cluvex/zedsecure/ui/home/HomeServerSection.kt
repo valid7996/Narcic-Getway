@@ -58,6 +58,7 @@ import dev.cluvex.zedsecure.ui.servers.AutoSelectCard
 import dev.cluvex.zedsecure.ui.servers.AutoSelectSheet
 import dev.cluvex.zedsecure.ui.servers.PsiphonSheet
 import dev.cluvex.zedsecure.ui.servers.ServersUiConfig
+import dev.cluvex.zedsecure.ui.servers.SniSpoofSheet
 import dev.cluvex.zedsecure.ui.servers.ServerCard
 import dev.cluvex.zedsecure.ui.servers.ProxyChainSheet
 import dev.cluvex.zedsecure.ui.servers.CrossChainSheet
@@ -114,6 +115,7 @@ internal fun HomeServerSection(
     var confirmDeleteSubscriptions by remember { mutableStateOf(false) }
     var showAutoSheet by remember { mutableStateOf(false) }
     var showPsiphon by remember { mutableStateOf(false) }
+    var showSniSpoofNoRoot by remember { mutableStateOf(false) }
     var showAether by remember { mutableStateOf(false) }
     var showProxyChain by remember { mutableStateOf(false) }
     var showCrossChain by remember { mutableStateOf(false) }
@@ -467,6 +469,18 @@ internal fun HomeServerSection(
         )
     }
 
+    if (showSniSpoofNoRoot) {
+        SniSpoofSheet(
+            candidates = profiles.filter { !it.isManagedTunnel && !it.isCrossChain && !it.isProxyChain },
+            noRoot = true,
+            onDismiss = { showSniSpoofNoRoot = false },
+            onSave = { name, settings ->
+                showSniSpoofNoRoot = false
+                repository.addSniSpoof(settings, name)
+            },
+        )
+    }
+
     if (showSubs) {
         SubscriptionsSheet(
             repository = repository,
@@ -514,7 +528,7 @@ internal fun HomeServerSection(
             onTor = {},
             onSsh = {},
             onSniSpoof = {},
-            onSniSpoofNoRoot = {},
+            onSniSpoofNoRoot = { showAdd = false; showSniSpoofNoRoot = true },
             onProxyChain = {
                 showAdd = false
                 showProxyChain = true
