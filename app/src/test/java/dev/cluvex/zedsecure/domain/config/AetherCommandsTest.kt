@@ -236,3 +236,48 @@ class PsiphonFrontingTest {
         assertFalse("AggressiveEstablishment" in AetherCommands.overlayOf(calm)!!)
     }
 }
+
+class SniSpoofNoRootTest {
+
+    private val vless = """{"outbounds":[{"tag":"proxy","protocol":"vless","settings":{"vnext":[{"address":"127.0.0.1","port":40443,"users":[{"id":"x"}]}]}},{"tag":"direct","protocol":"freedom"}]}"""
+
+    @Test
+    fun linkRoundTripsTheNoRootSettings() {
+        val profile = SniSpoofProfile(link = "vless://x@1.2.3.4:443", fakeSni = "cdnjs.cloudflare.com", cleanIp = "104.18.38.202", noRoot = true, method = "fragment", connectPort = 8443)
+        val (name, back) = SniSpoofLink.parse(SniSpoofLink.build(profile, "rsta"))!!
+        assertEquals("rsta", name)
+        assertTrue(back.noRoot)
+        assertEquals("fragment", back.method)
+        assertEquals(8443, back.connectPort)
+        // A link of the root spoof stays one.
+        val plain = SniSpoofLink.parse(SniSpoofLink.build(SniSpoofProfile(link = "vless://x@1.2.3.4:443", fakeSni = "a.com"), "x"))!!.second
+        assertFalse(plain.noRoot)
+    }
+
+    @Test
+    fun aProfileMadeForTheRstaAppNeedsTheCleanIpToKnowTheServer() {
+        val (host, port) = SniSpoofConfig.outboundOf(vless)!!
+        assertEquals("127.0.0.1", host)
+        assertEquals(40443, port)
+        assertTrue(SniSpoofConfig.isLoopback(host))
+        // No clean IP: the engine would have nowhere to go, and the address of the profile (this device) cannot be pinged.
+        assertNull(SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", noRoot = true), host, port))
+        // With one: its address, and 443 where the link only points at this device.
+        assertEquals("104.18.38.202" to 443, SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", cleanIp = "104.18.38.202", noRoot = true), host, port))
+        // A link with a real address keeps its own port, and a port of the profile overrides it.
+        assertEquals("1.2.3.4" to 2053, SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", noRoot = true), "1.2.3.4", 2053))
+        assertEquals("1.2.3.4" to 8443, SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", noRoot = true, connectPort = 8443), "1.2.3.4", 2053))
+    }
+
+    @Test
+    fun theProxyOutboundIsPointedAtTheEngineAndNothingElseChanges() {
+        val rewritten = SniSpoofConfig.withOutbound(vless, "127.0.0.1", 51234)
+        assertEquals("127.0.0.1" to 51234, SniSpoofConfig.outboundOf(rewritten))
+        assertTrue("\"id\":\"x\"" in rewritten)
+        assertTrue("\"tag\":\"direct\"" in rewritten)
+        // A config without a proxy outbound is returned as it was.
+        assertEquals("{}", SniSpoofConfig.withOutbound("{}", "127.0.0.1", 1))
+        assertEquals("combined", SniSpoofConfig.method("nonsense"))
+        assertEquals("oob", SniSpoofConfig.method("oob"))
+    }
+}

@@ -61,3 +61,9 @@
 -keep class com.google.zxing.PlanarYUVLuminanceSource { *; }
 -keep class com.google.zxing.RGBLuminanceSource { *; }
 -keep class com.google.zxing.common.HybridBinarizer { *; }
+
+# The Rsta SNI-spoof engine (no root): its JNI functions are bound to this class by name.
+-keep class com.rstagit.androidasdd.** { *; }
+-keepclasseswithmembers,includedescriptorclasses class com.rstagit.androidasdd.core.protocol.GoNativeBridge {
+    native <methods>;
+}

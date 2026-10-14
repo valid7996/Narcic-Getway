@@ -678,4 +678,6 @@
     <string name="auto_no_members">هیچ سروری در این گروه برای حالت خودکار قابل استفاده نیست</string>
     <string name="auto_group_all_short">همهٔ سرورها</string>
     <string name="auto_group_manual_short">دستی</string>
+    <string name="snispoof_noroot_engine_missing">موتور SNI spoof بدون روت روی این دستگاه در دسترس نیست.</string>
+    <string name="snispoof_noroot_failed">موتور SNI spoof بدون روت راه نیفتاد.</string>
 </resources>

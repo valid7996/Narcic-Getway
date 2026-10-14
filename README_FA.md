@@ -1,47 +1,22 @@
-# اصلاحات Aether در نرسیس (دور دوم)
+# افزودن SNI spoof (بدون روت) با موتور Rsta
 
-## علت اصلی مشکل WireGuard over MASQUE
-هسته‌ی داخل پروژه (`libaether.so`) **Aether 2.1.0** است. در این نسخه `gool` همان WARP-in-WARP است و **WireGuard over MASQUE اصلاً وجود ندارد** (از 2.3 اضافه شده). همین‌طور `--masque-sni` در 2.1.0 نیست و PattNG چون هسته‌ی جدید دارد کار می‌کند.
-- کد قبلی برای WG-over-MASQUE پرچم‌های WARP-in-WARP می‌فرستاد (`--wiw-scan`...). اصلاح شد: `--peer` برای دروازه‌ی MASQUE و `--gool-peer` برای WireGuard داخلی، و برای WARP-in-WARP پرچم `--gool-classic`.
-- خروجی اسکن «gool ready: masque X carries wireguard Y» اصلاً خوانده نمی‌شد، پس IP هیچ‌وقت در فیلد نمی‌نشست. اضافه شد و IP دروازه در فیلد Outer پر می‌شود.
-- **MASQUE SNI برگشت** (فیلد و پرچم). برنامه از خود هسته می‌پرسد چه پرچم‌هایی را می‌شناسد (`--help`) و پرچمی که هسته‌ی نصب‌شده نمی‌شناسد را حذف/تغییر نام می‌دهد (`--api-address` ↔ `--enroll-address`، `--gool-classic`).
-- **برای کار کردن واقعی این دو قابلیت باید `libaether.so` را با نسخه‌ی PattNG عوض کنید**: APK بیلد جدید PattNG را unzip کنید و `lib/<abi>/libaether.so` را در `app/src/main/jniLibs/<abi>/` بگذارید. تا آن موقع برنامه یک یادداشت در شیت Aether می‌گذارد و WG-over-MASQUE با پیام روشن متوقف می‌شود (به‌جای قطع ناگهانی).
+روی **آخرین نسخه‌ی خودتان** ساخته شده؛ فقط فایل‌های لازم داخل بسته است و تغییرات دیگر شما دست نخورده می‌ماند.
 
-## «وصل می‌شود و بلافاصله قطع می‌شود»
-حلقه‌ی آمار سرویس برای Aether شاخه نداشت و وضعیت «در حال اجرا» را از Xray می‌خواند؛ وقتی پروکسی خروجی Xray بالا نبود (یا command دستی خودش upstream داشت) تونل در اولین tick بسته می‌شد. حالا `aether.isRunning` چک می‌شود.
+## چه اضافه شد
+- در منوی افزودن، گزینه‌ی **«افزودن SNI spoof (بدون روت)»** کنار گزینه‌ی قبلی (که روت می‌خواهد).
+- موتور واقعی Rsta: `libsnispf.so` (Go) + `libandroidasdd_jni.so` برای arm64-v8a، armeabi-v7a و x86_64، و کلاس `GoNativeBridge` با همان اسم (JNI به اسم کلاس وصل است؛ قانون keep برایش در `proguard-rules.pro` گذاشته شد).
+- هنگام اتصال: Xray خروجی proxy را به `127.0.0.1:10811` می‌برد، موتور Rsta به IP واقعی سرور با SNI جعلی و روش انتخابی وصل می‌شود. بدون su.
+- روش (combined، fragment، random_split، seg2delay، sni_triplicate، oob، fake_sni، auto_ttl) و پورت اتصال در شیت انتخاب می‌شود.
+- لینک‌های ساخته‌شده برای خود برنامه‌ی Rsta (آدرس 127.0.0.1:40443): در این حالت آدرس واقعی سرور فقط از «IP تمیز» معلوم می‌شود؛ شیت بدون آن اجازه‌ی ذخیره نمی‌دهد.
 
 ## آپلود/دانلود
-همان حلقه برای Aether آمار Xray می‌خواند (صفر). حالا مثل Psiphon از شمارنده‌ی UID برنامه خوانده می‌شود.
+ترافیک از Xray خوانده می‌شود (مثل سایر پروفایل‌های Xray)، پس عدد واقعی است.
 
-## تست پینگ
-پروفایل‌های Aether از فهرست پینگ حذف بودند. حالا برای هر پروفایل یک هسته‌ی موقت بالا می‌آید، درخواست از طریق SOCKS آن زمان‌گیری می‌شود و بسته می‌شود (`AetherDelayProbe`). منوی «پینگ» کارت هم برای Aether فعال شد. هنگام اتصال فعال Aether، پینگ بقیه -1 می‌دهد (هسته‌ی دوم با جلسه‌ی فعال تداخل می‌کند). هر تست تا چند دقیقه زمان می‌برد (اسکن).
+## پینگ واقعی
+آدرس این پروفایل‌ها 127.0.0.1 است و پینگ به آن بی‌معنی است. حالا برای هر پروفایل یک جلسه‌ی موتور Rsta روی پورت آزاد بالا می‌آید، خروجی proxy کانفیگ به آن اشاره داده می‌شود و تأخیر **واقعی** (از میان موتور و سرور) اندازه‌گیری و نشان داده می‌شود. دکمه‌ی پینگ کارت و «تست همه» هر دو این کار را می‌کنند. به روت یا اتصال فعال نیازی نیست.
 
-## هنگ کردن گوشی هنگام دریافت کلید
-`startExitProxy` تا ۱۰ ثانیه با `Thread.sleep` روی ترد اصلی منتظر می‌ماند. حالا کل ثبت کلید روی IO اجرا می‌شود.
+## فایل‌ها
+جدید: `SniSpoofConfig.kt`، `RstaSpoofEngine.kt`، `GoNativeBridge.java`، رشته‌ها (`snispoof_noroot_strings.xml` در shared و app)، کتابخانه‌های native.
+تغییر: `SniSpoofProfile/Link/Sheet`، `VpnProfile`، `PingService`، `ServersScreen`، `HomeServerSection`، `ServerCardItem`، `StartPlanner`، `ZedVpnService`، `ZedSecureApp`، `proguard-rules.pro`، `AetherCommandsTest.kt`.
 
-## اشتراک‌گذاری و دریافت با لینک / QR
-- علت: `rawPayload()` برای Aether `null` بود (دکمه‌های Share/QR غیرفعال) و `importZedLink` هم Aether را رد می‌کرد.
-- حالا لینک `aether://...` (هم‌قالب PattNG، با چند کلید اضافه برای نرسیس) ساخته و خوانده می‌شود: اشتراک، QR، چسباندن، اسکن QR، deep-link (طرح `aether` در Manifest ثبت شد). لینک `narcicgetway://` برای Aether هم وارد می‌شود.
-
-## فایل‌های جدید
-`AetherLink.kt`، `AetherDelayProbe.kt`، `PsiphonServerList.kt`، `tools/fetch-psiphon-servers.sh`، تست‌ها در `AetherCommandsTest.kt`. اینجا Gradle نداشتم؛ کامپایل نشده.
-
-## مسیریابی (دور سوم)
-تنظیمات مسیریابی (rule setها، دور زدن ایران، بلاک تبلیغات، proxy/direct/block برای دامنه و IP) قاعده‌های **Xray** هستند و فقط روی پروفایل‌های Xray اعمال می‌شدند؛ تونل Aether مستقیم به SOCKS هسته وصل بود.
-- حالا اگر مسیریابی تنظیم شده باشد، یک Xray جلوی هسته می‌نشیند (`AetherFront`): قوانین را اعمال می‌کند، ترافیک «proxy» را به SOCKS هسته‌ی Aether می‌دهد و بقیه direct/block می‌شوند.
-- پروکسی خروجی Aether (finalMask/dialMode) هم در همان کانفیگ ادغام می‌شود، چون Xray فقط یک نمونه در برنامه دارد؛ اولین قانون ترافیک خروجی هسته را از قوانین کاربر مستثنی می‌کند تا حلقه نشود.
-- بدون هیچ قانون مسیریابی، Xray جلویی بالا نمی‌آید (فقط یک hop اضافه است).
-- حالت per-app و bypass LAN که در سطح TUN اعمال می‌شد، همان‌طور که بود کار می‌کند.
-- اگر rule شما geoip/geosite دارد، فایل‌های geo باید دانلود شده باشند (همان رفتار پروفایل‌های Xray).
-
-## CDN fronting و Beast Mode (دور چهارم، با مرجع Shirokhorshid)
-علت کار نکردن IP و SNI دلخواه:
-1. `VerifyServerNames` فقط SNI خودتان بود؛ ولی در fronting گواهی را edge می‌دهد (Akamai/Fastly) و با SNI شما نمی‌خواند، پس هر handshake رد می‌شد. حالا overrideهای Shirokhorshid (Fastly + ۹ edge Akamai با نام گواهی‌های Akamai، ALPN و TLSProfile مرورگر) ساخته می‌شود.
-2. `FrontedMeekDialOverridesProbability` نبود (پیش‌فرض صفر یعنی overrideها اصلاً استفاده نمی‌شدند). حالا 1.0.
-3. وقتی IP سفارشی بود `FrontedMeekCDNScanUseBuiltInSpec` برداشته می‌شد؛ حالا لیست داخلی کنار IPهای شما می‌ماند.
-4. در Aether فقط وقتی IP می‌دادید SNI فرستاده می‌شد؛ SNI تنها هم معتبر است. لیست‌ها قبل از ارسال تمیز می‌شوند (جداکننده، `https://`، مقدار نامعتبر).
-5. در صفحه‌ی Psiphon مستقل فیلدها فقط در حالت CDN دیده می‌شدند؛ حالا در Auto/Direct/CDN.
-- **Beast Mode** (`AggressiveEstablishment`): کلید جدید در هر دو بخش، پیش‌فرض روشن.
-- **تشخیص هوشمند مسیر قبلی**: این خود Psiphon است (replay) و به datastore پایدار نیاز دارد؛ پوشه‌ی `psiphon` و `aether-psiphon` پایدار هستند. «پاک‌کردن حافظه‌ی سایفون» آن را پاک می‌کند.
-- Aether: `AetherCommands` حالا `--psiphon-config` را می‌فرستد (فایل `psiphon-fronting.json`) که روی کانفیگ داخلی هسته گذاشته می‌شود.
-- **محدودیت**: Psiphon مستقل از `zedcore.aar` می‌آید و من آن را ندیدم. اگر هسته‌ی Psiphon داخلش stock باشد، `AggressiveEstablishment` و overrideها را نمی‌شناسد (نادیده گرفته می‌شود). هسته‌ی `libpsiphon-tunnel-core.so` که از PattNG گرفتیم این کلیدها را دارد.
+اینجا Gradle نداشتم؛ کامپایل و اجرا نشده.

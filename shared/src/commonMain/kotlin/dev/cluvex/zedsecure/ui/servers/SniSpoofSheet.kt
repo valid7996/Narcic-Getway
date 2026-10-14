@@ -38,6 +38,8 @@ import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import dev.cluvex.zedsecure.domain.config.ConfigParser
+import dev.cluvex.zedsecure.domain.config.SniSpoofConfig
 import dev.cluvex.zedsecure.domain.config.SniSpoofProfile
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 
@@ -49,7 +51,14 @@ fun SniSpoofSheet(
     initialName: String = "",
 
     candidates: List<VpnProfile> = emptyList(),
+
+    /** The no-root spoof (the Rsta engine) instead of the one that needs root. */
+    noRoot: Boolean = false,
 ) {
+    val noRootMode = noRoot || initial?.noRoot == true
+    var method by remember { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty())) }
+    var methodOpen by remember { mutableStateOf(false) }
+    var connectPort by remember { mutableStateOf(initial?.connectPort?.takeIf { it > 0 }?.toString().orEmpty()) }
     var name by remember { mutableStateOf(initialName) }
     var link by remember { mutableStateOf(initial?.link ?: "") }
     var fakeSni by remember { mutableStateOf(initial?.fakeSni ?: "") }
@@ -67,17 +76,21 @@ fun SniSpoofSheet(
                 .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(Res.string.snispoof_add_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(if (noRootMode) Res.string.snispoof_noroot_add_title else Res.string.snispoof_add_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
 
             Surface(
-                color = MaterialTheme.colorScheme.errorContainer,
+                color = if (noRootMode) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    stringResource(Res.string.snispoof_root_warn),
+                    stringResource(if (noRootMode) Res.string.snispoof_noroot_note else Res.string.snispoof_root_warn),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = if (noRootMode) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(14.dp),
                 )
             }
@@ -140,13 +153,53 @@ fun SniSpoofSheet(
             F(fakeSni, Res.string.snispoof_fake_sni, placeholder = "www.speedtest.net") { fakeSni = it }
             F(cleanIp, Res.string.snispoof_clean_ip, placeholder = "104.16.0.0 (optional)") { cleanIp = it }
 
+            // A link made for the Rsta app points at this device (127.0.0.1:40443); where the server really is
+            // then only the clean IP says, and the engine has nowhere to connect without it.
+            val linkHost = remember(link) { runCatching { ConfigParser.parse(link.trim())?.address }.getOrNull().orEmpty() }
+            val needsCleanIp = noRootMode && cleanIp.isBlank() && linkHost.isNotEmpty() && SniSpoofConfig.isLoopback(linkHost)
+
+            if (noRootMode) {
+                ExposedDropdownMenuBox(expanded = methodOpen, onExpandedChange = { methodOpen = !methodOpen }) {
+                    OutlinedTextField(
+                        value = method,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(Res.string.snispoof_method)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(methodOpen) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(
+                            androidx.compose.material3.MenuAnchorType.PrimaryNotEditable,
+                        ),
+                    )
+                    DropdownMenu(expanded = methodOpen, onDismissRequest = { methodOpen = false }) {
+                        SniSpoofConfig.METHODS.forEach { m ->
+                            DropdownMenuItem(text = { Text(m) }, onClick = { method = m; methodOpen = false })
+                        }
+                    }
+                }
+                F(connectPort, Res.string.snispoof_connect_port, placeholder = "443") { connectPort = it.filter(Char::isDigit).take(5) }
+                if (needsCleanIp) {
+                    Text(
+                        stringResource(Res.string.snispoof_needs_clean_ip),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
             Button(
 
-                enabled = link.isNotBlank() && fakeSni.isNotBlank(),
+                enabled = link.isNotBlank() && fakeSni.isNotBlank() && !needsCleanIp,
                 onClick = {
                     onSave(
                         name.trim(),
-                        SniSpoofProfile(link = link.trim(), fakeSni = fakeSni.trim(), cleanIp = cleanIp.trim()),
+                        SniSpoofProfile(
+                            link = link.trim(),
+                            fakeSni = fakeSni.trim(),
+                            cleanIp = cleanIp.trim(),
+                            noRoot = noRootMode,
+                            method = SniSpoofConfig.method(method),
+                            connectPort = connectPort.toIntOrNull()?.takeIf { it in 1..65535 } ?: 0,
+                        ),
                     )
                 },
                 shape = RoundedCornerShape(18.dp),

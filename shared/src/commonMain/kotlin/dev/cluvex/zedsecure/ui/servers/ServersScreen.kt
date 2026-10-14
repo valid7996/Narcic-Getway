@@ -323,6 +323,7 @@ fun ServersScreen(
     var showIkev2 by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
     var showSniSpoof by remember { mutableStateOf(false) }
+    var showSniSpoofNoRoot by remember { mutableStateOf(false) }
     var showProxyChain by remember { mutableStateOf(false) }
     var showCrossChain by remember { mutableStateOf(false) }
 
@@ -895,7 +896,7 @@ fun ServersScreen(
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
                                 // An Aether profile has no server to knock on: only a core started for it can be timed.
-                                val ms = if (profile.isAether) {
+                                val ms = if (profile.isAether || profile.isNoRootSniSpoof) {
                                     PingService.realDelay(
                                         profile,
                                         url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
@@ -903,7 +904,7 @@ fun ServersScreen(
                                 } else {
                                     PingService.tcpPing(profile.address, profile.port)
                                 }
-                                val cc = if (ms > 0 && !profile.isAether) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !profile.isAether && !profile.isNoRootSniSpoof) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
@@ -914,7 +915,7 @@ fun ServersScreen(
                                     profile,
                                     url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
                                 )
-                                val cc = if (ms > 0 && !profile.isAether) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !profile.isAether && !profile.isNoRootSniSpoof) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
@@ -1173,6 +1174,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showSniSpoof = true
             },
+            onSniSpoofNoRoot = {
+                showAddSheet = false
+                showSniSpoofNoRoot = true
+            },
             onAether = {
                 showAddSheet = false
                 showAether = true
@@ -1265,6 +1270,19 @@ fun ServersScreen(
             onDismiss = { showSniSpoof = false },
             onSave = { name, settings ->
                 showSniSpoof = false
+                repository.addSniSpoof(settings, name)
+                onServerActivated()
+            },
+        )
+    }
+
+    if (showSniSpoofNoRoot) {
+        SniSpoofSheet(
+            candidates = spoofCandidates,
+            noRoot = true,
+            onDismiss = { showSniSpoofNoRoot = false },
+            onSave = { name, settings ->
+                showSniSpoofNoRoot = false
                 repository.addSniSpoof(settings, name)
                 onServerActivated()
             },
@@ -1648,6 +1666,7 @@ internal fun AddServerSheet(
     onTor: () -> Unit,
     onSsh: () -> Unit,
     onSniSpoof: () -> Unit,
+    onSniSpoofNoRoot: () -> Unit,
     onAether: () -> Unit,
     onProxyChain: () -> Unit,
     onCrossChain: () -> Unit,
@@ -1788,6 +1807,17 @@ internal fun AddServerSheet(
                     gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
                     gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
                     onClick = onSniSpoof,
+                )
+                // The same spoof without root: the Rsta engine splits and disguises the ClientHello on plain sockets.
+                GlassOptionCard(
+                    title = stringResource(Res.string.snispoof_noroot_add_title),
+                    subtitle = "",
+                    icon = Res.drawable.ic_bolt,
+                    accentColor = Color(0xFF5FE6B0),
+                    iconTint = Color(0xFFB4F4DC),
+                    gradientStart = Color(0xFF123B2E).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B1E19).copy(alpha = 0.75f),
+                    onClick = onSniSpoofNoRoot,
                 )
 
                 OptionGroup(Res.string.add_group_dns)

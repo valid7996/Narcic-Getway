@@ -15,6 +15,11 @@ object SniSpoofLink {
         val params = buildList {
             profile.fakeSni.takeIf { it.isNotBlank() }?.let { add("sni=" + encode(it)) }
             profile.cleanIp.takeIf { it.isNotBlank() }?.let { add("ip=" + encode(it)) }
+            if (profile.noRoot) {
+                add("nr=1")
+                add("m=" + encode(SniSpoofConfig.method(profile.method)))
+                profile.connectPort.takeIf { it in 1..65535 }?.let { add("p=$it") }
+            }
         }
         if (params.isNotEmpty()) append("?").append(params.joinToString("&"))
         remark.takeIf { it.isNotBlank() }?.let { append("#").append(encode(it)) }
@@ -45,6 +50,9 @@ object SniSpoofLink {
             link = underlying,
             fakeSni = fakeSni,
             cleanIp = query["ip"].orEmpty(),
+            noRoot = query["nr"] == "1",
+            method = SniSpoofConfig.method(query["m"].orEmpty()),
+            connectPort = query["p"]?.toIntOrNull()?.takeIf { it in 1..65535 } ?: 0,
         )
     }
 

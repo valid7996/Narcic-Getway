@@ -8,6 +8,7 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.svg.SvgDecoder
 import dev.cluvex.zedsecure.core.AetherDelayProbe
+import dev.cluvex.zedsecure.core.RstaSpoofEngine
 import dev.cluvex.zedsecure.core.XrayController
 import dev.cluvex.zedsecure.data.net.PingService
 import dev.cluvex.zedsecure.core.platform.LocaleManager
@@ -33,6 +34,7 @@ class ZedSecureApp : Application(), SingletonImageLoader.Factory {
         container = AppContainer(this)
 
         XrayController.warmUp(this)
+        PingService.sniSpoofTunnel = { ip, port, sni, method, block -> RstaSpoofEngine.probe(ip, port, sni, method, block) }
         PingService.aetherTunnel = { profile, measure -> AetherDelayProbe.run(this, profile, measure) }
     }
 

@@ -690,4 +690,6 @@
     <string name="auto_no_members">No server in this group can be used by Auto</string>
     <string name="auto_group_all_short">All servers</string>
     <string name="auto_group_manual_short">Manual</string>
+    <string name="snispoof_noroot_engine_missing">The no-root SNI spoof engine is not available on this device.</string>
+    <string name="snispoof_noroot_failed">The no-root SNI spoof engine did not start.</string>
 </resources>

@@ -5,6 +5,7 @@ import dev.cluvex.zedsecure.core.LogBus
 import dev.cluvex.zedsecure.core.VpnManager
 import dev.cluvex.zedsecure.domain.config.AetherProfile
 import dev.cluvex.zedsecure.domain.config.CustomConfig
+import dev.cluvex.zedsecure.domain.config.SniSpoofConfig
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.platform.httpTimedTransfer
 import dev.cluvex.zedsecure.platform.tcpConnectMillis
@@ -29,6 +30,16 @@ object PingService {
      * Runs a core for an Aether profile and hands the port of its SOCKS listener to the block, whose result it returns.
      * The platform sets it; without it an Aether profile cannot be pinged.
      */
+    /**
+     * Runs the Rsta engine for a no-root SNI spoof profile (a session on a free local port, to the address and with the
+     * server name given) and hands that port to the block, whose result it returns. The platform sets it; without it such
+     * a profile cannot be pinged.
+     */
+    @Volatile
+    var sniSpoofTunnel: (suspend (ip: String, port: Int, sni: String, method: String, block: suspend (Int) -> Long) -> Long)? = null
+
+    private const val SNI_SPOOF_PROBE_TIMEOUT_MS = 60_000L
+
     @Volatile
     var aetherTunnel: (suspend (AetherProfile, suspend (Int) -> Long) -> Long)? = null
 
@@ -133,8 +144,10 @@ object PingService {
 
         val targets = profiles.filterNot { (it.isManagedTunnel && !it.isSingBoxConfig) || it.isDnsBasedTunnel }
         val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
+        val spoofTargets = if (sniSpoofTunnel != null) profiles.filter { it.isNoRootSniSpoof } else emptyList()
         val aetherPermits = Semaphore(1)
-        val total = targets.size + aetherTargets.size
+        val spoofPermits = Semaphore(1)
+        val total = targets.size + aetherTargets.size + spoofTargets.size
         var done = 0
         val doneLock = Semaphore(1)
         onProgress(0, total)
@@ -146,7 +159,15 @@ object PingService {
                 doneLock.withPermit { onProgress(++done, total) }
             }
         }
-        (aetherJobs + targets.map { profile ->
+        // The address of a spoof profile is this device: the delay is measured through the engine, to the real server.
+        val spoofJobs = spoofTargets.map { profile ->
+            launch(Dispatchers.IO) {
+                val ms = spoofPermits.withPermit { sniSpoofDelay(profile, url) }
+                onResult(profile.id, if (ms > 0) ms.toInt() else FAILED_PING, profile.countryCode)
+                doneLock.withPermit { onProgress(++done, total) }
+            }
+        }
+        (aetherJobs + spoofJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
                 val heavy = useRealDelay || profile.isProxyChain
                 val pool = if (heavy && profile.isCustom) customPermits else permits
@@ -168,6 +189,19 @@ object PingService {
                 }
             }
         }).joinAll()
+    }
+
+    private suspend fun sniSpoofDelay(profile: VpnProfile, url: String): Long {
+        val settings = profile.sniSpoofSettings()?.takeIf { it.noRoot } ?: return -1L
+        val runner = sniSpoofTunnel ?: return -1L
+        val xray = runCatching { profile.toXrayConfigJson(forSpeedtest = true) }.getOrNull() ?: return -1L
+        val (host, port) = SniSpoofConfig.outboundOf(xray) ?: return -1L
+        val target = SniSpoofConfig.target(settings, host, port) ?: return -1L
+        return withTimeoutOrNull(SNI_SPOOF_PROBE_TIMEOUT_MS) {
+            runner(target.first, target.second, settings.fakeSni, SniSpoofConfig.method(settings.method)) { local ->
+                probeWithTimeout(profile, SniSpoofConfig.withOutbound(xray, "127.0.0.1", local), url)
+            }
+        } ?: -1L
     }
 
     private suspend fun aetherDelay(profile: VpnProfile, url: String): Long {
@@ -193,6 +227,7 @@ object PingService {
         chainConfig: (VpnProfile) -> String? = { null },
     ): Long {
         if (profile.isAether) return aetherDelay(profile, url)
+        if (profile.isNoRootSniSpoof) return sniSpoofDelay(profile, url)
         val config = if (profile.isProxyChain) {
             chainConfig(profile) ?: return -1L
         } else {

@@ -115,6 +115,9 @@ data class VpnProfile(
 
     val isSniSpoof: Boolean get() = source is ProfileSource.SniSpoof
 
+    /** The SNI spoof that runs without root, on the Rsta engine; its address says nothing about the server, so it is pinged through the engine. */
+    val isNoRootSniSpoof: Boolean get() = (source as? ProfileSource.SniSpoof)?.settings?.noRoot == true
+
     val isOpenConnect: Boolean get() = source is ProfileSource.OpenConnect
 
     val isAether: Boolean get() = source is ProfileSource.Aether

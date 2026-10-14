@@ -143,6 +143,9 @@ class StartPlanner(context: Context) {
                 put("sni", org.json.JSONObject().apply {
                     put("fakeSni", sniSpoof.fakeSni)
                     put("cleanIp", sniSpoof.cleanIp)
+                    put("noRoot", sniSpoof.noRoot)
+                    put("method", sniSpoof.method)
+                    put("connectPort", sniSpoof.connectPort)
                 })
             }.toString()
         }

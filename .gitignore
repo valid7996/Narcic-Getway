@@ -55,6 +55,8 @@ ref*.png
 !/app/src/main/jniLibs/*/libaether.so
 !/app/src/main/jniLibs/*/libpsiphon-tunnel-core.so
 !/app/src/main/jniLibs/*/liblyrebird.so
+!/app/src/main/jniLibs/*/libandroidasdd_jni.so
+!/app/src/main/jniLibs/*/libsnispf.so
 
 __pycache__/
 *.pyc
