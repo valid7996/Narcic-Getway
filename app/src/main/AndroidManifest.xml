@@ -101,6 +101,11 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".core.RstaSpoofService"
+            android:process=":snispoof"
+            android:exported="false" />
+
         <receiver
             android:name=".core.Ikev2EventReceiver"
             android:exported="true">

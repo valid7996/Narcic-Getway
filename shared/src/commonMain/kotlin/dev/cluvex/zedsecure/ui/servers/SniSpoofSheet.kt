@@ -52,10 +52,10 @@ fun SniSpoofSheet(
 
     candidates: List<VpnProfile> = emptyList(),
 
-    /** The no-root spoof (the Rsta engine) instead of the one that needs root. */
-    noRoot: Boolean = false,
+    /** The no-root spoof (the Rsta engine). */
+    noRoot: Boolean = true,
 ) {
-    val noRootMode = noRoot || initial?.noRoot == true
+    val noRootMode = true
     var method by remember { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty())) }
     var methodOpen by remember { mutableStateOf(false) }
     var connectPort by remember { mutableStateOf(initial?.connectPort?.takeIf { it > 0 }?.toString().orEmpty()) }
@@ -77,20 +77,20 @@ fun SniSpoofSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                stringResource(if (noRootMode) Res.string.snispoof_noroot_add_title else Res.string.snispoof_add_title),
+                stringResource(Res.string.snispoof_noroot_add_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
 
             Surface(
-                color = if (noRootMode) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.errorContainer,
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    stringResource(if (noRootMode) Res.string.snispoof_noroot_note else Res.string.snispoof_root_warn),
+                    stringResource(Res.string.snispoof_noroot_note),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (noRootMode) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(14.dp),
                 )
             }

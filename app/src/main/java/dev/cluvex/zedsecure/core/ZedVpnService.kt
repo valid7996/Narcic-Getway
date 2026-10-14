@@ -54,10 +54,6 @@ class ZedVpnService : VpnService() {
     private var masterDns: MasterDnsController? = null
     private var tor: dev.cluvex.zedsecure.core.tor.TorController? = null
     private var ssh: SshController? = null
-    private var sniSpoof: SniSpoofController? = null
-
-    /** The session of the no-root SNI spoof (the Rsta engine), 0 when there is none. */
-    private var rstaSession: Long = 0L
 
     @Volatile
     private var sniSpoofEdge: String? = null
@@ -297,18 +293,6 @@ class ZedVpnService : VpnService() {
                 val sni = wrapper.getJSONObject("sni")
                 val fakeSni = sni.optString("fakeSni")
                 val cleanIp = sni.optString("cleanIp")
-                val noRoot = sni.optBoolean("noRoot", false)
-
-                // The no-root spoof is the Rsta engine of this app; the other one needs su.
-                if (noRoot) {
-                    if (!RstaSpoofEngine.isAvailable()) {
-                        VpnManager.onError(getString(R.string.snispoof_noroot_engine_missing))
-                        stopEverything(); return@launch
-                    }
-                } else if (!SniSpoofController.rootAvailable()) {
-                    VpnManager.onError(getString(R.string.snispoof_needs_root))
-                    stopEverything(); return@launch
-                }
 
                 val orig = readProxyOutbound(xray)
                 if (orig == null) {
@@ -318,44 +302,29 @@ class ZedVpnService : VpnService() {
                 val (realHost, realPort) = orig
 
                 val listenPort = SNISPOOF_PORT
-                if (noRoot) {
-                    val method = SniSpoofConfig.method(sni.optString("method"))
-                    val target = SniSpoofConfig.target(
-                        SniSpoofProfile(
-                            link = "", fakeSni = fakeSni, cleanIp = cleanIp, noRoot = true,
-                            method = method, connectPort = sni.optInt("connectPort", 0),
-                        ),
-                        realHost, realPort,
-                    )
-                    if (target == null) {
-                        // The link points at this device and no clean IP says where the server is.
-                        VpnManager.onError(getString(R.string.snispoof_noroot_failed))
-                        stopEverything(); return@launch
-                    }
-                    val ip = sniSpoofEdge
-                        ?: runCatching { java.net.InetAddress.getByName(target.first).hostAddress }.getOrNull()
-                        ?: target.first
-                    val id = RstaSpoofEngine.start(listenPort, ip, target.second, fakeSni, method)
-                    if (id == 0L) {
-                        VpnManager.onError(getString(R.string.snispoof_noroot_failed))
-                        stopEverything(); return@launch
-                    }
-                    rstaSession = id
-                    if (!RstaSpoofEngine.awaitListener(listenPort)) {
-                        VpnManager.onError(getString(R.string.snispoof_noroot_failed))
-                        stopEverything(); return@launch
-                    }
-                } else {
-                    val connectIp = sniSpoofEdge ?: cleanIp.ifBlank {
-                        runCatching { java.net.InetAddress.getByName(realHost).hostAddress }.getOrNull() ?: realHost
-                    }
-                    val controller = SniSpoofController(this@ZedVpnService, "$connectIp:$realPort", fakeSni, listenPort)
-                    sniSpoof = controller
-                    if (!controller.start()) {
-                        VpnManager.onError(getString(R.string.snispoof_needs_root))
-                        stopEverything(); return@launch
-                    }
+                val method = SniSpoofConfig.method(sni.optString("method"))
+                val target = SniSpoofConfig.target(
+                    SniSpoofProfile(
+                        link = "", fakeSni = fakeSni, cleanIp = cleanIp, noRoot = true,
+                        method = method, connectPort = sni.optInt("connectPort", 0),
+                    ),
+                    realHost, realPort,
+                )
+                if (target == null) {
+                    VpnManager.onError(getString(R.string.snispoof_noroot_failed))
+                    stopEverything(); return@launch
                 }
+                val ip = sniSpoofEdge
+                    ?: runCatching { java.net.InetAddress.getByName(target.first).hostAddress }.getOrNull()
+                    ?: target.first
+
+                // Run the Go spoof engine inside the isolated :snispoof process
+                RstaSpoofClient.start(this@ZedVpnService, listenPort, ip, target.second, fakeSni, method)
+                if (!RstaSpoofClient.awaitListener(listenPort, timeoutMs = 5_000L)) {
+                    VpnManager.onError(getString(R.string.snispoof_noroot_failed))
+                    stopEverything(); return@launch
+                }
+
                 writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost)
 
                 if (!XrayController.start(xray.toString())) {
@@ -366,12 +335,7 @@ class ZedVpnService : VpnService() {
                 if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) return@launch
 
                 if (!TunnelReadiness.verify(socksPort, timeoutMs = 7_000, attempts = 4)) {
-                    val reason = if ((sniSpoof?.ackTimeouts ?: 0) > 0) {
-                        R.string.snispoof_no_ack
-                    } else {
-                        R.string.snispoof_no_traffic
-                    }
-                    VpnManager.onError(getString(reason))
+                    VpnManager.onError(getString(R.string.snispoof_no_traffic))
                     stopEverything(); return@launch
                 }
                 VpnManager.activeSocksPort = socksPort
@@ -1311,8 +1275,7 @@ class ZedVpnService : VpnService() {
         masterDns?.stop(); masterDns = null
         tor?.stop(); tor = null
         ssh?.stop(); ssh = null
-        sniSpoof?.stop(); sniSpoof = null
-        if (rstaSession != 0L) { RstaSpoofEngine.stop(rstaSession); rstaSession = 0L }
+        RstaSpoofClient.stop(this)
         openConnect?.stop(); openConnect = null
         singBox?.stop(); singBox = null
         socksShim?.stop(); socksShim = null

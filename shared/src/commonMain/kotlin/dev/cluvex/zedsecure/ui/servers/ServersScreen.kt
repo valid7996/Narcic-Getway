@@ -1798,17 +1798,7 @@ internal fun AddServerSheet(
                     gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
                     onClick = onSsh,
                 )
-                GlassOptionCard(
-                    title = stringResource(Res.string.snispoof_add_title),
-                    subtitle = "",
-                    icon = Res.drawable.ic_bolt,
-                    accentColor = Color(0xFFB55FE6),
-                    iconTint = Color(0xFFD8B4FE),
-                    gradientStart = Color(0xFF271348).copy(alpha = 0.90f),
-                    gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
-                    onClick = onSniSpoof,
-                )
-                // The same spoof without root: the Rsta engine splits and disguises the ClientHello on plain sockets.
+                // SNI spoof without root: the Rsta engine splits and disguises the ClientHello on plain sockets.
                 GlassOptionCard(
                     title = stringResource(Res.string.snispoof_noroot_add_title),
                     subtitle = "",
