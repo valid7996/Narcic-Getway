@@ -90,8 +90,11 @@ fun AutoSelectCard(
     onDetails: () -> Unit,
     personalization: Personalization = Personalization.Default,
 ) {
+    val isAzkaban = personalization.themeProfileId == "azkaban"
     val container = if (active) {
         personalization.serverActiveColor ?: ZedGreen
+    } else if (isAzkaban) {
+        Color(0xFF091424)
     } else {
         personalization.serverCardColor
             ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
@@ -99,11 +102,16 @@ fun AutoSelectCard(
     val onContainer = when {
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
         !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
+        isAzkaban -> Color(0xFFF0F9FF)
         active -> MaterialTheme.colorScheme.onPrimaryContainer
         else -> MaterialTheme.colorScheme.onSurface
     }
     val phase = live?.status?.phase
-    val frame = if (active) ZedGreen.copy(alpha = 0.95f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+    val frame = when {
+        active -> (personalization.serverActiveColor ?: ZedGreen).copy(alpha = 0.95f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+    }
     Surface(
         onClick = onSelect,
         shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),
@@ -120,17 +128,19 @@ fun AutoSelectCard(
                 .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val cookieBg = if (isAzkaban) Color(0xFF0284C7) else phaseColor(phase)
+            val cookieTint = if (isAzkaban) Color(0xFFF0F9FF) else phaseColor(phase).readableOn()
             Box(
                 Modifier
                     .size(42.dp)
                     .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(phaseColor(phase)),
+                    .background(cookieBg),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(Res.drawable.ic_bolt),
                     contentDescription = null,
-                    tint = phaseColor(phase).readableOn(),
+                    tint = cookieTint,
                     modifier = Modifier.size(22.dp),
                 )
             }

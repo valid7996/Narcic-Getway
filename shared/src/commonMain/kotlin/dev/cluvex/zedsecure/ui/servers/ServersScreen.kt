@@ -741,6 +741,7 @@ fun ServersScreen(
                                 label = stringResource(Res.string.group_all),
                                 count = servers.size,
                                 selected = groupIndex == 0,
+                                personalization = personalization,
                                 onClick = { groupIndex = 0 },
                             )
                         }
@@ -750,6 +751,7 @@ fun ServersScreen(
                             label = stringResource(Res.string.group_manual),
                             count = counts[""] ?: 0,
                             selected = groupIndex == 1,
+                            personalization = personalization,
                             onClick = { groupIndex = 1 },
                         )
                     }
@@ -758,6 +760,7 @@ fun ServersScreen(
                             label = sub.name,
                             count = counts[sub.id] ?: 0,
                             selected = groupIndex == index + 2,
+                            personalization = personalization,
                             onClick = { groupIndex = index + 2 },
                         )
                     }
@@ -1579,19 +1582,40 @@ fun ServersScreen(
 }
 
 @Composable
-private fun GroupTab(label: String, count: Int, selected: Boolean, onClick: () -> Unit) {
+private fun GroupTab(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    personalization: Personalization = Personalization.Default,
+    onClick: () -> Unit,
+) {
+    val isAzkaban = personalization.themeProfileId == "azkaban"
+    val activeColor = personalization.serverActiveColor ?: MaterialTheme.colorScheme.primary
+    val bg = when {
+        selected -> activeColor
+        isAzkaban -> Color(0xFF091424)
+        else -> MaterialTheme.colorScheme.surfaceContainerHighest
+    }
+    val contentColor = when {
+        selected -> if (isAzkaban) Color(0xFF041220) else MaterialTheme.colorScheme.onPrimary
+        isAzkaban -> Color(0xFFBAE6FD)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val borderModifier = if (!selected && isAzkaban) {
+        Modifier.border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.30f), RoundedCornerShape(50))
+    } else Modifier
+
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(50),
-        color = if (selected) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.surfaceContainerHighest,
+        color = bg,
+        modifier = borderModifier,
     ) {
         Text(
             text = "$label  $count",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = if (selected) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = contentColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),

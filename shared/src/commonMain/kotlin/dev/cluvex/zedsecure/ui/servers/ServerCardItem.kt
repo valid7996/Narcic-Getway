@@ -81,10 +81,13 @@ internal fun ServerCard(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val isSelectedCard = selecting && isSelected
+    val isAzkaban = personalization.themeProfileId == "azkaban"
     val container = if (isSelectedCard) {
         MaterialTheme.colorScheme.secondaryContainer
     } else if (active) {
         personalization.serverActiveColor ?: ZedGreen
+    } else if (isAzkaban) {
+        Color(0xFF091322)
     } else {
         personalization.serverCardColor
             ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
@@ -92,7 +95,7 @@ internal fun ServerCard(
     val frame = when {
         isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
         active -> (personalization.serverActiveColor ?: ZedGreen).copy(alpha = 0.95f)
-        personalization.themeProfileId == "azkaban" -> Color(0xFF38BDF8).copy(alpha = 0.25f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
     }
 
@@ -100,9 +103,11 @@ internal fun ServerCard(
         isSelectedCard -> MaterialTheme.colorScheme.onSecondaryContainer
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
         !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
+        isAzkaban -> Color(0xFFF0F9FF)
         else -> MaterialTheme.colorScheme.onSurface
     }
     val vPad = personalization.density.cardVerticalDp.dp
+    val primaryAccent = personalization.serverActiveColor ?: MaterialTheme.colorScheme.primary
     Surface(
         color = Color.Transparent,
         shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),
@@ -124,7 +129,7 @@ internal fun ServerCard(
                     .fillMaxHeight()
                     .background(
                         when {
-                            active -> MaterialTheme.colorScheme.primary
+                            active -> primaryAccent
                             isSelectedCard -> MaterialTheme.colorScheme.secondary
                             else -> Color.Transparent
                         },
@@ -143,7 +148,7 @@ internal fun ServerCard(
                                 Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
+                                    .background(primaryAccent),
                             )
                             Spacer(Modifier.width(7.dp))
                         }

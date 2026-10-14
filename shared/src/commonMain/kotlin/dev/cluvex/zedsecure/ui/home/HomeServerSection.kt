@@ -66,6 +66,7 @@ import dev.cluvex.zedsecure.ui.components.QrDialog
 import dev.cluvex.zedsecure.ui.servers.SubscriptionsSheet
 import dev.cluvex.zedsecure.ui.theme.Personalization
 import dev.cluvex.zedsecure.ui.theme.ZedGreen
+import dev.cluvex.zedsecure.ui.theme.readableOn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -182,13 +183,14 @@ internal fun HomeServerSection(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            GroupTab(label = stringResource(Res.string.group_all), count = allServers.size, selected = group == "all") { group = "all" }
-            GroupTab(label = stringResource(Res.string.group_manual), count = manualCount, selected = group == "manual") { group = "manual" }
+            GroupTab(label = stringResource(Res.string.group_all), count = allServers.size, selected = group == "all", personalization = personalization) { group = "all" }
+            GroupTab(label = stringResource(Res.string.group_manual), count = manualCount, selected = group == "manual", personalization = personalization) { group = "manual" }
             subscriptions.forEach { sub ->
                 GroupTab(
                     label = sub.name,
                     count = allServers.count { it.subscriptionId == sub.id },
                     selected = group == sub.id,
+                    personalization = personalization,
                 ) { group = sub.id }
             }
         }
@@ -670,16 +672,33 @@ private fun GlassIconButton(onClick: () -> Unit, content: @Composable () -> Unit
 
 /** The group chip of the servers screen, restyled as glass for the home header. */
 @Composable
-private fun GroupTab(label: String, count: Int, selected: Boolean, onClick: () -> Unit) {
+private fun GroupTab(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    personalization: Personalization = Personalization.Default,
+    onClick: () -> Unit,
+) {
+    val isAzkaban = personalization.themeProfileId == "azkaban"
+    val activeColor = personalization.serverActiveColor ?: ZedGreen
     val background = if (selected) {
-        ZedGreen
+        activeColor
+    } else if (isAzkaban) {
+        Color(0xFF0C192E)
     } else {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
     }
     val content = if (selected) {
-        Color(0xFF052918)
+        activeColor.readableOn()
+    } else if (isAzkaban) {
+        Color(0xFFBAE6FD)
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val borderColor = when {
+        selected -> Color.Transparent
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.25f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
     }
     Row(
         Modifier
@@ -687,7 +706,7 @@ private fun GroupTab(label: String, count: Int, selected: Boolean, onClick: () -
             .background(background)
             .border(
                 1.dp,
-                if (selected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f),
+                borderColor,
                 MaterialTheme.shapes.small,
             )
             .clickable(onClick = onClick)

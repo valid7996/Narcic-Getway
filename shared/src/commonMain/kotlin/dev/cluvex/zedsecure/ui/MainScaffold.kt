@@ -168,7 +168,7 @@ fun MainScaffold(
                     delayTestUrl = settings.delayTestUrl,
 
                     personalization = settings.toPersonalization(),
-                    connectStyle = dev.cluvex.zedsecure.domain.model.ConnectButtonStyle.Slide,
+                    connectStyle = settings.connectButtonStyle,
                     repository = configRepository,
                     realPingConcurrency = settings.realPingConcurrency,
                     autoSortAfterTest = settings.autoSortAfterTest,

@@ -266,7 +266,14 @@ fun HomeScreen(
                   if (isAzkaban) {
                     AzkabanHero(
                         state = ui.state,
-                        onToggle = onToggleConnection,
+                        onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
+                            {
+                                if (ui.state != ConnectionState.Disconnecting) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onToggleConnection()
+                                }
+                            }
+                        } else null,
                     )
                   } else {
                     val stage = maxHeight
@@ -373,33 +380,41 @@ fun HomeScreen(
                         personalization = personalization,
                     )
                 }
-                if (!isAzkaban) {
-                    Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
-                    when (connectStyle) {
-                        ConnectButtonStyle.Hero -> Unit
-                        ConnectButtonStyle.Pill -> ConnectButton(
-                            state = ui.state,
-                            onToggle = onToggleConnection,
-                            customColor = personalization.connectColor,
-                            customActiveColor = personalization.connectedColor,
-                            compact = compact,
-                        )
-                        ConnectButtonStyle.Slide -> SlideToConnect(
-                            state = ui.state,
-                            onToggle = onToggleConnection,
-                            customColor = personalization.connectColor,
-                            customActiveColor = personalization.connectedColor,
-                            compact = compact,
-                        )
-                        else -> AltConnectControl(
-                            style = connectStyle,
-                            state = ui.state,
-                            onToggle = onToggleConnection,
-                            customColor = personalization.connectColor,
-                            customActiveColor = personalization.connectedColor,
-                            compact = compact,
-                        )
+
+                Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
+                when (connectStyle) {
+                    ConnectButtonStyle.Hero -> Unit
+                    ConnectButtonStyle.Pill -> {
+                        if (isAzkaban) {
+                            AzkabanConnectButton(
+                                state = ui.state,
+                                onClick = onToggleConnection,
+                            )
+                        } else {
+                            ConnectButton(
+                                state = ui.state,
+                                onToggle = onToggleConnection,
+                                customColor = personalization.connectColor,
+                                customActiveColor = personalization.connectedColor,
+                                compact = compact,
+                            )
+                        }
                     }
+                    ConnectButtonStyle.Slide -> SlideToConnect(
+                        state = ui.state,
+                        onToggle = onToggleConnection,
+                        customColor = personalization.connectColor,
+                        customActiveColor = personalization.connectedColor,
+                        compact = compact,
+                    )
+                    else -> AltConnectControl(
+                        style = connectStyle,
+                        state = ui.state,
+                        onToggle = onToggleConnection,
+                        customColor = personalization.connectColor,
+                        customActiveColor = personalization.connectedColor,
+                        compact = compact,
+                    )
                 }
                 Spacer(Modifier.height(12.dp))
 
@@ -414,6 +429,7 @@ fun HomeScreen(
                             expanded = infoExpanded,
                             destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
                             onClick = homeVm::toggleExpanded,
+                            isAzkaban = isAzkaban,
                         )
                         AnimatedVisibility(visible = infoExpanded) {
                             ConnectionRouteMapCard(
@@ -421,6 +437,7 @@ fun HomeScreen(
                                 activeConfigName = activeConfigName,
                                 fallbackCountryCode = activeCountryCode,
                                 onClose = homeVm::toggleExpanded,
+                                isAzkaban = isAzkaban,
                             )
                         }
                         MergedDashboardCard(
@@ -432,6 +449,7 @@ fun HomeScreen(
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
                             connectedColor = personalization.connectedColor ?: ConnectedGreen,
+                            isAzkaban = isAzkaban,
                         )
                     }
                 }
@@ -1397,21 +1415,33 @@ private fun MergedDashboardCard(
     onToggleMap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     connectedColor: Color = ConnectedGreen,
+    isAzkaban: Boolean = false,
 ) {
     val shape = RoundedCornerShape(24.dp)
+    val cardBg = if (isAzkaban) {
+        Brush.verticalGradient(
+            listOf(
+                Color(0xFF0C192E),
+                Color(0xFF07101F),
+            ),
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                connectedColor.copy(alpha = 0.60f),
+                connectedColor.copy(alpha = 0.35f),
+            ),
+        )
+    }
+    val cardBorder = if (isAzkaban) Color(0xFF38BDF8).copy(alpha = 0.35f) else Color.Transparent
+
     Surface(color = Color.Transparent, shape = shape, modifier = modifier.fillMaxWidth()) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .clip(shape)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            connectedColor.copy(alpha = 0.60f),
-                            connectedColor.copy(alpha = 0.35f),
-                        ),
-                    ),
-                ),
+                .background(cardBg)
+                .border(1.dp, cardBorder, shape),
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1424,14 +1454,14 @@ private fun MergedDashboardCard(
                                 ?: stringResource(Res.string.info_unknown_location),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = if (isAzkaban) Color(0xFFF0F9FF) else MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             text = info.ipv4 ?: stringResource(Res.string.info_no_ip),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isAzkaban) Color(0xFF94A3B8) else MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                         )
                     }
@@ -1440,7 +1470,9 @@ private fun MergedDashboardCard(
                             text = "$ping ms",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (ping < 250) {
+                            color = if (isAzkaban) {
+                                Color(0xFF38BDF8)
+                            } else if (ping < 250) {
                                 MaterialTheme.colorScheme.onSurface
                             } else {
                                 MaterialTheme.colorScheme.error
@@ -1452,7 +1484,7 @@ private fun MergedDashboardCard(
                             Icon(
                                 painterResource(Res.drawable.ic_map),
                                 contentDescription = "Map",
-                                tint = Color(0xFFFFE066),
+                                tint = if (isAzkaban) Color(0xFF38BDF8) else Color(0xFFFFE066),
                                 modifier = Modifier.size(20.dp),
                             )
                         }

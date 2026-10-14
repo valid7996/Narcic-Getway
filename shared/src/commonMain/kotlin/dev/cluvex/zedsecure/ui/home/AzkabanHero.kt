@@ -60,15 +60,15 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun AzkabanHero(
     state: ConnectionState,
-    onToggle: () -> Unit,
+    onTapHero: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val transition = rememberInfiniteTransition(label = "azkaban-anim")
 
     // Gentle hover animation of the Spectre / Dementor
     val floatOffset by transition.animateFloat(
-        initialValue = -7f,
-        targetValue = 7f,
+        initialValue = -5f,
+        targetValue = 5f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 3400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
@@ -122,7 +122,7 @@ fun AzkabanHero(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(32.dp))
+            .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
                     listOf(
@@ -141,14 +141,19 @@ fun AzkabanHero(
                         Color.Transparent,
                     ),
                 ),
-                RoundedCornerShape(32.dp),
+                RoundedCornerShape(28.dp),
             )
-            .padding(top = 20.dp, bottom = 22.dp, start = 16.dp, end = 16.dp),
+            .then(
+                if (onTapHero != null) {
+                    Modifier.clickable(onClick = onTapHero)
+                } else Modifier
+            )
+            .padding(top = 14.dp, bottom = 14.dp, start = 14.dp, end = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
             // Header: Fortress Ward Status
@@ -159,7 +164,7 @@ fun AzkabanHero(
                     .clip(RoundedCornerShape(50))
                     .background(Color(0xFF0C1D38).copy(alpha = 0.85f))
                     .border(1.dp, auraColor.copy(alpha = 0.40f), RoundedCornerShape(50))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                    .padding(horizontal = 14.dp, vertical = 5.dp),
             ) {
                 Box(
                     modifier = Modifier
@@ -184,14 +189,14 @@ fun AzkabanHero(
             // Dementor Figure Container with Ethereal Fog Aura
             Box(
                 modifier = Modifier
-                    .size(210.dp)
-                    .padding(8.dp),
+                    .size(150.dp)
+                    .padding(4.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 // Background Frost Aura Glow
                 Box(
                     modifier = Modifier
-                        .size(175.dp)
+                        .size(130.dp)
                         .graphicsLayer {
                             scaleX = breatheScale * (if (isConnected) 1.15f else 1f)
                             scaleY = breatheScale * (if (isConnected) 1.15f else 1f)
@@ -213,7 +218,7 @@ fun AzkabanHero(
                 // Runic Frost Halo Ring
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
+                        .size(120.dp)
                         .border(
                             width = if (isConnected) 2.dp else 1.dp,
                             brush = Brush.sweepGradient(
@@ -237,23 +242,17 @@ fun AzkabanHero(
                     painter = painterResource(Res.drawable.dementor_isolated),
                     contentDescription = "Azkaban Dementor",
                     modifier = Modifier
-                        .size(145.dp)
+                        .size(115.dp)
                         .offset(y = floatOffset.dp)
                         .scale(breatheScale),
                 )
             }
-
-            // Azkaban Frost Connect Trigger Button
-            AzkabanConnectButton(
-                state = state,
-                onClick = onToggle,
-            )
         }
     }
 }
 
 @Composable
-private fun AzkabanConnectButton(
+fun AzkabanConnectButton(
     state: ConnectionState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
