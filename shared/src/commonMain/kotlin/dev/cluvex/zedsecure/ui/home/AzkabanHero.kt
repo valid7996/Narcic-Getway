@@ -45,8 +45,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.unit.Dp
 import dev.cluvex.zedsecure.domain.model.ConnectionState
 import dev.cluvex.zedsecure.shared.resources.Res
+import dev.cluvex.zedsecure.shared.resources.circle_waves_sheet
 import dev.cluvex.zedsecure.shared.resources.dementor_isolated
 import dev.cluvex.zedsecure.shared.resources.ic_bolt
 import dev.cluvex.zedsecure.shared.resources.ic_close
@@ -63,52 +69,6 @@ fun AzkabanHero(
     onTapHero: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val transition = rememberInfiniteTransition(label = "azkaban-anim")
-
-    // Gentle hover animation of the Spectre / Dementor
-    val floatOffset by transition.animateFloat(
-        initialValue = -5f,
-        targetValue = 5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "dementor-float",
-    )
-
-    // Subtle scale breathing
-    val breatheScale by transition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.02f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "dementor-scale",
-    )
-
-    // Glowing aura pulse
-    val auraPulse by transition.animateFloat(
-        initialValue = 0.40f,
-        targetValue = 0.85f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "aura-pulse",
-    )
-
-    // Slow drifting winter mist rotation
-    val mistRotate by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 32000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "mist-rotate",
-    )
-
     val isConnected = state.isActive
     val isConnecting = state.isTransitioning
 
@@ -186,66 +146,119 @@ fun AzkabanHero(
                 )
             }
 
-            // Dementor Figure Container with Ethereal Fog Aura
-            Box(
-                modifier = Modifier
-                    .size(150.dp)
-                    .padding(4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Background Frost Aura Glow
-                Box(
-                    modifier = Modifier
-                        .size(130.dp)
-                        .graphicsLayer {
-                            scaleX = breatheScale * (if (isConnected) 1.15f else 1f)
-                            scaleY = breatheScale * (if (isConnected) 1.15f else 1f)
-                            alpha = auraPulse * (if (isConnected) 0.65f else 0.35f)
-                            rotationZ = mistRotate
-                        }
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    auraColor.copy(alpha = 0.55f),
-                                    Color(0xFF0284C7).copy(alpha = 0.25f),
-                                    Color.Transparent,
-                                ),
-                            ),
-                            shape = CircleShape,
+            // Circle Waves Animated Orb (clean, borderless, reactive)
+            CircleWavesOrb(
+                state = state,
+                size = 145.dp,
+            )
+        }
+    }
+}
+
+/**
+ * Animated Circle Waves Element:
+ * Renders the 25-frame smooth rotating wave/orbit animation from the sprite sheet.
+ * Fluidly reacts to connection state with glowing cyan pulse and breathing effect.
+ */
+@Composable
+fun CircleWavesOrb(
+    state: ConnectionState,
+    size: Dp = 145.dp,
+    modifier: Modifier = Modifier,
+) {
+    val transition = rememberInfiniteTransition(label = "circle-waves")
+    val isConnected = state.isActive
+    val isConnecting = state.isTransitioning
+
+    val animDuration = when {
+        isConnected -> 1250
+        isConnecting -> 800
+        else -> 2200
+    }
+
+    val frameProgress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = animDuration, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "wave-frame",
+    )
+
+    val breatheScale by transition.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = if (isConnected) 1800 else 3200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "orb-breathe",
+    )
+
+    val auraPulse by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "aura-pulse",
+    )
+
+    val auraColor = when {
+        state == ConnectionState.Error -> Color(0xFFEF4444)
+        isConnected -> Color(0xFF38BDF8)
+        isConnecting -> Color(0xFF7DD3FC)
+        else -> Color(0xFF0284C7)
+    }
+
+    val painter = painterResource(Res.drawable.circle_waves_sheet)
+    val currentFrame = frameProgress.toInt().coerceIn(0, 24)
+
+    Box(
+        modifier = modifier
+            .size(size)
+            .graphicsLayer {
+                scaleX = breatheScale
+                scaleY = breatheScale
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        // Soft ambient back glow (completely borderless)
+        Box(
+            modifier = Modifier
+                .size(size * 0.88f)
+                .background(
+                    Brush.radialGradient(
+                        listOf(
+                            auraColor.copy(alpha = if (isConnected) 0.50f * auraPulse else 0.20f),
+                            Color(0xFF0369A1).copy(alpha = if (isConnected) 0.25f else 0.08f),
+                            Color.Transparent,
                         ),
-                )
+                    ),
+                    shape = CircleShape,
+                ),
+        )
 
-                // Runic Frost Halo Ring
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .border(
-                            width = if (isConnected) 2.dp else 1.dp,
-                            brush = Brush.sweepGradient(
-                                listOf(
-                                    Color.Transparent,
-                                    auraColor.copy(alpha = 0.65f),
-                                    Color.Transparent,
-                                    auraColor.copy(alpha = 0.45f),
-                                    Color.Transparent,
-                                ),
-                            ),
-                            shape = CircleShape,
-                        )
-                        .graphicsLayer {
-                            rotationZ = -mistRotate * 0.75f
-                        },
-                )
+        // Circle Waves frame renderer
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val cols = 5
+            val frameX = currentFrame % cols
+            val frameY = currentFrame / cols
 
-                // Floating Dementor Image
-                Image(
-                    painter = painterResource(Res.drawable.dementor_isolated),
-                    contentDescription = "Azkaban Dementor",
-                    modifier = Modifier
-                        .size(115.dp)
-                        .offset(y = floatOffset.dp)
-                        .scale(breatheScale),
-                )
+            clipRect(0f, 0f, this.size.width, this.size.height) {
+                withTransform({
+                    translate(
+                        left = -frameX * this@Canvas.size.width,
+                        top = -frameY * this@Canvas.size.height,
+                    )
+                    scale(scaleX = 5f, scaleY = 5f, pivot = Offset.Zero)
+                }) {
+                    with(painter) {
+                        draw(this@Canvas.size)
+                    }
+                }
             }
         }
     }
