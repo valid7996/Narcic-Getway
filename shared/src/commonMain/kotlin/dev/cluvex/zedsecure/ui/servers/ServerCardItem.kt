@@ -91,7 +91,8 @@ internal fun ServerCard(
     }
     val frame = when {
         isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
-        active -> ZedGreen.copy(alpha = 0.95f)
+        active -> (personalization.serverActiveColor ?: ZedGreen).copy(alpha = 0.95f)
+        personalization.themeProfileId == "azkaban" -> Color(0xFF38BDF8).copy(alpha = 0.25f)
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
     }
 

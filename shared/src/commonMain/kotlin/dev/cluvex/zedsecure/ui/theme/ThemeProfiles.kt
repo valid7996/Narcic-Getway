@@ -28,6 +28,23 @@ data class ThemeProfile(
 
 val ThemeProfiles: List<ThemeProfile> = listOf(
     ThemeProfile(
+        id = "azkaban",
+        name = "Azkaban (آزکابان)",
+        accentIndex = 2,
+        amoled = false,
+        download = 0xFFBAE6FD,
+        upload = 0xFFE2E8F0,
+        downloadTile = 0xFF0A1628,
+        uploadTile = 0xFF081220,
+        connect = 0xFF38BDF8,
+        connected = 0xFF0284C7,
+        tapHint = 0xFFBAE6FD,
+        serverCard = 0xFF091322,
+        serverActive = 0xFF38BDF8,
+        configCard = 0xFF0B1728,
+        configCardText = 0xFFF0F9FF,
+    ),
+    ThemeProfile(
         id = "narcis",
         name = "Narcis",
         accentIndex = 0,

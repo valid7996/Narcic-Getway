@@ -209,14 +209,16 @@ fun HomeScreen(
     var statusLastTap by remember { mutableLongStateOf(0L) }
     val haptics = LocalHapticFeedback.current
 
+    val isAzkaban = personalization.themeProfileId == "azkaban"
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        DecorativeBackdrop(reduceMotion = reduceMotion)
+        DecorativeBackdrop(reduceMotion = reduceMotion, isAzkaban = isAzkaban)
 
-        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion)
+        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion, isAzkaban = isAzkaban)
 
         BoxWithConstraints(
             modifier = Modifier
@@ -261,95 +263,102 @@ fun HomeScreen(
                 }
 
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().layoutId(STAGE_ID)) {
-                  val stage = maxHeight
-                  val tight = stage < 260.dp
-                  val stageHero = minOf(heroSize, stage * 0.58f)
-                  Column(
-                    modifier = Modifier.fillMaxSize().clipToBounds(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                  ) {
-                    Hero(
+                  if (isAzkaban) {
+                    AzkabanHero(
                         state = ui.state,
-                        sessionId = ui.sessionId,
-                        size = stageHero,
-                        onLongPress = {
-                            burst++
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        },
-
-                        onTap = if (connectStyle == ConnectButtonStyle.Hero) {
-                            {
-                                if (ui.state != ConnectionState.Disconnecting) {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onToggleConnection()
-                                }
-                            }
-                        } else null,
+                        onToggle = onToggleConnection,
                     )
+                  } else {
+                    val stage = maxHeight
+                    val tight = stage < 260.dp
+                    val stageHero = minOf(heroSize, stage * 0.58f)
+                    Column(
+                      modifier = Modifier.fillMaxSize().clipToBounds(),
+                      horizontalAlignment = Alignment.CenterHorizontally,
+                      verticalArrangement = Arrangement.Center,
+                    ) {
+                      Hero(
+                          state = ui.state,
+                          sessionId = ui.sessionId,
+                          size = stageHero,
+                          onLongPress = {
+                              burst++
+                              haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                          },
 
-                    Spacer(Modifier.height(if (tight) 8.dp else 20.dp))
+                          onTap = if (connectStyle == ConnectButtonStyle.Hero) {
+                              {
+                                  if (ui.state != ConnectionState.Disconnecting) {
+                                      haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                      onToggleConnection()
+                                  }
+                              }
+                          } else null,
+                      )
 
-                    AnimatedContent(
-                        targetState = ui.state,
-                        transitionSpec = {
-                            (fadeIn(animationSpec = tween(220)) +
-                                scaleIn(initialScale = 0.92f, animationSpec = tween(220))) togetherWith
-                                fadeOut(animationSpec = tween(140))
-                        },
-                        label = "status-text",
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            val now = System.currentTimeMillis()
-                            statusTaps = if (now - statusLastTap < TAP_WINDOW_MS) statusTaps + 1 else 1
-                            statusLastTap = now
-                            if (statusTaps >= 3) {
-                                statusTaps = 0
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                laser++
-                            }
-                        },
-                    ) { s ->
+                      Spacer(Modifier.height(if (tight) 8.dp else 20.dp))
 
-                        Text(
-                            text = stringResource(s.labelRes()),
-                            style = if (tight) {
-                                MaterialTheme.typography.headlineMediumEmphasized
-                            } else {
-                                MaterialTheme.typography.displaySmallEmphasized
-                            },
-                            maxLines = 1,
-                            textAlign = TextAlign.Center,
-                            color = when {
-                                s == ConnectionState.Error -> MaterialTheme.colorScheme.error
+                      AnimatedContent(
+                          targetState = ui.state,
+                          transitionSpec = {
+                              (fadeIn(animationSpec = tween(220)) +
+                                  scaleIn(initialScale = 0.92f, animationSpec = tween(220))) togetherWith
+                                  fadeOut(animationSpec = tween(140))
+                          },
+                          label = "status-text",
+                          modifier = Modifier.clickable(
+                              interactionSource = remember { MutableInteractionSource() },
+                              indication = null,
+                          ) {
+                              val now = System.currentTimeMillis()
+                              statusTaps = if (now - statusLastTap < TAP_WINDOW_MS) statusTaps + 1 else 1
+                              statusLastTap = now
+                              if (statusTaps >= 3) {
+                                  statusTaps = 0
+                                  haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                  laser++
+                              }
+                          },
+                      ) { s ->
 
-                                s.isActive || s == ConnectionState.Disconnecting -> Color.White
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                        )
-                    }
+                          Text(
+                              text = stringResource(s.labelRes()),
+                              style = if (tight) {
+                                  MaterialTheme.typography.headlineMediumEmphasized
+                              } else {
+                                  MaterialTheme.typography.displaySmallEmphasized
+                              },
+                              maxLines = 1,
+                              textAlign = TextAlign.Center,
+                              color = when {
+                                  s == ConnectionState.Error -> MaterialTheme.colorScheme.error
 
-                    if (lockedNote != null) {
-                        val noteScroll = rememberScrollState()
-                        Spacer(Modifier.height(16.dp))
-                        Surface(
-                            shape = MaterialTheme.shapes.large,
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            NoteText(
-                                text = lockedNote,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 140.dp)
-                                    .verticalScroll(noteScroll)
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                            )
-                        }
+                                  s.isActive || s == ConnectionState.Disconnecting -> Color.White
+                                  else -> MaterialTheme.colorScheme.onSurface
+                              },
+                          )
+                      }
+
+                      if (lockedNote != null) {
+                          val noteScroll = rememberScrollState()
+                          Spacer(Modifier.height(16.dp))
+                          Surface(
+                              shape = MaterialTheme.shapes.large,
+                              color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                              modifier = Modifier.fillMaxWidth(),
+                          ) {
+                              NoteText(
+                                  text = lockedNote,
+                                  style = MaterialTheme.typography.bodyMedium,
+                                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                  modifier = Modifier
+                                      .fillMaxWidth()
+                                      .heightIn(max = 140.dp)
+                                      .verticalScroll(noteScroll)
+                                      .padding(horizontal = 16.dp, vertical = 12.dp),
+                              )
+                          }
+                      }
                     }
                   }
                 }
@@ -364,31 +373,33 @@ fun HomeScreen(
                         personalization = personalization,
                     )
                 }
-                Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
-                when (connectStyle) {
-                    ConnectButtonStyle.Hero -> Unit
-                    ConnectButtonStyle.Pill -> ConnectButton(
-                        state = ui.state,
-                        onToggle = onToggleConnection,
-                        customColor = personalization.connectColor,
-                        customActiveColor = personalization.connectedColor,
-                        compact = compact,
-                    )
-                    ConnectButtonStyle.Slide -> SlideToConnect(
-                        state = ui.state,
-                        onToggle = onToggleConnection,
-                        customColor = personalization.connectColor,
-                        customActiveColor = personalization.connectedColor,
-                        compact = compact,
-                    )
-                    else -> AltConnectControl(
-                        style = connectStyle,
-                        state = ui.state,
-                        onToggle = onToggleConnection,
-                        customColor = personalization.connectColor,
-                        customActiveColor = personalization.connectedColor,
-                        compact = compact,
-                    )
+                if (!isAzkaban) {
+                    Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
+                    when (connectStyle) {
+                        ConnectButtonStyle.Hero -> Unit
+                        ConnectButtonStyle.Pill -> ConnectButton(
+                            state = ui.state,
+                            onToggle = onToggleConnection,
+                            customColor = personalization.connectColor,
+                            customActiveColor = personalization.connectedColor,
+                            compact = compact,
+                        )
+                        ConnectButtonStyle.Slide -> SlideToConnect(
+                            state = ui.state,
+                            onToggle = onToggleConnection,
+                            customColor = personalization.connectColor,
+                            customActiveColor = personalization.connectedColor,
+                            compact = compact,
+                        )
+                        else -> AltConnectControl(
+                            style = connectStyle,
+                            state = ui.state,
+                            onToggle = onToggleConnection,
+                            customColor = personalization.connectColor,
+                            customActiveColor = personalization.connectedColor,
+                            compact = compact,
+                        )
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
 
@@ -420,6 +431,7 @@ fun HomeScreen(
                             totalUpload = ui.totalUpload,
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
+                            connectedColor = personalization.connectedColor ?: ConnectedGreen,
                         )
                     }
                 }
@@ -526,7 +538,7 @@ private fun StageColumn(
 }
 
 @Composable
-private fun DecorativeBackdrop(reduceMotion: Boolean) {
+private fun DecorativeBackdrop(reduceMotion: Boolean, isAzkaban: Boolean = false) {
     val budget = LocalMotionBudget.current
     val spin by if (budget == MotionBudget.Full) {
         rememberInfiniteTransition(label = "backdrop").animateFloat(
@@ -539,7 +551,11 @@ private fun DecorativeBackdrop(reduceMotion: Boolean) {
         remember { mutableFloatStateOf(0f) }
     }
     val rotation = if (reduceMotion || budget != MotionBudget.Full) 0f else spin
-    val splash = listOf(ZedDeepViolet, ZedViolet, ZedCyan)
+    val splash = if (isAzkaban) {
+        listOf(Color(0xFF040A16), Color(0xFF0C1D38), Color(0xFF38BDF8))
+    } else {
+        listOf(ZedDeepViolet, ZedViolet, ZedCyan)
+    }
     // A quiet splash: one large disc with two droplets thrown off it.
     Box(
         Modifier
@@ -1209,7 +1225,7 @@ private fun ConnectButton(
 }
 
 @Composable
-private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMotion: Boolean) {
+private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMotion: Boolean, isAzkaban: Boolean = false) {
     val intensity by animateFloatAsState(
         targetValue = when (state) {
             ConnectionState.Connecting, ConnectionState.Reconnecting -> 0.72f
@@ -1238,7 +1254,13 @@ private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMot
         )
     }
 
-    val stops = if (state == ConnectionState.Connected) {
+    val stops = if (isAzkaban) {
+        if (state == ConnectionState.Connected) {
+            listOf(Color(0xFF040A16), Color(0xFF071224), Color(0xFF0284C7).copy(alpha = 0.4f), Color(0xFF38BDF8).copy(alpha = 0.2f))
+        } else {
+            listOf(Color(0xFF02050A), Color(0xFF071224), Color(0xFF0A1830))
+        }
+    } else if (state == ConnectionState.Connected) {
         ZedGradients.connectedStops(sessionId)
     } else {
         ZedGradients.connectingStops
@@ -1374,6 +1396,7 @@ private fun MergedDashboardCard(
     onRefresh: () -> Unit,
     onToggleMap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    connectedColor: Color = ConnectedGreen,
 ) {
     val shape = RoundedCornerShape(24.dp)
     Surface(color = Color.Transparent, shape = shape, modifier = modifier.fillMaxWidth()) {
@@ -1384,8 +1407,8 @@ private fun MergedDashboardCard(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            ConnectedGreen.copy(alpha = 0.60f),
-                            ConnectedGreen.copy(alpha = 0.35f),
+                            connectedColor.copy(alpha = 0.60f),
+                            connectedColor.copy(alpha = 0.35f),
                         ),
                     ),
                 ),

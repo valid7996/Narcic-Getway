@@ -90,6 +90,7 @@ data class Personalization(
     val trafficTilesAboveHero: Boolean = false,
     val trafficTileSize: TrafficTileSize = TrafficTileSize.Normal,
     val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Cards,
+    val themeProfileId: String? = null,
 ) {
     companion object {
         val Default = Personalization()
@@ -117,6 +118,7 @@ fun AppSettings.toPersonalization(): Personalization = Personalization(
     trafficTilesAboveHero = trafficTilesAboveHero,
     trafficTileSize = trafficTileSize,
     trafficCardStyle = trafficCardStyle,
+    themeProfileId = themeProfileId,
 )
 
 fun AppSettings.resetPersonalization(): AppSettings = copy(
