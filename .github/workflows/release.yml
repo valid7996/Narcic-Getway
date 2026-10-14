@@ -45,4 +45,4 @@ jobs:
             [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
           done
           gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "Narcic Getway $V" --notes "" --draft
+            --title "Narcic Getway $V" --notes ""
