@@ -20,6 +20,9 @@ import kotlinx.serialization.json.jsonPrimitive
 object SniSpoofConfig {
 
     const val DEFAULT_METHOD = "combined"
+    const val DEFAULT_CONNECT_IP = "104.18.38.202"
+    const val DEFAULT_CONNECT_PORT = 443
+    const val DEFAULT_FAKE_SNI = "cdnjs.cloudflare.com"
 
     /** The port a configuration made for the Rsta app points its proxy at. */
     const val RSTA_LOCAL_PORT = 40443

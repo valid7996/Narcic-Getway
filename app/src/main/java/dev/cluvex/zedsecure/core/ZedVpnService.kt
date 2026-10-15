@@ -334,9 +334,10 @@ class ZedVpnService : VpnService() {
 
                 if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) return@launch
 
-                if (!TunnelReadiness.verify(socksPort, timeoutMs = 7_000, attempts = 4)) {
-                    VpnManager.onError(getString(R.string.snispoof_no_traffic))
-                    stopEverything(); return@launch
+                // Tunnel readiness probe (non-fatal: in filtered regions port 80 HTTP is blocked)
+                val ready = TunnelReadiness.verify(socksPort, timeoutMs = 4_000, attempts = 2)
+                if (!ready) {
+                    Log.w(TAG, "SNI-spoof: HTTP readiness probe timed out (likely port 80 filtered), proceeding with connection")
                 }
                 VpnManager.activeSocksPort = socksPort
                 finishConnected()
@@ -369,12 +370,23 @@ class ZedVpnService : VpnService() {
         val stream = ob.optJSONObject("streamSettings")
         if (stream != null) {
             val tlsSettings = stream.optJSONObject("tlsSettings")
-            if (tlsSettings != null && tlsSettings.optString("serverName").isBlank()) {
-                tlsSettings.put("serverName", origHost)
+            if (tlsSettings != null) {
+                val current = tlsSettings.optString("serverName")
+                if ((current.isBlank() || current.startsWith("127.") || current == "localhost") &&
+                    !origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()
+                ) {
+                    tlsSettings.put("serverName", origHost)
+                }
+                tlsSettings.put("allowInsecure", true)
             }
             val realitySettings = stream.optJSONObject("realitySettings")
-            if (realitySettings != null && realitySettings.optString("serverName").isBlank()) {
-                realitySettings.put("serverName", origHost)
+            if (realitySettings != null) {
+                val current = realitySettings.optString("serverName")
+                if ((current.isBlank() || current.startsWith("127.") || current == "localhost") &&
+                    !origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()
+                ) {
+                    realitySettings.put("serverName", origHost)
+                }
             }
             // Remove domainStrategy UseIP since destination is 127.0.0.1
             stream.optJSONObject("sockopt")?.remove("domainStrategy")

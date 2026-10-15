@@ -1505,9 +1505,15 @@
     <string name="psiphon_beast_title">Beast mode</string>
     <string name="psiphon_beast_summary">Tries every protocol on every server at once. Connects where the normal way does not, and uses more battery and data while connecting. Psiphon also remembers the route that worked and uses it first the next time.</string>
     <string name="psiphon_cdn_hint">Optional. Addresses and CIDRs separated by commas, spaces or new lines. Used in Auto, Direct and CDN modes.</string>
-    <string name="snispoof_noroot_add_title">Add SNI spoof (no root)</string>
-    <string name="snispoof_noroot_note">Works without root. The built-in Rsta engine splits and disguises the first packets of the connection so the server name the filter sees is not the real one. Give the server link, the fake SNI, and the clean IP the engine should connect to.</string>
+    <string name="snispoof_noroot_add_title">Add SNI Spoof</string>
+    <string name="snispoof_noroot_note">Works without root. The Rsta engine disguises the TLS ClientHello so the real server name is hidden from filters. Enter the server IP, port, and the fake SNI domain to present instead.</string>
     <string name="snispoof_method">Spoof method</string>
-    <string name="snispoof_connect_port">Connect port (optional)</string>
+    <string name="snispoof_connect_port">Port</string>
     <string name="snispoof_needs_clean_ip">This link points at this device (127.0.0.1). Enter the clean IP of the real server so the engine knows where to connect.</string>
+    <string name="snispoof_advanced_link_title">Use existing proxy link</string>
+    <string name="snispoof_advanced_link_hint">Paste a full vless / vmess / trojan / Xray-JSON link. The IP and port above will still be used as the clean-IP override.</string>
+    <string name="snispoof_engine_status">Engine status</string>
+    <string name="snispoof_view_logs">View recent logs</string>
+    <string name="snispoof_status_active">Engine active</string>
+    <string name="snispoof_status_ready">Ready to connect</string>
 </resources>

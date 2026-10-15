@@ -36,7 +36,7 @@ class RstaSpoofService : Service() {
                 val ip = intent.getStringExtra(EXTRA_IP).orEmpty()
                 val port = intent.getIntExtra(EXTRA_PORT, 0)
                 val fakeSni = intent.getStringExtra(EXTRA_FAKE_SNI).orEmpty()
-                val method = intent.getStringExtra(EXTRA_METHOD) ?: "split"
+                val method = intent.getStringExtra(EXTRA_METHOD)?.takeIf { it.isNotBlank() } ?: "combined"
 
                 if (activeSessionId != 0L) {
                     RstaSpoofEngine.stop(activeSessionId)

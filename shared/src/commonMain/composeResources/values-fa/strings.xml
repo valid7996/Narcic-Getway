@@ -1498,9 +1498,15 @@
     <string name="psiphon_beast_title">حالت Beast</string>
     <string name="psiphon_beast_summary">همه‌ی پروتکل‌ها را روی همه‌ی سرورها هم‌زمان امتحان می‌کند. جایی وصل می‌شود که روش عادی نمی‌شود، ولی هنگام اتصال باتری و داده‌ی بیشتری مصرف می‌کند. سایفون مسیری را که جواب داده یادش می‌ماند و دفعه‌ی بعد اول همان را امتحان می‌کند.</string>
     <string name="psiphon_cdn_hint">اختیاری. آدرس و CIDR با کاما، فاصله یا خط جدید جدا شوند. در حالت‌های Auto، Direct و CDN استفاده می‌شود.</string>
-    <string name="snispoof_noroot_add_title">افزودن SNI spoof (بدون روت)</string>
-    <string name="snispoof_noroot_note">بدون روت کار می‌کند. موتور داخلی Rsta چند بسته‌ی اول اتصال را تکه و پنهان می‌کند تا نام سروری که فیلتر می‌بیند نام واقعی نباشد. لینک سرور، SNI جعلی و IP تمیزی که موتور باید به آن وصل شود را وارد کنید.</string>
-    <string name="snispoof_method">روش اسپوف</string>
-    <string name="snispoof_connect_port">پورت اتصال (اختیاری)</string>
+    <string name="snispoof_noroot_add_title">تنظیمات جعل SNI (Rsta Spoof)</string>
+    <string name="snispoof_noroot_note">مانند رستا: به صورت خودکار با تکه‌تکه کردن بسته‌های TLS و ارسال SNI جعلی، فیلترینگ را دور می‌زند. کافیست IP تمیز، پورت و SNI فیک را وارد کنید.</string>
+    <string name="snispoof_method">روش دور زدن (Method)</string>
+    <string name="snispoof_connect_port">پورت سرور (Port)</string>
     <string name="snispoof_needs_clean_ip">این لینک به خود دستگاه (127.0.0.1) اشاره می‌کند. IP تمیز سرور واقعی را وارد کنید تا موتور بداند به کجا وصل شود.</string>
+    <string name="snispoof_advanced_link_title">استفاده از لینک پروکسی موجود (پیشرفته)</string>
+    <string name="snispoof_advanced_link_hint">می‌توانید یک لینک کامل vless / vmess / trojan یا JSON وارد کنید. IP و پورت بالا به عنوان آدرس اتصال استفاده خواهد شد.</string>
+    <string name="snispoof_engine_status">وضعیت موتور Spoof</string>
+    <string name="snispoof_view_logs">مشاهده لاگ‌های زنده موتور</string>
+    <string name="snispoof_status_active">موتور فعال است</string>
+    <string name="snispoof_status_ready">آماده اتصال</string>
 </resources>
