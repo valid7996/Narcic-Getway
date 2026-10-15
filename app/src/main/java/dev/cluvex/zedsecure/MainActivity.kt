@@ -248,6 +248,7 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = settings.dynamicColor,
                 accentColor = settings.accentColor,
                 amoledBlack = settings.amoledBlack,
+                themeProfileId = settings.themeProfileId,
                 languageTag = langTag,
                 fontScale = settings.uiFontScale.scale,
             ) {

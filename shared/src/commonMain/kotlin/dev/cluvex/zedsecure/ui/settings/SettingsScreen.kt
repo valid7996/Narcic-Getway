@@ -804,6 +804,11 @@ private fun UiPage(
                 selected = s.uiFontScale,
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
+            SettingsActionRow(
+                title = "ویزارد خوش‌آمدگویی و راه‌اندازی اولیه",
+                summary = "تنظیم مجدد زبان، قالب و حالت نمایش",
+                onClick = { onUpdate { it.copy(onboardingVersion = 0) } },
+            )
         }
 
         ThemeProfileRow(
@@ -816,7 +821,7 @@ private fun UiPage(
                     if (profile != null) {
                         settings.applyThemeProfile(profile)
                     } else {
-                        settings.resetPersonalization()
+                        settings.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false)
                     }
                 }
             },

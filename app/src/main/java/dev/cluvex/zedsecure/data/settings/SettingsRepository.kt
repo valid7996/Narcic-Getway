@@ -65,12 +65,24 @@ class SettingsRepository(context: Context) {
             liveNotification = prefs.getBoolean("live_notif", d.liveNotification),
             notifChip = prefs.enum("notif_chip", d.notifChip),
             onboardingVersion = if (prefs.contains("onboarding_version")) {
-                prefs.getInt("onboarding_version", d.onboardingVersion)
-            } else if (prefs.all.isNotEmpty()) {
-                prefs.edit().putInt("onboarding_version", 1).apply()
-                1
+                prefs.getInt("onboarding_version", 0)
             } else {
-                0
+                val isUpdate = runCatching {
+                    val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        context.packageManager.getPackageInfo(context.packageName, 0)
+                    }
+                    pInfo.firstInstallTime < pInfo.lastUpdateTime
+                }.getOrDefault(false)
+
+                if (isUpdate && prefs.all.isNotEmpty()) {
+                    prefs.edit().putInt("onboarding_version", 1).apply()
+                    1
+                } else {
+                    0
+                }
             },
             screenTransition = prefs.enum("screen_transition", d.screenTransition),
             confirmRemove = prefs.getBoolean("confirm_remove", d.confirmRemove),

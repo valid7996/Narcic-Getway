@@ -45,6 +45,105 @@ fun ColorScheme.withAccent(index: Int, dark: Boolean): ColorScheme {
     )
 }
 
+fun ColorScheme.withThemeProfile(
+    profileId: String?,
+    accentIndex: Int,
+    dark: Boolean,
+): ColorScheme {
+    val profile = themeProfileOf(profileId)
+    val baseAccentColor = when (profile?.id) {
+        "azkaban" -> Color(0xFF38BDF8)
+        "noir" -> Color(0xFFFFFFFF)
+        "blossom" -> Color(0xFFF472B6)
+        "narcis" -> Color(0xFF0F9D6C)
+        else -> AccentPresets.getOrNull(accentIndex)?.let { if (dark) it.dark else it.light } ?: Color(0xFF0F9D6C)
+    }
+
+    val primary = baseAccentColor
+    val onPrimary = onColorFor(primary)
+    val primaryContainer = if (dark) {
+        when (profile?.id) {
+            "azkaban" -> Color(0xFF0A1628)
+            "noir" -> Color(0xFF18181B)
+            "blossom" -> Color(0xFF2A101D)
+            "narcis" -> Color(0xFF0A2E22)
+            else -> lerp(primary, Color.Black, 0.55f)
+        }
+    } else {
+        lerp(primary, Color.White, 0.82f)
+    }
+    val onPrimaryContainer = if (dark) {
+        when (profile?.id) {
+            "noir" -> Color(0xFFF4F4F5)
+            else -> lerp(primary, Color.White, 0.85f)
+        }
+    } else {
+        lerp(primary, Color.Black, 0.6f)
+    }
+
+    val themeBackground = if (dark) {
+        when (profile?.id) {
+            "azkaban" -> Color(0xFF070E1A)
+            "noir" -> Color(0xFF000000)
+            "blossom" -> Color(0xFF140810)
+            "narcis" -> Color(0xFF06140E)
+            else -> Color(0xFF0B111E)
+        }
+    } else {
+        Color(0xFFFAFAFC)
+    }
+
+    val themeSurface = if (dark) {
+        when (profile?.id) {
+            "azkaban" -> Color(0xFF091322)
+            "noir" -> Color(0xFF121214)
+            "blossom" -> Color(0xFF180A12)
+            "narcis" -> Color(0xFF0B2A20)
+            else -> Color(0xFF0B111E)
+        }
+    } else {
+        Color(0xFFFFFFFF)
+    }
+
+    val themeSurfaceContainer = if (dark) {
+        when (profile?.id) {
+            "azkaban" -> Color(0xFF0A1628)
+            "noir" -> Color(0xFF18181B)
+            "blossom" -> Color(0xFF210E1A)
+            "narcis" -> Color(0xFF0D2F24)
+            else -> Color(0xFF171D2B)
+        }
+    } else {
+        Color(0xFFF0F1F5)
+    }
+
+    val themeSurfaceContainerHigh = if (dark) {
+        when (profile?.id) {
+            "azkaban" -> Color(0xFF0E1F36)
+            "noir" -> Color(0xFF202024)
+            "blossom" -> Color(0xFF2D1424)
+            "narcis" -> Color(0xFF123B2D)
+            else -> Color(0xFF222836)
+        }
+    } else {
+        Color(0xFFE8E9EF)
+    }
+
+    return copy(
+        primary = primary,
+        onPrimary = onPrimary,
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = onPrimaryContainer,
+        inversePrimary = primary,
+        surfaceTint = primary,
+        background = themeBackground,
+        surface = themeSurface,
+        surfaceContainer = themeSurfaceContainer,
+        surfaceContainerHigh = themeSurfaceContainerHigh,
+        surfaceDim = themeBackground,
+    )
+}
+
 fun ColorScheme.amoled(dark: Boolean): ColorScheme {
     if (!dark) return this
     val black = Color(0xFF000000)

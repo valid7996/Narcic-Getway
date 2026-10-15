@@ -107,21 +107,17 @@ fun MainScaffold(
         return
     }
 
-    val isExistingUser = settings.onboardingVersion > 0 || profiles.isNotEmpty() || subscriptions.isNotEmpty()
-    var setupDone by rememberSaveable { mutableStateOf(isExistingUser) }
+    val showOnboarding = settings.onboardingVersion == 0
+    var setupDone by rememberSaveable(settings.onboardingVersion) { mutableStateOf(settings.onboardingVersion > 0) }
 
-    androidx.compose.runtime.LaunchedEffect(isExistingUser) {
-        if (isExistingUser && settings.onboardingVersion == 0) {
-            onUpdateSettings { it.copy(onboardingVersion = 1) }
-        }
-    }
-
-    if (!setupDone && !isExistingUser) {
+    if (!setupDone && showOnboarding) {
         var initialLang by remember { mutableStateOf(settings.language) }
         OnboardingFlow(
             settings = settings,
             onUpdate = onUpdateSettings,
-            onLanguage = onLanguage,
+            onLanguage = { lang ->
+                onUpdateSettings { it.copy(language = lang) }
+            },
             onFinish = {
                 onUpdateSettings { it.copy(onboardingVersion = 1) }
                 setupDone = true

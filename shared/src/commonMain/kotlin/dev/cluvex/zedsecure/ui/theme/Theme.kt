@@ -19,6 +19,7 @@ fun ZedSecureTheme(
 
     accentColor: Int = 0,
     amoledBlack: Boolean = false,
+    themeProfileId: String? = null,
 
     languageTag: String = "en",
 
@@ -29,8 +30,12 @@ fun ZedSecureTheme(
         (if (dynamicColor) dynamicColorSchemeOrNull(darkTheme) else null)
             ?: if (darkTheme) DarkColors else LightColors
 
-    val colorScheme = (if (dynamicColor) base else base.withAccent(accentColor, darkTheme))
-        .let { if (amoledBlack) it.amoled(darkTheme) else it }
+    val colorScheme = if (dynamicColor) {
+        base.let { if (amoledBlack) it.amoled(darkTheme) else it }
+    } else {
+        base.withThemeProfile(themeProfileId, accentColor, darkTheme)
+            .let { if (amoledBlack) it.amoled(darkTheme) else it }
+    }
 
     val density = LocalDensity.current
     val scaled = remember(density, fontScale) {

@@ -290,7 +290,8 @@ fun themeProfileOf(id: String?): ThemeProfile? =
 
 fun AppSettings.applyThemeProfile(profile: ThemeProfile): AppSettings = copy(
     accentColor = profile.accentIndex,
-    amoledBlack = amoledBlack || profile.amoled,
+    dynamicColor = false,
+    amoledBlack = if (profile.id == "noir") true else amoledBlack,
     customDownloadColor = profile.download,
     customUploadColor = profile.upload,
     customDownloadTileColor = profile.downloadTile,

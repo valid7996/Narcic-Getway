@@ -469,13 +469,13 @@ private fun ThemeProfileStep(
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // 1. Default (پیش‌فرض)
-            val isStockSelected = settings.themeProfileId == null
+            val isStockSelected = settings.themeProfileId == null || settings.themeProfileId == "narcis"
             ChoiceCard(
                 title = stringResource(Res.string.onb_preset_stock),
                 subtitle = "سبز زمردی کلاسیک نارسیس",
                 selected = isStockSelected,
                 accentColor = Color(0xFF0F9D6C),
-                onClick = { onUpdate { it.resetPersonalization() } },
+                onClick = { onUpdate { it.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false) } },
                 trailing = {
                     SwatchDots(listOf(Color(0xFF0F9D6C), Color(0xFF3FD898), Color(0xFFFFCE54)))
                 },
@@ -557,6 +557,38 @@ private fun ThemeModeStep(
                     onClick = { onUpdate { it.copy(themeMode = mode) } },
                 )
             }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            text = "گزینه‌های تکمیلی نمایش (Display Options)",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(10.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // AMOLED Black
+            ChoiceCard(
+                title = "مشکی عمیق امولد (AMOLED Black)",
+                subtitle = "پس‌زمینه کاملاً سیاه خالص (#000000) سازگار با تمام ۴ قالب",
+                selected = settings.amoledBlack,
+                accentColor = Color.White,
+                leading = { Text("🖤", fontSize = 20.sp) },
+                onClick = { onUpdate { it.copy(amoledBlack = !it.amoledBlack) } },
+            )
+
+            // Dynamic Color
+            ChoiceCard(
+                title = "رنگ پویا سیستم (Dynamic Color)",
+                subtitle = "استفاده از پالت رنگی پس‌زمینه گوشی (اندروید ۱۲ به بالا)",
+                selected = settings.dynamicColor,
+                accentColor = MaterialTheme.colorScheme.primary,
+                leading = { Text("✨", fontSize = 20.sp) },
+                onClick = { onUpdate { it.copy(dynamicColor = !it.dynamicColor) } },
+            )
         }
     }
 }
