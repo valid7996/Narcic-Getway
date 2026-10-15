@@ -66,23 +66,10 @@ class SettingsRepository(context: Context) {
             notifChip = prefs.enum("notif_chip", d.notifChip),
             onboardingVersion = if (prefs.contains("onboarding_version")) {
                 prefs.getInt("onboarding_version", 0)
+            } else if (prefs.contains("theme_mode")) {
+                1
             } else {
-                val isUpdate = runCatching {
-                    val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        context.packageManager.getPackageInfo(context.packageName, 0)
-                    }
-                    pInfo.firstInstallTime < pInfo.lastUpdateTime
-                }.getOrDefault(false)
-
-                if (isUpdate && prefs.all.isNotEmpty()) {
-                    prefs.edit().putInt("onboarding_version", 1).apply()
-                    1
-                } else {
-                    0
-                }
+                0
             },
             screenTransition = prefs.enum("screen_transition", d.screenTransition),
             confirmRemove = prefs.getBoolean("confirm_remove", d.confirmRemove),
