@@ -235,8 +235,8 @@ fun HomeScreen(
             // One scrollable page: header, tiles, the blob, the controls and the server list all
             // travel together, so nothing is pinned mid-screen or clipped by the status bar.
             StageColumn(
-                viewport = maxHeight * 0.58f,
-                stageMin = STAGE_MIN,
+                viewport = if (isAzkaban) maxHeight * 0.65f else maxHeight * 0.58f,
+                stageMin = if (isAzkaban) 280.dp else STAGE_MIN,
                 modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
             ) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -267,15 +267,16 @@ fun HomeScreen(
                     val stage = maxHeight
                     val tight = stage < 260.dp
                     val stageHero = minOf(heroSize, stage * 0.58f)
+                    val azkabanHeroSize = minOf(300.dp, maxOf(250.dp, stage * 0.78f))
                     Column(
-                      modifier = Modifier.fillMaxSize().clipToBounds(),
+                      modifier = Modifier.fillMaxSize(),
                       horizontalAlignment = Alignment.CenterHorizontally,
                       verticalArrangement = Arrangement.Center,
                     ) {
                       if (isAzkaban) {
                         AzkabanHero(
                             state = ui.state,
-                            size = stageHero,
+                            size = azkabanHeroSize,
                             onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
                                 {
                                     if (ui.state != ConnectionState.Disconnecting) {

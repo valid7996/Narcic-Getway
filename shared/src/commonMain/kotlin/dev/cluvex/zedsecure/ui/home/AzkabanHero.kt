@@ -66,7 +66,7 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun AzkabanHero(
     state: ConnectionState,
-    size: Dp = 200.dp,
+    size: Dp = 270.dp,
     onTapHero: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -86,7 +86,7 @@ fun AzkabanHero(
 @Composable
 fun CircleWavesOrb(
     state: ConnectionState,
-    size: Dp = 200.dp,
+    size: Dp = 270.dp,
     onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
