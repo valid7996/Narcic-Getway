@@ -175,8 +175,8 @@ fun CircleWavesOrb(
                 .background(
                     Brush.radialGradient(
                         listOf(
-                            auraColor.copy(alpha = if (isMoving) 0.38f * auraPulse else 0.10f),
-                            Color(0xFF0369A1).copy(alpha = if (isMoving) 0.15f else 0.03f),
+                            auraColor.copy(alpha = if (isMoving) 0.26f * auraPulse else 0.08f),
+                            Color(0xFF0369A1).copy(alpha = if (isMoving) 0.08f else 0.02f),
                             Color.Transparent,
                         ),
                     ),

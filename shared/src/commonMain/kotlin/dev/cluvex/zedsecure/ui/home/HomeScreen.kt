@@ -1297,16 +1297,67 @@ private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMot
             alpha = 0.9f * intensity,
         )
 
-        val center = Offset(w / 2f, h * 0.42f)
-        val ringCount = 4
-        for (i in 0 until ringCount) {
-            val p = (pulse + i.toFloat() / ringCount) % 1f
-            drawCircle(
-                color = Color.White.copy(alpha = 0.14f * (1f - p) * intensity),
-                radius = h * 0.06f + p * h * 0.42f,
-                center = center,
-                style = Stroke(width = 2.5f),
+        // Circle.json floating particles in background for both Default and Azkaban
+        val particleColors = if (isAzkaban) {
+            listOf(
+                Color(0xFF7DD3FC), // Soft Sky Cyan
+                Color(0xFF38BDF8), // Ice Blue
+                Color(0xFFBAE6FD), // Light Frost
+                Color(0xFF94A3B8), // Mellow Slate
             )
+        } else {
+            listOf(
+                Color(0xFF10B981), // Emerald
+                Color(0xFF38BDF8), // Cyan
+                Color(0xFFA78BFA), // Soft Violet
+                Color(0xFF34D399), // Mint Green
+            )
+        }
+
+        // Particle definitions from Circle.json: (relativeX, radiusDp, isStroke)
+        val particles = listOf(
+            Triple(0.825f, 9f, false),
+            Triple(0.704f, 6.5f, false),
+            Triple(0.185f, 10f, false),
+            Triple(0.492f, 10f, false),
+            Triple(0.496f, 15f, true),
+            Triple(0.235f, 8f, true),
+            Triple(0.308f, 8f, true),
+            Triple(0.937f, 14f, true),
+            Triple(0.114f, 14f, true),
+        )
+
+        val strokeStyle = Stroke(width = 1.8f)
+
+        // Draw Wave 1 and Wave 2 (offset by 0.5f)
+        for (wave in 0..1) {
+            val waveOffset = wave * 0.5f
+            particles.forEachIndexed { index, (relX, baseRadius, isStroke) ->
+                val p = (pulse + waveOffset + (index * 0.04f)) % 1f
+                val y = h * (1.08f - p * 1.18f)
+                val drift = sin((p * PI * 2).toFloat()) * (12f * (index % 3 + 1))
+                val x = (w * relX + drift).coerceIn(0f, w)
+
+                // Smooth sinusoidal alpha: gentle fade-in at bottom, gentle fade-out at top
+                val alphaCurve = sin((p * PI).toFloat()).coerceIn(0f, 1f)
+                val particleAlpha = (0.22f * alphaCurve * intensity).coerceIn(0f, 1f)
+                val color = particleColors[index % particleColors.size].copy(alpha = particleAlpha)
+
+                if (isStroke) {
+                    drawCircle(
+                        color = color,
+                        radius = baseRadius * density,
+                        center = Offset(x, y),
+                        style = strokeStyle,
+                    )
+                } else {
+                    drawCircle(
+                        color = color,
+                        radius = baseRadius * density,
+                        center = Offset(x, y),
+                    )
+                }
+            }
         }
     }
 }
