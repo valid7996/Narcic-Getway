@@ -33,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,7 +82,7 @@ fun AzkabanHero(
 /**
  * Animated Circle Waves Element:
  * Renders the 30-frame ultra-high-definition rotating wave/orbit animation from the vector sheet.
- * Fluidly reacts to connection state with glowing cyan pulse and breathing effect.
+ * Fluidly reacts to connection state: stays static when disconnected, and comes alive only when connecting or connected.
  */
 @Composable
 fun CircleWavesOrb(
@@ -90,45 +91,54 @@ fun CircleWavesOrb(
     onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val transition = rememberInfiniteTransition(label = "circle-waves")
     val isConnected = state.isActive
     val isConnecting = state.isTransitioning
+    val isMoving = isConnected || isConnecting
 
-    val animDuration = when {
-        isConnected -> 3000
-        isConnecting -> 1500
-        else -> 4500
+    val transition = rememberInfiniteTransition(label = "circle-waves")
+
+    val frameProgress by if (isMoving) {
+        val animDuration = if (isConnecting) 1500 else 3000
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 29.99f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = animDuration, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "wave-frame",
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
     }
 
-    val frameProgress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 29.99f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = animDuration, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "wave-frame",
-    )
+    val breatheScale by if (isMoving) {
+        transition.animateFloat(
+            initialValue = 0.96f,
+            targetValue = 1.04f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = if (isConnected) 2000 else 1400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "orb-breathe",
+        )
+    } else {
+        remember { mutableFloatStateOf(1f) }
+    }
 
-    val breatheScale by transition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = if (isConnected) 2000 else 3500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "orb-breathe",
-    )
-
-    val auraPulse by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.85f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "aura-pulse",
-    )
+    val auraPulse by if (isMoving) {
+        transition.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 0.85f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "aura-pulse",
+        )
+    } else {
+        remember { mutableFloatStateOf(0.20f) }
+    }
 
     val auraColor = when {
         state == ConnectionState.Error -> Color(0xFFEF4444)
@@ -138,7 +148,7 @@ fun CircleWavesOrb(
     }
 
     val painter = painterResource(Res.drawable.circle_waves_sheet)
-    val currentFrame = frameProgress.toInt().coerceIn(0, 29)
+    val currentFrame = if (isMoving) frameProgress.toInt().coerceIn(0, 29) else 0
 
     Box(
         modifier = modifier
@@ -165,8 +175,8 @@ fun CircleWavesOrb(
                 .background(
                     Brush.radialGradient(
                         listOf(
-                            auraColor.copy(alpha = if (isConnected) 0.38f * auraPulse else 0.12f),
-                            Color(0xFF0369A1).copy(alpha = if (isConnected) 0.15f else 0.04f),
+                            auraColor.copy(alpha = if (isMoving) 0.38f * auraPulse else 0.10f),
+                            Color(0xFF0369A1).copy(alpha = if (isMoving) 0.15f else 0.03f),
                             Color.Transparent,
                         ),
                     ),
@@ -198,7 +208,7 @@ fun CircleWavesOrb(
             }
         }
 
-        // Center state icon
+        // Center state icon: No spinning radar indicator! Clean and pure.
         AnimatedContent(
             targetState = state,
             transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(200)) },
@@ -213,12 +223,6 @@ fun CircleWavesOrb(
                         modifier = Modifier.size(size * 0.22f),
                     )
                 }
-                s.isTransitioning -> {
-                    CyberRadarIndicator(
-                        modifier = Modifier.size(size * 0.22f),
-                        accentColor = auraColor,
-                    )
-                }
                 s.isActive -> {
                     Icon(
                         painter = painterResource(Res.drawable.ic_bolt),
@@ -228,12 +232,7 @@ fun CircleWavesOrb(
                     )
                 }
                 else -> {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_bolt),
-                        contentDescription = null,
-                        tint = Color(0xFF94A3B8).copy(alpha = 0.55f),
-                        modifier = Modifier.size(size * 0.20f),
-                    )
+                    // Static / connecting: pure clean element without any spinning overlay icons
                 }
             }
         }
