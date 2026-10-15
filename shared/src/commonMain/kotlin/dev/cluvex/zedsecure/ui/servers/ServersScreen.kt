@@ -1590,19 +1590,23 @@ private fun GroupTab(
     onClick: () -> Unit,
 ) {
     val isAzkaban = personalization.themeProfileId == "azkaban"
+    val isNoir = personalization.themeProfileId == "noir"
     val activeColor = personalization.serverActiveColor ?: MaterialTheme.colorScheme.primary
     val bg = when {
         selected -> activeColor
+        isNoir -> Color(0xFF161618)
         isAzkaban -> Color(0xFF091424)
         else -> MaterialTheme.colorScheme.surfaceContainerHighest
     }
     val contentColor = when {
-        selected -> if (isAzkaban) Color(0xFF041220) else MaterialTheme.colorScheme.onPrimary
+        selected -> if (isNoir) Color(0xFF000000) else if (isAzkaban) Color(0xFF041220) else MaterialTheme.colorScheme.onPrimary
+        isNoir -> Color(0xFFE4E4E7)
         isAzkaban -> Color(0xFFBAE6FD)
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val borderModifier = if (!selected && isAzkaban) {
-        Modifier.border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.30f), RoundedCornerShape(50))
+    val borderModifier = if (!selected && (isAzkaban || isNoir)) {
+        val bc = if (isNoir) Color(0xFFFFFFFF).copy(alpha = 0.20f) else Color(0xFF38BDF8).copy(alpha = 0.30f)
+        Modifier.border(1.dp, bc, RoundedCornerShape(50))
     } else Modifier
 
     Surface(

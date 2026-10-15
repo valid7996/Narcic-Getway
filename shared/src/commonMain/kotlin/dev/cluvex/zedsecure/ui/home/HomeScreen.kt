@@ -211,15 +211,17 @@ fun HomeScreen(
     val haptics = LocalHapticFeedback.current
 
     val isAzkaban = personalization.themeProfileId == "azkaban"
+    val isNoir = personalization.themeProfileId == "noir"
+    val isAzkabanLike = isAzkaban || isNoir
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        DecorativeBackdrop(reduceMotion = reduceMotion, isAzkaban = isAzkaban)
+        DecorativeBackdrop(reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir)
 
-        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion, isAzkaban = isAzkaban)
+        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir)
 
         BoxWithConstraints(
             modifier = Modifier
@@ -235,8 +237,8 @@ fun HomeScreen(
             // One scrollable page: header, tiles, the blob, the controls and the server list all
             // travel together, so nothing is pinned mid-screen or clipped by the status bar.
             StageColumn(
-                viewport = if (isAzkaban) maxHeight * 0.65f else maxHeight * 0.58f,
-                stageMin = if (isAzkaban) 280.dp else STAGE_MIN,
+                viewport = if (isAzkabanLike) maxHeight * 0.65f else maxHeight * 0.58f,
+                stageMin = if (isAzkabanLike) 280.dp else STAGE_MIN,
                 modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
             ) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -267,13 +269,26 @@ fun HomeScreen(
                     val stage = maxHeight
                     val tight = stage < 260.dp
                     val stageHero = minOf(heroSize, stage * 0.58f)
-                    val azkabanHeroSize = minOf(300.dp, maxOf(250.dp, stage * 0.78f))
+                    val azkabanHeroSize = minOf(260.dp, maxOf(220.dp, stage * 0.70f))
                     Column(
                       modifier = Modifier.fillMaxSize(),
                       horizontalAlignment = Alignment.CenterHorizontally,
                       verticalArrangement = Arrangement.Center,
                     ) {
-                      if (isAzkaban) {
+                      if (isNoir) {
+                        MontaaHero(
+                            state = ui.state,
+                            size = azkabanHeroSize,
+                            onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
+                                {
+                                    if (ui.state != ConnectionState.Disconnecting) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onToggleConnection()
+                                    }
+                                }
+                            } else null,
+                        )
+                      } else if (isAzkaban) {
                         AzkabanHero(
                             state = ui.state,
                             size = azkabanHeroSize,
@@ -388,10 +403,11 @@ fun HomeScreen(
                 when (connectStyle) {
                     ConnectButtonStyle.Hero -> Unit
                     ConnectButtonStyle.Pill -> {
-                        if (isAzkaban) {
+                        if (isAzkabanLike) {
                             AzkabanConnectButton(
                                 state = ui.state,
                                 onClick = onToggleConnection,
+                                isNoir = isNoir,
                             )
                         } else {
                             ConnectButton(
@@ -432,7 +448,7 @@ fun HomeScreen(
                             expanded = infoExpanded,
                             destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
                             onClick = homeVm::toggleExpanded,
-                            isAzkaban = isAzkaban,
+                            isAzkaban = isAzkabanLike,
                         )
                         AnimatedVisibility(visible = infoExpanded) {
                             ConnectionRouteMapCard(
@@ -440,7 +456,7 @@ fun HomeScreen(
                                 activeConfigName = activeConfigName,
                                 fallbackCountryCode = activeCountryCode,
                                 onClose = homeVm::toggleExpanded,
-                                isAzkaban = isAzkaban,
+                                isAzkaban = isAzkabanLike,
                             )
                         }
                         MergedDashboardCard(
@@ -452,7 +468,7 @@ fun HomeScreen(
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
                             connectedColor = personalization.connectedColor ?: ConnectedGreen,
-                            isAzkaban = isAzkaban,
+                            isAzkaban = isAzkabanLike,
                         )
                     }
                 }
@@ -559,7 +575,7 @@ private fun StageColumn(
 }
 
 @Composable
-private fun DecorativeBackdrop(reduceMotion: Boolean, isAzkaban: Boolean = false) {
+private fun DecorativeBackdrop(reduceMotion: Boolean, isAzkaban: Boolean = false, isNoir: Boolean = false) {
     val budget = LocalMotionBudget.current
     val spin by if (budget == MotionBudget.Full) {
         rememberInfiniteTransition(label = "backdrop").animateFloat(
@@ -572,7 +588,9 @@ private fun DecorativeBackdrop(reduceMotion: Boolean, isAzkaban: Boolean = false
         remember { mutableFloatStateOf(0f) }
     }
     val rotation = if (reduceMotion || budget != MotionBudget.Full) 0f else spin
-    val splash = if (isAzkaban) {
+    val splash = if (isNoir) {
+        listOf(Color(0xFF000000), Color(0xFF18181B), Color(0xFF3F3F46))
+    } else if (isAzkaban) {
         listOf(Color(0xFF040A16), Color(0xFF0C1D38), Color(0xFF38BDF8))
     } else {
         listOf(ZedDeepViolet, ZedViolet, ZedCyan)
@@ -1246,7 +1264,13 @@ private fun ConnectButton(
 }
 
 @Composable
-private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMotion: Boolean, isAzkaban: Boolean = false) {
+private fun ConnectingBackdrop(
+    state: ConnectionState,
+    sessionId: Int,
+    reduceMotion: Boolean,
+    isAzkaban: Boolean = false,
+    isNoir: Boolean = false,
+) {
     val intensity by animateFloatAsState(
         targetValue = when (state) {
             ConnectionState.Connecting, ConnectionState.Reconnecting -> 0.72f
@@ -1270,12 +1294,18 @@ private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMot
         rememberInfiniteTransition(label = "backdrop-life").animateFloat(
             initialValue = 0f,
             targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(2600), RepeatMode.Restart),
+            animationSpec = infiniteRepeatable(tween(8500), RepeatMode.Restart),
             label = "pulse",
         )
     }
 
-    val stops = if (isAzkaban) {
+    val stops = if (isNoir) {
+        if (state == ConnectionState.Connected) {
+            listOf(Color(0xFF000000), Color(0xFF0C0C0E), Color(0xFF18181B).copy(alpha = 0.5f), Color(0xFF27272A).copy(alpha = 0.25f))
+        } else {
+            listOf(Color(0xFF000000), Color(0xFF09090B), Color(0xFF121214))
+        }
+    } else if (isAzkaban) {
         if (state == ConnectionState.Connected) {
             listOf(Color(0xFF040A16), Color(0xFF071224), Color(0xFF0284C7).copy(alpha = 0.4f), Color(0xFF38BDF8).copy(alpha = 0.2f))
         } else {
@@ -1297,8 +1327,15 @@ private fun ConnectingBackdrop(state: ConnectionState, sessionId: Int, reduceMot
             alpha = 0.9f * intensity,
         )
 
-        // Circle.json floating particles in background for both Default and Azkaban
-        val particleColors = if (isAzkaban) {
+        // Circle.json floating particles in background for Default, Azkaban, and Noir
+        val particleColors = if (isNoir) {
+            listOf(
+                Color(0xFFFFFFFF), // Crisp White
+                Color(0xFFE4E4E7), // Silver
+                Color(0xFFA1A1AA), // Slate Gray
+                Color(0xFF71717A), // Charcoal
+            )
+        } else if (isAzkaban) {
             listOf(
                 Color(0xFF7DD3FC), // Soft Sky Cyan
                 Color(0xFF38BDF8), // Ice Blue

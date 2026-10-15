@@ -98,7 +98,7 @@ fun CircleWavesOrb(
     val transition = rememberInfiniteTransition(label = "circle-waves")
 
     val frameProgress by if (isMoving) {
-        val animDuration = if (isConnecting) 1500 else 3000
+        val animDuration = if (isConnecting) 4500 else 7500
         transition.animateFloat(
             initialValue = 0f,
             targetValue = 29.99f,
@@ -114,10 +114,10 @@ fun CircleWavesOrb(
 
     val breatheScale by if (isMoving) {
         transition.animateFloat(
-            initialValue = 0.96f,
-            targetValue = 1.04f,
+            initialValue = 0.97f,
+            targetValue = 1.03f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = if (isConnected) 2000 else 1400, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = if (isConnected) 3600 else 2400, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse,
             ),
             label = "orb-breathe",
@@ -129,9 +129,9 @@ fun CircleWavesOrb(
     val auraPulse by if (isMoving) {
         transition.animateFloat(
             initialValue = 0.35f,
-            targetValue = 0.85f,
+            targetValue = 0.75f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+                animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse,
             ),
             label = "aura-pulse",
@@ -244,6 +244,7 @@ fun AzkabanConnectButton(
     state: ConnectionState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isNoir: Boolean = false,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
@@ -252,25 +253,50 @@ fun AzkabanConnectButton(
 
     val buttonScale = if (isPressed) 0.95f else 1f
 
-    val bgGradient = when {
-        state == ConnectionState.Error -> Brush.horizontalGradient(
-            listOf(Color(0xFF991B1B), Color(0xFFEF4444)),
-        )
-        isConnected -> Brush.horizontalGradient(
-            listOf(Color(0xFF0284C7), Color(0xFF38BDF8)),
-        )
-        isConnecting -> Brush.horizontalGradient(
-            listOf(Color(0xFF0369A1), Color(0xFF0284C7)),
-        )
-        else -> Brush.horizontalGradient(
-            listOf(Color(0xFF0E223D), Color(0xFF16345C)),
-        )
+    val bgGradient = if (isNoir) {
+        when {
+            state == ConnectionState.Error -> Brush.horizontalGradient(
+                listOf(Color(0xFF7F1D1D), Color(0xFFDC2626)),
+            )
+            isConnected -> Brush.horizontalGradient(
+                listOf(Color(0xFF27272A), Color(0xFF3F3F46)),
+            )
+            isConnecting -> Brush.horizontalGradient(
+                listOf(Color(0xFF18181B), Color(0xFF27272A)),
+            )
+            else -> Brush.horizontalGradient(
+                listOf(Color(0xFF141416), Color(0xFF1E1E22)),
+            )
+        }
+    } else {
+        when {
+            state == ConnectionState.Error -> Brush.horizontalGradient(
+                listOf(Color(0xFF991B1B), Color(0xFFEF4444)),
+            )
+            isConnected -> Brush.horizontalGradient(
+                listOf(Color(0xFF0284C7), Color(0xFF38BDF8)),
+            )
+            isConnecting -> Brush.horizontalGradient(
+                listOf(Color(0xFF0369A1), Color(0xFF0284C7)),
+            )
+            else -> Brush.horizontalGradient(
+                listOf(Color(0xFF0E223D), Color(0xFF16345C)),
+            )
+        }
     }
 
-    val borderColor = when {
-        isConnected -> Color(0xFFBAE6FD).copy(alpha = 0.75f)
-        isConnecting -> Color(0xFF7DD3FC).copy(alpha = 0.60f)
-        else -> Color(0xFF64748B).copy(alpha = 0.40f)
+    val borderColor = if (isNoir) {
+        when {
+            isConnected -> Color(0xFFFFFFFF).copy(alpha = 0.70f)
+            isConnecting -> Color(0xFFE4E4E7).copy(alpha = 0.50f)
+            else -> Color(0xFF52525B).copy(alpha = 0.40f)
+        }
+    } else {
+        when {
+            isConnected -> Color(0xFFBAE6FD).copy(alpha = 0.75f)
+            isConnecting -> Color(0xFF7DD3FC).copy(alpha = 0.60f)
+            else -> Color(0xFF64748B).copy(alpha = 0.40f)
+        }
     }
 
     Surface(
@@ -296,7 +322,7 @@ fun AzkabanConnectButton(
                 CyberRadarIndicator(Modifier.size(24.dp))
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "در حال ایجاد پیوند امن...",
+                    text = if (isNoir) "در حال برقراری اتصال امن..." else "در حال ایجاد پیوند امن...",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -305,19 +331,31 @@ fun AzkabanConnectButton(
                 Icon(
                     painter = painterResource(if (isConnected) Res.drawable.ic_close else Res.drawable.ic_bolt),
                     contentDescription = null,
-                    tint = if (isConnected) Color(0xFFF0F9FF) else Color(0xFF7DD3FC),
+                    tint = if (isNoir) {
+                        if (isConnected) Color.White else Color(0xFFE4E4E7)
+                    } else {
+                        if (isConnected) Color(0xFFF0F9FF) else Color(0xFF7DD3FC)
+                    },
                     modifier = Modifier.size(22.dp),
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = when {
-                        state == ConnectionState.Error -> "تلاش مجدد"
-                        isConnected -> "گسستن طلسم (قطع اتصال)"
-                        else -> "احضار محافظ (اتصال امن)"
+                    text = if (isNoir) {
+                        when {
+                            state == ConnectionState.Error -> "تلاش مجدد"
+                            isConnected -> "قطع اتصال امن"
+                            else -> "برقراری اتصال امن"
+                        }
+                    } else {
+                        when {
+                            state == ConnectionState.Error -> "تلاش مجدد"
+                            isConnected -> "گسستن طلسم (قطع اتصال)"
+                            else -> "احضار محافظ (اتصال امن)"
+                        }
                     },
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isConnected) Color.White else Color(0xFFE0F2FE),
+                    color = if (isConnected) Color.White else (if (isNoir) Color(0xFFF4F4F5) else Color(0xFFE0F2FE)),
                 )
             }
         }

@@ -82,10 +82,13 @@ internal fun ServerCard(
     var menuOpen by remember { mutableStateOf(false) }
     val isSelectedCard = selecting && isSelected
     val isAzkaban = personalization.themeProfileId == "azkaban"
+    val isNoir = personalization.themeProfileId == "noir"
     val container = if (isSelectedCard) {
         MaterialTheme.colorScheme.secondaryContainer
     } else if (active) {
         personalization.serverActiveColor ?: ZedGreen
+    } else if (isNoir) {
+        Color(0xFF121214)
     } else if (isAzkaban) {
         Color(0xFF091322)
     } else {
@@ -95,6 +98,7 @@ internal fun ServerCard(
     val frame = when {
         isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
         active -> (personalization.serverActiveColor ?: ZedGreen).copy(alpha = 0.95f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.22f)
         isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
     }
@@ -103,6 +107,7 @@ internal fun ServerCard(
         isSelectedCard -> MaterialTheme.colorScheme.onSecondaryContainer
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
         !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
+        isNoir -> Color(0xFFF4F4F5)
         isAzkaban -> Color(0xFFF0F9FF)
         else -> MaterialTheme.colorScheme.onSurface
     }
