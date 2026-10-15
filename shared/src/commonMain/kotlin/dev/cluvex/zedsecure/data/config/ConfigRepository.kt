@@ -864,6 +864,16 @@ class ConfigRepository(private val store: KeyValueStore) {
 
     fun lastAutoSelectPick(autoId: String): String? = store.getString(KEY_AUTO_PICK + autoId)
 
+    fun getSniSpoofDefaults(): dev.cluvex.zedsecure.domain.config.SniSpoofProfile =
+        dev.cluvex.zedsecure.domain.config.SniSpoofProfile(
+            link = "",
+            cleanIp = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp,
+            connectPort = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectPort,
+            fakeSni = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultFakeSni,
+            method = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultMethod,
+            noRoot = true,
+        )
+
     fun saveSniSpoofDefaults(cleanIp: String, connectPort: Int, fakeSni: String, method: String) {
         val ip = cleanIp.trim().ifBlank { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
         val port = if (connectPort in 1..65535) connectPort else dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT
@@ -879,6 +889,24 @@ class ConfigRepository(private val store: KeyValueStore) {
         store.putInt(KEY_SNISPOOF_PORT, port)
         store.putString(KEY_SNISPOOF_SNI, sni)
         store.putString(KEY_SNISPOOF_METHOD, m)
+
+        var changed = false
+        val updated = _profiles.value.map { profile ->
+            (profile.source as? ProfileSource.SniSpoof)?.let { src ->
+                changed = true
+                val s = src.settings.copy(
+                    cleanIp = ip,
+                    connectPort = port,
+                    fakeSni = sni,
+                    method = m,
+                )
+                profile.copy(source = ProfileSource.SniSpoof(s))
+            } ?: profile
+        }
+        if (changed) {
+            _profiles.value = updated
+            persistProfiles()
+        }
     }
 
     fun addSniSpoof(

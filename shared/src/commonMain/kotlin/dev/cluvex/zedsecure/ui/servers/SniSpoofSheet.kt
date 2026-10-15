@@ -98,7 +98,7 @@ fun SniSpoofSheet(
                 ?: SniSpoofConfig.defaultConnectPort.toString()
         )
     }
-    var fakeSni by remember { mutableStateOf(initial?.fakeSni ?: SniSpoofConfig.defaultFakeSni) }
+    var fakeSni by remember { mutableStateOf(initial?.fakeSni?.ifBlank { null } ?: SniSpoofConfig.defaultFakeSni) }
     var method by remember { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty().ifBlank { SniSpoofConfig.defaultMethod })) }
     var methodOpen by remember { mutableStateOf(false) }
 
@@ -212,12 +212,14 @@ fun SniSpoofSheet(
                 }
             }
 
-            // ── Remark / Profile Name ──────────────────────────────────────────────────────────
-            SniField(
-                value = name,
-                labelRes = Res.string.manual_remark,
-                placeholder = "SNI Spoof",
-            ) { name = it }
+            // ── Remark / Profile Name (only shown when editing an existing profile) ─────────
+            if (initial != null) {
+                SniField(
+                    value = name,
+                    labelRes = Res.string.manual_remark,
+                    placeholder = "SNI Spoof",
+                ) { name = it }
+            }
 
             // ── Engine Status & Log Actions ────────────────────────────────────────────────────
             Surface(
@@ -262,9 +264,7 @@ fun SniSpoofSheet(
                     val resolvedSni = fakeSni.trim().ifBlank { SniSpoofConfig.defaultFakeSni }
                     val profileName = name.trim().ifBlank { "SNI Spoof" }
 
-                    val link = initial?.link?.takeIf { it.isNotBlank() }
-                        ?: ("vless://00000000-0000-0000-0000-000000000000@127.0.0.1:${SniSpoofConfig.RSTA_LOCAL_PORT}" +
-                            "?security=tls&sni=$resolvedSni&type=ws&path=%2F#$profileName")
+                    val link = initial?.link.orEmpty()
 
                     onSave(
                         profileName,

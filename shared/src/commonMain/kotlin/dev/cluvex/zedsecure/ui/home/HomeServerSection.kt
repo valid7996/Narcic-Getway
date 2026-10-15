@@ -491,9 +491,14 @@ internal fun HomeServerSection(
             candidates = profiles.filter { !it.isManagedTunnel && !it.isCrossChain && !it.isProxyChain },
             noRoot = true,
             onDismiss = { showSniSpoofNoRoot = false },
-            onSave = { name, settings ->
+            onSave = { _, settings ->
                 showSniSpoofNoRoot = false
-                repository.addSniSpoof(settings, name)
+                repository.saveSniSpoofDefaults(
+                    settings.cleanIp,
+                    settings.connectPort,
+                    settings.fakeSni,
+                    settings.method,
+                )
             },
         )
     }

@@ -292,8 +292,10 @@ class ZedVpnService : VpnService() {
                 val wrapper = JSONObject(configJson)
                 val xray = wrapper.getJSONObject("xray")
                 val sni = wrapper.getJSONObject("sni")
-                val fakeSni = sni.optString("fakeSni")
-                val cleanIp = sni.optString("cleanIp")
+                val fakeSni = sni.optString("fakeSni").ifBlank { SniSpoofConfig.defaultFakeSni }
+                val cleanIp = sni.optString("cleanIp").ifBlank { SniSpoofConfig.defaultConnectIp }
+                val connectPort = sni.optInt("connectPort", 0).takeIf { it in 1..65535 && it != SNISPOOF_PORT }
+                    ?: SniSpoofConfig.defaultConnectPort
 
                 val orig = readProxyOutbound(xray)
                 if (orig == null) {
@@ -307,7 +309,7 @@ class ZedVpnService : VpnService() {
                 val target = SniSpoofConfig.target(
                     SniSpoofProfile(
                         link = "", fakeSni = fakeSni, cleanIp = cleanIp, noRoot = true,
-                        method = method, connectPort = sni.optInt("connectPort", 0),
+                        method = method, connectPort = connectPort,
                     ),
                     realHost, realPort,
                 )
@@ -1193,14 +1195,18 @@ class ZedVpnService : VpnService() {
     private fun sniSpoofEdgeIpOrNull(configJson: String): String? = runCatching {
         val wrapper = JSONObject(configJson)
         val sni = wrapper.optJSONObject("sni") ?: return null
-        val clean = sni.optString("cleanIp").orEmpty()
-        if (clean.isNotBlank() && !clean.startsWith("127.") && clean != "localhost" && clean != "sni-spoof") return clean
+        val clean = sni.optString("cleanIp").orEmpty().trim().ifBlank {
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp
+        }
+        if (!clean.startsWith("127.") && clean != "localhost" && clean != "sni-spoof") {
+            return java.net.InetAddress.getByName(clean).hostAddress
+        }
         val xray = wrapper.optJSONObject("xray") ?: return null
         val host = readProxyOutbound(xray)?.first ?: return null
         if (!host.startsWith("127.") && host != "localhost" && host != "sni-spoof") {
             java.net.InetAddress.getByName(host).hostAddress
         } else {
-            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp
+            java.net.InetAddress.getByName(dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp).hostAddress
         }
     }.getOrNull()
 

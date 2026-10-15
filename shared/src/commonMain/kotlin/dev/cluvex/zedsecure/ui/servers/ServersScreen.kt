@@ -1271,10 +1271,15 @@ fun ServersScreen(
         SniSpoofSheet(
             candidates = spoofCandidates,
             onDismiss = { showSniSpoof = false },
-            onSave = { name, settings ->
+            onSave = { _, settings ->
                 showSniSpoof = false
-                repository.addSniSpoof(settings, name)
-                onServerActivated()
+                repository.saveSniSpoofDefaults(
+                    settings.cleanIp,
+                    settings.connectPort,
+                    settings.fakeSni,
+                    settings.method,
+                )
+                toastRes(Res.string.saved)
             },
         )
     }
@@ -1284,10 +1289,15 @@ fun ServersScreen(
             candidates = spoofCandidates,
             noRoot = true,
             onDismiss = { showSniSpoofNoRoot = false },
-            onSave = { name, settings ->
+            onSave = { _, settings ->
                 showSniSpoofNoRoot = false
-                repository.addSniSpoof(settings, name)
-                onServerActivated()
+                repository.saveSniSpoofDefaults(
+                    settings.cleanIp,
+                    settings.connectPort,
+                    settings.fakeSni,
+                    settings.method,
+                )
+                toastRes(Res.string.saved)
             },
         )
     }

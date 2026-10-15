@@ -151,28 +151,29 @@ data class VpnProfile(
     fun sshSettings(): SshProfile? = (source as? ProfileSource.Ssh)?.settings
 
     fun sniSpoofSettings(): SniSpoofProfile? {
-        (source as? ProfileSource.SniSpoof)?.let { return it.settings }
-        if (isLoopbackOrRstaPort && source !is ProfileSource.CrossChain && source !is ProfileSource.AutoSelect) {
-            val clean = if (SniSpoofConfig.isLoopback(address) || address == "sni-spoof" || address.isBlank() || address == "-") {
-                SniSpoofConfig.defaultConnectIp
-            } else {
-                address
-            }
-            val p = if (port == SniSpoofConfig.RSTA_LOCAL_PORT || port <= 0) {
-                SniSpoofConfig.defaultConnectPort
-            } else {
-                port
-            }
+        if (source is ProfileSource.CrossChain || source is ProfileSource.AutoSelect) return null
+        if (source is ProfileSource.SniSpoof) {
+            val s = (source as ProfileSource.SniSpoof).settings
+            return SniSpoofProfile(
+                link = s.link,
+                fakeSni = SniSpoofConfig.defaultFakeSni.ifBlank { s.fakeSni },
+                cleanIp = SniSpoofConfig.defaultConnectIp.ifBlank { s.cleanIp },
+                noRoot = true,
+                method = SniSpoofConfig.defaultMethod.ifBlank { s.method },
+                connectPort = SniSpoofConfig.defaultConnectPort.takeIf { it in 1..65535 && it != SniSpoofConfig.RSTA_LOCAL_PORT } ?: s.connectPort,
+            )
+        }
+        if (isLoopbackOrRstaPort) {
             val rawLnk = (source as? ProfileSource.Link)?.link
                 ?: (source as? ProfileSource.RawJson)?.json
                 ?: ""
             return SniSpoofProfile(
                 link = rawLnk,
                 fakeSni = SniSpoofConfig.defaultFakeSni,
-                cleanIp = clean,
+                cleanIp = SniSpoofConfig.defaultConnectIp,
                 noRoot = true,
                 method = SniSpoofConfig.defaultMethod,
-                connectPort = p,
+                connectPort = SniSpoofConfig.defaultConnectPort,
             )
         }
         return null

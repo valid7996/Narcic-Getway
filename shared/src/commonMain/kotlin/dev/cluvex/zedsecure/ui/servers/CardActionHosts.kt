@@ -190,7 +190,7 @@ internal fun CardActionHosts(
                     },
                 )
             }
-            target.isSniSpoof -> {
+            target.source is dev.cluvex.zedsecure.domain.config.ProfileSource.SniSpoof -> {
                 SniSpoofSheet(
                     candidates = spoofCandidates,
                     initial = target.sniSpoofSettings(),
