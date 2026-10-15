@@ -194,6 +194,12 @@ private fun StockPreview() {
     )
 }
 
+val AllowedConnectButtonStyles = listOf(
+    ConnectButtonStyle.Hero,
+    ConnectButtonStyle.Pill,
+    ConnectButtonStyle.Slide,
+)
+
 @Composable
 fun ConnectStyleRow(
     label: String,
@@ -214,7 +220,7 @@ fun ConnectStyleRow(
             Modifier.fillMaxWidth().draggableHorizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ConnectButtonStyle.entries.forEach { style ->
+            AllowedConnectButtonStyles.forEach { style ->
                 val isSelected = style == selected
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(

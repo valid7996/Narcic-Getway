@@ -767,6 +767,19 @@ private fun UiPage(
                 selected = s.themeMode,
                 onSelected = { v -> onUpdate { it.copy(themeMode = v) } },
             )
+            SettingsSwitchRow(
+                title = stringResource(Res.string.title_pref_dynamic_color),
+                summary = stringResource(Res.string.summary_pref_dynamic_color),
+                checked = s.dynamicColor,
+                enabled = LocalPlatform.current.supportsDynamicColor,
+                onCheckedChange = { v -> onUpdate { it.copy(dynamicColor = v) } },
+            )
+            SettingsSwitchRow(
+                title = stringResource(Res.string.title_pref_amoled),
+                summary = stringResource(Res.string.summary_pref_amoled),
+                checked = s.amoledBlack,
+                onCheckedChange = { v -> onUpdate { it.copy(amoledBlack = v) } },
+            )
             SettingsListRow(
                 title = stringResource(Res.string.settings_language),
                 options = listOf(

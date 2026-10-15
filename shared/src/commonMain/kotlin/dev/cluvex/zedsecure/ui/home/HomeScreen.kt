@@ -416,7 +416,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
                 when (connectStyle) {
                     ConnectButtonStyle.Hero -> Unit
-                    ConnectButtonStyle.Pill -> {
+                    ConnectButtonStyle.Pill, ConnectButtonStyle.Switch -> {
                         if (isAzkabanLike) {
                             AzkabanConnectButton(
                                 state = ui.state,

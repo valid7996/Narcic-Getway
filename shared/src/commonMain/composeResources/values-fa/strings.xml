@@ -1066,7 +1066,7 @@
     <string name="mtu_apply">اعمال %1$d</string>
     <string name="connect_style_title">دکمهٔ اتصال</string>
     <string name="connect_style_sub">شکل دکمهٔ اصلی در صفحهٔ خانه</string>
-    <string name="connect_style_pill">قرصی</string>
+    <string name="connect_style_pill">کلید</string>
     <string name="connect_style_hero">ضربه روی هسته</string>
     <string name="connect_style_ring">حلقه</string>
     <string name="connect_style_bar">نوار</string>
@@ -1250,6 +1250,9 @@
     <string name="summary_singbox_ntp">VMess و REALITY دستگاهی را که ساعتش جابه‌جا شده قبول نمی‌کنند</string>
     <string name="title_singbox_ntp_server">سرور زمان</string>
 
+    <string name="onb_welcome_title">به نارسیس خوش آمدید</string>
+    <string name="onb_welcome_body">اتصال امن، پرسرعت و پایدار. قبل از شروع، بیایید در چند مرحله کوتاه برنامه را مطابق سلیقه شما تنظیم کنیم.</string>
+    <string name="onb_get_started">شروع و ورود به برنامه</string>
     <string name="onb_next">بعدی</string>
     <string name="onb_back">قبلی</string>
     <string name="onb_theme_title">روشن یا تیره؟</string>

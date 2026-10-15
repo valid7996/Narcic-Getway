@@ -27,6 +27,7 @@ import dev.cluvex.zedsecure.ui.easteregg.SpaceScreen
 import dev.cluvex.zedsecure.ui.home.HomeScreen
 import dev.cluvex.zedsecure.ui.motion.transitionDecoration
 import dev.cluvex.zedsecure.ui.navigation.TopDestination
+import dev.cluvex.zedsecure.ui.onboarding.OnboardingFlow
 import dev.cluvex.zedsecure.ui.platform.BackHandler
 import dev.cluvex.zedsecure.ui.settings.SettingsScreen
 import dev.cluvex.zedsecure.ui.update.NudgeHost
@@ -103,6 +104,21 @@ fun MainScaffold(
 
     if (spaceUnlocked) {
         SpaceScreen(onExit = { spaceUnlocked = false })
+        return
+    }
+
+    var setupDone by rememberSaveable { mutableStateOf(settings.onboardingVersion > 0) }
+
+    if (!setupDone) {
+        OnboardingFlow(
+            settings = settings,
+            onUpdate = onUpdateSettings,
+            onLanguage = onLanguage,
+            onFinish = {
+                onUpdateSettings { it.copy(onboardingVersion = 1) }
+                setupDone = true
+            },
+        )
         return
     }
 

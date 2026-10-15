@@ -1256,6 +1256,9 @@
     <string name="summary_singbox_ntp">设备时钟偏移时 VMess 与 REALITY 会拒绝连接</string>
     <string name="title_singbox_ntp_server">时间服务器</string>
 
+    <string name="onb_welcome_title">欢迎使用 Narcic</string>
+    <string name="onb_welcome_body">安全、快速、稳定的连接体验。开始前，让我们为您快速个性化设置应用。</string>
+    <string name="onb_get_started">开始使用</string>
     <string name="onb_next">下一步</string>
     <string name="onb_back">上一步</string>
     <string name="onb_theme_title">浅色还是深色？</string>

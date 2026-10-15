@@ -1256,6 +1256,9 @@
     <string name="summary_singbox_ntp">VMess и REALITY отказывают устройству с убежавшими часами</string>
     <string name="title_singbox_ntp_server">Сервер времени</string>
 
+    <string name="onb_welcome_title">Добро пожаловать в Narcic</string>
+    <string name="onb_welcome_body">Безопасное, быстрое и стабильное соединение. Давайте быстро настроим приложение под ваши предпочтения.</string>
+    <string name="onb_get_started">Начать работу</string>
     <string name="onb_next">Далее</string>
     <string name="onb_back">Назад</string>
     <string name="onb_theme_title">Светлая или тёмная?</string>

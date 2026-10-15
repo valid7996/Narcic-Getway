@@ -78,6 +78,9 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
         configCard = 0xFF210E1A,
         configCardText = 0xFFFFF1F5,
     ),
+)
+
+private val HiddenThemeProfiles: List<ThemeProfile> = listOf(
     ThemeProfile(
         id = "narcis",
         name = "Narcis",
@@ -283,7 +286,7 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
 )
 
 fun themeProfileOf(id: String?): ThemeProfile? =
-    id?.let { wanted -> ThemeProfiles.firstOrNull { it.id == wanted } }
+    id?.let { wanted -> (ThemeProfiles + HiddenThemeProfiles).firstOrNull { it.id == wanted } }
 
 fun AppSettings.applyThemeProfile(profile: ThemeProfile): AppSettings = copy(
     accentColor = profile.accentIndex,
