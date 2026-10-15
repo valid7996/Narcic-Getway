@@ -463,7 +463,9 @@ fun HomeScreen(
                             expanded = infoExpanded,
                             destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
                             onClick = homeVm::toggleExpanded,
-                            isAzkaban = isAzkabanLike,
+                            isAzkaban = isAzkaban,
+                            isNoir = isNoir,
+                            isBlossom = isBlossom,
                         )
                         AnimatedVisibility(visible = infoExpanded) {
                             ConnectionRouteMapCard(
@@ -471,7 +473,9 @@ fun HomeScreen(
                                 activeConfigName = activeConfigName,
                                 fallbackCountryCode = activeCountryCode,
                                 onClose = homeVm::toggleExpanded,
-                                isAzkaban = isAzkabanLike,
+                                isAzkaban = isAzkaban,
+                                isNoir = isNoir,
+                                isBlossom = isBlossom,
                             )
                         }
                         MergedDashboardCard(
@@ -483,7 +487,9 @@ fun HomeScreen(
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
                             connectedColor = personalization.connectedColor ?: ConnectedGreen,
-                            isAzkaban = isAzkabanLike,
+                            isAzkaban = isAzkaban,
+                            isNoir = isNoir,
+                            isBlossom = isBlossom,
                         )
                     }
                 }
@@ -1543,24 +1549,70 @@ private fun MergedDashboardCard(
     modifier: Modifier = Modifier,
     connectedColor: Color = ConnectedGreen,
     isAzkaban: Boolean = false,
+    isNoir: Boolean = false,
+    isBlossom: Boolean = false,
 ) {
     val shape = RoundedCornerShape(24.dp)
-    val cardBg = if (isAzkaban) {
-        Brush.verticalGradient(
+    val cardBg = when {
+        isBlossom -> Brush.verticalGradient(
+            listOf(
+                Color(0xFF260D1A),
+                Color(0xFF381226),
+            ),
+        )
+        isNoir -> Brush.verticalGradient(
+            listOf(
+                Color(0xFF141416),
+                Color(0xFF1E1E22),
+            ),
+        )
+        isAzkaban -> Brush.verticalGradient(
             listOf(
                 Color(0xFF0C192E),
                 Color(0xFF07101F),
             ),
         )
-    } else {
-        Brush.verticalGradient(
+        else -> Brush.verticalGradient(
             listOf(
                 connectedColor.copy(alpha = 0.60f),
                 connectedColor.copy(alpha = 0.35f),
             ),
         )
     }
-    val cardBorder = if (isAzkaban) Color(0xFF38BDF8).copy(alpha = 0.35f) else Color.Transparent
+    val cardBorder = when {
+        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.40f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.25f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
+        else -> Color.Transparent
+    }
+
+    val primaryTextColor = when {
+        isBlossom -> Color(0xFFFFF1F5)
+        isNoir -> Color(0xFFFFFFFF)
+        isAzkaban -> Color(0xFFF0F9FF)
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    val secondaryTextColor = when {
+        isBlossom -> Color(0xFFFFD1DC)
+        isNoir -> Color(0xFF94A3B8)
+        isAzkaban -> Color(0xFF94A3B8)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    val accentColor = when {
+        isBlossom -> Color(0xFFFF85A1)
+        isNoir -> Color(0xFFFFFFFF)
+        isAzkaban -> Color(0xFF38BDF8)
+        else -> Color(0xFFFFE066)
+    }
+
+    val dividerColor = when {
+        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.22f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.18f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.20f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+    }
 
     Surface(color = Color.Transparent, shape = shape, modifier = modifier.fillMaxWidth()) {
         Box(
@@ -1581,14 +1633,14 @@ private fun MergedDashboardCard(
                                 ?: stringResource(Res.string.info_unknown_location),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isAzkaban) Color(0xFFF0F9FF) else MaterialTheme.colorScheme.onSurface,
+                            color = primaryTextColor,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             text = info.ipv4 ?: stringResource(Res.string.info_no_ip),
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (isAzkaban) Color(0xFF94A3B8) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = secondaryTextColor,
                             maxLines = 1,
                         )
                     }
@@ -1597,12 +1649,12 @@ private fun MergedDashboardCard(
                             text = "$ping ms",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (isAzkaban) {
-                                Color(0xFF38BDF8)
-                            } else if (ping < 250) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.error
+                            color = when {
+                                isBlossom -> Color(0xFFFF85A1)
+                                isNoir -> Color(0xFFFFFFFF)
+                                isAzkaban -> Color(0xFF38BDF8)
+                                ping < 250 -> MaterialTheme.colorScheme.onSurface
+                                else -> MaterialTheme.colorScheme.error
                             },
                         )
                     }
@@ -1611,7 +1663,7 @@ private fun MergedDashboardCard(
                             Icon(
                                 painterResource(Res.drawable.ic_map),
                                 contentDescription = "Map",
-                                tint = if (isAzkaban) Color(0xFF38BDF8) else Color(0xFFFFE066),
+                                tint = accentColor,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -1625,7 +1677,7 @@ private fun MergedDashboardCard(
                             Icon(
                                 painterResource(Res.drawable.ic_sync),
                                 contentDescription = stringResource(Res.string.info_refresh),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = secondaryTextColor,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -1633,7 +1685,7 @@ private fun MergedDashboardCard(
                 }
 
                 Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f))
+                HorizontalDivider(color = dividerColor)
                 Spacer(Modifier.height(12.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1643,12 +1695,15 @@ private fun MergedDashboardCard(
                         bytesPerSecond = downloadBps,
                         total = totalDownload,
                         modifier = Modifier.weight(1f),
+                        primaryColor = primaryTextColor,
+                        secondaryColor = secondaryTextColor,
+                        accentColor = accentColor,
                     )
                     Box(
                         Modifier
                             .width(1.dp)
                             .height(44.dp)
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+                            .background(dividerColor),
                     )
                     DashboardReading(
                         icon = Res.drawable.ic_upload,
@@ -1656,6 +1711,9 @@ private fun MergedDashboardCard(
                         bytesPerSecond = uploadBps,
                         total = totalUpload,
                         modifier = Modifier.weight(1f),
+                        primaryColor = primaryTextColor,
+                        secondaryColor = secondaryTextColor,
+                        accentColor = accentColor,
                     )
                 }
             }
@@ -1670,13 +1728,16 @@ private fun DashboardReading(
     bytesPerSecond: Long,
     total: Long,
     modifier: Modifier = Modifier,
+    primaryColor: Color = MaterialTheme.colorScheme.onSurface,
+    secondaryColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    accentColor: Color? = null,
 ) {
     val (value, unit) = formatRate(bytesPerSecond)
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         Icon(
             painterResource(icon),
             contentDescription = label,
-            tint = if (bytesPerSecond > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (bytesPerSecond > 0) (accentColor ?: primaryColor) else secondaryColor,
             modifier = Modifier.size(16.dp),
         )
         Spacer(Modifier.width(9.dp))
@@ -1685,21 +1746,21 @@ private fun DashboardReading(
                 Text(
                     value,
                     style = MaterialTheme.typography.headlineSmallEmphasized,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = primaryColor,
                     maxLines = 1,
                 )
                 Spacer(Modifier.width(3.dp))
                 Text(
                     unit,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = secondaryColor,
                     modifier = Modifier.padding(bottom = 3.dp),
                 )
             }
             Text(
                 formatBytes(total),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = secondaryColor,
                 maxLines = 1,
             )
         }

@@ -161,26 +161,34 @@ fun ConnectionMapTriggerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isAzkaban: Boolean = false,
+    isNoir: Boolean = false,
+    isBlossom: Boolean = false,
 ) {
-    val bgBrush = if (isAzkaban) {
-        Brush.horizontalGradient(
-            listOf(
-                Color(0xFF0C192E),
-                Color(0xFF07101F),
-            ),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(
-                Color(0xFF0B7D5A),
-                Color(0xFF064834),
-            ),
-        )
+    val bgBrush = when {
+        isBlossom -> Brush.horizontalGradient(listOf(Color(0xFF260D1A), Color(0xFF381226)))
+        isNoir -> Brush.horizontalGradient(listOf(Color(0xFF141416), Color(0xFF1E1E22)))
+        isAzkaban -> Brush.horizontalGradient(listOf(Color(0xFF0C192E), Color(0xFF07101F)))
+        else -> Brush.horizontalGradient(listOf(Color(0xFF0B7D5A), Color(0xFF064834)))
     }
 
-    val accent = if (isAzkaban) Color(0xFF38BDF8) else Color(0xFFFFE066)
-    val accentSub = if (isAzkaban) Color(0xFF94A3B8) else Color(0xFFFFE066).copy(alpha = 0.88f)
-    val borderColor = if (isAzkaban) Color(0xFF38BDF8).copy(alpha = 0.50f) else Color(0xFFFFE066).copy(alpha = 0.55f)
+    val accent = when {
+        isBlossom -> Color(0xFFF472B6)
+        isNoir -> Color(0xFFFFFFFF)
+        isAzkaban -> Color(0xFF38BDF8)
+        else -> Color(0xFFFFE066)
+    }
+    val accentSub = when {
+        isBlossom -> Color(0xFFFFD1DC)
+        isNoir -> Color(0xFF94A3B8)
+        isAzkaban -> Color(0xFF94A3B8)
+        else -> Color(0xFFFFE066).copy(alpha = 0.88f)
+    }
+    val borderColor = when {
+        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.50f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.30f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.50f)
+        else -> Color(0xFFFFE066).copy(alpha = 0.55f)
+    }
 
     Surface(
         onClick = onClick,
@@ -257,6 +265,8 @@ fun ConnectionRouteMapCard(
     onClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     isAzkaban: Boolean = false,
+    isNoir: Boolean = false,
+    isBlossom: Boolean = false,
 ) {
     var mapData by remember { mutableStateOf(WorldMapCache.countries) }
     var smartZoom by remember { mutableStateOf(true) }
@@ -331,10 +341,30 @@ fun ConnectionRouteMapCard(
         ?: destCode
 
     val shape = RoundedCornerShape(24.dp)
-    val cardBg = if (isAzkaban) Color(0xFF060E1A) else Color(0xFF071915)
-    val cardBorder = if (isAzkaban) Color(0xFF38BDF8).copy(alpha = 0.45f) else Color(0xFF10B981).copy(alpha = 0.45f)
-    val primaryAccent = if (isAzkaban) Color(0xFF38BDF8) else Color(0xFFFFE066)
-    val secondaryAccent = if (isAzkaban) Color(0xFFBAE6FD) else Color(0xFF6EE7B7)
+    val cardBg = when {
+        isBlossom -> Color(0xFF1F0B18)
+        isNoir -> Color(0xFF101012)
+        isAzkaban -> Color(0xFF060E1A)
+        else -> Color(0xFF071915)
+    }
+    val cardBorder = when {
+        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.50f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.30f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.45f)
+        else -> Color(0xFF10B981).copy(alpha = 0.45f)
+    }
+    val primaryAccent = when {
+        isBlossom -> Color(0xFFFF85A1)
+        isNoir -> Color(0xFFFFFFFF)
+        isAzkaban -> Color(0xFF38BDF8)
+        else -> Color(0xFFFFE066)
+    }
+    val secondaryAccent = when {
+        isBlossom -> Color(0xFFF472B6)
+        isNoir -> Color(0xFFE2E8F0)
+        isAzkaban -> Color(0xFFBAE6FD)
+        else -> Color(0xFF6EE7B7)
+    }
 
     Surface(
         shape = shape,
@@ -432,12 +462,84 @@ fun ConnectionRouteMapCard(
             }
 
             // 2. Natural World Map Canvas with Smart Zoom & Country Highlighting
+            val mapCanvasBg = when {
+                isBlossom -> Color(0xFF0F040A)
+                isNoir -> Color(0xFF08080A)
+                isAzkaban -> Color(0xFF03070E)
+                else -> Color(0xFF05120F)
+            }
+            val gridColor = when {
+                isBlossom -> Color(0xFFF472B6).copy(alpha = 0.10f)
+                isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.08f)
+                isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.08f)
+                else -> Color(0xFF10B981).copy(alpha = 0.08f)
+            }
+            val baseFill = when {
+                isBlossom -> Color(0xFF2B0E1E)
+                isNoir -> Color(0xFF1A1A1E)
+                isAzkaban -> Color(0xFF0C192E)
+                else -> Color(0xFF12352C)
+            }
+            val baseStroke = when {
+                isBlossom -> Color(0xFF4E1A38)
+                isNoir -> Color(0xFF2E2E34)
+                isAzkaban -> Color(0xFF1E3A5F)
+                else -> Color(0xFF216653)
+            }
+            val originFill = when {
+                isBlossom -> Color(0xFF9D174D)
+                isNoir -> Color(0xFF3F3F46)
+                isAzkaban -> Color(0xFF0284C7)
+                else -> Color(0xFFD99B00)
+            }
+            val originStroke = when {
+                isBlossom -> Color(0xFFFF85A1)
+                isNoir -> Color(0xFFFFFFFF)
+                isAzkaban -> Color(0xFF38BDF8)
+                else -> Color(0xFFFFE066)
+            }
+            val destFill = when {
+                isBlossom -> Color(0xFFDB2777)
+                isNoir -> Color(0xFF52525B)
+                isAzkaban -> Color(0xFF0369A1)
+                else -> Color(0xFF10B981)
+            }
+            val destStroke = when {
+                isBlossom -> Color(0xFFF472B6)
+                isNoir -> Color(0xFFE2E8F0)
+                isAzkaban -> Color(0xFFBAE6FD)
+                else -> Color(0xFFA7F3D0)
+            }
+            val arcBrush = Brush.linearGradient(
+                colors = when {
+                    isBlossom -> listOf(Color(0xFFFF85A1), Color(0xFFF472B6))
+                    isNoir -> listOf(Color(0xFFFFFFFF), Color(0xFF94A3B8))
+                    isAzkaban -> listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8))
+                    else -> listOf(Color(0xFFFFE066), Color(0xFF10B981))
+                },
+                start = originPt,
+                end = destPt,
+            )
+            val packetColor = when {
+                isBlossom -> Color(0xFFFFD1DC)
+                isNoir -> Color(0xFFFFFFFF)
+                isAzkaban -> Color(0xFFBAE6FD)
+                else -> Color(0xFFFFE066)
+            }
+            val originPinColor = originStroke
+            val destPinColor = when {
+                isBlossom -> Color(0xFFF472B6)
+                isNoir -> Color(0xFFFFFFFF)
+                isAzkaban -> Color(0xFF38BDF8)
+                else -> Color(0xFF10B981)
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(195.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(if (isAzkaban) Color(0xFF03070E) else Color(0xFF05120F))
+                    .background(mapCanvasBg)
                     .border(1.dp, cardBorder.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
             ) {
                 val reusablePath = remember { Path() }
@@ -454,7 +556,6 @@ fun ConnectionRouteMapCard(
                             scale(scaleX = s, scaleY = s, pivot = Offset.Zero)
                         }) {
                             // Subtle lat/lon grid lines
-                            val gridColor = if (isAzkaban) Color(0xFF38BDF8).copy(alpha = 0.08f) else Color(0xFF10B981).copy(alpha = 0.08f)
                             val gridStroke = (1.0f / s).coerceAtLeast(0.25f)
                             for (gy in listOf(125f, 250f, 375f)) {
                                 drawLine(gridColor, Offset(0f, gy), Offset(1000f, gy), strokeWidth = gridStroke)
@@ -466,8 +567,6 @@ fun ConnectionRouteMapCard(
                             // Draw all real country borders
                             val countries = mapData
                             if (countries != null) {
-                                val baseFill = if (isAzkaban) Color(0xFF0C192E) else Color(0xFF12352C)
-                                val baseStroke = if (isAzkaban) Color(0xFF1E3A5F) else Color(0xFF216653)
                                 val borderW = (0.85f / s).coerceAtLeast(0.3f)
                                 val highlightW = (1.5f / s).coerceAtLeast(0.6f)
 
@@ -486,18 +585,18 @@ fun ConnectionRouteMapCard(
 
                                     when (iso) {
                                         originCode -> {
-                                            drawPath(reusablePath, color = if (isAzkaban) Color(0xFF0284C7) else Color(0xFFD99B00))
+                                            drawPath(reusablePath, color = originFill)
                                             drawPath(
                                                 reusablePath,
-                                                color = if (isAzkaban) Color(0xFF38BDF8) else Color(0xFFFFE066),
+                                                color = originStroke,
                                                 style = Stroke(width = highlightW, join = StrokeJoin.Round),
                                             )
                                         }
                                         destCode -> {
-                                            drawPath(reusablePath, color = if (isAzkaban) Color(0xFF0369A1) else Color(0xFF10B981))
+                                            drawPath(reusablePath, color = destFill)
                                             drawPath(
                                                 reusablePath,
-                                                color = if (isAzkaban) Color(0xFFBAE6FD) else Color(0xFFA7F3D0),
+                                                color = destStroke,
                                                 style = Stroke(width = highlightW, join = StrokeJoin.Round),
                                             )
                                         }
@@ -521,13 +620,6 @@ fun ConnectionRouteMapCard(
                             reusablePath.reset()
                             reusablePath.moveTo(originPt.x, originPt.y)
                             reusablePath.quadraticTo(ctrlX, ctrlY, destPt.x, destPt.y)
-
-                            val arcBrush = Brush.linearGradient(
-                                colors = if (isAzkaban) listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8))
-                                         else listOf(Color(0xFFFFE066), Color(0xFF10B981)),
-                                start = originPt,
-                                end = destPt,
-                            )
 
                             // Soft outer glow
                             drawPath(
@@ -561,7 +653,7 @@ fun ConnectionRouteMapCard(
                                 center = Offset(px, py),
                             )
                             drawCircle(
-                                color = Color(0xFFFFE066),
+                                color = packetColor,
                                 radius = 3.2f / s,
                                 center = Offset(px, py),
                             )
@@ -569,23 +661,23 @@ fun ConnectionRouteMapCard(
                             // Origin Pin (Iran)
                             val pulseR = (4f + pulse * 11f) / s
                             drawCircle(
-                                color = Color(0xFFFFE066).copy(alpha = (1f - pulse) * 0.75f),
+                                color = originPinColor.copy(alpha = (1f - pulse) * 0.75f),
                                 radius = pulseR,
                                 center = originPt,
                                 style = Stroke(width = 1.6f / s),
                             )
-                            drawCircle(color = Color(0xFF05120F), radius = 4.6f / s, center = originPt)
-                            drawCircle(color = Color(0xFFFFE066), radius = 3.4f / s, center = originPt)
+                            drawCircle(color = mapCanvasBg, radius = 4.6f / s, center = originPt)
+                            drawCircle(color = originPinColor, radius = 3.4f / s, center = originPt)
 
                             // Destination Pin (Connected Country)
                             drawCircle(
-                                color = Color(0xFF10B981).copy(alpha = (1f - pulse) * 0.85f),
+                                color = destPinColor.copy(alpha = (1f - pulse) * 0.85f),
                                 radius = pulseR * 1.1f,
                                 center = destPt,
                                 style = Stroke(width = 1.6f / s),
                             )
                             drawCircle(color = Color.White, radius = 4.8f / s, center = destPt)
-                            drawCircle(color = Color(0xFF10B981), radius = 3.5f / s, center = destPt)
+                            drawCircle(color = destPinColor, radius = 3.5f / s, center = destPt)
                         }
                     }
                 }
@@ -601,7 +693,7 @@ fun ConnectionRouteMapCard(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
                             .background(Color.Black.copy(alpha = 0.65f))
-                            .border(1.dp, Color(0xFF10B981).copy(alpha = 0.45f), RoundedCornerShape(10.dp))
+                            .border(1.dp, cardBorder.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
                             .clickable { smartZoom = !smartZoom }
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                     ) {
@@ -609,7 +701,7 @@ fun ConnectionRouteMapCard(
                             text = if (smartZoom) "🔍 زوم هوشمند" else "🌍 نمای کل جهان",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF6EE7B7),
+                            color = secondaryAccent,
                         )
                     }
                 }
@@ -636,13 +728,13 @@ fun ConnectionRouteMapCard(
                 }
             }
 
-            // 3. Bottom Bar: IPv4 + Active Config Name (exact user requirement)
+            // 3. Bottom Bar: IPv4 + Active Config Name
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(Color.Black.copy(alpha = 0.50f))
-                    .border(1.dp, Color(0xFF10B981).copy(alpha = 0.32f), RoundedCornerShape(14.dp))
+                    .border(1.dp, cardBorder.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -651,7 +743,7 @@ fun ConnectionRouteMapCard(
                     Text(
                         text = "آدرس IPv4 متصل:",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF6EE7B7).copy(alpha = 0.85f),
+                        color = secondaryAccent.copy(alpha = 0.85f),
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
@@ -678,7 +770,7 @@ fun ConnectionRouteMapCard(
                     Text(
                         text = "نام کانفیگ فعال:",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFFFE066).copy(alpha = 0.88f),
+                        color = primaryAccent.copy(alpha = 0.88f),
                     )
                     Spacer(Modifier.height(2.dp))
                     Row(
@@ -690,7 +782,7 @@ fun ConnectionRouteMapCard(
                             text = activeConfigName?.takeIf { it.isNotBlank() } ?: "سرور متصل",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFFE066),
+                            color = primaryAccent,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
