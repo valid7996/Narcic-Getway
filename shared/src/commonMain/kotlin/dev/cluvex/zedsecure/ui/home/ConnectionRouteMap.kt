@@ -160,11 +160,13 @@ fun ConnectionMapTriggerButton(
     destCountryCode: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    personalization: Personalization = Personalization.Default,
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
 ) {
     val bgBrush = when {
+        personalization.amoledBlack -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF000000)))
         isBlossom -> Brush.horizontalGradient(listOf(Color(0xFF260D1A), Color(0xFF381226)))
         isNoir -> Brush.horizontalGradient(listOf(Color(0xFF141416), Color(0xFF1E1E22)))
         isAzkaban -> Brush.horizontalGradient(listOf(Color(0xFF0C192E), Color(0xFF07101F)))
@@ -172,21 +174,25 @@ fun ConnectionMapTriggerButton(
     }
 
     val accent = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
         isBlossom -> Color(0xFFF472B6)
         isNoir -> Color(0xFFFFFFFF)
         isAzkaban -> Color(0xFF38BDF8)
         else -> Color(0xFFFFE066)
     }
     val accentSub = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
         isBlossom -> Color(0xFFFFD1DC)
         isNoir -> Color(0xFF94A3B8)
         isAzkaban -> Color(0xFF94A3B8)
         else -> Color(0xFFFFE066).copy(alpha = 0.88f)
     }
     val borderColor = when {
-        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.50f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.30f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.50f)
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
+        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.45f else 0.30f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
+        personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.60f)
         else -> Color(0xFFFFE066).copy(alpha = 0.55f)
     }
 
@@ -264,6 +270,7 @@ fun ConnectionRouteMapCard(
     fallbackCountryCode: String?,
     onClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    personalization: Personalization = Personalization.Default,
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
@@ -342,24 +349,29 @@ fun ConnectionRouteMapCard(
 
     val shape = RoundedCornerShape(24.dp)
     val cardBg = when {
+        personalization.amoledBlack -> Color(0xFF000000)
         isBlossom -> Color(0xFF1F0B18)
         isNoir -> Color(0xFF101012)
         isAzkaban -> Color(0xFF060E1A)
         else -> Color(0xFF071915)
     }
     val cardBorder = when {
-        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.50f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.30f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.45f)
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.65f else 0.45f)
+        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.45f else 0.30f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.60f else 0.45f)
+        personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.55f)
         else -> Color(0xFF10B981).copy(alpha = 0.45f)
     }
     val primaryAccent = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
         isBlossom -> Color(0xFFFF85A1)
         isNoir -> Color(0xFFFFFFFF)
         isAzkaban -> Color(0xFF38BDF8)
         else -> Color(0xFFFFE066)
     }
     val secondaryAccent = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.tertiary
         isBlossom -> Color(0xFFF472B6)
         isNoir -> Color(0xFFE2E8F0)
         isAzkaban -> Color(0xFFBAE6FD)
@@ -463,48 +475,56 @@ fun ConnectionRouteMapCard(
 
             // 2. Natural World Map Canvas with Smart Zoom & Country Highlighting
             val mapCanvasBg = when {
+                personalization.amoledBlack -> Color(0xFF000000)
                 isBlossom -> Color(0xFF0F040A)
                 isNoir -> Color(0xFF08080A)
                 isAzkaban -> Color(0xFF03070E)
                 else -> Color(0xFF05120F)
             }
             val gridColor = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 isBlossom -> Color(0xFFF472B6).copy(alpha = 0.10f)
                 isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.08f)
                 isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.08f)
                 else -> Color(0xFF10B981).copy(alpha = 0.08f)
             }
             val baseFill = when {
+                personalization.amoledBlack -> Color(0xFF080808)
                 isBlossom -> Color(0xFF2B0E1E)
                 isNoir -> Color(0xFF1A1A1E)
                 isAzkaban -> Color(0xFF0C192E)
                 else -> Color(0xFF12352C)
             }
             val baseStroke = when {
+                personalization.amoledBlack -> Color(0xFF181818)
                 isBlossom -> Color(0xFF4E1A38)
                 isNoir -> Color(0xFF2E2E34)
                 isAzkaban -> Color(0xFF1E3A5F)
                 else -> Color(0xFF216653)
             }
             val originFill = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
                 isBlossom -> Color(0xFF9D174D)
                 isNoir -> Color(0xFF3F3F46)
                 isAzkaban -> Color(0xFF0284C7)
                 else -> Color(0xFFD99B00)
             }
             val originStroke = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.secondary
                 isBlossom -> Color(0xFFFF85A1)
                 isNoir -> Color(0xFFFFFFFF)
                 isAzkaban -> Color(0xFF38BDF8)
                 else -> Color(0xFFFFE066)
             }
             val destFill = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 isBlossom -> Color(0xFFDB2777)
                 isNoir -> Color(0xFF52525B)
                 isAzkaban -> Color(0xFF0369A1)
                 else -> Color(0xFF10B981)
             }
             val destStroke = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFF472B6)
                 isNoir -> Color(0xFFE2E8F0)
                 isAzkaban -> Color(0xFFBAE6FD)
@@ -512,6 +532,7 @@ fun ConnectionRouteMapCard(
             }
             val arcBrush = Brush.linearGradient(
                 colors = when {
+                    personalization.dynamicColor -> listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)
                     isBlossom -> listOf(Color(0xFFFF85A1), Color(0xFFF472B6))
                     isNoir -> listOf(Color(0xFFFFFFFF), Color(0xFF94A3B8))
                     isAzkaban -> listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8))
@@ -521,6 +542,7 @@ fun ConnectionRouteMapCard(
                 end = destPt,
             )
             val packetColor = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFFFD1DC)
                 isNoir -> Color(0xFFFFFFFF)
                 isAzkaban -> Color(0xFFBAE6FD)
@@ -528,6 +550,7 @@ fun ConnectionRouteMapCard(
             }
             val originPinColor = originStroke
             val destPinColor = when {
+                personalization.dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFF472B6)
                 isNoir -> Color(0xFFFFFFFF)
                 isAzkaban -> Color(0xFF38BDF8)

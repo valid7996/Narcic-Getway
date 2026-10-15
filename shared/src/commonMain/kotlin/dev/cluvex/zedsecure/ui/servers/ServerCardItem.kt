@@ -84,10 +84,13 @@ internal fun ServerCard(
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
+    val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: ZedGreen)
     val container = if (isSelectedCard) {
         MaterialTheme.colorScheme.secondaryContainer
     } else if (active) {
-        personalization.serverActiveColor ?: ZedGreen
+        activeColor
+    } else if (personalization.amoledBlack) {
+        Color(0xFF000000)
     } else if (isBlossom) {
         Color(0xFF180A12)
     } else if (isNoir) {
@@ -100,10 +103,12 @@ internal fun ServerCard(
     }
     val frame = when {
         isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
-        active -> (personalization.serverActiveColor ?: ZedGreen).copy(alpha = 0.95f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.32f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.22f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
+        active -> activeColor.copy(alpha = 0.95f)
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
+        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.32f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.22f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
+        personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.40f)
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
     }
 
@@ -117,7 +122,7 @@ internal fun ServerCard(
         else -> MaterialTheme.colorScheme.onSurface
     }
     val vPad = personalization.density.cardVerticalDp.dp
-    val primaryAccent = personalization.serverActiveColor ?: MaterialTheme.colorScheme.primary
+    val primaryAccent = activeColor
     Surface(
         color = Color.Transparent,
         shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),

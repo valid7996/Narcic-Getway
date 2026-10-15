@@ -246,6 +246,8 @@ fun AzkabanConnectButton(
     modifier: Modifier = Modifier,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
+    amoledBlack: Boolean = false,
+    dynamicColor: Boolean = false,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
@@ -254,70 +256,80 @@ fun AzkabanConnectButton(
 
     val buttonScale = if (isPressed) 0.95f else 1f
 
-    val bgGradient = if (isBlossom) {
-        when {
-            state == ConnectionState.Error -> Brush.horizontalGradient(
-                listOf(Color(0xFF991B1B), Color(0xFFEF4444)),
+    val bgGradient = when {
+        state == ConnectionState.Error -> Brush.horizontalGradient(
+            listOf(Color(0xFF991B1B), Color(0xFFEF4444)),
+        )
+        dynamicColor -> when {
+            isConnected -> Brush.horizontalGradient(
+                listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.82f)),
             )
+            isConnecting -> Brush.horizontalGradient(
+                listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.70f), MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)),
+            )
+            amoledBlack -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF000000)))
+            else -> Brush.horizontalGradient(
+                listOf(MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.surfaceContainerHighest),
+            )
+        }
+        isBlossom -> when {
             isConnected -> Brush.horizontalGradient(
                 listOf(Color(0xFFDB2777), Color(0xFFF472B6)),
             )
             isConnecting -> Brush.horizontalGradient(
                 listOf(Color(0xFF9D174D), Color(0xFFBE185D)),
             )
+            amoledBlack -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF000000)))
             else -> Brush.horizontalGradient(
                 listOf(Color(0xFF381226), Color(0xFF521937)),
             )
         }
-    } else if (isNoir) {
-        when {
-            state == ConnectionState.Error -> Brush.horizontalGradient(
-                listOf(Color(0xFF7F1D1D), Color(0xFFDC2626)),
-            )
+        isNoir -> when {
             isConnected -> Brush.horizontalGradient(
                 listOf(Color(0xFF27272A), Color(0xFF3F3F46)),
             )
             isConnecting -> Brush.horizontalGradient(
                 listOf(Color(0xFF18181B), Color(0xFF27272A)),
             )
+            amoledBlack -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF000000)))
             else -> Brush.horizontalGradient(
                 listOf(Color(0xFF141416), Color(0xFF1E1E22)),
             )
         }
-    } else {
-        when {
-            state == ConnectionState.Error -> Brush.horizontalGradient(
-                listOf(Color(0xFF991B1B), Color(0xFFEF4444)),
-            )
+        else -> when {
             isConnected -> Brush.horizontalGradient(
                 listOf(Color(0xFF0284C7), Color(0xFF38BDF8)),
             )
             isConnecting -> Brush.horizontalGradient(
                 listOf(Color(0xFF0369A1), Color(0xFF0284C7)),
             )
+            amoledBlack -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF000000)))
             else -> Brush.horizontalGradient(
                 listOf(Color(0xFF0E223D), Color(0xFF16345C)),
             )
         }
     }
 
-    val borderColor = if (isBlossom) {
-        when {
+    val borderColor = when {
+        dynamicColor -> when {
+            isConnected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.90f)
+            isConnecting -> MaterialTheme.colorScheme.primary.copy(alpha = 0.70f)
+            else -> MaterialTheme.colorScheme.primary.copy(alpha = if (amoledBlack) 0.55f else 0.35f)
+        }
+        isBlossom -> when {
             isConnected -> Color(0xFFFFC2D6).copy(alpha = 0.85f)
             isConnecting -> Color(0xFFF472B6).copy(alpha = 0.65f)
-            else -> Color(0xFFBE185D).copy(alpha = 0.45f)
+            else -> Color(0xFFF472B6).copy(alpha = if (amoledBlack) 0.55f else 0.40f)
         }
-    } else if (isNoir) {
-        when {
+        isNoir -> when {
             isConnected -> Color(0xFFFFFFFF).copy(alpha = 0.70f)
             isConnecting -> Color(0xFFE4E4E7).copy(alpha = 0.50f)
-            else -> Color(0xFF52525B).copy(alpha = 0.40f)
+            else -> Color(0xFFFFFFFF).copy(alpha = if (amoledBlack) 0.40f else 0.25f)
         }
-    } else {
-        when {
+        else -> when {
             isConnected -> Color(0xFFBAE6FD).copy(alpha = 0.75f)
             isConnecting -> Color(0xFF7DD3FC).copy(alpha = 0.60f)
-            else -> Color(0xFF64748B).copy(alpha = 0.40f)
+            else -> Color(0xFF38BDF8).copy(alpha = if (amoledBlack) 0.55f else 0.35f)
         }
     }
 

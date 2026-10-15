@@ -377,7 +377,12 @@ class ZedVpnService : VpnService() {
                 ) {
                     tlsSettings.put("serverName", origHost)
                 }
-                tlsSettings.put("allowInsecure", true)
+                tlsSettings.remove("allowInsecure")
+                val sni = tlsSettings.optString("serverName").takeIf { it.isNotBlank() }
+                    ?: origHost.takeIf { !it.startsWith("127.") && it.isNotBlank() }
+                if (sni != null && !tlsSettings.has("verifyPeerCertByName") && !tlsSettings.has("pinnedPeerCertSha256")) {
+                    tlsSettings.put("verifyPeerCertByName", sni)
+                }
             }
             val realitySettings = stream.optJSONObject("realitySettings")
             if (realitySettings != null) {
@@ -387,9 +392,28 @@ class ZedVpnService : VpnService() {
                 ) {
                     realitySettings.put("serverName", origHost)
                 }
+                realitySettings.remove("allowInsecure")
             }
             // Remove domainStrategy UseIP since destination is 127.0.0.1
             stream.optJSONObject("sockopt")?.remove("domainStrategy")
+        }
+        removeAllowInsecureRecursive(xray)
+    }
+
+    private fun removeAllowInsecureRecursive(any: Any?) {
+        when (any) {
+            is JSONObject -> {
+                any.remove("allowInsecure")
+                val it = any.keys()
+                while (it.hasNext()) {
+                    removeAllowInsecureRecursive(any.opt(it.next()))
+                }
+            }
+            is JSONArray -> {
+                for (i in 0 until any.length()) {
+                    removeAllowInsecureRecursive(any.opt(i))
+                }
+            }
         }
     }
 

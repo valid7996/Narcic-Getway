@@ -220,9 +220,25 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        DecorativeBackdrop(reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir, isBlossom = isBlossom)
+        DecorativeBackdrop(
+            reduceMotion = reduceMotion,
+            isAzkaban = isAzkaban,
+            isNoir = isNoir,
+            isBlossom = isBlossom,
+            amoledBlack = personalization.amoledBlack,
+            dynamicColor = personalization.dynamicColor,
+        )
 
-        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir, isBlossom = isBlossom)
+        ConnectingBackdrop(
+            state = ui.state,
+            sessionId = ui.sessionId,
+            reduceMotion = reduceMotion,
+            isAzkaban = isAzkaban,
+            isNoir = isNoir,
+            isBlossom = isBlossom,
+            amoledBlack = personalization.amoledBlack,
+            dynamicColor = personalization.dynamicColor,
+        )
 
         BoxWithConstraints(
             modifier = Modifier
@@ -423,13 +439,15 @@ fun HomeScreen(
                                 onClick = onToggleConnection,
                                 isNoir = isNoir,
                                 isBlossom = isBlossom,
+                                amoledBlack = personalization.amoledBlack,
+                                dynamicColor = personalization.dynamicColor,
                             )
                         } else {
                             ConnectButton(
                                 state = ui.state,
                                 onToggle = onToggleConnection,
-                                customColor = personalization.connectColor,
-                                customActiveColor = personalization.connectedColor,
+                                customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
+                                customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
                                 compact = compact,
                             )
                         }
@@ -437,16 +455,16 @@ fun HomeScreen(
                     ConnectButtonStyle.Slide -> SlideToConnect(
                         state = ui.state,
                         onToggle = onToggleConnection,
-                        customColor = personalization.connectColor,
-                        customActiveColor = personalization.connectedColor,
+                        customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
+                        customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
                         compact = compact,
                     )
                     else -> AltConnectControl(
                         style = connectStyle,
                         state = ui.state,
                         onToggle = onToggleConnection,
-                        customColor = personalization.connectColor,
-                        customActiveColor = personalization.connectedColor,
+                        customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
+                        customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
                         compact = compact,
                     )
                 }
@@ -463,6 +481,7 @@ fun HomeScreen(
                             expanded = infoExpanded,
                             destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
                             onClick = homeVm::toggleExpanded,
+                            personalization = personalization,
                             isAzkaban = isAzkaban,
                             isNoir = isNoir,
                             isBlossom = isBlossom,
@@ -473,6 +492,7 @@ fun HomeScreen(
                                 activeConfigName = activeConfigName,
                                 fallbackCountryCode = activeCountryCode,
                                 onClose = homeVm::toggleExpanded,
+                                personalization = personalization,
                                 isAzkaban = isAzkaban,
                                 isNoir = isNoir,
                                 isBlossom = isBlossom,
@@ -487,6 +507,7 @@ fun HomeScreen(
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
                             connectedColor = personalization.connectedColor ?: ConnectedGreen,
+                            personalization = personalization,
                             isAzkaban = isAzkaban,
                             isNoir = isNoir,
                             isBlossom = isBlossom,
@@ -601,6 +622,8 @@ private fun DecorativeBackdrop(
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
+    amoledBlack: Boolean = false,
+    dynamicColor: Boolean = false,
 ) {
     val budget = LocalMotionBudget.current
     val spin by if (budget == MotionBudget.Full) {
@@ -614,7 +637,22 @@ private fun DecorativeBackdrop(
         remember { mutableFloatStateOf(0f) }
     }
     val rotation = if (reduceMotion || budget != MotionBudget.Full) 0f else spin
-    val splash = if (isBlossom) {
+    val splash = if (amoledBlack) {
+        val accent = when {
+            dynamicColor -> MaterialTheme.colorScheme.primary
+            isBlossom -> Color(0xFFF472B6)
+            isNoir -> Color(0xFFFFFFFF)
+            isAzkaban -> Color(0xFF38BDF8)
+            else -> ZedCyan
+        }
+        listOf(Color(0xFF000000), Color(0xFF000000), accent.copy(alpha = 0.35f))
+    } else if (dynamicColor) {
+        listOf(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        )
+    } else if (isBlossom) {
         listOf(Color(0xFF150510), Color(0xFF3B1229), Color(0xFFF472B6))
     } else if (isNoir) {
         listOf(Color(0xFF000000), Color(0xFF18181B), Color(0xFF3F3F46))
@@ -1062,13 +1100,27 @@ private fun ActiveConfigCard(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "config-scale",
     )
+    val isAmoled = personalization.amoledBlack
+    val cardBg = if (isAmoled) Color(0xFF000000) else (personalization.configCardColor ?: MaterialTheme.colorScheme.primaryContainer)
+    val cardBorder = if (isAmoled) {
+        when {
+            personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
+            personalization.themeProfileId == "blossom" -> Color(0xFFF472B6).copy(alpha = 0.50f)
+            personalization.themeProfileId == "noir" -> Color(0xFFFFFFFF).copy(alpha = 0.35f)
+            personalization.themeProfileId == "azkaban" -> Color(0xFF38BDF8).copy(alpha = 0.50f)
+            else -> Color(0xFF10B981).copy(alpha = 0.45f)
+        }
+    } else Color.Transparent
+
     Surface(
         onClick = onClick,
         interactionSource = interaction,
         shape = MaterialTheme.shapes.largeIncreased,
-
-        color = personalization.configCardColor ?: MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier.fillMaxWidth().scale(scale),
+        color = cardBg,
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .then(if (isAmoled) Modifier.border(1.dp, cardBorder, MaterialTheme.shapes.largeIncreased) else Modifier),
     ) {
         Row(
             Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
@@ -1299,6 +1351,8 @@ private fun ConnectingBackdrop(
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
+    amoledBlack: Boolean = false,
+    dynamicColor: Boolean = false,
 ) {
     val intensity by animateFloatAsState(
         targetValue = when (state) {
@@ -1328,7 +1382,42 @@ private fun ConnectingBackdrop(
         )
     }
 
-    val stops = if (isBlossom) {
+    val stops = if (amoledBlack) {
+        if (state == ConnectionState.Connected) {
+            val primary = when {
+                dynamicColor -> MaterialTheme.colorScheme.primary
+                isBlossom -> Color(0xFFDB2777)
+                isNoir -> Color(0xFF3F3F46)
+                isAzkaban -> Color(0xFF0284C7)
+                else -> dev.cluvex.zedsecure.ui.theme.ZedGreen
+            }
+            val accent = when {
+                dynamicColor -> MaterialTheme.colorScheme.tertiary
+                isBlossom -> Color(0xFFF472B6)
+                isNoir -> Color(0xFFFFFFFF)
+                isAzkaban -> Color(0xFF38BDF8)
+                else -> dev.cluvex.zedsecure.ui.theme.ZedLime
+            }
+            listOf(Color(0xFF000000), Color(0xFF000000), primary.copy(alpha = 0.30f), accent.copy(alpha = 0.18f))
+        } else {
+            listOf(Color(0xFF000000), Color(0xFF000000), Color(0xFF000000))
+        }
+    } else if (dynamicColor) {
+        if (state == ConnectionState.Connected) {
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surfaceContainerHigh,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.40f),
+                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.25f),
+            )
+        } else {
+            listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surfaceContainerLow,
+                MaterialTheme.colorScheme.surfaceContainer,
+            )
+        }
+    } else if (isBlossom) {
         if (state == ConnectionState.Connected) {
             listOf(Color(0xFF150510), Color(0xFF260D1A), Color(0xFFDB2777).copy(alpha = 0.35f), Color(0xFFF472B6).copy(alpha = 0.2f))
         } else {
@@ -1363,29 +1452,32 @@ private fun ConnectingBackdrop(
         )
 
         // Circle.json floating particles in background for Default, Azkaban, Noir, and Blossom
-        val particleColors = if (isBlossom) {
-            listOf(
+        val particleColors = when {
+            dynamicColor -> listOf(
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary,
+                MaterialTheme.colorScheme.primaryContainer,
+            )
+            isBlossom -> listOf(
                 Color(0xFFFF85A1), // Candy Rose
                 Color(0xFFF472B6), // Sakura Pink
                 Color(0xFFFFD1DC), // Soft Petal
                 Color(0xFFC084FC), // Lavender Orchid
             )
-        } else if (isNoir) {
-            listOf(
+            isNoir -> listOf(
                 Color(0xFFFFFFFF), // Crisp White
                 Color(0xFFE4E4E7), // Silver
                 Color(0xFFA1A1AA), // Slate Gray
                 Color(0xFF71717A), // Charcoal
             )
-        } else if (isAzkaban) {
-            listOf(
+            isAzkaban -> listOf(
                 Color(0xFF7DD3FC), // Soft Sky Cyan
                 Color(0xFF38BDF8), // Ice Blue
                 Color(0xFFBAE6FD), // Light Frost
                 Color(0xFF94A3B8), // Mellow Slate
             )
-        } else {
-            listOf(
+            else -> listOf(
                 Color(0xFF10B981), // Emerald
                 Color(0xFF38BDF8), // Cyan
                 Color(0xFFA78BFA), // Soft Violet
@@ -1548,12 +1640,16 @@ private fun MergedDashboardCard(
     onToggleMap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     connectedColor: Color = ConnectedGreen,
+    personalization: Personalization = Personalization.Default,
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
 ) {
     val shape = RoundedCornerShape(24.dp)
     val cardBg = when {
+        personalization.amoledBlack -> Brush.verticalGradient(
+            listOf(Color(0xFF000000), Color(0xFF060606)),
+        )
         isBlossom -> Brush.verticalGradient(
             listOf(
                 Color(0xFF260D1A),
@@ -1580,9 +1676,11 @@ private fun MergedDashboardCard(
         )
     }
     val cardBorder = when {
-        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.40f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.25f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.60f else 0.40f)
+        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.60f else 0.40f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.45f else 0.25f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
+        personalization.amoledBlack -> (personalization.connectedColor ?: ConnectedGreen).copy(alpha = 0.50f)
         else -> Color.Transparent
     }
 
@@ -1601,6 +1699,7 @@ private fun MergedDashboardCard(
     }
 
     val accentColor = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
         isBlossom -> Color(0xFFFF85A1)
         isNoir -> Color(0xFFFFFFFF)
         isAzkaban -> Color(0xFF38BDF8)
@@ -1608,6 +1707,7 @@ private fun MergedDashboardCard(
     }
 
     val dividerColor = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
         isBlossom -> Color(0xFFF472B6).copy(alpha = 0.22f)
         isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.18f)
         isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.20f)

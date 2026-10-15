@@ -91,6 +91,8 @@ data class Personalization(
     val trafficTileSize: TrafficTileSize = TrafficTileSize.Normal,
     val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Cards,
     val themeProfileId: String? = null,
+    val amoledBlack: Boolean = false,
+    val dynamicColor: Boolean = false,
 ) {
     companion object {
         val Default = Personalization()
@@ -119,6 +121,8 @@ fun AppSettings.toPersonalization(): Personalization = Personalization(
     trafficTileSize = trafficTileSize,
     trafficCardStyle = trafficCardStyle,
     themeProfileId = themeProfileId,
+    amoledBlack = amoledBlack,
+    dynamicColor = dynamicColor,
 )
 
 fun AppSettings.resetPersonalization(): AppSettings = copy(

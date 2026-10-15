@@ -64,7 +64,14 @@ class SettingsRepository(context: Context) {
             speedInNotification = prefs.getBoolean("speed_notif", d.speedInNotification),
             liveNotification = prefs.getBoolean("live_notif", d.liveNotification),
             notifChip = prefs.enum("notif_chip", d.notifChip),
-            onboardingVersion = prefs.getInt("onboarding_version", d.onboardingVersion),
+            onboardingVersion = if (prefs.contains("onboarding_version")) {
+                prefs.getInt("onboarding_version", d.onboardingVersion)
+            } else if (prefs.all.isNotEmpty()) {
+                prefs.edit().putInt("onboarding_version", 1).apply()
+                1
+            } else {
+                0
+            },
             screenTransition = prefs.enum("screen_transition", d.screenTransition),
             confirmRemove = prefs.getBoolean("confirm_remove", d.confirmRemove),
             homeAfterSelect = prefs.getBoolean("home_after_select", d.homeAfterSelect),

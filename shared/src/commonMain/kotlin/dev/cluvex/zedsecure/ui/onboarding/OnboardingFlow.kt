@@ -322,6 +322,13 @@ private fun WelcomeFeatureRow(icon: String, title: String, subtitle: String) {
     }
 }
 
+private data class ThemePreviewInfo(
+    val name: String,
+    val accent: Color,
+    val avatar: String,
+    val desc: String,
+)
+
 @Composable
 private fun LanguageStep(
     settings: AppSettings,
@@ -343,21 +350,22 @@ private fun LanguageStep(
         Spacer(Modifier.height(20.dp))
 
         val languages = listOf(
-            AppLanguage.Persian to ("فارسی" to "Persian"),
-            AppLanguage.English to ("English" to "انگلیسی"),
-            AppLanguage.System to (stringResource(Res.string.settings_language_system) to "System Default"),
-            AppLanguage.Chinese to ("中文" to "Chinese"),
-            AppLanguage.Russian to ("Русский" to "Russian"),
+            Triple(AppLanguage.Persian, "فارسی" to "Persian", "🇮🇷"),
+            Triple(AppLanguage.English, "English" to "انگلیسی", "🇬🇧"),
+            Triple(AppLanguage.System, stringResource(Res.string.settings_language_system) to "System Default", "🌐"),
+            Triple(AppLanguage.Chinese, "中文" to "Chinese", "🇨🇳"),
+            Triple(AppLanguage.Russian, "Русский" to "Russian", "🇷🇺"),
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            languages.forEach { (lang, labels) ->
+            languages.forEach { (lang, labels, flag) ->
                 val (primaryLabel, subLabel) = labels
                 val isSelected = settings.language == lang
                 ChoiceCard(
                     title = primaryLabel,
                     subtitle = subLabel,
                     selected = isSelected,
+                    leading = { Text(flag, fontSize = 20.sp) },
                     onClick = {
                         if (settings.language != lang) onLanguage(lang)
                     },
@@ -385,7 +393,79 @@ private fun ThemeProfileStep(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Live Interactive Theme Preview Card
+        val activeProfileId = settings.themeProfileId
+        val preview = when (activeProfileId) {
+            "azkaban" -> ThemePreviewInfo("Azkaban (آزکابان)", Color(0xFF38BDF8), "🪐", "آبی سایبرنتیک نئونی و های‌تک")
+            "noir" -> ThemePreviewInfo("Noir (سیاه و سفید)", Color(0xFFFFFFFF), "🌑", "مشکی مونوکروم دارک و مینیمال")
+            "blossom" -> ThemePreviewInfo("Blossom (دخترونه صورتی)", Color(0xFFF472B6), "🌸", "صورتی و رز پاستلی دخترونه")
+            else -> ThemePreviewInfo("Narcis (پیش‌فرض)", Color(0xFF0F9D6C), "🛡️", "سبز زمردی کلاسیک نارسیس")
+        }
+
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = if (settings.amoledBlack) Color(0xFF000000) else MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.5.dp, preview.accent.copy(alpha = 0.5f), RoundedCornerShape(22.dp)),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(preview.accent.copy(alpha = 0.18f))
+                            .border(1.5.dp, preview.accent, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(text = preview.avatar, fontSize = 22.sp)
+                    }
+                    Column {
+                        Text(
+                            text = preview.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = preview.accent,
+                        )
+                        Text(
+                            text = preview.desc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(preview.accent)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "فعال",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (preview.accent == Color.White) Color.Black else Color.White,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // 1. Default (پیش‌فرض)
@@ -394,6 +474,7 @@ private fun ThemeProfileStep(
                 title = stringResource(Res.string.onb_preset_stock),
                 subtitle = "سبز زمردی کلاسیک نارسیس",
                 selected = isStockSelected,
+                accentColor = Color(0xFF0F9D6C),
                 onClick = { onUpdate { it.resetPersonalization() } },
                 trailing = {
                     SwatchDots(listOf(Color(0xFF0F9D6C), Color(0xFF3FD898), Color(0xFFFFCE54)))
@@ -403,16 +484,17 @@ private fun ThemeProfileStep(
             // 2, 3, 4. The 3 Ready ThemeProfiles (Azkaban, Noir, Blossom)
             ThemeProfiles.forEach { profile ->
                 val isSelected = settings.themeProfileId == profile.id
-                val description = when (profile.id) {
-                    "azkaban" -> "آبی سایبرنتیک نئونی و های‌تک"
-                    "noir" -> "مشکی مونوکروم دارک و مینیمال"
-                    "blossom" -> "صورتی و رز پاستلی دخترونه"
-                    else -> null
+                val (description, cardAccent) = when (profile.id) {
+                    "azkaban" -> "آبی سایبرنتیک نئونی و های‌تک" to Color(0xFF38BDF8)
+                    "noir" -> "مشکی مونوکروم دارک و مینیمال" to Color(0xFFFFFFFF)
+                    "blossom" -> "صورتی و رز پاستلی دخترونه" to Color(0xFFF472B6)
+                    else -> null to MaterialTheme.colorScheme.primary
                 }
                 ChoiceCard(
                     title = profile.name,
                     subtitle = description,
                     selected = isSelected,
+                    accentColor = cardAccent,
                     onClick = { onUpdate { it.applyThemeProfile(profile) } },
                     trailing = {
                         SwatchDots(profile.swatches)
@@ -448,26 +530,30 @@ private fun ThemeModeStep(
                 ThemeMode.System,
                 stringResource(Res.string.settings_theme_system),
                 "هماهنگ با حالت تیره یا روشن تنظیمات گوشی شما",
-            ),
+            ) to ("📱" to MaterialTheme.colorScheme.primary),
             Triple(
                 ThemeMode.Dark,
                 stringResource(Res.string.settings_theme_dark),
                 "رنگ‌های تیره برای راحتی چشم و مصرف باتری کمتر",
-            ),
+            ) to ("🌙" to Color(0xFF818CF8)),
             Triple(
                 ThemeMode.Light,
                 stringResource(Res.string.settings_theme_light),
                 "رنگ‌های روشن برای دید واضح در نور روز",
-            ),
+            ) to ("☀️" to Color(0xFFF59E0B)),
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            modes.forEach { (mode, title, desc) ->
+            modes.forEach { (info, meta) ->
+                val (mode, title, desc) = info
+                val (icon, accent) = meta
                 val isSelected = settings.themeMode == mode
                 ChoiceCard(
                     title = title,
                     subtitle = desc,
                     selected = isSelected,
+                    accentColor = accent,
+                    leading = { Text(icon, fontSize = 22.sp) },
                     onClick = { onUpdate { it.copy(themeMode = mode) } },
                 )
             }
@@ -496,15 +582,18 @@ private fun ChoiceCard(
     subtitle: String? = null,
     selected: Boolean,
     onClick: () -> Unit,
+    accentColor: Color? = null,
+    leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
+    val activeAccent = accentColor ?: MaterialTheme.colorScheme.primary
     val container by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.primaryContainer
+        if (selected) activeAccent.copy(alpha = 0.16f)
         else MaterialTheme.colorScheme.surfaceContainerHigh,
         label = "choice-container-color",
     )
     val borderColor by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.primary
+        if (selected) activeAccent
         else Color.Transparent,
         label = "choice-border-color",
     )
@@ -521,12 +610,16 @@ private fun ChoiceCard(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 15.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (leading != null) {
+                leading()
+                Spacer(Modifier.width(14.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                    color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                    color = if (selected) (if (activeAccent == Color.White) MaterialTheme.colorScheme.onSurface else activeAccent)
                     else MaterialTheme.colorScheme.onSurface,
                 )
                 if (subtitle != null) {
@@ -534,7 +627,7 @@ private fun ChoiceCard(
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                        color = if (selected) (if (activeAccent == Color.White) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f) else activeAccent.copy(alpha = 0.85f))
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -546,7 +639,7 @@ private fun ChoiceCard(
                 Icon(
                     painter = painterResource(Res.drawable.ic_check_circle),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = activeAccent,
                     modifier = Modifier.size(24.dp),
                 )
             }
