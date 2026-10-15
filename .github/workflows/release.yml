@@ -44,5 +44,10 @@ jobs:
                    "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.apk"; do
             [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
           done
-          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-            --title "Narcic Getway $V" --notes ""
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists, uploading assets..."
+            gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+              --title "Narcic Getway $V" --notes ""
+          fi
