@@ -212,16 +212,17 @@ fun HomeScreen(
 
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
-    val isAzkabanLike = isAzkaban || isNoir
+    val isBlossom = personalization.themeProfileId == "blossom"
+    val isAzkabanLike = isAzkaban || isNoir || isBlossom
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        DecorativeBackdrop(reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir)
+        DecorativeBackdrop(reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir, isBlossom = isBlossom)
 
-        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir)
+        ConnectingBackdrop(state = ui.state, sessionId = ui.sessionId, reduceMotion = reduceMotion, isAzkaban = isAzkaban, isNoir = isNoir, isBlossom = isBlossom)
 
         BoxWithConstraints(
             modifier = Modifier
@@ -275,7 +276,20 @@ fun HomeScreen(
                       horizontalAlignment = Alignment.CenterHorizontally,
                       verticalArrangement = Arrangement.Center,
                     ) {
-                      if (isNoir) {
+                      if (isBlossom) {
+                        GirlHero(
+                            state = ui.state,
+                            size = azkabanHeroSize,
+                            onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
+                                {
+                                    if (ui.state != ConnectionState.Disconnecting) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onToggleConnection()
+                                    }
+                                }
+                            } else null,
+                        )
+                      } else if (isNoir) {
                         MontaaHero(
                             state = ui.state,
                             size = azkabanHeroSize,
@@ -408,6 +422,7 @@ fun HomeScreen(
                                 state = ui.state,
                                 onClick = onToggleConnection,
                                 isNoir = isNoir,
+                                isBlossom = isBlossom,
                             )
                         } else {
                             ConnectButton(
@@ -575,7 +590,12 @@ private fun StageColumn(
 }
 
 @Composable
-private fun DecorativeBackdrop(reduceMotion: Boolean, isAzkaban: Boolean = false, isNoir: Boolean = false) {
+private fun DecorativeBackdrop(
+    reduceMotion: Boolean,
+    isAzkaban: Boolean = false,
+    isNoir: Boolean = false,
+    isBlossom: Boolean = false,
+) {
     val budget = LocalMotionBudget.current
     val spin by if (budget == MotionBudget.Full) {
         rememberInfiniteTransition(label = "backdrop").animateFloat(
@@ -588,7 +608,9 @@ private fun DecorativeBackdrop(reduceMotion: Boolean, isAzkaban: Boolean = false
         remember { mutableFloatStateOf(0f) }
     }
     val rotation = if (reduceMotion || budget != MotionBudget.Full) 0f else spin
-    val splash = if (isNoir) {
+    val splash = if (isBlossom) {
+        listOf(Color(0xFF150510), Color(0xFF3B1229), Color(0xFFF472B6))
+    } else if (isNoir) {
         listOf(Color(0xFF000000), Color(0xFF18181B), Color(0xFF3F3F46))
     } else if (isAzkaban) {
         listOf(Color(0xFF040A16), Color(0xFF0C1D38), Color(0xFF38BDF8))
@@ -1270,6 +1292,7 @@ private fun ConnectingBackdrop(
     reduceMotion: Boolean,
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
+    isBlossom: Boolean = false,
 ) {
     val intensity by animateFloatAsState(
         targetValue = when (state) {
@@ -1299,7 +1322,13 @@ private fun ConnectingBackdrop(
         )
     }
 
-    val stops = if (isNoir) {
+    val stops = if (isBlossom) {
+        if (state == ConnectionState.Connected) {
+            listOf(Color(0xFF150510), Color(0xFF260D1A), Color(0xFFDB2777).copy(alpha = 0.35f), Color(0xFFF472B6).copy(alpha = 0.2f))
+        } else {
+            listOf(Color(0xFF0D0209), Color(0xFF1A0812), Color(0xFF2A0E1E))
+        }
+    } else if (isNoir) {
         if (state == ConnectionState.Connected) {
             listOf(Color(0xFF000000), Color(0xFF0C0C0E), Color(0xFF18181B).copy(alpha = 0.5f), Color(0xFF27272A).copy(alpha = 0.25f))
         } else {
@@ -1327,8 +1356,15 @@ private fun ConnectingBackdrop(
             alpha = 0.9f * intensity,
         )
 
-        // Circle.json floating particles in background for Default, Azkaban, and Noir
-        val particleColors = if (isNoir) {
+        // Circle.json floating particles in background for Default, Azkaban, Noir, and Blossom
+        val particleColors = if (isBlossom) {
+            listOf(
+                Color(0xFFFF85A1), // Candy Rose
+                Color(0xFFF472B6), // Sakura Pink
+                Color(0xFFFFD1DC), // Soft Petal
+                Color(0xFFC084FC), // Lavender Orchid
+            )
+        } else if (isNoir) {
             listOf(
                 Color(0xFFFFFFFF), // Crisp White
                 Color(0xFFE4E4E7), // Silver

@@ -1591,21 +1591,28 @@ private fun GroupTab(
 ) {
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
+    val isBlossom = personalization.themeProfileId == "blossom"
     val activeColor = personalization.serverActiveColor ?: MaterialTheme.colorScheme.primary
     val bg = when {
         selected -> activeColor
+        isBlossom -> Color(0xFF260D1A)
         isNoir -> Color(0xFF161618)
         isAzkaban -> Color(0xFF091424)
         else -> MaterialTheme.colorScheme.surfaceContainerHighest
     }
     val contentColor = when {
-        selected -> if (isNoir) Color(0xFF000000) else if (isAzkaban) Color(0xFF041220) else MaterialTheme.colorScheme.onPrimary
+        selected -> if (isBlossom) Color(0xFFFFFFFF) else if (isNoir) Color(0xFF000000) else if (isAzkaban) Color(0xFF041220) else MaterialTheme.colorScheme.onPrimary
+        isBlossom -> Color(0xFFFFD1DC)
         isNoir -> Color(0xFFE4E4E7)
         isAzkaban -> Color(0xFFBAE6FD)
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val borderModifier = if (!selected && (isAzkaban || isNoir)) {
-        val bc = if (isNoir) Color(0xFFFFFFFF).copy(alpha = 0.20f) else Color(0xFF38BDF8).copy(alpha = 0.30f)
+    val borderModifier = if (!selected && (isAzkaban || isNoir || isBlossom)) {
+        val bc = when {
+            isBlossom -> Color(0xFFF472B6).copy(alpha = 0.35f)
+            isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.20f)
+            else -> Color(0xFF38BDF8).copy(alpha = 0.30f)
+        }
         Modifier.border(1.dp, bc, RoundedCornerShape(50))
     } else Modifier
 

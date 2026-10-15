@@ -681,9 +681,12 @@ private fun GroupTab(
 ) {
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
+    val isBlossom = personalization.themeProfileId == "blossom"
     val activeColor = personalization.serverActiveColor ?: ZedGreen
     val background = if (selected) {
         activeColor
+    } else if (isBlossom) {
+        Color(0xFF230D18)
     } else if (isNoir) {
         Color(0xFF141416)
     } else if (isAzkaban) {
@@ -693,6 +696,8 @@ private fun GroupTab(
     }
     val content = if (selected) {
         activeColor.readableOn()
+    } else if (isBlossom) {
+        Color(0xFFFFD1DC)
     } else if (isNoir) {
         Color(0xFFE4E4E7)
     } else if (isAzkaban) {
@@ -702,6 +707,7 @@ private fun GroupTab(
     }
     val borderColor = when {
         selected -> Color.Transparent
+        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.30f)
         isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.20f)
         isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.25f)
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)

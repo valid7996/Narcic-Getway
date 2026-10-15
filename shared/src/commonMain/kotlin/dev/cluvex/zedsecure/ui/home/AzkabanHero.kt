@@ -245,6 +245,7 @@ fun AzkabanConnectButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isNoir: Boolean = false,
+    isBlossom: Boolean = false,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
@@ -253,7 +254,22 @@ fun AzkabanConnectButton(
 
     val buttonScale = if (isPressed) 0.95f else 1f
 
-    val bgGradient = if (isNoir) {
+    val bgGradient = if (isBlossom) {
+        when {
+            state == ConnectionState.Error -> Brush.horizontalGradient(
+                listOf(Color(0xFF991B1B), Color(0xFFEF4444)),
+            )
+            isConnected -> Brush.horizontalGradient(
+                listOf(Color(0xFFDB2777), Color(0xFFF472B6)),
+            )
+            isConnecting -> Brush.horizontalGradient(
+                listOf(Color(0xFF9D174D), Color(0xFFBE185D)),
+            )
+            else -> Brush.horizontalGradient(
+                listOf(Color(0xFF381226), Color(0xFF521937)),
+            )
+        }
+    } else if (isNoir) {
         when {
             state == ConnectionState.Error -> Brush.horizontalGradient(
                 listOf(Color(0xFF7F1D1D), Color(0xFFDC2626)),
@@ -285,7 +301,13 @@ fun AzkabanConnectButton(
         }
     }
 
-    val borderColor = if (isNoir) {
+    val borderColor = if (isBlossom) {
+        when {
+            isConnected -> Color(0xFFFFC2D6).copy(alpha = 0.85f)
+            isConnecting -> Color(0xFFF472B6).copy(alpha = 0.65f)
+            else -> Color(0xFFBE185D).copy(alpha = 0.45f)
+        }
+    } else if (isNoir) {
         when {
             isConnected -> Color(0xFFFFFFFF).copy(alpha = 0.70f)
             isConnecting -> Color(0xFFE4E4E7).copy(alpha = 0.50f)
@@ -322,7 +344,7 @@ fun AzkabanConnectButton(
                 CyberRadarIndicator(Modifier.size(24.dp))
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = if (isNoir) "در حال برقراری اتصال امن..." else "در حال ایجاد پیوند امن...",
+                    text = if (isNoir || isBlossom) "در حال برقراری اتصال امن..." else "در حال ایجاد پیوند امن...",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -331,7 +353,9 @@ fun AzkabanConnectButton(
                 Icon(
                     painter = painterResource(if (isConnected) Res.drawable.ic_close else Res.drawable.ic_bolt),
                     contentDescription = null,
-                    tint = if (isNoir) {
+                    tint = if (isBlossom) {
+                        if (isConnected) Color.White else Color(0xFFFFD1DC)
+                    } else if (isNoir) {
                         if (isConnected) Color.White else Color(0xFFE4E4E7)
                     } else {
                         if (isConnected) Color(0xFFF0F9FF) else Color(0xFF7DD3FC)
@@ -340,7 +364,7 @@ fun AzkabanConnectButton(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = if (isNoir) {
+                    text = if (isNoir || isBlossom) {
                         when {
                             state == ConnectionState.Error -> "تلاش مجدد"
                             isConnected -> "قطع اتصال امن"
@@ -355,7 +379,7 @@ fun AzkabanConnectButton(
                     },
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isConnected) Color.White else (if (isNoir) Color(0xFFF4F4F5) else Color(0xFFE0F2FE)),
+                    color = if (isConnected) Color.White else (if (isBlossom) Color(0xFFFFF1F5) else if (isNoir) Color(0xFFF4F4F5) else Color(0xFFE0F2FE)),
                 )
             }
         }
