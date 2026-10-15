@@ -101,6 +101,7 @@ internal fun HomeServerSection(
     val updatedTemplate = stringResource(Res.string.subs_updated)
     val removedTemplate = stringResource(Res.string.removed_count)
     val copiedToast = stringResource(Res.string.copied)
+    val nothingToExport = stringResource(Res.string.nothing_to_export)
 
     // The group tabs: every server, the manual ones, then one per subscription.
     var group by remember { mutableStateOf("all") }
@@ -322,6 +323,20 @@ internal fun HomeServerSection(
                         onClick = {
                             overflowOpen = false
                             repository.sortByTestResults()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.export_all)) },
+                        leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null) },
+                        onClick = {
+                            overflowOpen = false
+                            val payload = repository.exportAllPayloads()
+                            if (payload.isBlank()) {
+                                platform.toast(nothingToExport)
+                            } else {
+                                platform.copyToClipboard(payload)
+                                platform.toast(copiedToast)
+                            }
                         },
                     )
                     HorizontalDivider()
