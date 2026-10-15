@@ -264,19 +264,6 @@ fun HomeScreen(
                 }
 
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().layoutId(STAGE_ID)) {
-                  if (isAzkaban) {
-                    AzkabanHero(
-                        state = ui.state,
-                        onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
-                            {
-                                if (ui.state != ConnectionState.Disconnecting) {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onToggleConnection()
-                                }
-                            }
-                        } else null,
-                    )
-                  } else {
                     val stage = maxHeight
                     val tight = stage < 260.dp
                     val stageHero = minOf(heroSize, stage * 0.58f)
@@ -285,24 +272,39 @@ fun HomeScreen(
                       horizontalAlignment = Alignment.CenterHorizontally,
                       verticalArrangement = Arrangement.Center,
                     ) {
-                      Hero(
-                          state = ui.state,
-                          sessionId = ui.sessionId,
-                          size = stageHero,
-                          onLongPress = {
-                              burst++
-                              haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                          },
+                      if (isAzkaban) {
+                        AzkabanHero(
+                            state = ui.state,
+                            size = stageHero,
+                            onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
+                                {
+                                    if (ui.state != ConnectionState.Disconnecting) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onToggleConnection()
+                                    }
+                                }
+                            } else null,
+                        )
+                      } else {
+                        Hero(
+                            state = ui.state,
+                            sessionId = ui.sessionId,
+                            size = stageHero,
+                            onLongPress = {
+                                burst++
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
 
-                          onTap = if (connectStyle == ConnectButtonStyle.Hero) {
-                              {
-                                  if (ui.state != ConnectionState.Disconnecting) {
-                                      haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                      onToggleConnection()
-                                  }
-                              }
-                          } else null,
-                      )
+                            onTap = if (connectStyle == ConnectButtonStyle.Hero) {
+                                {
+                                    if (ui.state != ConnectionState.Disconnecting) {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onToggleConnection()
+                                    }
+                                }
+                            } else null,
+                        )
+                      }
 
                       Spacer(Modifier.height(if (tight) 8.dp else 20.dp))
 
@@ -368,7 +370,6 @@ fun HomeScreen(
                           }
                       }
                     }
-                  }
                 }
 
                 if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ACTIVE_CONFIG) {
