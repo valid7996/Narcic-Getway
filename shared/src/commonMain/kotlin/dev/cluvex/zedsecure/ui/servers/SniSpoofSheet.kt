@@ -24,10 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
+import dev.cluvex.zedsecure.ui.components.PickerField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -83,24 +81,23 @@ fun SniSpoofSheet(
         }
     }
 
-    var name by remember { mutableStateOf(initialName.ifBlank { "SNI Spoof" }) }
-    var ip by remember {
+    var name by remember(initialName) { mutableStateOf(initialName.ifBlank { "SNI Spoof" }) }
+    var ip by remember(initial) {
         mutableStateOf(
             initial?.cleanIp?.ifBlank { null }
                 ?: initParsed?.address?.takeIf { it != "sni-spoof" && it != "127.0.0.1" }
                 ?: SniSpoofConfig.defaultConnectIp
         )
     }
-    var port by remember {
+    var port by remember(initial) {
         mutableStateOf(
             initParsed?.port?.takeIf { it > 0 && it != SniSpoofConfig.RSTA_LOCAL_PORT }?.toString()
                 ?: initial?.connectPort?.takeIf { it > 0 }?.toString()
                 ?: SniSpoofConfig.defaultConnectPort.toString()
         )
     }
-    var fakeSni by remember { mutableStateOf(initial?.fakeSni?.ifBlank { null } ?: SniSpoofConfig.defaultFakeSni) }
-    var method by remember { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty().ifBlank { SniSpoofConfig.defaultMethod })) }
-    var methodOpen by remember { mutableStateOf(false) }
+    var fakeSni by remember(initial) { mutableStateOf(initial?.fakeSni?.ifBlank { null } ?: SniSpoofConfig.defaultFakeSni) }
+    var method by remember(initial) { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty().ifBlank { SniSpoofConfig.defaultMethod })) }
 
     var showLogsDialog by remember { mutableStateOf(false) }
 
@@ -110,7 +107,12 @@ fun SniSpoofSheet(
     val sniOk = fakeSni.trim().isNotBlank()
     val canSave = ipOk && portOk && sniOk
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding()
                 .padding(start = 20.dp, end = 20.dp, bottom = 32.dp),
@@ -166,15 +168,16 @@ fun SniSpoofSheet(
                 labelRes = Res.string.snispoof_clean_ip,
                 placeholder = SniSpoofConfig.DEFAULT_CONNECT_IP,
                 isError = ip.isNotBlank() && ip.trim().isBlank(),
-            ) { ip = it }
+            ) { ip = normalizeDigits(it).trim() }
 
             // ── Connect Port (Real Server Port) ────────────────────────────────────────────────
             SniField(
                 value = port,
                 labelRes = Res.string.snispoof_connect_port,
                 placeholder = SniSpoofConfig.DEFAULT_CONNECT_PORT.toString(),
+                numeric = true,
                 isError = port.isNotEmpty() && portInt == null,
-            ) { port = it.filter(Char::isDigit).take(5) }
+            ) { port = normalizeDigits(it).filter(Char::isDigit).take(5) }
 
             // ── Fake SNI (DPI Disguise Domain) ─────────────────────────────────────────────────
             SniField(
@@ -182,35 +185,15 @@ fun SniSpoofSheet(
                 labelRes = Res.string.snispoof_fake_sni,
                 placeholder = SniSpoofConfig.DEFAULT_FAKE_SNI,
                 isError = fakeSni.isNotBlank() && fakeSni.trim().isBlank(),
-            ) { fakeSni = it }
+            ) { fakeSni = normalizeDigits(it).trim() }
 
             // ── Bypass Method Picker ───────────────────────────────────────────────────────────
-            ExposedDropdownMenuBox(expanded = methodOpen, onExpandedChange = { methodOpen = !methodOpen }) {
-                OutlinedTextField(
-                    value = method,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(Res.string.snispoof_method)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(methodOpen) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(
-                        androidx.compose.material3.MenuAnchorType.PrimaryNotEditable,
-                    ),
-                )
-                DropdownMenu(expanded = methodOpen, onDismissRequest = { methodOpen = false }) {
-                    SniSpoofConfig.METHODS.forEach { m ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    m,
-                                    fontWeight = if (m == method) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (m == method) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                )
-                            },
-                            onClick = { method = m; methodOpen = false },
-                        )
-                    }
-                }
-            }
+            PickerField(
+                label = stringResource(Res.string.snispoof_method),
+                options = SniSpoofConfig.METHODS.map { it to it },
+                selected = method,
+                onSelect = { method = it },
+            )
 
             // ── Remark / Profile Name (only shown when editing an existing profile) ─────────
             if (initial != null) {
@@ -322,6 +305,7 @@ private fun SniField(
     labelRes: StringResource,
     placeholder: String? = null,
     minLines: Int = 1,
+    numeric: Boolean = false,
     isError: Boolean = false,
     onChange: (String) -> Unit,
 ) {
@@ -333,6 +317,22 @@ private fun SniField(
         singleLine = minLines == 1,
         minLines = minLines,
         isError = isError,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+            keyboardType = if (numeric) {
+                androidx.compose.ui.text.input.KeyboardType.Number
+            } else {
+                androidx.compose.ui.text.input.KeyboardType.Ascii
+            },
+        ),
         modifier = Modifier.fillMaxWidth(),
     )
 }
+
+private fun normalizeDigits(input: String): String =
+    input.map {
+        when (it) {
+            in '۰'..'۹' -> '0' + (it - '۰')
+            in '٠'..'٩' -> '0' + (it - '٠')
+            else -> it
+        }
+    }.joinToString("")
