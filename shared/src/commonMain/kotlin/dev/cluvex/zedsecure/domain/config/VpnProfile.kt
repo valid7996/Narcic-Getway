@@ -113,10 +113,15 @@ data class VpnProfile(
 
     val isSsh: Boolean get() = source is ProfileSource.Ssh
 
-    val isSniSpoof: Boolean get() = source is ProfileSource.SniSpoof
+    val isLoopbackOrRstaPort: Boolean
+        get() = SniSpoofConfig.isSpoofTarget(address, port)
 
-    /** The SNI spoof that runs without root, on the Rsta engine; its address says nothing about the server, so it is pinged through the engine. */
-    val isNoRootSniSpoof: Boolean get() = (source as? ProfileSource.SniSpoof)?.settings?.noRoot == true
+    val isSniSpoof: Boolean get() = source is ProfileSource.SniSpoof || isLoopbackOrRstaPort
+
+    /** The SNI spoof that runs without root, on the SNI spoof engine; its address says nothing about the server, so it is pinged through the engine. */
+    val isNoRootSniSpoof: Boolean
+        get() = (source as? ProfileSource.SniSpoof)?.settings?.noRoot == true ||
+            (isLoopbackOrRstaPort && source !is ProfileSource.CrossChain && source !is ProfileSource.AutoSelect)
 
     val isOpenConnect: Boolean get() = source is ProfileSource.OpenConnect
 
@@ -145,7 +150,33 @@ data class VpnProfile(
 
     fun sshSettings(): SshProfile? = (source as? ProfileSource.Ssh)?.settings
 
-    fun sniSpoofSettings(): SniSpoofProfile? = (source as? ProfileSource.SniSpoof)?.settings
+    fun sniSpoofSettings(): SniSpoofProfile? {
+        (source as? ProfileSource.SniSpoof)?.let { return it.settings }
+        if (isLoopbackOrRstaPort && source !is ProfileSource.CrossChain && source !is ProfileSource.AutoSelect) {
+            val clean = if (SniSpoofConfig.isLoopback(address) || address == "sni-spoof" || address.isBlank() || address == "-") {
+                SniSpoofConfig.defaultConnectIp
+            } else {
+                address
+            }
+            val p = if (port == SniSpoofConfig.RSTA_LOCAL_PORT || port <= 0) {
+                SniSpoofConfig.defaultConnectPort
+            } else {
+                port
+            }
+            val rawLnk = (source as? ProfileSource.Link)?.link
+                ?: (source as? ProfileSource.RawJson)?.json
+                ?: ""
+            return SniSpoofProfile(
+                link = rawLnk,
+                fakeSni = SniSpoofConfig.defaultFakeSni,
+                cleanIp = clean,
+                noRoot = true,
+                method = SniSpoofConfig.defaultMethod,
+                connectPort = p,
+            )
+        }
+        return null
+    }
 
     val isManagedTunnel: Boolean
         get() = isPsiphon || isDnsTunnel || isMasterDns || isTor || isSsh || isSniSpoof ||

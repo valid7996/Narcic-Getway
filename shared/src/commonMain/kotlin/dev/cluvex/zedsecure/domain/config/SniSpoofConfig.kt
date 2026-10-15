@@ -20,12 +20,17 @@ import kotlinx.serialization.json.jsonPrimitive
 object SniSpoofConfig {
 
     const val DEFAULT_METHOD = "combined"
-    const val DEFAULT_CONNECT_IP = "104.18.38.202"
+    const val DEFAULT_CONNECT_IP = "104.21.33.58"
     const val DEFAULT_CONNECT_PORT = 443
-    const val DEFAULT_FAKE_SNI = "cdnjs.cloudflare.com"
+    const val DEFAULT_FAKE_SNI = "www.sciencedirect.com"
 
-    /** The port a configuration made for the Rsta app points its proxy at. */
+    /** The port a configuration made for SNI Spoof points its proxy at. */
     const val RSTA_LOCAL_PORT = 40443
+
+    var defaultConnectIp: String = DEFAULT_CONNECT_IP
+    var defaultConnectPort: Int = DEFAULT_CONNECT_PORT
+    var defaultFakeSni: String = DEFAULT_FAKE_SNI
+    var defaultMethod: String = DEFAULT_METHOD
 
     val METHODS = listOf(
         "combined",
@@ -40,23 +45,32 @@ object SniSpoofConfig {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun method(raw: String): String = raw.trim().takeIf { it in METHODS } ?: DEFAULT_METHOD
+    fun method(raw: String): String = raw.trim().takeIf { it in METHODS } ?: defaultMethod
 
     fun isLoopback(host: String): Boolean {
         val h = host.trim().trim('[', ']').lowercase()
         return h == "localhost" || h == "::1" || h.startsWith("127.")
     }
 
+    fun isSpoofTarget(address: String?, port: Int?): Boolean {
+        val a = address?.trim()?.trim('[', ']')?.lowercase().orEmpty()
+        return isLoopback(a) || a == "sni-spoof" || port == RSTA_LOCAL_PORT
+    }
+
     /**
      * Where the engine connects for a profile whose proxy outbound is [realHost]:[realPort]: the clean IP when there is
      * one, else the host itself; the port of the profile, else the link's (443 when the link points at this device).
-     * Null when the engine would have nowhere to go: the link points at this device and no clean IP says where the server is.
+     * Falls back to [defaultConnectIp] and [defaultConnectPort] when pointing at loopback.
      */
     fun target(settings: SniSpoofProfile, realHost: String, realPort: Int): Pair<String, Int>? {
-        val host = settings.cleanIp.trim().ifEmpty { realHost.trim() }
-        if (host.isEmpty() || (settings.cleanIp.isBlank() && isLoopback(host))) return null
-        val port = settings.connectPort.takeIf { it in 1..65535 }
-            ?: if (isLoopback(realHost) || realPort !in 1..65535) 443 else realPort
+        val candidate = settings.cleanIp.trim().ifEmpty { realHost.trim() }
+        val host = if (candidate.isEmpty() || isLoopback(candidate) || candidate == "sni-spoof") {
+            defaultConnectIp
+        } else {
+            candidate
+        }
+        val port = settings.connectPort.takeIf { it in 1..65535 && it != RSTA_LOCAL_PORT }
+            ?: if (isLoopback(realHost) || realPort !in 1..65535 || realPort == RSTA_LOCAL_PORT) defaultConnectPort else realPort
         return host to port
     }
 

@@ -259,9 +259,8 @@ class SniSpoofNoRootTest {
         val (host, port) = SniSpoofConfig.outboundOf(vless)!!
         assertEquals("127.0.0.1", host)
         assertEquals(40443, port)
-        assertTrue(SniSpoofConfig.isLoopback(host))
-        // No clean IP: the engine would have nowhere to go, and the address of the profile (this device) cannot be pinged.
-        assertNull(SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", noRoot = true), host, port))
+        // No clean IP: falls back to default clean IP and port
+        assertEquals(SniSpoofConfig.defaultConnectIp to SniSpoofConfig.defaultConnectPort, SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", noRoot = true), host, port))
         // With one: its address, and 443 where the link only points at this device.
         assertEquals("104.18.38.202" to 443, SniSpoofConfig.target(SniSpoofProfile(link = "", fakeSni = "a.com", cleanIp = "104.18.38.202", noRoot = true), host, port))
         // A link with a real address keeps its own port, and a port of the profile overrides it.

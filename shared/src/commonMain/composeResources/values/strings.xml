@@ -1505,8 +1505,8 @@
     <string name="psiphon_beast_title">Beast mode</string>
     <string name="psiphon_beast_summary">Tries every protocol on every server at once. Connects where the normal way does not, and uses more battery and data while connecting. Psiphon also remembers the route that worked and uses it first the next time.</string>
     <string name="psiphon_cdn_hint">Optional. Addresses and CIDRs separated by commas, spaces or new lines. Used in Auto, Direct and CDN modes.</string>
-    <string name="snispoof_noroot_add_title">Add SNI Spoof</string>
-    <string name="snispoof_noroot_note">Works without root. The Rsta engine disguises the TLS ClientHello so the real server name is hidden from filters. Enter the server IP, port, and the fake SNI domain to present instead.</string>
+    <string name="snispoof_noroot_add_title">SNI Spoof</string>
+    <string name="snispoof_noroot_note">Works without root. Disguises the TLS ClientHello so the real server name is hidden from filters. Enter the clean IP, port, and fake SNI domain to connect.</string>
     <string name="snispoof_method">Spoof method</string>
     <string name="snispoof_connect_port">Port</string>
     <string name="snispoof_needs_clean_ip">This link points at this device (127.0.0.1). Enter the clean IP of the real server so the engine knows where to connect.</string>

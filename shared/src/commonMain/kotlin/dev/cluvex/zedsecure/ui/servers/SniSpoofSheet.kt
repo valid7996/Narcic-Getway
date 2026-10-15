@@ -59,17 +59,14 @@ import dev.cluvex.zedsecure.domain.config.SniSpoofConfig
 import dev.cluvex.zedsecure.domain.config.SniSpoofProfile
 
 /**
- * Dedicated RSTA Spoof configuration sheet — matching the RstaNg experience:
- *  • Connect IP (real server/CDN clean IP, default: 104.18.38.202)
+ * Dedicated SNI Spoof configuration sheet:
+ *  • Connect IP (clean IP, default: 104.21.33.58)
  *  • Connect Port (real server port, default: 443)
- *  • Fake SNI (DPI disguise domain, default: cdnjs.cloudflare.com)
+ *  • Fake SNI (DPI disguise domain, default: www.sciencedirect.com)
  *  • Spoof Method (combined, fragment, random_split, etc.)
  *  • Engine Status
  *  • View Logs dialog
- *  • Optional remark name
- *  • Optional advanced proxy link
- *
- * No mandatory server wrapping or complex config creation is required.
+ *  • Profile name
  */
 @Composable
 fun SniSpoofSheet(
@@ -86,37 +83,32 @@ fun SniSpoofSheet(
         }
     }
 
-    var name by remember { mutableStateOf(initialName.ifBlank { "RSTA Spoof" }) }
+    var name by remember { mutableStateOf(initialName.ifBlank { "SNI Spoof" }) }
     var ip by remember {
         mutableStateOf(
             initial?.cleanIp?.ifBlank { null }
                 ?: initParsed?.address?.takeIf { it != "sni-spoof" && it != "127.0.0.1" }
-                ?: SniSpoofConfig.DEFAULT_CONNECT_IP
+                ?: SniSpoofConfig.defaultConnectIp
         )
     }
     var port by remember {
         mutableStateOf(
             initParsed?.port?.takeIf { it > 0 && it != SniSpoofConfig.RSTA_LOCAL_PORT }?.toString()
                 ?: initial?.connectPort?.takeIf { it > 0 }?.toString()
-                ?: SniSpoofConfig.DEFAULT_CONNECT_PORT.toString()
+                ?: SniSpoofConfig.defaultConnectPort.toString()
         )
     }
-    var fakeSni by remember { mutableStateOf(initial?.fakeSni ?: SniSpoofConfig.DEFAULT_FAKE_SNI) }
-    var method by remember { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty())) }
+    var fakeSni by remember { mutableStateOf(initial?.fakeSni ?: SniSpoofConfig.defaultFakeSni) }
+    var method by remember { mutableStateOf(SniSpoofConfig.method(initial?.method.orEmpty().ifBlank { SniSpoofConfig.defaultMethod })) }
     var methodOpen by remember { mutableStateOf(false) }
 
-    // Advanced: optional link override
-    var advancedOpen by remember { mutableStateOf(false) }
-    var rawLink by remember { mutableStateOf(initial?.link?.takeIf { it.isNotBlank() && initParsed == null } ?: "") }
     var showLogsDialog by remember { mutableStateOf(false) }
 
     val portInt = port.trim().toIntOrNull()?.takeIf { it in 1..65535 }
     val ipOk = ip.trim().isNotBlank()
     val portOk = portInt != null
     val sniOk = fakeSni.trim().isNotBlank()
-    val advancedLinkOk = !advancedOpen || rawLink.isBlank() ||
-        runCatching { dev.cluvex.zedsecure.domain.config.ConfigParser.parse(rawLink.trim()) }.isSuccess
-    val canSave = ipOk && portOk && sniOk && advancedLinkOk
+    val canSave = ipOk && portOk && sniOk
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -224,7 +216,7 @@ fun SniSpoofSheet(
             SniField(
                 value = name,
                 labelRes = Res.string.manual_remark,
-                placeholder = "RSTA Spoof",
+                placeholder = "SNI Spoof",
             ) { name = it }
 
             // ── Engine Status & Log Actions ────────────────────────────────────────────────────
@@ -261,53 +253,18 @@ fun SniSpoofSheet(
                 }
             }
 
-            // ── Advanced: optional proxy link ──────────────────────────────────────────────────
-            HorizontalDivider()
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    stringResource(Res.string.snispoof_advanced_link_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                androidx.compose.material3.Switch(
-                    checked = advancedOpen,
-                    onCheckedChange = { advancedOpen = it },
-                )
-            }
-            if (advancedOpen) {
-                SniField(
-                    rawLink,
-                    Res.string.snispoof_link,
-                    placeholder = "vless://… / trojan://… / { \"outbounds\": … }",
-                    minLines = 3,
-                    isError = rawLink.isNotBlank() && !advancedLinkOk,
-                ) { rawLink = it }
-                Text(
-                    stringResource(Res.string.snispoof_advanced_link_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
             // ── Save Button ────────────────────────────────────────────────────────────────────
             Button(
                 enabled = canSave,
                 onClick = {
-                    val resolvedPort = portInt ?: SniSpoofConfig.DEFAULT_CONNECT_PORT
-                    val resolvedIp = ip.trim().ifBlank { SniSpoofConfig.DEFAULT_CONNECT_IP }
-                    val resolvedSni = fakeSni.trim().ifBlank { SniSpoofConfig.DEFAULT_FAKE_SNI }
-                    val profileName = name.trim().ifBlank { "RSTA Spoof" }
+                    val resolvedPort = portInt ?: SniSpoofConfig.defaultConnectPort
+                    val resolvedIp = ip.trim().ifBlank { SniSpoofConfig.defaultConnectIp }
+                    val resolvedSni = fakeSni.trim().ifBlank { SniSpoofConfig.defaultFakeSni }
+                    val profileName = name.trim().ifBlank { "SNI Spoof" }
 
-                    val link = if (advancedOpen && rawLink.isNotBlank()) {
-                        rawLink.trim()
-                    } else {
-                        "vless://00000000-0000-0000-0000-000000000000@127.0.0.1:${SniSpoofConfig.RSTA_LOCAL_PORT}" +
-                            "?security=tls&sni=$resolvedSni&type=ws&path=%2F#$profileName"
-                    }
+                    val link = initial?.link?.takeIf { it.isNotBlank() }
+                        ?: ("vless://00000000-0000-0000-0000-000000000000@127.0.0.1:${SniSpoofConfig.RSTA_LOCAL_PORT}" +
+                            "?security=tls&sni=$resolvedSni&type=ws&path=%2F#$profileName")
 
                     onSave(
                         profileName,

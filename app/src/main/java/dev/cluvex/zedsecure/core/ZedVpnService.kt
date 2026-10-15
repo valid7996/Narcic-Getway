@@ -326,7 +326,7 @@ class ZedVpnService : VpnService() {
                     stopEverything(); return@launch
                 }
 
-                writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost)
+                writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost, fakeSni)
 
                 if (!XrayController.start(xray.toString())) {
                     VpnManager.onError(coreStartError())
@@ -360,38 +360,47 @@ class ZedVpnService : VpnService() {
         return host to port
     }
 
-    private fun writeProxyOutbound(xray: JSONObject, host: String, port: Int, origHost: String) {
+    private fun writeProxyOutbound(xray: JSONObject, host: String, port: Int, origHost: String, fakeSni: String = "") {
         val ob = proxyOutbound(xray) ?: return
         val settings = ob.optJSONObject("settings") ?: return
         val node = settings.optJSONArray("vnext")?.optJSONObject(0)
             ?: settings.optJSONArray("servers")?.optJSONObject(0) ?: return
         node.put("address", host); node.put("port", port)
 
-        // Make sure streamSettings SNI is explicitly kept to the real remote host
+        val fallbackSni = fakeSni.trim().ifBlank { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultFakeSni }
+
+        // Make sure streamSettings SNI is explicitly kept to the real remote host or fallback
         val stream = ob.optJSONObject("streamSettings")
         if (stream != null) {
             val tlsSettings = stream.optJSONObject("tlsSettings")
             if (tlsSettings != null) {
-                val current = tlsSettings.optString("serverName")
-                if ((current.isBlank() || current.startsWith("127.") || current == "localhost") &&
-                    !origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()
-                ) {
-                    tlsSettings.put("serverName", origHost)
+                var current = tlsSettings.optString("serverName")
+                if (current.isBlank() || current.startsWith("127.") || current == "localhost") {
+                    current = if (!origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()) {
+                        origHost
+                    } else {
+                        fallbackSni
+                    }
+                    tlsSettings.put("serverName", current)
                 }
                 tlsSettings.remove("allowInsecure")
-                val sni = tlsSettings.optString("serverName").takeIf { it.isNotBlank() }
-                    ?: origHost.takeIf { !it.startsWith("127.") && it.isNotBlank() }
-                if (sni != null && !tlsSettings.has("verifyPeerCertByName") && !tlsSettings.has("pinnedPeerCertSha256")) {
+                val sni = current.takeIf { it.isNotBlank() && !it.startsWith("127.") && it != "localhost" }
+                    ?: fallbackSni
+                tlsSettings.put("serverName", sni)
+                if (!tlsSettings.has("verifyPeerCertByName") && !tlsSettings.has("pinnedPeerCertSha256")) {
                     tlsSettings.put("verifyPeerCertByName", sni)
                 }
             }
             val realitySettings = stream.optJSONObject("realitySettings")
             if (realitySettings != null) {
-                val current = realitySettings.optString("serverName")
-                if ((current.isBlank() || current.startsWith("127.") || current == "localhost") &&
-                    !origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()
-                ) {
-                    realitySettings.put("serverName", origHost)
+                var current = realitySettings.optString("serverName")
+                if (current.isBlank() || current.startsWith("127.") || current == "localhost") {
+                    current = if (!origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()) {
+                        origHost
+                    } else {
+                        fallbackSni
+                    }
+                    realitySettings.put("serverName", current)
                 }
                 realitySettings.remove("allowInsecure")
             }
@@ -1185,10 +1194,14 @@ class ZedVpnService : VpnService() {
         val wrapper = JSONObject(configJson)
         val sni = wrapper.optJSONObject("sni") ?: return null
         val clean = sni.optString("cleanIp").orEmpty()
-        if (clean.isNotBlank()) return clean
+        if (clean.isNotBlank() && !clean.startsWith("127.") && clean != "localhost" && clean != "sni-spoof") return clean
         val xray = wrapper.optJSONObject("xray") ?: return null
         val host = readProxyOutbound(xray)?.first ?: return null
-        java.net.InetAddress.getByName(host).hostAddress
+        if (!host.startsWith("127.") && host != "localhost" && host != "sni-spoof") {
+            java.net.InetAddress.getByName(host).hostAddress
+        } else {
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp
+        }
     }.getOrNull()
 
     private fun VpnService.Builder.addLanAwareRoutes(

@@ -81,6 +81,18 @@ class ConfigRepository(private val store: KeyValueStore) {
     private val _activeId = MutableStateFlow(store.getString(KEY_ACTIVE))
     val activeId: StateFlow<String?> = _activeId.asStateFlow()
 
+    init {
+        val savedIp = store.getString(KEY_SNISPOOF_IP)?.takeIf { it.isNotBlank() }
+        if (savedIp != null) dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp = savedIp
+        val savedPort = store.getInt(KEY_SNISPOOF_PORT, 0).takeIf { it in 1..65535 }
+        if (savedPort != null) dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectPort = savedPort
+        val savedSni = store.getString(KEY_SNISPOOF_SNI)?.takeIf { it.isNotBlank() }
+        if (savedSni != null) dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultFakeSni = savedSni
+        val savedMethod = store.getString(KEY_SNISPOOF_METHOD)?.takeIf { it.isNotBlank() }
+        if (savedMethod != null) dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultMethod =
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.method(savedMethod)
+    }
+
     fun activeProfile(): VpnProfile? = _activeId.value?.let { profile(it) }
 
     fun profile(id: String): VpnProfile? =
@@ -852,11 +864,29 @@ class ConfigRepository(private val store: KeyValueStore) {
 
     fun lastAutoSelectPick(autoId: String): String? = store.getString(KEY_AUTO_PICK + autoId)
 
+    fun saveSniSpoofDefaults(cleanIp: String, connectPort: Int, fakeSni: String, method: String) {
+        val ip = cleanIp.trim().ifBlank { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
+        val port = if (connectPort in 1..65535) connectPort else dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT
+        val sni = fakeSni.trim().ifBlank { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_FAKE_SNI }
+        val m = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.method(method)
+
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp = ip
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectPort = port
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultFakeSni = sni
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultMethod = m
+
+        store.putString(KEY_SNISPOOF_IP, ip)
+        store.putInt(KEY_SNISPOOF_PORT, port)
+        store.putString(KEY_SNISPOOF_SNI, sni)
+        store.putString(KEY_SNISPOOF_METHOD, m)
+    }
+
     fun addSniSpoof(
         settings: dev.cluvex.zedsecure.domain.config.SniSpoofProfile,
         name: String,
         id: String? = null,
     ): VpnProfile {
+        saveSniSpoofDefaults(settings.cleanIp, settings.connectPort, settings.fakeSni, settings.method)
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromSniSpoof(
             settings = settings,
@@ -1522,6 +1552,10 @@ class ConfigRepository(private val store: KeyValueStore) {
         private const val KEY_SUBS = "subscriptions"
         private const val KEY_ACTIVE = "active_id"
         private const val KEY_AUTO_PICK = "auto_pick:"
+        const val KEY_SNISPOOF_IP = "snispoof_default_ip"
+        const val KEY_SNISPOOF_PORT = "snispoof_default_port"
+        const val KEY_SNISPOOF_SNI = "snispoof_default_sni"
+        const val KEY_SNISPOOF_METHOD = "snispoof_default_method"
 
         const val DEFAULT_SUB_IRANCELL = "default-narcic-irancell"
         const val DEFAULT_SUB_MCI = "default-mci"
