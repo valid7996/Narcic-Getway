@@ -1,5 +1,6 @@
 package dev.cluvex.zedsecure.ui.home
 
+import dev.cluvex.zedsecure.ui.theme.Personalization
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode

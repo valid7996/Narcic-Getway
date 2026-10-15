@@ -1441,6 +1441,40 @@ private fun ConnectingBackdrop(
         ZedGradients.connectingStops
     }
 
+    // Circle.json floating particles in background for Default, Azkaban, Noir, and Blossom
+    val particleColors = when {
+        dynamicColor -> listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.primaryContainer,
+        )
+        isBlossom -> listOf(
+            Color(0xFFFF85A1), // Candy Rose
+            Color(0xFFF472B6), // Sakura Pink
+            Color(0xFFFFD1DC), // Soft Petal
+            Color(0xFFC084FC), // Lavender Orchid
+        )
+        isNoir -> listOf(
+            Color(0xFFFFFFFF), // Crisp White
+            Color(0xFFE4E4E7), // Silver
+            Color(0xFFA1A1AA), // Slate Gray
+            Color(0xFF71717A), // Charcoal
+        )
+        isAzkaban -> listOf(
+            Color(0xFF7DD3FC), // Soft Sky Cyan
+            Color(0xFF38BDF8), // Ice Blue
+            Color(0xFFBAE6FD), // Light Frost
+            Color(0xFF94A3B8), // Mellow Slate
+        )
+        else -> listOf(
+            Color(0xFF10B981), // Emerald
+            Color(0xFF38BDF8), // Cyan
+            Color(0xFFA78BFA), // Soft Violet
+            Color(0xFF34D399), // Mint Green
+        )
+    }
+
     Canvas(Modifier.fillMaxSize()) {
         if (intensity <= 0.002f) return@Canvas
         val w = size.width
@@ -1450,40 +1484,6 @@ private fun ConnectingBackdrop(
             brush = Brush.verticalGradient(colors = stops, startY = 0f, endY = h),
             alpha = 0.9f * intensity,
         )
-
-        // Circle.json floating particles in background for Default, Azkaban, Noir, and Blossom
-        val particleColors = when {
-            dynamicColor -> listOf(
-                MaterialTheme.colorScheme.primary,
-                MaterialTheme.colorScheme.secondary,
-                MaterialTheme.colorScheme.tertiary,
-                MaterialTheme.colorScheme.primaryContainer,
-            )
-            isBlossom -> listOf(
-                Color(0xFFFF85A1), // Candy Rose
-                Color(0xFFF472B6), // Sakura Pink
-                Color(0xFFFFD1DC), // Soft Petal
-                Color(0xFFC084FC), // Lavender Orchid
-            )
-            isNoir -> listOf(
-                Color(0xFFFFFFFF), // Crisp White
-                Color(0xFFE4E4E7), // Silver
-                Color(0xFFA1A1AA), // Slate Gray
-                Color(0xFF71717A), // Charcoal
-            )
-            isAzkaban -> listOf(
-                Color(0xFF7DD3FC), // Soft Sky Cyan
-                Color(0xFF38BDF8), // Ice Blue
-                Color(0xFFBAE6FD), // Light Frost
-                Color(0xFF94A3B8), // Mellow Slate
-            )
-            else -> listOf(
-                Color(0xFF10B981), // Emerald
-                Color(0xFF38BDF8), // Cyan
-                Color(0xFFA78BFA), // Soft Violet
-                Color(0xFF34D399), // Mint Green
-            )
-        }
 
         // Particle definitions from Circle.json: (relativeX, radiusDp, isStroke)
         val particles = listOf(
