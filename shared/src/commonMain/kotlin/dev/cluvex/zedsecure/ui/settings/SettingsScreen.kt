@@ -182,7 +182,7 @@ private fun RootPage(
     modifier: Modifier,
     onOpen: (SettingsPage) -> Unit,
     onAbout: () -> Unit,
-    onUpdate: (AppSettings) -> Unit,
+    onUpdate: ((AppSettings) -> AppSettings) -> Unit,
 
     hasAi: Boolean,
 ) {
@@ -415,7 +415,7 @@ private fun RootPage(
         )
 
         if (showLogs) LogSheet(onDismiss = { showLogs = false })
-        if (showRstaSpoof) RstaSpoofSheet(settings = settings, onUpdate = onUpdate, onDismiss = { showRstaSpoof = false })
+        if (showRstaSpoof) RstaSpoofSheet(settings = settings, onUpdate = { updated -> onUpdate { updated } }, onDismiss = { showRstaSpoof = false })
     }
 }
 
@@ -782,6 +782,19 @@ private fun UiPage(
                 selected = s.themeMode,
                 onSelected = { v -> onUpdate { it.copy(themeMode = v) } },
             )
+            SettingsSwitchRow(
+                title = stringResource(Res.string.title_pref_dynamic_color),
+                summary = stringResource(Res.string.summary_pref_dynamic_color),
+                checked = s.dynamicColor,
+                enabled = LocalPlatform.current.supportsDynamicColor,
+                onCheckedChange = { v -> onUpdate { it.copy(dynamicColor = v) } },
+            )
+            SettingsSwitchRow(
+                title = stringResource(Res.string.title_pref_amoled),
+                summary = stringResource(Res.string.summary_pref_amoled),
+                checked = s.amoledBlack,
+                onCheckedChange = { v -> onUpdate { it.copy(amoledBlack = v) } },
+            )
             SettingsListRow(
                 title = stringResource(Res.string.settings_language),
                 options = listOf(
@@ -806,6 +819,11 @@ private fun UiPage(
                 selected = s.uiFontScale,
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
+            SettingsActionRow(
+                title = "ویزارد خوش‌آمدگویی و راه‌اندازی اولیه",
+                summary = "تنظیم مجدد زبان، قالب و حالت نمایش",
+                onClick = { onUpdate { it.copy(onboardingVersion = 0) } },
+            )
         }
 
         ThemeProfileRow(
@@ -818,7 +836,7 @@ private fun UiPage(
                     if (profile != null) {
                         settings.applyThemeProfile(profile)
                     } else {
-                        settings.resetPersonalization()
+                        settings.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false)
                     }
                 }
             },

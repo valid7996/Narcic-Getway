@@ -20,9 +20,17 @@ import kotlinx.serialization.json.jsonPrimitive
 object SniSpoofConfig {
 
     const val DEFAULT_METHOD = "combined"
+    const val DEFAULT_CONNECT_IP = "104.21.33.58"
+    const val DEFAULT_CONNECT_PORT = 443
+    const val DEFAULT_FAKE_SNI = "www.sciencedirect.com"
 
     /** The port a configuration made for the Rsta app points its proxy at. */
     const val RSTA_LOCAL_PORT = 40443
+
+    var defaultConnectIp: String = DEFAULT_CONNECT_IP
+    var defaultConnectPort: Int = DEFAULT_CONNECT_PORT
+    var defaultFakeSni: String = DEFAULT_FAKE_SNI
+    var defaultMethod: String = DEFAULT_METHOD
 
     val METHODS = listOf(
         "combined",
@@ -43,7 +51,12 @@ object SniSpoofConfig {
         return (s == "127.0.0.1" || s == "localhost") && port == RSTA_LOCAL_PORT
     }
 
-    fun method(raw: String): String = raw.trim().takeIf { it in METHODS } ?: DEFAULT_METHOD
+    fun isSpoofTarget(address: String?, port: Int?): Boolean {
+        val a = address?.trim()?.trim('[', ']')?.lowercase().orEmpty()
+        return isLoopback(a) || a == "sni-spoof" || port == RSTA_LOCAL_PORT
+    }
+
+    fun method(raw: String): String = raw.trim().takeIf { it in METHODS } ?: defaultMethod
 
     fun isLoopback(host: String): Boolean {
         val h = host.trim().trim('[', ']').lowercase()
