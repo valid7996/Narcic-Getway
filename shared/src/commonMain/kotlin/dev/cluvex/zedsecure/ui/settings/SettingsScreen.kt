@@ -112,6 +112,7 @@ fun SettingsScreen(
                 modifier = modifier,
                 onOpen = { page = it },
                 onAbout = { showAbout = true },
+                onUpdate = onUpdate,
                 hasAi = ai != null,
             )
             SettingsPage.Ui -> UiPage(settings, contentPadding, modifier, onUpdate, onLanguage)
@@ -181,6 +182,7 @@ private fun RootPage(
     modifier: Modifier,
     onOpen: (SettingsPage) -> Unit,
     onAbout: () -> Unit,
+    onUpdate: (AppSettings) -> Unit,
 
     hasAi: Boolean,
 ) {
@@ -189,6 +191,7 @@ private fun RootPage(
     var checkTrigger by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var checking by androidx.compose.runtime.remember { mutableStateOf(false) }
     var showLogs by androidx.compose.runtime.remember { mutableStateOf(false) }
+    var showRstaSpoof by androidx.compose.runtime.remember { mutableStateOf(false) }
 
     val isDark = androidx.compose.material3.MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val dividerColor = if (isDark) Color(0xFF28384F).copy(alpha = 0.35f) else Color(0xFFE2E8F0).copy(alpha = 0.80f)
@@ -250,6 +253,17 @@ private fun RootPage(
                 iconTint = Color(0xFF38BDF8),
                 iconTile = true,
             ) { showLogs = true }
+        }
+
+        // The no-root SNI spoof, laid out as RstaNG does: one page for the whole app.
+        SettingsGroup {
+            SettingsMenuRow(
+                stringResource(Res.string.rsta_title),
+                stringResource(Res.string.rsta_sub),
+                leadingIcon = Res.drawable.ic_bolt,
+                iconTint = Color(0xFF5FE6B0),
+                iconTile = true,
+            ) { showRstaSpoof = true }
         }
 
         if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ROUTING) SettingsGroup(
@@ -401,6 +415,7 @@ private fun RootPage(
         )
 
         if (showLogs) LogSheet(onDismiss = { showLogs = false })
+        if (showRstaSpoof) RstaSpoofSheet(settings = settings, onUpdate = onUpdate, onDismiss = { showRstaSpoof = false })
     }
 }
 
@@ -767,19 +782,6 @@ private fun UiPage(
                 selected = s.themeMode,
                 onSelected = { v -> onUpdate { it.copy(themeMode = v) } },
             )
-            SettingsSwitchRow(
-                title = stringResource(Res.string.title_pref_dynamic_color),
-                summary = stringResource(Res.string.summary_pref_dynamic_color),
-                checked = s.dynamicColor,
-                enabled = LocalPlatform.current.supportsDynamicColor,
-                onCheckedChange = { v -> onUpdate { it.copy(dynamicColor = v) } },
-            )
-            SettingsSwitchRow(
-                title = stringResource(Res.string.title_pref_amoled),
-                summary = stringResource(Res.string.summary_pref_amoled),
-                checked = s.amoledBlack,
-                onCheckedChange = { v -> onUpdate { it.copy(amoledBlack = v) } },
-            )
             SettingsListRow(
                 title = stringResource(Res.string.settings_language),
                 options = listOf(
@@ -804,11 +806,6 @@ private fun UiPage(
                 selected = s.uiFontScale,
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
-            SettingsActionRow(
-                title = "ویزارد خوش‌آمدگویی و راه‌اندازی اولیه",
-                summary = "تنظیم مجدد زبان، قالب و حالت نمایش",
-                onClick = { onUpdate { it.copy(onboardingVersion = 0) } },
-            )
         }
 
         ThemeProfileRow(
@@ -821,7 +818,7 @@ private fun UiPage(
                     if (profile != null) {
                         settings.applyThemeProfile(profile)
                     } else {
-                        settings.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false)
+                        settings.resetPersonalization()
                     }
                 }
             },

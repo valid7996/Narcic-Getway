@@ -1271,15 +1271,10 @@ fun ServersScreen(
         SniSpoofSheet(
             candidates = spoofCandidates,
             onDismiss = { showSniSpoof = false },
-            onSave = { _, settings ->
+            onSave = { name, settings ->
                 showSniSpoof = false
-                repository.saveSniSpoofDefaults(
-                    settings.cleanIp,
-                    settings.connectPort,
-                    settings.fakeSni,
-                    settings.method,
-                )
-                toastRes(Res.string.saved)
+                repository.addSniSpoof(settings, name)
+                onServerActivated()
             },
         )
     }
@@ -1289,15 +1284,10 @@ fun ServersScreen(
             candidates = spoofCandidates,
             noRoot = true,
             onDismiss = { showSniSpoofNoRoot = false },
-            onSave = { _, settings ->
+            onSave = { name, settings ->
                 showSniSpoofNoRoot = false
-                repository.saveSniSpoofDefaults(
-                    settings.cleanIp,
-                    settings.connectPort,
-                    settings.fakeSni,
-                    settings.method,
-                )
-                toastRes(Res.string.saved)
+                repository.addSniSpoof(settings, name)
+                onServerActivated()
             },
         )
     }
@@ -1847,8 +1837,8 @@ internal fun AddServerSheet(
                     gradientEnd = Color(0xFF130E28).copy(alpha = 0.75f),
                     onClick = onSsh,
                 )
-                // SNI spoof without root: the Rsta engine splits and disguises the ClientHello on plain sockets.
-                GlassOptionCard(
+                // The no-root SNI spoof is a setting now (Settings > SNI spoof), as in RstaNG, not a profile to create.
+                if (ServersUiConfig.SHOW_SNI_SPOOF_NO_ROOT) GlassOptionCard(
                     title = stringResource(Res.string.snispoof_noroot_add_title),
                     subtitle = "",
                     icon = Res.drawable.ic_bolt,

@@ -41,6 +41,12 @@ interface Platform {
 
     fun liveStats(): LiveStats = LiveStats()
 
+    /** The state of the no-root SNI spoof engine, one line ("inactive", "active -> ip:port (sni=..., method=...)", "failed: ..."). */
+    fun rstaSpoofStatus(): String = ""
+
+    /** The recent lines of the engine's own log. */
+    fun rstaSpoofLog(): List<String> = emptyList()
+
     val isComputer: Boolean get() = false
 
     fun cryptoAcceleration(): String = ""

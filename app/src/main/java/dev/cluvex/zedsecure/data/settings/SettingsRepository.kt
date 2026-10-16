@@ -226,6 +226,11 @@ class SettingsRepository(context: Context) {
 
             killSwitch = prefs.getBoolean("kill_switch", d.killSwitch),
 
+            rstaSpoofConnectIp = prefs.str("rsta_connect_ip", d.rstaSpoofConnectIp),
+            rstaSpoofConnectPort = prefs.getInt("rsta_connect_port", d.rstaSpoofConnectPort),
+            rstaSpoofFakeSni = prefs.str("rsta_fake_sni", d.rstaSpoofFakeSni),
+            rstaSpoofMethod = prefs.str("rsta_method", d.rstaSpoofMethod),
+
             ai = prefs.getString("ai_settings", null)
                 ?.let { runCatching { aiJson.decodeFromString(AiSettings.serializer(), it) }.getOrNull() }
                 ?: d.ai,
@@ -428,6 +433,12 @@ class SettingsRepository(context: Context) {
             putInt("ssh_max_channels", s.sshMaxChannels)
 
             putBoolean("kill_switch", s.killSwitch)
+
+            putString("rsta_connect_ip", s.rstaSpoofConnectIp)
+            putInt("rsta_connect_port", s.rstaSpoofConnectPort)
+            putString("rsta_fake_sni", s.rstaSpoofFakeSni)
+            putString("rsta_method", s.rstaSpoofMethod)
+
             putString("ai_settings", aiJson.encodeToString(AiSettings.serializer(), s.ai))
         }.apply()
     }

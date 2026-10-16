@@ -27,6 +27,14 @@ object RstaSpoofEngine {
 
     @Volatile private var poller: Thread? = null
 
+    /** Where the engine's own lines go. The engine runs in the :snispoof process, whose LogBus nobody reads: the service points this at a file. */
+    @Volatile var logSink: ((String) -> Unit)? = null
+
+    private fun emit(line: String) {
+        LogBus.append(line)
+        logSink?.invoke(line)
+    }
+
     /** One ping at a time: the engine's log is one queue, and the sessions of a batch would answer for each other. */
     private val probeLock = Mutex()
 
@@ -47,6 +55,7 @@ object RstaSpoofEngine {
     fun start(listenPort: Int, ip: String, port: Int, fakeSni: String, method: String): Long {
         if (!isAvailable()) {
             Log.e(TAG, "engine unavailable: ${loadError() ?: "unknown"}")
+            emit("E/sni-spoof engine unavailable: ${loadError() ?: "unknown"}")
             return 0L
         }
         return try {
@@ -54,9 +63,10 @@ object RstaSpoofEngine {
             val id = GoNativeBridge.spfStart(listenPort, remote, fakeSni, method)
             if (id == 0L) {
                 Log.e(TAG, "spfStart returned 0: port $listenPort may be in use")
+                emit("E/sni-spoof spfStart failed: port $listenPort may be in use")
             } else {
                 sessions[id] = "$listenPort -> $remote"
-                LogBus.append("I/sni-spoof started: 127.0.0.1:$listenPort -> $remote (sni=$fakeSni, method=$method)")
+                emit("I/sni-spoof started: 127.0.0.1:$listenPort -> $remote (sni=$fakeSni, method=$method)")
                 startPolling()
             }
             id
@@ -108,33 +118,6 @@ object RstaSpoofEngine {
             }
         }
 
-    private val logBuffer = java.util.ArrayDeque<String>()
-    private val logLock = Any()
-    private const val LOG_BUFFER_MAX_LINES = 200
-
-    val isRunning: Boolean
-        get() = sessions.isNotEmpty()
-
-    fun statusSummary(): String {
-        if (!isAvailable()) return "unavailable: ${loadError() ?: "native bridge failed"}"
-        return if (isRunning) {
-            "active (${sessions.values.joinToString(", ")})"
-        } else {
-            "ready / inactive"
-        }
-    }
-
-    fun recentLogLines(): List<String> = synchronized(logLock) { logBuffer.toList() }
-
-    private fun appendLog(line: String) {
-        synchronized(logLock) {
-            logBuffer.addLast(line)
-            while (logBuffer.size > LOG_BUFFER_MAX_LINES) {
-                logBuffer.removeFirst()
-            }
-        }
-    }
-
     private fun startPolling() {
         if (poller?.isAlive == true) return
         poller = Thread({
@@ -144,9 +127,8 @@ object RstaSpoofEngine {
                     try { Thread.sleep(300) } catch (_: InterruptedException) { return@Thread }
                 } else {
                     val clean = line.trim()
-                    appendLog(clean)
                     val level = if (clean.startsWith("[ERR]")) "E" else "I"
-                    LogBus.append("$level/sni-spoof $clean")
+                    emit("$level/sni-spoof $clean")
                 }
             }
         }, "rsta-spoof-log").apply { isDaemon = true; start() }

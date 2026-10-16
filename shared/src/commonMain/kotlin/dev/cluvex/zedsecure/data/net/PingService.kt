@@ -31,14 +31,12 @@ object PingService {
      * The platform sets it; without it an Aether profile cannot be pinged.
      */
     /**
-     * Runs the Rsta engine for a no-root SNI spoof profile (a session on a free local port, to the address and with the
-     * server name given) and hands that port to the block, whose result it returns. The platform sets it; without it such
-     * a profile cannot be pinged.
+     * Keeps the no-root SNI spoof engine running (with the settings of the app) until the returned function is called;
+     * null when the engine could not be started. A profile that points at 127.0.0.1:40443 has no server of its own: it
+     * can only be measured while the engine is up, which is what the real delay needs. The platform sets it.
      */
     @Volatile
-    var sniSpoofTunnel: (suspend (ip: String, port: Int, sni: String, method: String, block: suspend (Int) -> Long) -> Long)? = null
-
-    private const val SNI_SPOOF_PROBE_TIMEOUT_MS = 60_000L
+    var rstaSpoofLease: (suspend () -> (() -> Unit)?)? = null
 
     @Volatile
     var aetherTunnel: (suspend (AetherProfile, suspend (Int) -> Long) -> Long)? = null
@@ -144,10 +142,8 @@ object PingService {
 
         val targets = profiles.filterNot { (it.isManagedTunnel && !it.isSingBoxConfig) || it.isDnsBasedTunnel }
         val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
-        val spoofTargets = if (sniSpoofTunnel != null) profiles.filter { it.isNoRootSniSpoof } else emptyList()
         val aetherPermits = Semaphore(1)
-        val spoofPermits = Semaphore(1)
-        val total = targets.size + aetherTargets.size + spoofTargets.size
+        val total = targets.size + aetherTargets.size
         var done = 0
         val doneLock = Semaphore(1)
         onProgress(0, total)
@@ -159,15 +155,10 @@ object PingService {
                 doneLock.withPermit { onProgress(++done, total) }
             }
         }
-        // The address of a spoof profile is this device: the delay is measured through the engine, to the real server.
-        val spoofJobs = spoofTargets.map { profile ->
-            launch(Dispatchers.IO) {
-                val ms = spoofPermits.withPermit { sniSpoofDelay(profile, url) }
-                onResult(profile.id, if (ms > 0) ms.toInt() else FAILED_PING, profile.countryCode)
-                doneLock.withPermit { onProgress(++done, total) }
-            }
-        }
-        (aetherJobs + spoofJobs + targets.map { profile ->
+        // The engine stays up for the whole batch when some profile points at it, instead of starting and stopping around each probe.
+        val batchLease = if (targets.any { SniSpoofConfig.isRstaTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
+        try {
+        (aetherJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
                 val heavy = useRealDelay || profile.isProxyChain
                 val pool = if (heavy && profile.isCustom) customPermits else permits
@@ -189,19 +180,9 @@ object PingService {
                 }
             }
         }).joinAll()
-    }
-
-    private suspend fun sniSpoofDelay(profile: VpnProfile, url: String): Long {
-        val settings = profile.sniSpoofSettings()?.takeIf { it.noRoot } ?: return -1L
-        val runner = sniSpoofTunnel ?: return -1L
-        val xray = runCatching { profile.toXrayConfigJson(forSpeedtest = true) }.getOrNull() ?: return -1L
-        val (host, port) = SniSpoofConfig.outboundOf(xray) ?: return -1L
-        val target = SniSpoofConfig.target(settings, host, port) ?: return -1L
-        return withTimeoutOrNull(SNI_SPOOF_PROBE_TIMEOUT_MS) {
-            runner(target.first, target.second, settings.fakeSni, SniSpoofConfig.method(settings.method)) { local ->
-                probeWithTimeout(profile, SniSpoofConfig.withOutbound(xray, "127.0.0.1", local), url)
-            }
-        } ?: -1L
+        } finally {
+            batchLease?.invoke()
+        }
     }
 
     private suspend fun aetherDelay(profile: VpnProfile, url: String): Long {
@@ -227,7 +208,6 @@ object PingService {
         chainConfig: (VpnProfile) -> String? = { null },
     ): Long {
         if (profile.isAether) return aetherDelay(profile, url)
-        if (profile.isNoRootSniSpoof) return sniSpoofDelay(profile, url)
         val config = if (profile.isProxyChain) {
             chainConfig(profile) ?: return -1L
         } else {
@@ -259,7 +239,23 @@ object PingService {
 
     private val UDP_OUTBOUND_PROTOCOLS = setOf("WIREGUARD", "AMNEZIAWG", "HYSTERIA")
 
-    private suspend fun probeWithTimeout(profile: VpnProfile, config: String, url: String): Long =
+    private suspend fun probeWithTimeout(profile: VpnProfile, config: String, url: String): Long {
+        // A profile that points at the spoof engine is only measurable while the engine is up (and without it the
+        // number would be the time to a closed port on this device, not a delay).
+        if (!SniSpoofConfig.isRstaTarget(profile.address, profile.port)) return probeCore(profile, config, url)
+        val release = rstaSpoofLease?.invoke()
+        if (release == null) {
+            LogBus.append("W/PingService the SNI spoof engine did not start; ${profile.name} cannot be measured")
+            return -1L
+        }
+        try {
+            return probeCore(profile, config, url)
+        } finally {
+            release()
+        }
+    }
+
+    private suspend fun probeCore(profile: VpnProfile, config: String, url: String): Long =
         withContext(Dispatchers.IO) {
             val job = async(Dispatchers.IO) {
                 runCatching { CoreProbe.measureOutboundDelay(config, url) }

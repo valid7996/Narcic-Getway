@@ -34,6 +34,10 @@ class AndroidPlatform(
 ) : Platform {
     override fun scanQrCode(onResult: (String?) -> Unit) = qrScanner(onResult)
 
+    override fun rstaSpoofStatus(): String = dev.cluvex.zedsecure.core.RstaSpoofClient.statusSummary(context)
+
+    override fun rstaSpoofLog(): List<String> = dev.cluvex.zedsecure.core.RstaSpoofClient.recentLog(context)
+
     override fun liveStats(): dev.cluvex.zedsecure.ui.platform.LiveStats {
         val cpu = cpuSample()
         val battery = batterySample()
