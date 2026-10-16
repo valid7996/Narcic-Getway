@@ -13,7 +13,6 @@ import dev.cluvex.zedsecure.data.settings.SettingsRepository
 import dev.cluvex.zedsecure.core.XrayController
 import dev.cluvex.zedsecure.data.net.PingService
 import dev.cluvex.zedsecure.core.platform.LocaleManager
-import dev.cluvex.zedsecure.data.settings.SettingsRepository
 import dev.cluvex.zedsecure.di.AppContainer
 
 class ZedSecureApp : Application(), SingletonImageLoader.Factory {
