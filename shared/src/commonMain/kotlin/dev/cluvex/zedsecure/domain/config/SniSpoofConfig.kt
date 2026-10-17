@@ -66,13 +66,17 @@ object SniSpoofConfig {
     /**
      * Where the engine connects for a profile whose proxy outbound is [realHost]:[realPort]: the clean IP when there is
      * one, else the host itself; the port of the profile, else the link's (443 when the link points at this device).
-     * Null when the engine would have nowhere to go: the link points at this device and no clean IP says where the server is.
+     * Falls back to [defaultConnectIp] and [defaultConnectPort] when pointing at loopback.
      */
     fun target(settings: SniSpoofProfile, realHost: String, realPort: Int): Pair<String, Int>? {
-        val host = settings.cleanIp.trim().ifEmpty { realHost.trim() }
-        if (host.isEmpty() || (settings.cleanIp.isBlank() && isLoopback(host))) return null
-        val port = settings.connectPort.takeIf { it in 1..65535 }
-            ?: if (isLoopback(realHost) || realPort !in 1..65535) 443 else realPort
+        val candidate = settings.cleanIp.trim().ifEmpty { realHost.trim() }
+        val host = if (candidate.isEmpty() || isLoopback(candidate) || candidate == "sni-spoof") {
+            defaultConnectIp
+        } else {
+            candidate
+        }
+        val port = settings.connectPort.takeIf { it in 1..65535 && it != RSTA_LOCAL_PORT }
+            ?: if (isLoopback(realHost) || realPort !in 1..65535 || realPort == RSTA_LOCAL_PORT) defaultConnectPort else realPort
         return host to port
     }
 
