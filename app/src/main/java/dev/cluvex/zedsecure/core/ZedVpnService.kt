@@ -230,8 +230,18 @@ class ZedVpnService : VpnService() {
 
         val bypassLan = shouldBypassLan(settings, configJson, kind)
 
-        val spoofBypassIp =
-            if (kind == VpnManager.KIND_SNISPOOF) sniSpoofEdgeIp(configJson) else null
+        val spoofBypassIp = when {
+            kind == VpnManager.KIND_SNISPOOF -> sniSpoofEdgeIp(configJson)
+            kind == VpnManager.KIND_XRAY -> {
+                val target = SniSpoofConfig.outboundOf(configJson)
+                if (target != null && SniSpoofConfig.isRstaTarget(target.first, target.second)) {
+                    val appSettings = SettingsRepository(this).settings.value
+                    val ip = appSettings.rstaSpoofConnectIp.trim().ifEmpty { SniSpoofConfig.defaultConnectIp }
+                    runCatching { java.net.InetAddress.getByName(ip).hostAddress }.getOrNull() ?: ip
+                } else null
+            }
+            else -> null
+        }
 
         sniSpoofEdge = spoofBypassIp
         val descriptor = try {
@@ -328,7 +338,7 @@ class ZedVpnService : VpnService() {
                     stopEverything(); return@launch
                 }
 
-                writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost)
+                writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost, fakeSni)
 
                 if (!XrayController.start(xray.toString())) {
                     VpnManager.onError(coreStartError())
@@ -337,9 +347,9 @@ class ZedVpnService : VpnService() {
 
                 if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) return@launch
 
-                if (!TunnelReadiness.verify(socksPort, timeoutMs = 7_000, attempts = 4)) {
-                    VpnManager.onError(getString(R.string.snispoof_no_traffic))
-                    stopEverything(); return@launch
+                val ready = TunnelReadiness.verify(socksPort, timeoutMs = 4_000, attempts = 2)
+                if (!ready) {
+                    Log.w(TAG, "SNI-spoof: HTTP readiness probe timed out (likely port 80 filtered), proceeding with connection")
                 }
                 VpnManager.activeSocksPort = socksPort
                 finishConnected()
@@ -361,23 +371,65 @@ class ZedVpnService : VpnService() {
         return host to port
     }
 
-    private fun writeProxyOutbound(xray: JSONObject, host: String, port: Int, origHost: String) {
+    private fun writeProxyOutbound(
+        xray: JSONObject,
+        host: String,
+        port: Int,
+        origHost: String,
+        fakeSni: String = "",
+    ) {
         val ob = proxyOutbound(xray) ?: return
         val settings = ob.optJSONObject("settings") ?: return
         val node = settings.optJSONArray("vnext")?.optJSONObject(0)
             ?: settings.optJSONArray("servers")?.optJSONObject(0) ?: return
-        node.put("address", host); node.put("port", port)
+        node.put("address", host)
+        node.put("port", port)
 
-        // Make sure streamSettings SNI is explicitly kept to the real remote host
+        val fallbackSni = fakeSni.trim().ifBlank { SniSpoofConfig.defaultFakeSni }
+
+        // Make sure streamSettings SNI is explicitly kept to the real remote host or fallback
         val stream = ob.optJSONObject("streamSettings")
         if (stream != null) {
+            val wsHost = stream.optJSONObject("wsSettings")?.optJSONObject("headers")?.optString("Host")
+                ?: stream.optJSONObject("wsSettings")?.optString("host")
+            val httpHost = stream.optJSONObject("httpSettings")?.optJSONObject("headers")?.optString("Host")
+                ?: stream.optJSONObject("httpSettings")?.optString("host")
+            val xhttpHost = stream.optJSONObject("xhttpSettings")?.optString("host")
+            val grpcAuth = stream.optJSONObject("grpcSettings")?.optString("authority")
+            val candidateHost = listOf(wsHost, httpHost, xhttpHost, grpcAuth)
+                .firstOrNull { !it.isNullOrBlank() && !it.startsWith("127.") && it != "localhost" }
+
             val tlsSettings = stream.optJSONObject("tlsSettings")
-            if (tlsSettings != null && tlsSettings.optString("serverName").isBlank()) {
-                tlsSettings.put("serverName", origHost)
+            if (tlsSettings != null) {
+                var current = tlsSettings.optString("serverName").trim()
+                if (current.isBlank() || current.startsWith("127.") || current == "localhost") {
+                    current = if (!origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()) {
+                        origHost
+                    } else if (!candidateHost.isNullOrBlank()) {
+                        candidateHost
+                    } else {
+                        fallbackSni
+                    }
+                    tlsSettings.put("serverName", current)
+                }
+                tlsSettings.put("allowInsecure", true)
+                if (!tlsSettings.has("verifyPeerCertByName") && !tlsSettings.has("pinnedPeerCertSha256")) {
+                    tlsSettings.put("verifyPeerCertByName", current)
+                }
             }
             val realitySettings = stream.optJSONObject("realitySettings")
-            if (realitySettings != null && realitySettings.optString("serverName").isBlank()) {
-                realitySettings.put("serverName", origHost)
+            if (realitySettings != null) {
+                var current = realitySettings.optString("serverName").trim()
+                if (current.isBlank() || current.startsWith("127.") || current == "localhost") {
+                    current = if (!origHost.startsWith("127.") && origHost != "localhost" && origHost.isNotBlank()) {
+                        origHost
+                    } else if (!candidateHost.isNullOrBlank()) {
+                        candidateHost
+                    } else {
+                        fallbackSni
+                    }
+                    realitySettings.put("serverName", current)
+                }
             }
             // Remove domainStrategy UseIP since destination is 127.0.0.1
             stream.optJSONObject("sockopt")?.remove("domainStrategy")
@@ -709,15 +761,22 @@ class ZedVpnService : VpnService() {
         // A profile that points at 127.0.0.1:40443 goes through the no-root SNI spoof engine, as in RstaNG: the engine is
         // started with the settings of the app before the core, and the profile itself is left as it is.
         val spoofTarget = SniSpoofConfig.outboundOf(configJson)
+        var effectiveConfig = configJson
         if (spoofTarget != null && SniSpoofConfig.isRstaTarget(spoofTarget.first, spoofTarget.second)) {
-            if (!RstaSpoofClient.acquire(this, SettingsRepository(this).settings.value)) {
+            val appSettings = SettingsRepository(this).settings.value
+            if (!RstaSpoofClient.acquire(this, appSettings)) {
                 VpnManager.onError(getString(R.string.snispoof_noroot_failed))
                 stopEverything()
                 return
             }
             rstaHeld = true
+            effectiveConfig = runCatching {
+                val xrayObj = JSONObject(configJson)
+                writeProxyOutbound(xrayObj, spoofTarget.first, spoofTarget.second, spoofTarget.first, appSettings.rstaSpoofFakeSni)
+                xrayObj.toString()
+            }.getOrDefault(configJson)
         }
-        if (!XrayController.start(configJson)) {
+        if (!XrayController.start(effectiveConfig)) {
             VpnManager.onError(coreStartError())
             stopEverything()
             return
@@ -1160,12 +1219,20 @@ class ZedVpnService : VpnService() {
 
     private fun sniSpoofEdgeIpOrNull(configJson: String): String? = runCatching {
         val wrapper = JSONObject(configJson)
-        val sni = wrapper.optJSONObject("sni") ?: return null
-        val clean = sni.optString("cleanIp").orEmpty()
-        if (clean.isNotBlank()) return clean
-        val xray = wrapper.optJSONObject("xray") ?: return null
+        val sni = wrapper.optJSONObject("sni")
+        val clean = sni?.optString("cleanIp").orEmpty().trim().ifBlank {
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp
+        }
+        if (!clean.startsWith("127.") && clean != "localhost" && clean != "sni-spoof") {
+            return java.net.InetAddress.getByName(clean).hostAddress
+        }
+        val xray = wrapper.optJSONObject("xray") ?: wrapper
         val host = readProxyOutbound(xray)?.first ?: return null
-        java.net.InetAddress.getByName(host).hostAddress
+        if (!host.startsWith("127.") && host != "localhost" && host != "sni-spoof") {
+            java.net.InetAddress.getByName(host).hostAddress
+        } else {
+            java.net.InetAddress.getByName(dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp).hostAddress
+        }
     }.getOrNull()
 
     private fun VpnService.Builder.addLanAwareRoutes(

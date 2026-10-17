@@ -234,7 +234,12 @@ class SettingsRepository(context: Context) {
             ai = prefs.getString("ai_settings", null)
                 ?.let { runCatching { aiJson.decodeFromString(AiSettings.serializer(), it) }.getOrNull() }
                 ?: d.ai,
-        )
+        ).also { s ->
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp = s.rstaSpoofConnectIp.trim().ifEmpty { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectPort = s.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultFakeSni = s.rstaSpoofFakeSni.trim().ifEmpty { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_FAKE_SNI }
+            dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultMethod = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.method(s.rstaSpoofMethod)
+        }
     }
 
     private val aiJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -441,6 +446,10 @@ class SettingsRepository(context: Context) {
 
             putString("ai_settings", aiJson.encodeToString(AiSettings.serializer(), s.ai))
         }.apply()
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectIp = s.rstaSpoofConnectIp.trim().ifEmpty { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultConnectPort = s.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultFakeSni = s.rstaSpoofFakeSni.trim().ifEmpty { dev.cluvex.zedsecure.domain.config.SniSpoofConfig.DEFAULT_FAKE_SNI }
+        dev.cluvex.zedsecure.domain.config.SniSpoofConfig.defaultMethod = dev.cluvex.zedsecure.domain.config.SniSpoofConfig.method(s.rstaSpoofMethod)
     }
 
     private fun SharedPreferences.str(key: String, fallback: String): String =

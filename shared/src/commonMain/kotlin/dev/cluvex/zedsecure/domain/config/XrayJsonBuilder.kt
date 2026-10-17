@@ -1448,8 +1448,10 @@ private fun statsPolicy() = buildJsonObject {
         val sec = s.tls.security.lowercase()
         if (sec == "tls" || sec == "reality") {
             put("security", sec)
+            val isSpoof = SniSpoofConfig.isSpoofTarget(s.address, s.port)
             val serverName = s.tls.sni?.takeIf { it.isNotBlank() }
                 ?: hostHeader?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: if (isSpoof) SniSpoofConfig.defaultFakeSni else null
 
             val fingerprint = s.tls.fingerprint?.lowercase()?.takeIf { fp ->
                 if (sec == "reality") {
@@ -1466,9 +1468,13 @@ private fun statsPolicy() = buildJsonObject {
                 if (sec == "tls") {
                     if (pinned != null) put("pinnedPeerCertSha256", pinned)
 
+                    if (isSpoof || s.tls.allowInsecure) {
+                        put("allowInsecure", true)
+                    }
+
                     val vcn = s.tls.verifyPeerCertByName?.takeIf { it.isNotBlank() }
                     if (vcn != null) put("verifyPeerCertByName", vcn)
-                    else if (pinned == null && s.tls.allowInsecure && serverName != null) {
+                    else if (pinned == null && (s.tls.allowInsecure || isSpoof) && serverName != null) {
                         put("verifyPeerCertByName", serverName)
                     }
 
