@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -97,6 +99,7 @@ internal fun HomeServerSection(
 ) {
     val platform = dev.cluvex.zedsecure.ui.platform.LocalPlatform.current
     val scope = rememberCoroutineScope()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val profiles by repository.profiles.collectAsStateWithLifecycle()
     val activeId by repository.activeId.collectAsStateWithLifecycle()
     val subscriptions by repository.subscriptions.collectAsStateWithLifecycle()
@@ -272,7 +275,12 @@ internal fun HomeServerSection(
                     DropdownMenu(
                         expanded = pingMenu,
                         onDismissRequest = { pingMenu = false },
-                        shape = MaterialTheme.shapes.largeIncreased,
+                        shape = RoundedCornerShape(14.dp),
+                        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.5.dp,
+                            if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                        ),
                     ) {
                         val currentSub = subscriptions.firstOrNull { it.id == group }
                         val currentScopeName = when (group) {
@@ -311,7 +319,12 @@ internal fun HomeServerSection(
                 DropdownMenu(
                     expanded = overflowOpen,
                     onDismissRequest = { overflowOpen = false },
-                    shape = MaterialTheme.shapes.largeIncreased,
+                    shape = RoundedCornerShape(14.dp),
+                    containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+                    border = androidx.compose.foundation.BorderStroke(
+                        0.5.dp,
+                        if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                    ),
                 ) {
                     val currentSub = subscriptions.firstOrNull { it.id == group }
                     if (currentSub != null) {
@@ -403,7 +416,10 @@ internal fun HomeServerSection(
                             }
                         },
                     )
-                    HorizontalDivider()
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                    )
                     DropdownMenuItem(
                         text = { Text(stringResource(Res.string.del_duplicates)) },
                         leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
@@ -444,8 +460,8 @@ internal fun HomeServerSection(
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.del_all)) },
-                        leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+                        text = { Text(stringResource(Res.string.del_all), color = Color(0xFFFF3B30), fontWeight = FontWeight.Medium) },
+                        leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
                         onClick = {
                             overflowOpen = false
                             confirmDeleteAll = true
@@ -780,16 +796,34 @@ internal fun HomeServerSection(
         var password by remember(text) { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { ovpnPrompt = null },
-            title = { Text(stringResource(Res.string.ovpn_credentials_title)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    stringResource(Res.string.ovpn_credentials_title),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            },
             text = {
                 Column {
-                    Text(stringResource(Res.string.ovpn_credentials_body, name))
+                    Text(
+                        stringResource(Res.string.ovpn_credentials_body, name),
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                    )
                     Spacer(Modifier.height(12.dp))
                     androidx.compose.material3.OutlinedTextField(
                         value = username,
                         onValueChange = { username = it },
                         singleLine = true,
                         label = { Text(stringResource(Res.string.ovpn_username)) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF007AFF),
+                            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(8.dp))
@@ -798,24 +832,37 @@ internal fun HomeServerSection(
                         onValueChange = { password = it },
                         singleLine = true,
                         label = { Text(stringResource(Res.string.ovpn_password)) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF007AFF),
+                            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val user = username
-                    val pass = password
-                    ovpnPrompt = null
-                    scope.launch {
-                        repository.addOvpn(text, name = name, username = user, password = pass)
-                            .onSuccess { platform.toast(importedTemplate.format(1)) }
-                            .onFailure { platform.toast(it.message ?: importFailed) }
-                    }
-                }) { Text(stringResource(Res.string.action_save)) }
+                TextButton(
+                    onClick = {
+                        val user = username
+                        val pass = password
+                        ovpnPrompt = null
+                        scope.launch {
+                            repository.addOvpn(text, name = name, username = user, password = pass)
+                                .onSuccess { platform.toast(importedTemplate.format(1)) }
+                                .onFailure { platform.toast(it.message ?: importFailed) }
+                        }
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { ovpnPrompt = null }) { Text(stringResource(Res.string.action_cancel)) }
+                TextButton(
+                    onClick = { ovpnPrompt = null },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) { Text(stringResource(Res.string.action_cancel)) }
             },
         )
     }
@@ -854,13 +901,17 @@ internal fun HomeServerSection(
         }
         AlertDialog(
             onDismissRequest = { confirmDeleteSubscriptions = false },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
             title = {
                 Text(
                     stringResource(
                         if (currentSub != null) Res.string.del_this_subscription
                         else Res.string.del_subscriptions
-                    )
+                    ),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
                 )
             },
             text = {
@@ -869,18 +920,25 @@ internal fun HomeServerSection(
                         stringResource(Res.string.del_this_subscription_confirm, currentSub.name, subCount)
                     } else {
                         stringResource(Res.string.del_subscriptions_confirm, subCount)
-                    }
+                    },
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDeleteSubscriptions = false
-                    val removed = repository.removeSubscriptionConfigs(targetSubId)
-                    platform.toast(removedTemplate.format(removed))
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        confirmDeleteSubscriptions = false
+                        val removed = repository.removeSubscriptionConfigs(targetSubId)
+                        platform.toast(removedTemplate.format(removed))
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteSubscriptions = false }) {
+                TextButton(
+                    onClick = { confirmDeleteSubscriptions = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -890,19 +948,27 @@ internal fun HomeServerSection(
     if (confirmDeleteAll) {
         AlertDialog(
             onDismissRequest = { confirmDeleteAll = false },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = { Text(stringResource(Res.string.del_all)) },
-            text = { Text(stringResource(Res.string.del_all_confirm)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
+            title = { Text(stringResource(Res.string.del_all), color = if (isDark) Color.White else Color.Black, fontWeight = FontWeight.SemiBold) },
+            text = { Text(stringResource(Res.string.del_all_confirm), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)) },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDeleteAll = false
-                    val removed = allServers.size
-                    repository.removeAll { !it.isLocked }
-                    platform.toast(removedTemplate.format(removed))
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        confirmDeleteAll = false
+                        val removed = allServers.size
+                        repository.removeAll { !it.isLocked }
+                        platform.toast(removedTemplate.format(removed))
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteAll = false }) {
+                TextButton(
+                    onClick = { confirmDeleteAll = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -930,13 +996,14 @@ private fun GroupTab(
     selected: Boolean,
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
-) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
     val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: ZedGreen)
+    val tabShape = RoundedCornerShape(8.dp)
     val background = if (selected) {
-        activeColor
+        if (personalization.dynamicColor || personalization.serverActiveColor != null) activeColor else Color(0xFF007AFF)
     } else if (personalization.amoledBlack) {
         Color(0xFF000000)
     } else if (isBlossom) {
@@ -945,37 +1012,34 @@ private fun GroupTab(
         Color(0xFF141416)
     } else if (isAzkaban) {
         Color(0xFF0C192E)
+    } else if (isDark) {
+        Color(0xFF1C1C1E)
     } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
+        Color(0xFFE5E5EA)
     }
     val content = if (selected) {
-        activeColor.readableOn()
+        Color.White
     } else if (isBlossom) {
         Color(0xFFFFD1DC)
     } else if (isNoir) {
         Color(0xFFE4E4E7)
     } else if (isAzkaban) {
         Color(0xFFBAE6FD)
+    } else if (isDark) {
+        Color(0xFF8E8E93)
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+        Color(0xFF6E6E73)
     }
-    val borderColor = when {
-        selected -> Color.Transparent
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.50f else 0.35f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.50f else 0.30f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.20f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.50f else 0.25f)
-        personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.40f)
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f)
-    }
+    val borderColor = if (selected) Color.Transparent else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFD1D1D6))
+
     Row(
         Modifier
-            .clip(MaterialTheme.shapes.small)
+            .clip(tabShape)
             .background(background)
             .border(
-                1.dp,
+                0.5.dp,
                 borderColor,
-                MaterialTheme.shapes.small,
+                tabShape,
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
@@ -988,12 +1052,14 @@ private fun GroupTab(
             color = content,
             maxLines = 1,
         )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            count.toString(),
-            style = MaterialTheme.typography.labelSmall,
-            color = content.copy(alpha = 0.7f),
-        )
+        if (count > 0) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                count.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = content.copy(alpha = 0.75f),
+            )
+        }
     }
 }
 

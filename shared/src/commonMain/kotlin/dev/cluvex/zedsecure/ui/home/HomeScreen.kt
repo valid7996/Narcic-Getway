@@ -1016,9 +1016,14 @@ private fun StatusChip(state: ConnectionState) {
     val stretchX = (abs(dragX.value) / 90f).coerceAtMost(0.30f)
     val stretchY = (abs(dragY.value) / 90f).coerceAtMost(0.30f)
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val chipBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7)
+    val chipBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
+
     Surface(
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = chipBg,
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, chipBorder),
         modifier = Modifier
             .graphicsLayer {
                 translationX = dragX.value
@@ -1052,10 +1057,10 @@ private fun StatusChip(state: ConnectionState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val dotColor = when (state) {
-                ConnectionState.Connected -> MaterialTheme.colorScheme.primary
-                ConnectionState.Connecting, ConnectionState.Reconnecting -> MaterialTheme.colorScheme.tertiary
-                ConnectionState.Error -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.outline
+                ConnectionState.Connected -> Color(0xFF34C759)
+                ConnectionState.Connecting, ConnectionState.Reconnecting -> Color(0xFFFF9500)
+                ConnectionState.Error -> Color(0xFFFF3B30)
+                else -> if (isDark) Color(0xFF636366) else Color(0xFFAEAEB2)
             }
             Box(
                 Modifier
@@ -1067,8 +1072,7 @@ private fun StatusChip(state: ConnectionState) {
                 label,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-
+                color = if (isDark) Color.White else Color.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1093,27 +1097,65 @@ private fun ActiveConfigCard(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "config-scale",
     )
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isAmoled = personalization.amoledBlack
-    val cardBg = if (isAmoled) Color(0xFF000000) else (personalization.configCardColor ?: MaterialTheme.colorScheme.primaryContainer)
-    val cardBorder = if (isAmoled) {
-        when {
-            personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
-            personalization.themeProfileId == "blossom" -> Color(0xFFF472B6).copy(alpha = 0.50f)
-            personalization.themeProfileId == "noir" -> Color(0xFFFFFFFF).copy(alpha = 0.35f)
-            personalization.themeProfileId == "azkaban" -> Color(0xFF38BDF8).copy(alpha = 0.50f)
-            else -> Color(0xFF10B981).copy(alpha = 0.45f)
-        }
-    } else Color.Transparent
+    val isAzkaban = personalization.themeProfileId == "azkaban"
+    val isNoir = personalization.themeProfileId == "noir"
+    val isBlossom = personalization.themeProfileId == "blossom"
+
+    val shape = RoundedCornerShape(16.dp)
+    val cardBg = when {
+        isAmoled -> Color(0xFF000000)
+        personalization.configCardColor != null -> personalization.configCardColor
+        isBlossom -> Color(0xFF1F0B16)
+        isNoir -> Color(0xFF121214)
+        isAzkaban -> Color(0xFF091424)
+        isDark -> Color(0xFF1C1C1E)
+        else -> Color(0xFFFFFFFF)
+    }
+    val cardBorder = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (isAmoled) 0.50f else 0.35f)
+        isBlossom -> Color(0xFFF472B6).copy(alpha = if (isAmoled) 0.50f else 0.35f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (isAmoled) 0.35f else 0.20f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (isAmoled) 0.50f else 0.35f)
+        isAmoled -> Color(0xFF10B981).copy(alpha = 0.45f)
+        isDark -> Color(0xFF2C2C2E)
+        else -> Color(0xFFE5E5EA)
+    }
+    val titleColor = when {
+        personalization.configCardTextColor != null -> personalization.configCardTextColor
+        isBlossom -> Color(0xFFFFF1F5)
+        isNoir -> Color(0xFFFFFFFF)
+        isAzkaban -> Color(0xFFF0F9FF)
+        isDark -> Color(0xFFF2F2F7)
+        else -> Color(0xFF000000)
+    }
+    val subtitleColor = when {
+        personalization.tapHintColor != null -> personalization.tapHintColor
+        isBlossom -> Color(0xFFFFD1DC)
+        isNoir -> Color(0xFF8E8E93)
+        isAzkaban -> Color(0xFF94A3B8)
+        isDark -> Color(0xFF8E8E93)
+        else -> Color(0xFF6E6E73)
+    }
+    val tileBg = when {
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
+        isBlossom -> Color(0xFFFF85A1)
+        isNoir -> Color(0xFF2C2C2E)
+        isAzkaban -> Color(0xFF0284C7)
+        personalization.configCardTextColor != null -> personalization.configCardTextColor
+        else -> Color(0xFF007AFF)
+    }
 
     Surface(
         onClick = onClick,
         interactionSource = interaction,
-        shape = MaterialTheme.shapes.largeIncreased,
+        shape = shape,
         color = cardBg,
         modifier = modifier
             .fillMaxWidth()
             .scale(scale)
-            .then(if (isAmoled) Modifier.border(1.dp, cardBorder, MaterialTheme.shapes.largeIncreased) else Modifier),
+            .border(0.5.dp, cardBorder, shape),
     ) {
         Row(
             Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
@@ -1121,20 +1163,15 @@ private fun ActiveConfigCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(MaterialShapes.Cookie9Sided.toShape())
-
-                    .background(
-                        personalization.configCardTextColor
-                            ?: MaterialTheme.colorScheme.primary,
-                    ),
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(tileBg),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(if (locked) Res.drawable.ic_encrypted else Res.drawable.ic_public),
                     contentDescription = null,
-                    tint = personalization.configCardColor
-                        ?: MaterialTheme.colorScheme.onPrimary,
+                    tint = Color.White,
                     modifier = Modifier.size(22.dp),
                 )
             }
@@ -1152,8 +1189,7 @@ private fun ActiveConfigCard(
                         text = name ?: stringResource(Res.string.home_select_config),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = personalization.configCardTextColor
-                            ?: MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = titleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -1167,19 +1203,23 @@ private fun ActiveConfigCard(
                         },
                     ),
                     style = MaterialTheme.typography.bodySmall,
-
-                    color = personalization.tapHintColor
-                        ?: (personalization.configCardTextColor
-                            ?: MaterialTheme.colorScheme.onPrimaryContainer).copy(alpha = 0.75f),
+                    color = subtitleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
             Icon(
                 painter = painterResource(Res.drawable.ic_chevron_right),
                 contentDescription = null,
-                tint = personalization.configCardTextColor
-                    ?: MaterialTheme.colorScheme.onPrimaryContainer,
+                tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
+                modifier = Modifier
+                    .size(18.dp)
+                    .androidx.compose.ui.graphics.graphicsLayer {
+                        if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                            rotationY = 180f
+                        }
+                    },
             )
         }
     }
@@ -1637,58 +1677,41 @@ private fun MergedDashboardCard(
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
-) {
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(16.dp)
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val isAmoled = personalization.amoledBlack
     val cardBg = when {
-        personalization.amoledBlack -> Brush.verticalGradient(
-            listOf(Color(0xFF000000), Color(0xFF060606)),
-        )
-        isBlossom -> Brush.verticalGradient(
-            listOf(
-                Color(0xFF260D1A),
-                Color(0xFF381226),
-            ),
-        )
-        isNoir -> Brush.verticalGradient(
-            listOf(
-                Color(0xFF141416),
-                Color(0xFF1E1E22),
-            ),
-        )
-        isAzkaban -> Brush.verticalGradient(
-            listOf(
-                Color(0xFF0C192E),
-                Color(0xFF07101F),
-            ),
-        )
-        else -> Brush.verticalGradient(
-            listOf(
-                connectedColor.copy(alpha = 0.60f),
-                connectedColor.copy(alpha = 0.35f),
-            ),
-        )
+        isAmoled -> Color(0xFF000000)
+        isBlossom -> Color(0xFF260D1A)
+        isNoir -> Color(0xFF141416)
+        isAzkaban -> Color(0xFF0C192E)
+        isDark -> Color(0xFF1C1C1E)
+        else -> Color(0xFFFFFFFF)
     }
     val cardBorder = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.60f else 0.40f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.60f else 0.40f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.45f else 0.25f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
-        personalization.amoledBlack -> (personalization.connectedColor ?: ConnectedGreen).copy(alpha = 0.50f)
-        else -> Color.Transparent
+        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (isAmoled) 0.60f else 0.40f)
+        isBlossom -> Color(0xFFF472B6).copy(alpha = if (isAmoled) 0.60f else 0.40f)
+        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (isAmoled) 0.45f else 0.25f)
+        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (isAmoled) 0.55f else 0.35f)
+        isAmoled -> (personalization.connectedColor ?: ConnectedGreen).copy(alpha = 0.50f)
+        isDark -> Color(0xFF2C2C2E)
+        else -> Color(0xFFE5E5EA)
     }
 
     val primaryTextColor = when {
         isBlossom -> Color(0xFFFFF1F5)
         isNoir -> Color(0xFFFFFFFF)
         isAzkaban -> Color(0xFFF0F9FF)
-        else -> MaterialTheme.colorScheme.onSurface
+        isDark -> Color(0xFFF2F2F7)
+        else -> Color(0xFF000000)
     }
 
     val secondaryTextColor = when {
         isBlossom -> Color(0xFFFFD1DC)
-        isNoir -> Color(0xFF94A3B8)
+        isNoir -> Color(0xFF8E8E93)
         isAzkaban -> Color(0xFF94A3B8)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        isDark -> Color(0xFF8E8E93)
+        else -> Color(0xFF6E6E73)
     }
 
     val accentColor = when {
@@ -1696,7 +1719,7 @@ private fun MergedDashboardCard(
         isBlossom -> Color(0xFFFF85A1)
         isNoir -> Color(0xFFFFFFFF)
         isAzkaban -> Color(0xFF38BDF8)
-        else -> Color(0xFFFFE066)
+        else -> Color(0xFF007AFF)
     }
 
     val dividerColor = when {
@@ -1704,7 +1727,8 @@ private fun MergedDashboardCard(
         isBlossom -> Color(0xFFF472B6).copy(alpha = 0.22f)
         isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.18f)
         isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.20f)
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+        isDark -> Color(0xFF2C2C2E)
+        else -> Color(0xFFE5E5EA)
     }
 
     Surface(color = Color.Transparent, shape = shape, modifier = modifier.fillMaxWidth()) {
@@ -1713,7 +1737,7 @@ private fun MergedDashboardCard(
                 .fillMaxWidth()
                 .clip(shape)
                 .background(cardBg)
-                .border(1.dp, cardBorder, shape),
+                .border(0.5.dp, cardBorder, shape),
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1746,7 +1770,7 @@ private fun MergedDashboardCard(
                                 isBlossom -> Color(0xFFFF85A1)
                                 isNoir -> Color(0xFFFFFFFF)
                                 isAzkaban -> Color(0xFF38BDF8)
-                                ping < 250 -> MaterialTheme.colorScheme.onSurface
+                                ping < 250 -> primaryTextColor
                                 else -> MaterialTheme.colorScheme.error
                             },
                         )
@@ -1778,7 +1802,7 @@ private fun MergedDashboardCard(
                 }
 
                 Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = dividerColor)
+                HorizontalDivider(thickness = 0.5.dp, color = dividerColor)
                 Spacer(Modifier.height(12.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1790,11 +1814,11 @@ private fun MergedDashboardCard(
                         modifier = Modifier.weight(1f),
                         primaryColor = primaryTextColor,
                         secondaryColor = secondaryTextColor,
-                        accentColor = accentColor,
+                        accentColor = Color(0xFF007AFF),
                     )
                     Box(
                         Modifier
-                            .width(1.dp)
+                            .width(0.5.dp)
                             .height(44.dp)
                             .background(dividerColor),
                     )
@@ -1806,7 +1830,7 @@ private fun MergedDashboardCard(
                         modifier = Modifier.weight(1f),
                         primaryColor = primaryTextColor,
                         secondaryColor = secondaryTextColor,
-                        accentColor = accentColor,
+                        accentColor = Color(0xFF34C759),
                     )
                 }
             }

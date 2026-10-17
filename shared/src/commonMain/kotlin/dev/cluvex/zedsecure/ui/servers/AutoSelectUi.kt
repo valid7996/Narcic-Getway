@@ -236,15 +236,16 @@ fun AutoSelectSheet(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
-                        .size(48.dp)
-                        .clip(MaterialShapes.Cookie9Sided.toShape())
-                        .background(phaseColor(status?.phase)),
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF007AFF)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        painterResource(Res.drawable.ic_bolt),
+                        painterResource(Res.drawable.ic_sync),
                         contentDescription = null,
-                        tint = phaseColor(status?.phase).readableOn(),
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
                 Spacer(Modifier.width(14.dp))
@@ -253,7 +254,7 @@ fun AutoSelectSheet(
                         stringResource(Res.string.auto_title_for, groupLabel),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) Color.White else Color(0xFF0F172A),
+                        color = if (isDark) Color.White else Color.Black,
                     )
                     Text(
                         status?.let { phaseLabel(it.phase) } ?: stringResource(Res.string.auto_not_connected),
