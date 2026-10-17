@@ -193,21 +193,18 @@ private fun RootPage(
     var showLogs by androidx.compose.runtime.remember { mutableStateOf(false) }
     var showRstaSpoof by androidx.compose.runtime.remember { mutableStateOf(false) }
 
-    val isDark = androidx.compose.material3.MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val dividerColor = if (isDark) Color(0xFF28384F).copy(alpha = 0.35f) else Color(0xFFE2E8F0).copy(alpha = 0.80f)
-
     SettingsPageScaffold(
         title = stringResource(Res.string.settings_title),
         contentPadding = contentPadding,
         modifier = modifier,
-        accentLine = true,
+        accentLine = false,
     ) {
         if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup {
             SettingsMenuRow(
                 stringResource(Res.string.support_title),
                 stringResource(Res.string.support_subtitle),
                 leadingIcon = Res.drawable.ic_favorite,
-                iconTile = true,
+                iconTint = Color(0xFFFF2D55),
             ) { onOpen(SettingsPage.Support) }
         }
 
@@ -216,46 +213,33 @@ private fun RootPage(
                 stringResource(Res.string.title_ui_settings),
                 stringResource(Res.string.summary_ui_settings),
                 leadingIcon = Res.drawable.ic_palette,
-                iconTint = Color(0xFF60E0B0),
-                iconTile = true,
+                iconTint = Color(0xFF5856D6),
             ) { onOpen(SettingsPage.Ui) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MODE) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.title_mode_settings),
                     stringResource(Res.string.summary_mode_settings),
                     leadingIcon = Res.drawable.ic_tune,
-                    iconTint = Color(0xFF38BDF8),
-                    iconTile = true,
+                    iconTint = Color(0xFF007AFF),
                 ) { onOpen(SettingsPage.Mode) }
             }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MONITOR) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.monitor_title),
                     stringResource(Res.string.monitor_subtitle),
                     leadingIcon = Res.drawable.ic_speedometer,
-                    iconTint = Color(0xFF38BDF8),
-                    iconTile = true,
+                    iconTint = Color(0xFF34C759),
                 ) { onOpen(SettingsPage.Monitor) }
             }
             if (hasAi && dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.ai_title),
                     stringResource(Res.string.ai_subtitle),
+                    leadingIcon = Res.drawable.ic_star,
+                    iconTint = Color(0xFFAF52DE),
                 ) { onOpen(SettingsPage.Ai) }
             }
         }
@@ -265,45 +249,48 @@ private fun RootPage(
                 stringResource(Res.string.logs_title),
                 stringResource(Res.string.logs_settings_sub),
                 leadingIcon = Res.drawable.ic_description,
-                iconTint = Color(0xFF38BDF8),
-                iconTile = true,
+                iconTint = Color(0xFF8E8E93),
             ) { showLogs = true }
-        }
-
-        // The no-root SNI spoof, laid out as RstaNG does: one page for the whole app.
-        SettingsGroup {
+            SettingsDivider()
             SettingsMenuRow(
                 stringResource(Res.string.rsta_title),
                 stringResource(Res.string.rsta_sub),
                 leadingIcon = Res.drawable.ic_bolt,
-                iconTint = Color(0xFF5FE6B0),
-                iconTile = true,
+                iconTint = Color(0xFFFF9500),
             ) { showRstaSpoof = true }
         }
 
         if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ROUTING) SettingsGroup(
             stringResource(Res.string.routing_title),
-            sectionTitle = true,
         ) {
             SettingsMenuRow(
                 stringResource(Res.string.routing_title),
                 stringResource(Res.string.routing_subtitle),
                 leadingIcon = Res.drawable.ic_public,
-                iconTint = Color(0xFF60E0B0),
-                iconTile = true,
+                iconTint = Color(0xFF30B0C7),
             ) { onOpen(SettingsPage.Routing) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_PER_APP) SettingsMenuRow(
-                stringResource(Res.string.per_app_title),
-                if (settings.perAppProxyEnabled) {
-                    stringResource(Res.string.per_app_selected, settings.perAppPackages.size)
-                } else {
-                    stringResource(Res.string.per_app_mode_off)
-                },
-            ) { onOpen(SettingsPage.PerApp) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
-                stringResource(Res.string.assets_title),
-                stringResource(Res.string.assets_subtitle),
-            ) { onOpen(SettingsPage.Assets) }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_PER_APP) {
+                SettingsDivider()
+                SettingsMenuRow(
+                    stringResource(Res.string.per_app_title),
+                    if (settings.perAppProxyEnabled) {
+                        stringResource(Res.string.per_app_selected, settings.perAppPackages.size)
+                    } else {
+                        stringResource(Res.string.per_app_mode_off)
+                    },
+                    leadingIcon = Res.drawable.ic_map,
+                    iconTint = Color(0xFF5E5CE6),
+                ) { onOpen(SettingsPage.PerApp) }
+            }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
+                SettingsDivider()
+                SettingsMenuRow(
+                    stringResource(Res.string.assets_title),
+                    stringResource(Res.string.assets_subtitle),
+                    leadingIcon = Res.drawable.ic_download,
+                    iconTint = Color(0xFF00C7BE),
+                ) { onOpen(SettingsPage.Assets) }
+            }
         }
 
         if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_TUNNELS) SettingsGroup(
@@ -312,116 +299,90 @@ private fun RootPage(
             SettingsMenuRow(
                 stringResource(Res.string.title_dns_protocols),
                 stringResource(Res.string.summary_dns_protocols),
+                leadingIcon = Res.drawable.ic_dns,
+                iconTint = Color(0xFF32ADE6),
             ) { onOpen(SettingsPage.DnsProtocols) }
-            HorizontalDivider(
-                color = dividerColor,
-                thickness = 1.dp,
-                modifier = Modifier.padding(horizontal = 14.dp),
-            )
+            SettingsDivider()
             SettingsMenuRow(
                 stringResource(Res.string.title_tor_settings),
                 stringResource(Res.string.summary_tor_settings),
+                leadingIcon = Res.drawable.ic_lock,
+                iconTint = Color(0xFFAF52DE),
             ) { onOpen(SettingsPage.Tor) }
-            HorizontalDivider(
-                color = dividerColor,
-                thickness = 1.dp,
-                modifier = Modifier.padding(horizontal = 14.dp),
-            )
+            SettingsDivider()
             SettingsMenuRow(
                 stringResource(Res.string.title_ssh_settings),
                 stringResource(Res.string.summary_ssh_settings),
+                leadingIcon = Res.drawable.ic_encrypted,
+                iconTint = Color(0xFF48484A),
             ) { onOpen(SettingsPage.Ssh) }
         }
 
         SettingsGroup(
             stringResource(Res.string.title_core_settings),
-            sectionTitle = true,
         ) {
             SettingsMenuRow(
                 stringResource(Res.string.title_vpn_settings),
                 stringResource(Res.string.summary_vpn_settings),
                 leadingIcon = Res.drawable.ic_lock,
-                iconTint = Color(0xFF60E0B0),
-                iconTile = true,
+                iconTint = Color(0xFF28CD41),
             ) { onOpen(SettingsPage.Vpn) }
-            HorizontalDivider(
-                color = dividerColor,
-                thickness = 1.dp,
-                modifier = Modifier.padding(horizontal = 14.dp),
-            )
+            SettingsDivider()
             SettingsMenuRow(
                 stringResource(Res.string.title_core_settings),
                 stringResource(Res.string.summary_core_settings),
-                leadingIcon = Res.drawable.ic_dns,
-                iconTint = Color(0xFF38BDF8),
-                iconTile = true,
+                leadingIcon = Res.drawable.ic_settings,
+                iconTint = Color(0xFF007AFF),
             ) { onOpen(SettingsPage.Core) }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.title_mux_settings),
                     stringResource(Res.string.summary_mux_settings),
+                    leadingIcon = Res.drawable.ic_speed,
+                    iconTint = Color(0xFF5856D6),
                 ) { onOpen(SettingsPage.Mux) }
             }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.title_fragment_settings),
                     stringResource(Res.string.summary_fragment_settings),
-                    leadingIcon = Res.drawable.ic_lock,
-                    iconTint = Color(0xFF60E0B0),
-                    iconTile = true,
+                    leadingIcon = Res.drawable.ic_contrast,
+                    iconTint = Color(0xFFFF9500),
                 ) { onOpen(SettingsPage.Fragment) }
             }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.title_singbox_settings),
                     stringResource(Res.string.summary_singbox_settings),
+                    leadingIcon = Res.drawable.ic_zed_mark,
+                    iconTint = Color(0xFFFF2D55),
                 ) { onOpen(SettingsPage.SingBox) }
             }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.title_observatory_settings),
                     stringResource(Res.string.summary_observatory_settings),
                     leadingIcon = Res.drawable.ic_sync,
-                    iconTint = Color(0xFF38BDF8),
-                    iconTile = true,
+                    iconTint = Color(0xFF0A84FF),
                 ) { onOpen(SettingsPage.Observatory) }
             }
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                HorizontalDivider(
-                    color = dividerColor,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(horizontal = 14.dp),
-                )
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.title_advanced),
                     stringResource(Res.string.summary_advanced),
+                    leadingIcon = Res.drawable.ic_tune,
+                    iconTint = Color(0xFF8E8E93),
                 ) { onOpen(SettingsPage.Advanced) }
             }
         }
 
         SettingsGroup(
             stringResource(Res.string.settings_about),
-            sectionTitle = true,
         ) {
             val fromPlay = platform.distribution == Distribution.PlayStore
             if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
@@ -432,23 +393,30 @@ private fun RootPage(
                         fromPlay -> stringResource(Res.string.update_check_summary)
                         else -> stringResource(Res.string.update_check_summary_github)
                     },
+                    leadingIcon = Res.drawable.ic_sync,
+                    iconTint = Color(0xFF34C759),
                 ) { if (!checking) { checking = true; checkTrigger++ } }
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(if (fromPlay) Res.string.rate_title else Res.string.rate_title_github),
                     stringResource(if (fromPlay) Res.string.rate_summary else Res.string.rate_summary_github),
+                    leadingIcon = Res.drawable.ic_star,
+                    iconTint = Color(0xFFFFCC00),
                 ) { platform.openStorePage() }
+                SettingsDivider()
                 SettingsMenuRow(
                     stringResource(Res.string.privacy_title),
                     stringResource(Res.string.privacy_settings_sub),
                     leadingIcon = Res.drawable.ic_policy,
+                    iconTint = Color(0xFFFF3B30),
                 ) { onOpen(SettingsPage.Privacy) }
+                SettingsDivider()
             }
             SettingsMenuRow(
                 stringResource(Res.string.settings_about),
                 "",
                 leadingIcon = Res.drawable.ic_info,
-                iconTint = Color(0xFF38BDF8),
-                iconTile = true,
+                iconTint = Color(0xFF007AFF),
             ) {
                 onAbout()
             }
@@ -491,6 +459,7 @@ private fun DnsProtocolsPage(
                 checked = s.dnsGlobalResolverEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(dnsGlobalResolverEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.dns_resolver_ips),
                 value = s.dnsGlobalResolvers,
@@ -507,6 +476,7 @@ private fun DnsProtocolsPage(
                 checked = s.dnsPoolEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(dnsPoolEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.dns_pool_list),
                 value = s.dnsPoolText,
@@ -514,6 +484,7 @@ private fun DnsProtocolsPage(
                 placeholder = "8.8.8.8\n1.1.1.1",
                 onValueChanged = { v -> onUpdate { it.copy(dnsPoolText = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.dns_pool_verify),
                 summary = stringResource(
@@ -536,10 +507,12 @@ private fun DnsProtocolsPage(
                 onSelected = { v -> onUpdate { it.copy(remoteDnsMode = v) } },
             )
             if (s.remoteDnsMode == "custom") {
+                SettingsDivider(hasIcon = false)
                 SettingsEditRow(
                     title = stringResource(Res.string.dns_remote_primary), value = s.remoteDnsPrimary, placeholder = "9.9.9.9",
                     onValueChanged = { v -> onUpdate { it.copy(remoteDnsPrimary = v) } },
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsEditRow(
                     title = stringResource(Res.string.dns_remote_fallback), value = s.remoteDnsFallback, placeholder = "8.8.8.8",
                     onValueChanged = { v -> onUpdate { it.copy(remoteDnsFallback = v) } },
@@ -559,7 +532,7 @@ private fun DnsProtocolsPage(
                 selected = s.dnsWorkerMode,
                 onSelected = { v -> onUpdate { it.copy(dnsWorkerMode = v) } },
             )
-
+            SettingsDivider(hasIcon = false)
             SettingsInfoRow(
                 title = stringResource(Res.string.dns_prevent_fallback),
                 body = stringResource(Res.string.dns_prevent_fallback_always),
@@ -598,6 +571,7 @@ private fun TorPage(
                 } else {
                     listOf("obfs4", "obfs3", "meek_lite", "snowflake", "conjure", "webtunnel", "vanilla")
                 }
+                SettingsDivider(hasIcon = false)
                 SettingsListRow(
                     title = stringResource(Res.string.tor_bridge_transport),
                     options = transports.map { it to it },
@@ -605,12 +579,14 @@ private fun TorPage(
                     onSelected = { v -> onUpdate { it.copy(torBridgeTransport = v) } },
                 )
                 if (s.torBridgeTransport == "snowflake") {
+                    SettingsDivider(hasIcon = false)
                     SettingsListRow(
                         title = stringResource(Res.string.tor_rendezvous),
                         options = listOf("amp" to "AMP", "cdn77" to "CDN77", "amazon" to "AMAZON"),
                         selected = s.torSnowflakeRendezvous,
                         onSelected = { v -> onUpdate { it.copy(torSnowflakeRendezvous = v) } },
                     )
+                    SettingsDivider(hasIcon = false)
                     SettingsEditRow(
                         title = stringResource(Res.string.tor_snowflake_stun_hint),
                         value = s.torSnowflakeStun,
@@ -618,6 +594,7 @@ private fun TorPage(
                     )
                 }
                 if (s.torBridgesMode == "own") {
+                    SettingsDivider(hasIcon = false)
                     SettingsEditRow(
                         title = stringResource(Res.string.tor_own_bridges),
                         value = s.torOwnBridges,
@@ -625,6 +602,7 @@ private fun TorPage(
                         onValueChanged = { v -> onUpdate { it.copy(torOwnBridges = v) } },
                     )
                 } else {
+                    SettingsDivider(hasIcon = false)
                     SettingsMenuRow(
                         stringResource(Res.string.tor_bridges_title),
                         stringResource(Res.string.tor_bridges_browse_sum),
@@ -639,21 +617,25 @@ private fun TorPage(
                 value = s.torEntryNodes, placeholder = "{de},{nl}",
                 onValueChanged = { v -> onUpdate { it.copy(torEntryNodes = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.tor_exit_nodes_t),
                 value = s.torExitNodes, placeholder = "{us},{gb}",
                 onValueChanged = { v -> onUpdate { it.copy(torExitNodes = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.tor_exclude_nodes_t),
                 value = s.torExcludeNodes, placeholder = "{ru},{cn}",
                 onValueChanged = { v -> onUpdate { it.copy(torExcludeNodes = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.tor_exclude_exit_nodes_t),
                 value = s.torExcludeExitNodes, placeholder = "{ru},{cn}",
                 onValueChanged = { v -> onUpdate { it.copy(torExcludeExitNodes = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_strict_nodes_t),
                 summary = stringResource(Res.string.tor_strict_nodes_t_sum),
@@ -667,55 +649,67 @@ private fun TorPage(
                 title = stringResource(Res.string.tor_virtual_addr), value = s.torVirtualAddrNetwork,
                 onValueChanged = { v -> onUpdate { it.copy(torVirtualAddrNetwork = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_hardware_accel),
                 summary = stringResource(Res.string.tor_hardware_accel_sum),
                 checked = s.torHardwareAccel,
                 onCheckedChange = { v -> onUpdate { it.copy(torHardwareAccel = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_avoid_disk),
                 summary = stringResource(Res.string.tor_avoid_disk_sum),
                 checked = s.torAvoidDiskWrites,
                 onCheckedChange = { v -> onUpdate { it.copy(torAvoidDiskWrites = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_conn_padding),
                 summary = stringResource(Res.string.tor_conn_padding_sum),
                 checked = s.torConnectionPadding,
                 onCheckedChange = { v -> onUpdate { it.copy(torConnectionPadding = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_reduced_padding),
                 summary = stringResource(Res.string.tor_reduced_padding_sum),
                 checked = s.torReducedConnectionPadding,
                 onCheckedChange = { v -> onUpdate { it.copy(torReducedConnectionPadding = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_fascist),
                 summary = stringResource(Res.string.tor_fascist_sum),
                 checked = s.torFascistFirewall,
                 onCheckedChange = { v -> onUpdate { it.copy(torFascistFirewall = v) } },
             )
+            SettingsDivider(hasIcon = false)
             IntEditRow(stringResource(Res.string.tor_new_circuit), s.torNewCircuitPeriod) { v -> onUpdate { it.copy(torNewCircuitPeriod = v) } }
+            SettingsDivider(hasIcon = false)
             IntEditRow(stringResource(Res.string.tor_max_dirtiness), s.torMaxCircuitDirtiness) { v -> onUpdate { it.copy(torMaxCircuitDirtiness = v) } }
+            SettingsDivider(hasIcon = false)
             IntEditRow(stringResource(Res.string.tor_dormant_timeout), s.torDormantClientTimeout) { v -> onUpdate { it.copy(torDormantClientTimeout = v) } }
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_distinct_subnets),
                 summary = stringResource(Res.string.tor_distinct_subnets_sum),
                 checked = s.torEnforceDistinctSubnets,
                 onCheckedChange = { v -> onUpdate { it.copy(torEnforceDistinctSubnets = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_track_host),
                 summary = stringResource(Res.string.tor_track_host_sum),
                 checked = s.torTrackHostExits,
                 onCheckedChange = { v -> onUpdate { it.copy(torTrackHostExits = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_client_ipv4), checked = s.torClientUseIPv4,
                 onCheckedChange = { v -> onUpdate { it.copy(torClientUseIPv4 = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_client_ipv6), checked = s.torClientUseIPv6,
                 onCheckedChange = { v -> onUpdate { it.copy(torClientUseIPv6 = v) } },
@@ -729,6 +723,7 @@ private fun TorPage(
                 checked = s.torIsolateDestAddr,
                 onCheckedChange = { v -> onUpdate { it.copy(torIsolateDestAddr = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.tor_isolate_port_t),
                 summary = stringResource(Res.string.tor_isolate_port_t_sum),
@@ -744,6 +739,7 @@ private fun TorPage(
                 checked = s.torFakeSniEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(torFakeSniEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.tor_fake_sni_hosts),
                 value = s.torFakeSniHosts,
@@ -790,12 +786,14 @@ private fun SshPage(
                 selected = s.sshCipher,
                 onSelected = { v -> onUpdate { it.copy(sshCipher = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.ssh_compression),
                 summary = stringResource(Res.string.ssh_compression_sum),
                 checked = s.sshCompression,
                 onCheckedChange = { v -> onUpdate { it.copy(sshCompression = v) } },
             )
+            SettingsDivider(hasIcon = false)
             IntEditRow(stringResource(Res.string.ssh_max_channels), s.sshMaxChannels) { v ->
                 onUpdate { it.copy(sshMaxChannels = v.coerceIn(1, 64)) }
             }
@@ -828,6 +826,7 @@ private fun UiPage(
                 selected = s.themeMode,
                 onSelected = { v -> onUpdate { it.copy(themeMode = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_dynamic_color),
                 summary = stringResource(Res.string.summary_pref_dynamic_color),
@@ -835,12 +834,14 @@ private fun UiPage(
                 enabled = LocalPlatform.current.supportsDynamicColor,
                 onCheckedChange = { v -> onUpdate { it.copy(dynamicColor = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_amoled),
                 summary = stringResource(Res.string.summary_pref_amoled),
                 checked = s.amoledBlack,
                 onCheckedChange = { v -> onUpdate { it.copy(amoledBlack = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.settings_language),
                 options = listOf(
@@ -853,6 +854,7 @@ private fun UiPage(
                 selected = s.language,
                 onSelected = onLanguage,
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.personalize_font_size),
                 options = listOf(
@@ -865,6 +867,7 @@ private fun UiPage(
                 selected = s.uiFontScale,
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsActionRow(
                 title = "ویزارد خوش‌آمدگویی و راه‌اندازی اولیه",
                 summary = "تنظیم مجدد زبان، قالب و حالت نمایش",
@@ -929,6 +932,7 @@ private fun VpnPage(
                     ),
                     onClick = { batteryPlatform.openBatteryOptimizationSettings() },
                 )
+                SettingsDivider(hasIcon = false)
             }
             SettingsSwitchRow(
                 title = stringResource(Res.string.kill_switch),
@@ -936,18 +940,21 @@ private fun VpnPage(
                 checked = s.killSwitch,
                 onCheckedChange = { v -> onUpdate { it.copy(killSwitch = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_ipv6_enabled),
                 summary = stringResource(Res.string.summary_pref_ipv6_enabled),
                 checked = s.enableIpv6,
                 onCheckedChange = { v -> onUpdate { it.copy(enableIpv6 = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_prefer_ipv6),
                 summary = stringResource(Res.string.summary_pref_prefer_ipv6),
                 checked = s.preferIpv6,
                 onCheckedChange = { v -> onUpdate { it.copy(preferIpv6 = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_pref_vpn_interface_address),
                 options = VpnInterfaceAddress.entries.map { it to it.label },
@@ -955,6 +962,7 @@ private fun VpnPage(
                 enabled = isVpn,
                 onSelected = { v -> onUpdate { it.copy(vpnInterfaceAddress = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_vpn_mtu),
                 value = s.vpnMtu.toString(),
@@ -966,12 +974,13 @@ private fun VpnPage(
                     }
                 },
             )
-
+            SettingsDivider(hasIcon = false)
             MtuOptimizeRow(
                 enabled = isVpn,
                 serverHost = mtuHint?.host,
                 overhead = mtuHint?.overhead ?: dev.cluvex.zedsecure.data.net.MtuOverheads.worstCase(),
             ) { mtu -> onUpdate { it.copy(vpnMtu = mtu) } }
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_pref_vpn_bypass_lan),
                 options = listOf(
@@ -993,6 +1002,7 @@ private fun VpnPage(
                 enabled = isVpn,
                 onCheckedChange = { v -> onUpdate { it.copy(localDnsEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_fake_dns_enabled),
                 summary = stringResource(Res.string.summary_pref_fake_dns_enabled),
@@ -1000,12 +1010,14 @@ private fun VpnPage(
                 enabled = isVpn && s.localDnsEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(fakeDnsEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_vpn_dns),
                 value = s.vpnDns,
                 enabled = isVpn && !s.localDnsEnabled,
                 onValueChanged = { v -> onUpdate { it.copy(vpnDns = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_append_http_proxy),
                 summary = stringResource(Res.string.summary_pref_append_http_proxy),
@@ -1021,6 +1033,7 @@ private fun VpnPage(
                     stringResource(Res.string.title_pref_use_hev_tunnel),
                     stringResource(Res.string.summary_pref_hev_tunnel_always_on),
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsListRow(
                     title = stringResource(Res.string.tun_engine_title),
                     options = listOf(
@@ -1031,10 +1044,12 @@ private fun VpnPage(
                     enabled = hevOn,
                     onSelected = { v -> onUpdate { it.copy(useZepTun = v) } },
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsInfoRow(
                     stringResource(Res.string.tun_engine_title),
                     stringResource(Res.string.tun_engine_sub),
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsListRow(
                     title = stringResource(Res.string.title_pref_hev_tunnel_loglevel),
                     options = HevLogLevel.entries.map { it to it.value },
@@ -1042,6 +1057,7 @@ private fun VpnPage(
                     enabled = hevOn,
                     onSelected = { v -> onUpdate { it.copy(hevTunLogLevel = v) } },
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsEditRow(
                     title = stringResource(Res.string.title_pref_hev_tunnel_rw_timeout),
                     value = s.hevTunRwTimeout,
@@ -1075,18 +1091,21 @@ private fun CorePage(
                 checked = s.sniffingEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(sniffingEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_route_only_enabled),
                 summary = stringResource(Res.string.summary_pref_route_only_enabled),
                 checked = s.routeOnly,
                 onCheckedChange = { v -> onUpdate { it.copy(routeOnly = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_core_loglevel),
                 options = LogLevel.entries.map { it to it.value },
                 selected = s.logLevel,
                 onSelected = { v -> onUpdate { it.copy(logLevel = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_outbound_domain_resolve_method),
                 options = listOf(
@@ -1115,7 +1134,7 @@ private fun CorePage(
                     }
                 },
             )
-
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_proxy_sharing_enabled),
                 summary = stringResource(Res.string.summary_pref_proxy_sharing_enabled),
@@ -1135,11 +1154,15 @@ private fun CorePage(
                     }
                 },
             )
-            if (s.proxySharing) LanShareAddressRow(s)
+            if (s.proxySharing) {
+                SettingsDivider(hasIcon = false)
+                LanShareAddressRow(s)
+            }
             val platform = LocalPlatform.current
             val invalidPort = stringResource(Res.string.toast_lan_port_invalid)
             val credentialRequired = stringResource(Res.string.toast_lan_credential_required)
             val sharing = localProxy && s.proxySharing
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_lan_port),
                 value = s.effectiveLanSocksPort.toString(),
@@ -1155,6 +1178,7 @@ private fun CorePage(
                     }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_lan_username),
                 value = s.socksUsername,
@@ -1164,6 +1188,7 @@ private fun CorePage(
                     else onUpdate { it.copy(socksUsername = v.trim()) }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_lan_password),
                 value = s.socksPassword,
@@ -1174,6 +1199,7 @@ private fun CorePage(
                     else onUpdate { it.copy(socksPassword = v) }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_socks_enable_udp),
                 summary = stringResource(Res.string.summary_pref_socks_enable_udp),
@@ -1190,11 +1216,13 @@ private fun CorePage(
                 placeholder = stringResource(Res.string.summary_pref_remote_dns),
                 onValueChanged = { v -> onUpdate { it.copy(remoteDns = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_domestic_dns),
                 value = s.directDns,
                 onValueChanged = { v -> onUpdate { it.copy(directDns = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_dns_hosts),
                 value = s.dnsHosts,
@@ -1253,6 +1281,7 @@ private fun SingBoxPage(
                 checked = s.singBoxMuxEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxMuxEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_singbox_mux_protocol),
                 options = SingBoxMuxProtocol.entries.map { it to it.value },
@@ -1260,6 +1289,7 @@ private fun SingBoxPage(
                 enabled = s.singBoxMuxEnabled,
                 onSelected = { v -> onUpdate { it.copy(singBoxMuxProtocol = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_singbox_mux_connections),
                 value = s.singBoxMuxMaxConnections.toString(),
@@ -1269,6 +1299,7 @@ private fun SingBoxPage(
                     v.toIntOrNull()?.coerceIn(0, 64)?.let { n -> onUpdate { it.copy(singBoxMuxMaxConnections = n) } }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_mux_padding),
                 summary = stringResource(Res.string.summary_singbox_mux_padding),
@@ -1276,6 +1307,7 @@ private fun SingBoxPage(
                 enabled = s.singBoxMuxEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxMuxPadding = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_brutal),
                 summary = stringResource(Res.string.summary_singbox_brutal),
@@ -1283,6 +1315,7 @@ private fun SingBoxPage(
                 enabled = s.singBoxMuxEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxBrutalEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_singbox_brutal_up),
                 value = s.singBoxBrutalUpMbps.toString(),
@@ -1292,6 +1325,7 @@ private fun SingBoxPage(
                     v.toIntOrNull()?.coerceIn(1, 10_000)?.let { n -> onUpdate { it.copy(singBoxBrutalUpMbps = n) } }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_singbox_brutal_down),
                 value = s.singBoxBrutalDownMbps.toString(),
@@ -1310,12 +1344,14 @@ private fun SingBoxPage(
                 checked = s.singBoxTlsFragment,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxTlsFragment = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_record_fragment),
                 summary = stringResource(Res.string.summary_singbox_record_fragment),
                 checked = s.singBoxTlsRecordFragment,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxTlsRecordFragment = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_singbox_utls),
                 options = listOf("" to stringResource(Res.string.singbox_utls_off)) +
@@ -1323,6 +1359,7 @@ private fun SingBoxPage(
                 selected = s.singBoxUtlsFingerprint,
                 onSelected = { v -> onUpdate { it.copy(singBoxUtlsFingerprint = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_uot),
                 summary = stringResource(Res.string.summary_singbox_uot),
@@ -1340,30 +1377,35 @@ private fun SingBoxPage(
                 selected = s.singBoxTunStack,
                 onSelected = { v -> onUpdate { it.copy(singBoxTunStack = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_strict_route),
                 summary = stringResource(Res.string.summary_singbox_strict_route),
                 checked = s.singBoxStrictRoute,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxStrictRoute = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_nat),
                 summary = stringResource(Res.string.summary_singbox_nat),
                 checked = s.singBoxEndpointIndependentNat,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxEndpointIndependentNat = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_cache),
                 summary = stringResource(Res.string.summary_singbox_cache),
                 checked = s.singBoxStoreCache,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxStoreCache = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_singbox_ntp),
                 summary = stringResource(Res.string.summary_singbox_ntp),
                 checked = s.singBoxNtpEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(singBoxNtpEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_singbox_ntp_server),
                 value = s.singBoxNtpServer,
@@ -1394,6 +1436,7 @@ private fun MuxPage(
                 checked = s.muxEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(muxEnabled = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_mux_concurrency),
                 value = s.muxConcurrency.toString(),
@@ -1406,6 +1449,7 @@ private fun MuxPage(
                     }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_mux_xudp_concurrency),
                 value = s.muxXudpConcurrency.toString(),
@@ -1417,6 +1461,7 @@ private fun MuxPage(
                     }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_pref_mux_xudp_quic),
                 options = XudpQuic.entries.map { it to it.value },
@@ -1447,7 +1492,7 @@ private fun FragmentPage(
                 checked = s.fragmentEnabled,
                 onCheckedChange = { v -> onUpdate { it.copy(fragmentEnabled = v) } },
             )
-
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.title_pref_fragment_packets),
                 options = FragmentPackets.entries.map { it to it.value },
@@ -1455,6 +1500,7 @@ private fun FragmentPage(
                 enabled = s.fragmentEnabled,
                 onSelected = { v -> onUpdate { it.copy(fragmentPackets = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_fragment_length),
                 value = s.fragmentLength,
@@ -1462,6 +1508,7 @@ private fun FragmentPage(
                 placeholder = stringResource(Res.string.summary_pref_fragment_range),
                 onValueChanged = { v -> onUpdate { it.copy(fragmentLength = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_fragment_interval),
                 value = s.fragmentInterval,
@@ -1469,6 +1516,7 @@ private fun FragmentPage(
                 placeholder = stringResource(Res.string.summary_pref_fragment_range),
                 onValueChanged = { v -> onUpdate { it.copy(fragmentInterval = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_fragment_maxsplit),
                 value = s.fragmentMaxSplit.toString(),
@@ -1512,18 +1560,21 @@ private fun ObservatoryPage(
                 checked = s.autoSelectRetry,
                 onCheckedChange = { v -> onUpdate { it.copy(autoSelectRetry = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.auto_pref_margin),
                 options = listOf(15, 30, 50).map { it to "$it%" },
                 selected = s.autoSelectSwitchMargin,
                 onSelected = { v -> onUpdate { it.copy(autoSelectSwitchMargin = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.auto_pref_check),
                 options = listOf(15, 30, 60, 120).map { it to seconds.replace("%s", it.toString()) },
                 selected = s.autoSelectCheckSeconds,
                 onSelected = { v -> onUpdate { it.copy(autoSelectCheckSeconds = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.auto_pref_sweep),
                 options = listOf(5, 10, 20, 30).map { it to minutes.replace("%s", it.toString()) },
@@ -1554,11 +1605,13 @@ private fun AdvancedPage(
                 checked = s.autoConnectOnBoot,
                 onCheckedChange = { v -> onUpdate { it.copy(autoConnectOnBoot = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_delay_test_url),
                 value = s.delayTestUrl,
                 onValueChanged = { v -> onUpdate { it.copy(delayTestUrl = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_real_ping_concurrency),
                 value = s.realPingConcurrency.toString(),
@@ -1569,6 +1622,7 @@ private fun AdvancedPage(
                     }
                 },
             )
+            SettingsDivider(hasIcon = false)
             SettingsEditRow(
                 title = stringResource(Res.string.title_pref_ip_api_url),
                 value = s.ipApiUrl,
@@ -1582,6 +1636,7 @@ private fun AdvancedPage(
                 checked = s.autoUpdateSubscriptions,
                 onCheckedChange = { v -> onUpdate { it.copy(autoUpdateSubscriptions = v) } },
             )
+            SettingsDivider(hasIcon = false)
             val hourOptions = (SUB_INTERVAL_PRESETS + s.subscriptionUpdateIntervalHours.coerceIn(1, 168))
                 .distinct().sorted()
             SettingsListRow(
@@ -1592,22 +1647,25 @@ private fun AdvancedPage(
                 onSelected = { h -> onUpdate { it.copy(subscriptionUpdateIntervalHours = h) } },
             )
             if (s.autoUpdateSubscriptions) {
+                SettingsDivider(hasIcon = false)
                 SettingsInfoRow(
                     title = stringResource(Res.string.settings_sub_interval_provider_title),
                     body = stringResource(Res.string.settings_sub_interval_provider_body),
                 )
             }
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_auto_test_after_update),
                 checked = s.autoTestAfterUpdate,
                 onCheckedChange = { v -> onUpdate { it.copy(autoTestAfterUpdate = v) } },
             )
-
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_auto_remove_invalid),
                 checked = s.autoRemoveInvalidAfterTest,
                 onCheckedChange = { v -> onUpdate { it.copy(autoRemoveInvalidAfterTest = v) } },
             )
+            SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_auto_sort_after_test),
                 checked = s.autoSortAfterTest,
@@ -1658,15 +1716,18 @@ private fun ModePage(
                 selected = if (desktop && !tun && s.runMode == RunMode.Vpn) RunMode.SystemProxy else s.runMode,
                 onSelected = { v -> onUpdate { it.copy(runMode = v) } },
             )
+            SettingsDivider(hasIcon = false)
             if (desktop) {
                 SettingsInfoRow(
                     title = stringResource(Res.string.mode_system_proxy),
                     body = stringResource(Res.string.mode_system_proxy_body),
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsInfoRow(
                     title = stringResource(Res.string.mode_socks),
                     body = stringResource(Res.string.mode_socks_body),
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsInfoRow(
                     title = stringResource(Res.string.mode_tun),
                     body = stringResource(Res.string.mode_tun_body),
@@ -1676,6 +1737,7 @@ private fun ModePage(
                     title = stringResource(Res.string.mode_vpn_explained),
                     body = stringResource(Res.string.mode_vpn_explained_body),
                 )
+                SettingsDivider(hasIcon = false)
                 SettingsInfoRow(
                     title = stringResource(Res.string.mode_proxy_explained),
                     body = stringResource(Res.string.mode_proxy_explained_body),

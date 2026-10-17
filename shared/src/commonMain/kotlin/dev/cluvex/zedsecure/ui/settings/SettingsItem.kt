@@ -74,9 +74,9 @@ private fun SettingsRow(
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val titleColor = if (enabled) (if (isDark) Color(0xFFE0E0F0) else Color(0xFF0F172A))
+    val titleColor = if (enabled) (if (isDark) Color(0xFFF2F2F7) else Color(0xFF000000))
     else MaterialTheme.colorScheme.onSurface.copy(alpha = DisabledAlpha)
-    val descColor = if (enabled) (if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B))
+    val descColor = if (enabled) (if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73))
     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DisabledAlpha)
 
     Row(
@@ -86,7 +86,7 @@ private fun SettingsRow(
                 if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick)
                 else Modifier
             )
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leading != null) {
@@ -96,14 +96,14 @@ private fun SettingsRow(
         Column(Modifier.weight(1f)) {
             Text(
                 title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
                 color = titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (!description.isNullOrEmpty()) {
-                Spacer(Modifier.height(3.dp))
+                Spacer(Modifier.height(2.dp))
                 Text(
                     description,
                     style = MaterialTheme.typography.bodySmall,
@@ -114,7 +114,7 @@ private fun SettingsRow(
             }
         }
         if (trailing != null) {
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(8.dp))
             trailing()
         }
     }
@@ -125,6 +125,8 @@ fun SettingsActionRow(
     title: String,
     summary: String? = null,
     enabled: Boolean = true,
+    leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
+    iconTint: Color? = null,
     onClick: () -> Unit,
 ) {
     SettingsRow(
@@ -132,6 +134,24 @@ fun SettingsActionRow(
         description = summary,
         enabled = enabled,
         onClick = onClick,
+        leading = leadingIcon?.let {
+            {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconTint ?: Color(0xFF007AFF)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(it),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp),
+                    )
+                }
+            }
+        },
     )
 }
 
@@ -141,8 +161,11 @@ fun SettingsSwitchRow(
     summary: String? = null,
     checked: Boolean,
     enabled: Boolean = true,
+    leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
+    iconTint: Color? = null,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     SettingsRow(
         title = title,
         description = summary,
@@ -150,11 +173,37 @@ fun SettingsSwitchRow(
         onClick = if (enabled) {
             { onCheckedChange(!checked) }
         } else null,
+        leading = leadingIcon?.let {
+            {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconTint ?: Color(0xFF34C759)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(it),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp),
+                    )
+                }
+            }
+        },
         trailing = {
             Switch(
                 checked = checked,
                 onCheckedChange = if (enabled) onCheckedChange else null,
                 enabled = enabled,
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF34C759),
+                    checkedBorderColor = Color.Transparent,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EA),
+                    uncheckedBorderColor = Color.Transparent,
+                ),
             )
         },
     )
@@ -168,8 +217,11 @@ fun SettingsEditRow(
     isPassword: Boolean = false,
     numeric: Boolean = false,
     placeholder: String? = null,
+    leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
+    iconTint: Color? = null,
     onValueChanged: (String) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     var showDialog by remember { mutableStateOf(false) }
     val description = when {
         isPassword && value.isNotEmpty() -> "••••••"
@@ -184,6 +236,24 @@ fun SettingsEditRow(
         onClick = if (enabled) {
             { showDialog = true }
         } else null,
+        leading = leadingIcon?.let {
+            {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconTint ?: Color(0xFF007AFF)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(it),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp),
+                    )
+                }
+            }
+        },
     )
 
     if (showDialog) {
@@ -191,12 +261,22 @@ fun SettingsEditRow(
         var reveal by remember { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(title, style = MaterialTheme.typography.titleMedium) },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+            },
             text = {
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
                     ),
@@ -226,11 +306,20 @@ fun SettingsEditRow(
                 TextButton(onClick = {
                     showDialog = false
                     onValueChanged(text.trim())
-                }) { Text(stringResource(Res.string.action_save)) }
+                }) {
+                    Text(
+                        stringResource(Res.string.action_save),
+                        color = Color(0xFF007AFF),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text(stringResource(Res.string.action_cancel))
+                    Text(
+                        stringResource(Res.string.action_cancel),
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                    )
                 }
             },
         )
@@ -243,8 +332,12 @@ fun <T> SettingsListRow(
     options: List<Pair<T, String>>,
     selected: T,
     enabled: Boolean = true,
+    leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
+    iconTint: Color? = null,
     onSelected: (T) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val direction = LocalLayoutDirection.current
     var showDialog by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.first == selected }?.second
         ?: options.firstOrNull()?.second.orEmpty()
@@ -256,12 +349,53 @@ fun <T> SettingsListRow(
         onClick = if (enabled) {
             { showDialog = true }
         } else null,
+        leading = leadingIcon?.let {
+            {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(iconTint ?: Color(0xFF007AFF)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(it),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp),
+                    )
+                }
+            }
+        },
+        trailing = {
+            Icon(
+                painter = painterResource(Res.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
+                modifier = Modifier
+                    .size(18.dp)
+                    .graphicsLayer {
+                        if (direction == LayoutDirection.Rtl) {
+                            rotationY = 180f
+                        }
+                    },
+            )
+        },
     )
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(title, style = MaterialTheme.typography.titleMedium) },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+            },
             text = {
                 Column(
                     Modifier
@@ -272,6 +406,7 @@ fun <T> SettingsListRow(
                         Row(
                             Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
                                 .selectable(
                                     selected = value == selected,
                                     onClick = {
@@ -279,7 +414,7 @@ fun <T> SettingsListRow(
                                         onSelected(value)
                                     },
                                 )
-                                .padding(vertical = 10.dp),
+                                .padding(vertical = 10.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(
@@ -288,11 +423,15 @@ fun <T> SettingsListRow(
                                     showDialog = false
                                     onSelected(value)
                                 },
+                                colors = androidx.compose.material3.RadioButtonDefaults.colors(
+                                    selectedColor = Color(0xFF007AFF),
+                                ),
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 label.ifBlank { stringResource(Res.string.option_none) },
                                 style = MaterialTheme.typography.bodyLarge,
+                                color = if (isDark) Color(0xFFF2F2F7) else Color(0xFF000000),
                             )
                         }
                     }
@@ -300,7 +439,11 @@ fun <T> SettingsListRow(
             },
             confirmButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text(stringResource(Res.string.action_cancel))
+                    Text(
+                        stringResource(Res.string.action_cancel),
+                        color = Color(0xFF007AFF),
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             },
         )
@@ -309,17 +452,20 @@ fun <T> SettingsListRow(
 
 @Composable
 fun SettingsInfoRow(title: String, body: String) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp)) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Text(
             title,
-            style = MaterialTheme.typography.titleSmallEmphasized,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (isDark) Color(0xFFF2F2F7) else Color(0xFF000000),
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(3.dp))
         Text(
             body,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+            lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.25,
         )
     }
 }
@@ -330,7 +476,8 @@ fun SettingsMenuRow(
     subtitle: String? = null,
     leadingIcon: org.jetbrains.compose.resources.DrawableResource? = null,
     iconTint: Color? = null,
-    iconTile: Boolean = false,
+    iconTile: Boolean = true,
+    trailingText: String? = null,
     onClick: () -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -342,61 +489,68 @@ fun SettingsMenuRow(
         onClick = onClick,
         leading = leadingIcon?.let {
             {
-                if (iconTile) {
-                    val tileBg = if (isDark) Color.Black.copy(alpha = 0.40f) else Color(0xFFF1F5F9).copy(alpha = 0.95f)
-                    val effectiveTint = if (isDark) {
-                        iconTint ?: Color(0xFF60E0B0)
-                    } else {
-                        when (iconTint) {
-                            Color(0xFF60E0B0), Color(0xFF20D8C0) -> Color(0xFF059669)
-                            Color(0xFF38BDF8), Color(0xFF2088FF) -> Color(0xFF2563EB)
-                            Color(0xFFD8B4FE), Color(0xFFB55FE6) -> Color(0xFF7C3AED)
-                            else -> iconTint ?: Color(0xFF0D9488)
-                        }
-                    }
-                    Box(
-                        Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(tileBg)
-                            .border(
-                                1.dp,
-                                effectiveTint.copy(alpha = if (isDark) 0.45f else 0.25f),
-                                RoundedCornerShape(16.dp),
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painterResource(it),
-                            contentDescription = null,
-                            tint = effectiveTint,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                } else {
+                val squircleBg = iconTint ?: Color(0xFF007AFF)
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(squircleBg),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Icon(
                         painterResource(it),
                         contentDescription = null,
-                        tint = iconTint ?: MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp),
+                        tint = Color.White,
+                        modifier = Modifier.size(19.dp),
                     )
                 }
             }
         },
         trailing = {
-            Icon(
-                painter = painterResource(Res.drawable.ic_chevron_right),
-                contentDescription = null,
-                tint = if (isDark) Color(0xFFC0C0D0) else Color(0xFF94A3B8),
-                modifier = Modifier
-                    .size(20.dp)
-                    .graphicsLayer {
-                        if (direction == LayoutDirection.Rtl) {
-                            rotationY = 180f
-                        }
-                    },
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!trailingText.isNullOrEmpty()) {
+                    Text(
+                        trailingText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                }
+                Icon(
+                    painter = painterResource(Res.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
+                    modifier = Modifier
+                        .size(18.dp)
+                        .graphicsLayer {
+                            if (direction == LayoutDirection.Rtl) {
+                                rotationY = 180f
+                            }
+                        },
+                )
+            }
         },
+    )
+}
+
+@Composable
+fun SettingsDivider(
+    modifier: Modifier = Modifier,
+    hasIcon: Boolean = true,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val direction = LocalLayoutDirection.current
+    val indent = if (hasIcon) 62.dp else 16.dp
+    androidx.compose.material3.HorizontalDivider(
+        modifier = modifier.then(
+            if (direction == LayoutDirection.Rtl) {
+                Modifier.padding(end = indent)
+            } else {
+                Modifier.padding(start = indent)
+            }
+        ),
+        thickness = 0.5.dp,
+        color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
     )
 }
 
@@ -408,72 +562,30 @@ fun SettingsGroup(
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val cardShape = RoundedCornerShape(26.dp)
-    val cardBorder = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
-        )
-    }
-    val cardBg = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
-        )
-    }
-    val sectionColor = if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488)
+    val cardShape = RoundedCornerShape(16.dp)
+    val cardBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
+    val cardBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
+    val headerColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)
 
-    Column(modifier.fillMaxWidth()) {
+    Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         if (title != null) {
-            if (sectionTitle) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = sectionColor,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Box(
-                        Modifier
-                            .size(width = 28.dp, height = 3.5.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(sectionColor.copy(alpha = 0.85f)),
-                    )
-                }
-            } else {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.labelLargeEmphasized,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 8.dp),
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = headerColor,
+                modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 6.dp),
+            )
         }
         Surface(
             shape = cardShape,
-            color = Color.Transparent,
+            color = cardBg,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 5.dp)
-                .border(1.dp, cardBorder, cardShape),
+                .border(0.5.dp, cardBorder, cardShape),
         ) {
             Column(
-                Modifier
-                    .fillMaxWidth()
-                    .background(cardBg)
-                    .padding(vertical = 4.dp),
+                Modifier.fillMaxWidth(),
                 content = content,
             )
         }
@@ -493,54 +605,28 @@ fun SettingsPageScaffold(
     content: @Composable ColumnScopeAlias.() -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val glowColors = if (isDark) {
-        listOf(
-            Color(0xFF0168D1).copy(alpha = 0.40f),
-            Color(0xFF08C6AB).copy(alpha = 0.18f),
-            Color.Transparent,
-        )
-    } else {
-        listOf(
-            Color(0xFF60A5FA).copy(alpha = 0.20f),
-            Color(0xFF2DD4BF).copy(alpha = 0.14f),
-            Color.Transparent,
-        )
-    }
+    val pageBg = if (isDark) Color(0xFF000000) else Color(0xFFF2F2F7)
 
     Box(
         modifier
             .fillMaxSize()
-            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
+            .background(pageBg),
     ) {
-        // Top-left cosmic aurora / crescent glow curve from screenshot
-        Box(
-            Modifier
-                .size(360.dp)
-                .offset(x = (-80).dp, y = (-60).dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = glowColors,
-                        radius = 500f,
-                    ),
-                ),
-        )
-
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Spacer(Modifier.height(8.dp))
             dev.cluvex.zedsecure.ui.components.PageHeader(
                 title = title,
                 subtitle = subtitle,
                 titleIcon = titleIcon,
-                accentLine = accentLine,
+                accentLine = false,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(4.dp))
             content()
             Spacer(Modifier.height(32.dp))
         }

@@ -56,8 +56,8 @@ fun AboutSheet(onDismiss: () -> Unit) {
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
@@ -109,11 +109,11 @@ fun AboutSheet(onDismiss: () -> Unit) {
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                color = if (isDark) Color(0xFF0F243A).copy(alpha = 0.70f) else Color.White.copy(alpha = 0.90f),
+                shape = RoundedCornerShape(14.dp),
+                color = if (isDark) Color(0xFF2C2C2E).copy(alpha = 0.45f) else Color(0xFFF2F2F7),
                 border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isDark) Color(0xFF2088FF).copy(alpha = 0.25f) else Color(0xFF3B82F6).copy(alpha = 0.15f),
+                    0.5.dp,
+                    if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
                 ),
             ) {
                 Column(
@@ -178,63 +178,63 @@ fun AboutSheet(onDismiss: () -> Unit) {
 
 @Composable
 private fun LinkRow(iconRes: DrawableResource, title: String, subtitle: String, isDark: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
-    val cardBorder = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF2088FF).copy(alpha = 0.50f), Color(0xFF20D8C0).copy(alpha = 0.30f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF3B82F6).copy(alpha = 0.25f), Color(0xFF0D9488).copy(alpha = 0.18f)),
-        )
-    }
-    val cardBg = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
-        )
-    }
+    val shape = RoundedCornerShape(14.dp)
+    val cardBorder = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val cardBg = if (isDark) Color(0xFF2C2C2E).copy(alpha = 0.45f) else Color(0xFFF2F2F7)
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
     Surface(
         onClick = onClick,
         shape = shape,
-        color = Color.Transparent,
+        color = cardBg,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, cardBorder, shape),
+            .border(0.5.dp, cardBorder, shape),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(cardBg)
-                .padding(14.dp),
+                .padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                painterResource(iconRes),
-                null,
-                tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF2563EB),
-            )
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF007AFF)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(iconRes),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(19.dp),
+                )
+            }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = if (isDark) Color(0xFFF2F2F7) else Color(0xFF000000),
                 )
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                 )
             }
             Icon(
-                painterResource(Res.drawable.ic_chevron_right),
-                null,
-                tint = if (isDark) Color(0xFFC0C0D0) else Color(0xFF94A3B8),
+                painter = painterResource(Res.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
+                modifier = Modifier
+                    .size(18.dp)
+                    .androidx.compose.ui.graphics.graphicsLayer {
+                        if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                            rotationY = 180f
+                        }
+                    },
             )
         }
     }
