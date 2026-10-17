@@ -18,6 +18,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,10 +80,25 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
         )
     }
 
-    ModalBottomSheet(onDismissRequest = {
-        applySave()
-        onDismiss()
-    }) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+    ModalBottomSheet(
+        onDismissRequest = {
+            applySave()
+            onDismiss()
+        },
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Surface(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = if (isDark) Color(0xFF38383A) else Color(0xFFD1D1D6),
+                shape = RoundedCornerShape(2.5.dp),
+            ) {
+                androidx.compose.foundation.layout.Box(Modifier.height(5.dp).androidx.compose.foundation.layout.width(36.dp))
+            }
+        },
+    ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding()
                 .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
@@ -95,6 +112,7 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                 onValueChange = { ip = it },
                 label = { Text(stringResource(Res.string.rsta_connect_ip)) },
                 supportingText = { Text(stringResource(Res.string.rsta_connect_ip_hint)) },
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -102,6 +120,7 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                 value = port,
                 onValueChange = { port = it.filter(Char::isDigit).take(5) },
                 label = { Text(stringResource(Res.string.rsta_connect_port)) },
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -110,6 +129,7 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                 onValueChange = { sni = it },
                 label = { Text(stringResource(Res.string.rsta_fake_sni)) },
                 supportingText = { Text(stringResource(Res.string.rsta_fake_sni_hint)) },
+                shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -125,24 +145,46 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                     applySave()
                     onDismiss()
                 },
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
             }
 
-            Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                border = androidx.compose.foundation.BorderStroke(
+                    0.5.dp,
+                    if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA),
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(stringResource(Res.string.rsta_status), style = MaterialTheme.typography.labelMedium)
                     Text(status.ifEmpty { "…" }, fontWeight = FontWeight.SemiBold)
                     Text(stringResource(Res.string.rsta_status_hint), style = MaterialTheme.typography.bodySmall)
                 }
             }
-            OutlinedButton(onClick = { showLog = !showLog }, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(Res.string.rsta_view_log))
+            OutlinedButton(
+                onClick = { showLog = !showLog },
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFF007AFF)),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(Res.string.rsta_view_log), color = Color(0xFF007AFF), fontWeight = FontWeight.SemiBold)
             }
             if (showLog) {
-                Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isDark) Color(0xFF000000) else Color(0xFFF2F2F7),
+                    border = androidx.compose.foundation.BorderStroke(
+                        0.5.dp,
+                        if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Text(
                         log.takeLast(60).joinToString("\n").ifEmpty { stringResource(Res.string.rsta_log_empty) },
                         style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace,

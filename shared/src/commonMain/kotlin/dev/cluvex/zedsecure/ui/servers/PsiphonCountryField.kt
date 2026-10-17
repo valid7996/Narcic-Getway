@@ -133,15 +133,15 @@ private fun CountryPickerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -157,7 +157,7 @@ private fun CountryPickerSheet(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 placeholder = { Text(stringResource(Res.string.action_search)) },
                 modifier = Modifier.fillMaxWidth(),
             )

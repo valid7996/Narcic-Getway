@@ -36,6 +36,10 @@ import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.ButtonDefaults
+
 private enum class CrossSlot { CARRIER, EXIT }
 
 @Composable
@@ -50,6 +54,7 @@ fun CrossChainSheet(
     initialInnerId: String = "",
     initialOuterId: String = "",
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     var name by remember { mutableStateOf(initialName) }
     var innerId by remember { mutableStateOf(initialInnerId) }
     var outerId by remember { mutableStateOf(initialOuterId) }
@@ -73,8 +78,18 @@ fun CrossChainSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Surface(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = if (isDark) Color(0xFF38383A) else Color(0xFFD1D1D6),
+                shape = RoundedCornerShape(2.5.dp),
+            ) {
+                androidx.compose.foundation.layout.Box(Modifier.height(5.dp).androidx.compose.foundation.layout.width(36.dp))
+            }
+        },
     ) {
         Column(Modifier.fillMaxWidth().imePadding()) {
             LazyColumn(
@@ -102,6 +117,7 @@ fun CrossChainSheet(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text(stringResource(Res.string.manual_remark)) },
+                        shape = RoundedCornerShape(12.dp),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -181,8 +197,12 @@ fun CrossChainSheet(
             ) {
                 if (valid) {
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
                         shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.5.dp,
+                            if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA),
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
@@ -233,8 +253,9 @@ fun CrossChainSheet(
                 Button(
                     onClick = { onSave(name.trim(), innerId, outerId) },
                     enabled = valid,
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
                 ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
             }
         }
@@ -249,11 +270,17 @@ private fun SlotCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = RoundedCornerShape(12.dp)
+    val cardBorder = if (active) Color(0xFF007AFF) else (if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
+    val cardBg = if (active) Color(0xFF007AFF).copy(alpha = 0.12f)
+        else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7))
+
     Surface(
         onClick = onClick,
-        color = if (active) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(14.dp),
+        color = cardBg,
+        shape = shape,
+        border = androidx.compose.foundation.BorderStroke(if (active) 1.5.dp else 0.5.dp, cardBorder),
         modifier = modifier,
     ) {
         Column(
@@ -264,8 +291,7 @@ private fun SlotCard(
                 label,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
-                else MaterialTheme.colorScheme.primary,
+                color = if (active) Color(0xFF007AFF) else (if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)),
             )
             Text(
                 picked?.name ?: stringResource(Res.string.crosschain_not_set),
@@ -273,13 +299,13 @@ private fun SlotCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = if (picked == null) MaterialTheme.colorScheme.onSurfaceVariant
-                else MaterialTheme.colorScheme.onSurface,
+                else (if (isDark) Color.White else Color.Black),
             )
             if (picked != null) {
                 Text(
                     picked.transportLabel,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

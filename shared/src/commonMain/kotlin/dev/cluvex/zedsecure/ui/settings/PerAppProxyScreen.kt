@@ -138,38 +138,12 @@ fun PerAppProxyScreen(
     }
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val glowColors = if (isDark) {
-        listOf(
-            Color(0xFF0168D1).copy(alpha = 0.40f),
-            Color(0xFF08C6AB).copy(alpha = 0.18f),
-            Color.Transparent,
-        )
-    } else {
-        listOf(
-            Color(0xFF60A5FA).copy(alpha = 0.20f),
-            Color(0xFF2DD4BF).copy(alpha = 0.14f),
-            Color.Transparent,
-        )
-    }
 
     Box(
         modifier
             .fillMaxSize()
-            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
+            .background(if (isDark) Color(0xFF000000) else Color(0xFFF2F2F7)),
     ) {
-        Box(
-            Modifier
-                .size(360.dp)
-                .offset(x = (-80).dp, y = (-60).dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = glowColors,
-                        radius = 500f,
-                    ),
-                ),
-        )
-
         Column(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
             Spacer(Modifier.height(8.dp))
             PageHeader(
@@ -205,7 +179,7 @@ fun PerAppProxyScreen(
                 onValueChange = { query = it },
                 label = { Text(stringResource(Res.string.per_app_search)) },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -214,7 +188,14 @@ fun PerAppProxyScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f),
                 )
-                Switch(checked = showSystem, onCheckedChange = { showSystem = it })
+                Switch(
+                    checked = showSystem,
+                    onCheckedChange = { showSystem = it },
+                    colors = androidx.compose.material3.SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFF34C759),
+                    ),
+                )
             }
         }
 
@@ -317,45 +298,23 @@ private fun AppRow(
     onToggle: () -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val shape = RoundedCornerShape(16.dp)
-    val cardBorder = if (isDark) {
-        if (checked) {
-            Brush.horizontalGradient(
-                listOf(Color(0xFF20D8C0).copy(alpha = 0.60f), Color(0xFF2088FF).copy(alpha = 0.45f)),
-            )
-        } else {
-            Brush.horizontalGradient(
-                listOf(Color(0xFF28384F).copy(alpha = 0.25f), Color(0xFF1E293B).copy(alpha = 0.20f)),
-            )
-        }
+    val shape = RoundedCornerShape(12.dp)
+    val cardBorder = if (checked) Color(0xFF007AFF) else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA))
+    val cardBg = if (checked) {
+        if (isDark) Color(0xFF007AFF).copy(alpha = 0.12f) else Color(0xFF007AFF).copy(alpha = 0.08f)
     } else {
-        if (checked) {
-            Brush.horizontalGradient(
-                listOf(Color(0xFF0D9488).copy(alpha = 0.40f), Color(0xFF3B82F6).copy(alpha = 0.30f)),
-            )
-        } else {
-            Brush.horizontalGradient(
-                listOf(Color(0xFFE2E8F0), Color(0xFFE2E8F0)),
-            )
-        }
-    }
-    val cardBg = if (isDark) {
-        if (checked) Color(0xFF102840).copy(alpha = 0.85f) else Color(0xFF0A1828).copy(alpha = 0.65f)
-    } else {
-        if (checked) Color(0xFFF0FDF4) else Color.White
+        if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
     }
 
     Surface(
         shape = shape,
-        color = Color.Transparent,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, cardBorder, shape),
+        color = cardBg,
+        border = androidx.compose.foundation.BorderStroke(if (checked) 1.dp else 0.5.dp, cardBorder),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(cardBg)
                 .clickable(enabled = enabled, onClick = onToggle)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -371,19 +330,24 @@ private fun AppRow(
                     app.label,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = if (isDark) Color(0xFFE0E0F0) else Color(0xFF0F172A),
+                    color = if (isDark) Color.White else Color(0xFF000000),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     app.packageName,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
+            Checkbox(
+                checked = checked,
+                onCheckedChange = { onToggle() },
+                enabled = enabled,
+                colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)),
+            )
         }
     }
 }

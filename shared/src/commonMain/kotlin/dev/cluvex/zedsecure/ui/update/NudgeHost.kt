@@ -22,6 +22,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -128,33 +131,36 @@ fun NudgeHost(
 @Composable
 fun UpdateDialog(info: UpdateInfo, onDismiss: () -> Unit) {
     val platform = LocalPlatform.current
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
         icon = {
             Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF007AFF),
                 modifier = Modifier.size(44.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painterResource(Res.drawable.ic_download),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = Color.White,
                         modifier = Modifier.size(24.dp),
                     )
                 }
             }
         },
-        title = { Text(stringResource(Res.string.update_available_title)) },
+        title = { Text(stringResource(Res.string.update_available_title), fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    VersionPill(AppInfo.versionName, MaterialTheme.colorScheme.surfaceVariant)
+                    VersionPill(AppInfo.versionName, if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7))
                     Spacer(Modifier.width(8.dp))
                     Text("→", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.width(8.dp))
-                    VersionPill(info.versionName, MaterialTheme.colorScheme.primaryContainer)
+                    VersionPill(info.versionName, Color(0xFF007AFF).copy(alpha = 0.15f))
                 }
                 if (info.releaseNotes.isNotBlank()) {
                     Spacer(Modifier.padding(top = 12.dp))
@@ -162,7 +168,7 @@ fun UpdateDialog(info: UpdateInfo, onDismiss: () -> Unit) {
                         stringResource(Res.string.update_whats_new),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = Color(0xFF007AFF),
                     )
                     Spacer(Modifier.padding(top = 4.dp))
                     Box(Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState())) {
@@ -172,16 +178,25 @@ fun UpdateDialog(info: UpdateInfo, onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val url = info.downloadUrl
-                if (url != null) platform.openUri(url) else platform.openStorePage()
-                onDismiss()
-            }) {
-                Text(stringResource(Res.string.update_action_update))
+            Button(
+                onClick = {
+                    val url = info.downloadUrl
+                    if (url != null) platform.openUri(url) else platform.openStorePage()
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+            ) {
+                Text(stringResource(Res.string.update_action_update), fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.update_action_later)) }
+            TextButton(onClick = onDismiss) {
+                Text(
+                    stringResource(Res.string.update_action_later),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                )
+            }
         },
     )
 }
@@ -200,31 +215,48 @@ private fun VersionPill(version: String, container: androidx.compose.ui.graphics
 @Composable
 private fun RateDialog(onDismiss: () -> Unit, onNever: () -> Unit) {
     val platform = LocalPlatform.current
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
         icon = {
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 repeat(5) {
                     Icon(
                         painterResource(Res.drawable.ic_star),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = Color(0xFFFF9500),
                         modifier = Modifier.size(20.dp),
                     )
                 }
             }
         },
-        title = { Text(stringResource(Res.string.rate_prompt_title)) },
+        title = { Text(stringResource(Res.string.rate_prompt_title), fontWeight = FontWeight.Bold) },
         text = { Text(stringResource(Res.string.rate_prompt_body)) },
         confirmButton = {
-            Button(onClick = { platform.openStorePage(); onDismiss() }) {
-                Text(stringResource(Res.string.rate_action_rate))
+            Button(
+                onClick = { platform.openStorePage(); onDismiss() },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+            ) {
+                Text(stringResource(Res.string.rate_action_rate), fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onNever) { Text(stringResource(Res.string.rate_action_never)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.rate_action_later)) }
+                TextButton(onClick = onNever) {
+                    Text(
+                        stringResource(Res.string.rate_action_never),
+                        color = Color(0xFFFF3B30),
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        stringResource(Res.string.rate_action_later),
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                    )
+                }
             }
         },
     )

@@ -20,6 +20,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -44,6 +48,7 @@ import org.infradead.libopenconnect.LibOpenConnect
 fun OpenConnectAuthDialog() {
     val prompt by AuthFormBus.pending.collectAsStateWithLifecycle()
     val form = prompt ?: return
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     val values = remember(form) {
         mutableStateMapOf<String, String>().apply {
@@ -53,7 +58,9 @@ fun OpenConnectAuthDialog() {
 
     AlertDialog(
         onDismissRequest = { AuthFormBus.cancel() },
-        title = { Text(stringResource(R.string.oc_auth_title)) },
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        title = { Text(stringResource(R.string.oc_auth_title), fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -102,12 +109,12 @@ fun OpenConnectAuthDialog() {
         },
         confirmButton = {
             TextButton(onClick = { AuthFormBus.submit(values.toMap()) }) {
-                Text(stringResource(R.string.oc_auth_connect))
+                Text(stringResource(R.string.oc_auth_connect), color = Color(0xFF007AFF), fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
             TextButton(onClick = { AuthFormBus.cancel() }) {
-                Text(stringResource(R.string.oc_auth_cancel))
+                Text(stringResource(R.string.oc_auth_cancel), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73))
             }
         },
     )
@@ -126,6 +133,7 @@ private fun InputField(
         onValueChange = onChange,
         label = { Text(label) },
         singleLine = true,
+        shape = RoundedCornerShape(12.dp),
         keyboardOptions = KeyboardOptions(
             keyboardType = when {
                 numeric && password -> KeyboardType.NumberPassword
@@ -146,6 +154,7 @@ private fun SelectField(
     selectedName: String,
     onSelect: (String) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = choices.firstOrNull { it.name == selectedName }?.label ?: selectedName
     Box(Modifier.fillMaxWidth()) {
@@ -154,11 +163,18 @@ private fun SelectField(
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth().clickable { expanded = true },
         )
 
         Box(Modifier.matchParentSize().clickable { expanded = true })
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            border = androidx.compose.foundation.BorderStroke(0.5.dp, if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA)),
+        ) {
             choices.forEach { choice ->
                 DropdownMenuItem(
                     text = { Text(choice.label ?: choice.name ?: "") },
@@ -173,12 +189,15 @@ private fun SelectField(
 fun OpenConnectCertTrustDialog(onRemember: (hash: String) -> Unit = {}) {
     val prompt by CertTrustBus.pending.collectAsStateWithLifecycle()
     val pending = prompt ?: return
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     var remember by androidx.compose.runtime.remember(pending) { androidx.compose.runtime.mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = { CertTrustBus.reject() },
-        title = { Text(stringResource(R.string.oc_cert_title)) },
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        title = { Text(stringResource(R.string.oc_cert_title), fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -200,7 +219,11 @@ fun OpenConnectCertTrustDialog(onRemember: (hash: String) -> Unit = {}) {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { remember = !remember },
                 ) {
-                    Checkbox(checked = remember, onCheckedChange = { remember = it })
+                    Checkbox(
+                        checked = remember,
+                        onCheckedChange = { remember = it },
+                        colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Color(0xFF007AFF)),
+                    )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         stringResource(R.string.oc_cert_remember),
@@ -214,12 +237,12 @@ fun OpenConnectCertTrustDialog(onRemember: (hash: String) -> Unit = {}) {
                 if (remember) onRemember(pending.hash)
                 CertTrustBus.accept()
             }) {
-                Text(stringResource(R.string.oc_cert_trust))
+                Text(stringResource(R.string.oc_cert_trust), color = Color(0xFF007AFF), fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
             TextButton(onClick = { CertTrustBus.reject() }) {
-                Text(stringResource(R.string.oc_auth_cancel))
+                Text(stringResource(R.string.oc_auth_cancel), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73))
             }
         },
     )

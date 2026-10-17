@@ -11,15 +11,24 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -63,7 +72,22 @@ fun ProxyChainSheet(
     }
     val available = candidates.filter { it.id !in selected }.filterByChainQuery(query)
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
+            )
+        },
+    ) {
         Column(Modifier.fillMaxWidth().imePadding()) {
             LazyColumn(
                 Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = 560.dp),
@@ -93,6 +117,7 @@ fun ProxyChainSheet(
                         onValueChange = { name = it },
                         label = { Text(stringResource(Res.string.manual_remark)) },
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -226,8 +251,12 @@ fun ProxyChainSheet(
                 Button(
                     onClick = { onSave(name.trim(), selected.toList()) },
                     enabled = selected.size >= 2 && udpWarning == null,
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF007AFF),
+                        contentColor = Color.White,
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
                 ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
             }
         }

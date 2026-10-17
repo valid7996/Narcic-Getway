@@ -24,15 +24,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cluvex.zedsecure.R
 import dev.cluvex.zedsecure.core.SsoBus
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun OpenConnectSsoDialog() {
     val uri by SsoBus.pending.collectAsStateWithLifecycle()
     val loginUri = uri ?: return
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     AlertDialog(
         onDismissRequest = { SsoBus.cancel() },
-        title = { Text(stringResource(R.string.openconnect_sso_title)) },
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        title = { Text(stringResource(R.string.openconnect_sso_title), fontWeight = FontWeight.Bold) },
         text = {
             Box(Modifier.fillMaxWidth().height(460.dp)) {
                 AndroidView(
@@ -68,11 +76,10 @@ fun OpenConnectSsoDialog() {
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = { SsoBus.cancel() }) {
-                Text(stringResource(R.string.action_cancel))
+                Text(stringResource(R.string.action_cancel), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73))
             }
         },
         modifier = Modifier.padding(8.dp),
-        titleContentColor = MaterialTheme.colorScheme.onSurface,
     )
 }
 

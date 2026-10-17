@@ -27,10 +27,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.platform.encodeQr
 
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+
 @Composable
 fun QrCode(text: String, modifier: Modifier = Modifier) {
     val matrix = remember(text) { encodeQr(text) }
-    Surface(color = Color.White, modifier = modifier) {
+    Surface(color = Color.White, shape = RoundedCornerShape(12.dp), modifier = modifier) {
         if (matrix == null) return@Surface
         Canvas(Modifier.fillMaxWidth().aspectRatio(1f).padding(12.dp)) {
             val module = size.minDimension / matrix.size
@@ -61,10 +65,13 @@ fun QrDialog(
     onShare: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val encodable = remember(text) { encodeQr(text) != null }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        title = { Text(title, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         text = {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -87,11 +94,23 @@ fun QrDialog(
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(closeLabel) } },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(closeLabel, color = Color(0xFF007AFF), fontWeight = FontWeight.SemiBold)
+            }
+        },
         dismissButton = {
             Row2(
-                first = { TextButton(onClick = onCopy) { Text(copyLabel) } },
-                second = { TextButton(onClick = onShare) { Text(shareLabel) } },
+                first = {
+                    TextButton(onClick = onCopy) {
+                        Text(copyLabel, color = Color(0xFF007AFF))
+                    }
+                },
+                second = {
+                    TextButton(onClick = onShare) {
+                        Text(shareLabel, color = Color(0xFF007AFF))
+                    }
+                },
             )
         },
     )

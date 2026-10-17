@@ -229,15 +229,15 @@ fun AetherSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -829,12 +829,12 @@ fun AetherSheet(
                     onSave(name.trim(), buildProfile())
                 },
                 enabled = problem == null,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) ZedGreen else Color(0xFF0D9488),
+                    containerColor = Color(0xFF007AFF),
                     contentColor = Color.White,
                 ),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Icon(painterResource(Res.drawable.ic_bolt), null, Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
@@ -1011,15 +1011,15 @@ private fun AetherKeysPage(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -1234,12 +1234,12 @@ private fun AetherKeysPage(
                     }
                 },
                 enabled = !isRenewing,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) ZedGreen else Color(0xFF0D9488),
+                    containerColor = Color(0xFF007AFF),
                     contentColor = Color.White,
                 ),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 if (isRenewing) {
                     CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)

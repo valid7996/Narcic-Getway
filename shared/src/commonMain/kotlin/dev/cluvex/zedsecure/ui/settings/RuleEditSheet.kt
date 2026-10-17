@@ -74,15 +74,15 @@ fun RuleEditSheet(
     val isDark = androidx.compose.material3.MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -112,7 +112,7 @@ fun RuleEditSheet(
                 supportingText = if (remarksBlank) {
                     { Text(stringResource(Res.string.rule_error_remarks)) }
                 } else null,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -151,7 +151,7 @@ fun RuleEditSheet(
                 supportingText = if (!portValid) {
                     { Text(stringResource(Res.string.rule_error_port)) }
                 } else null,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             PickerField(
@@ -192,7 +192,17 @@ fun RuleEditSheet(
                         color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Switch(checked = locked, onCheckedChange = { locked = it })
+                Switch(
+                    checked = locked,
+                    onCheckedChange = { locked = it },
+                    colors = androidx.compose.material3.SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFF34C759),
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EA),
+                        uncheckedBorderColor = Color.Transparent,
+                    ),
+                )
             }
 
             Text(
@@ -207,7 +217,7 @@ fun RuleEditSheet(
             ) {
                 OutlinedButton(
                     onClick = onDismiss,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.weight(1f).height(50.dp),
                 ) {
                     Text(stringResource(Res.string.action_cancel))
@@ -228,9 +238,9 @@ fun RuleEditSheet(
                             ),
                         )
                     },
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                        containerColor = Color(0xFF007AFF),
                         contentColor = Color.White,
                     ),
                     modifier = Modifier.weight(1f).height(50.dp),
@@ -253,7 +263,7 @@ private fun RuleField(label: String, value: String, error: String?, onChange: (S
         maxLines = 4,
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
     )
 }

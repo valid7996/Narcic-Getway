@@ -1,6 +1,8 @@
 package dev.cluvex.zedsecure.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,13 +16,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.domain.ai.AiAgent
 import dev.cluvex.zedsecure.domain.ai.AiAppBridge
@@ -64,6 +72,7 @@ fun AiChatScreen(
         androidx.compose.foundation.layout.PaddingValues(0.dp),
     modifier: Modifier = Modifier,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val scope = rememberCoroutineScope()
     val history = remember { mutableStateListOf<AiTurn>() }
     val steps = remember { mutableStateListOf<String>() }
@@ -93,81 +102,126 @@ fun AiChatScreen(
         if (last >= 0) runCatching { listState.animateScrollToItem(last) }
     }
 
-    Column(modifier.fillMaxSize().padding(contentPadding)) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(settings.provider.label, style = MaterialTheme.typography.titleLarge)
+    Column(
+        modifier
+            .fillMaxSize()
+            .background(if (isDark) Color(0xFF000000) else Color(0xFFF2F2F7))
+            .padding(contentPadding),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                settings.provider.label,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (isDark) Color.White else Color.Black,
+            )
+            Spacer(Modifier.height(2.dp))
             Text(
                 settings.model(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
             )
         }
+
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (history.isEmpty()) {
-                item { Intro(settings) }
+                item { Intro(settings, isDark) }
             }
-            items(history) { turn -> TurnBubble(turn) }
+            items(history) { turn -> TurnBubble(turn, isDark) }
             if (steps.isNotEmpty()) {
-                item { StepTrail(steps) }
+                item { StepTrail(steps, isDark) }
             }
         }
 
-        Row(
-            Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Surface(
+            color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            border = BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                placeholder = { Text(stringResource(Res.string.ai_chat_hint)) },
-                enabled = !busy,
-                maxLines = 4,
-                modifier = Modifier.weight(1f),
-            )
-            FilledIconButton(
-                enabled = draft.isNotBlank() && !busy,
-                onClick = {
-                    val message = draft.trim()
-                    draft = ""
-                    busy = true
-                    steps.clear()
-                    scope.launch {
-                        val produced = runCatching {
-                        agent.ask(history.toList(), message) { step ->
-                            when (step) {
-                                is AiAgent.Step.Calling -> steps += "→ ${step.name}"
-                                is AiAgent.Step.Called -> steps += if (step.result.failed) {
-                                    "✕ ${step.result.name}: ${step.result.content.take(200)}"
-                                } else {
-                                    "✓ ${step.result.name}"
-                                }
-                                is AiAgent.Step.Failed -> steps += "✕ ${step.message}"
-                                else -> Unit
-                            }
-                        }
-                        }.getOrElse { e ->
-                            if (e is kotlinx.coroutines.CancellationException) throw e
-
-                            listOf(
-                                AiTurn(AiRole.USER, message),
-                                AiTurn(AiRole.ASSISTANT, "", error = e.message ?: e::class.simpleName),
-                            )
-                        }
-                        history.addAll(produced)
-                        steps.clear()
-                        busy = false
-                    }
-                },
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (busy) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("\u27A4")
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    placeholder = {
+                        Text(
+                            stringResource(Res.string.ai_chat_hint),
+                            color = if (isDark) Color(0xFF8E8E93) else Color(0xFFC7C7CC),
+                        )
+                    },
+                    enabled = !busy,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF007AFF),
+                        unfocusedBorderColor = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA),
+                        focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        focusedTextColor = if (isDark) Color.White else Color.Black,
+                        unfocusedTextColor = if (isDark) Color.White else Color.Black,
+                    ),
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    enabled = draft.isNotBlank() && !busy,
+                    onClick = {
+                        val message = draft.trim()
+                        draft = ""
+                        busy = true
+                        steps.clear()
+                        scope.launch {
+                            val produced = runCatching {
+                                agent.ask(history.toList(), message) { step ->
+                                    when (step) {
+                                        is AiAgent.Step.Calling -> steps += "→ ${step.name}"
+                                        is AiAgent.Step.Called -> steps += if (step.result.failed) {
+                                            "✕ ${step.result.name}: ${step.result.content.take(200)}"
+                                        } else {
+                                            "✓ ${step.result.name}"
+                                        }
+                                        is AiAgent.Step.Failed -> steps += "✕ ${step.message}"
+                                        else -> Unit
+                                    }
+                                }
+                            }.getOrElse { e ->
+                                if (e is kotlinx.coroutines.CancellationException) throw e
+
+                                listOf(
+                                    AiTurn(AiRole.USER, message),
+                                    AiTurn(AiRole.ASSISTANT, "", error = e.message ?: e::class.simpleName),
+                                )
+                            }
+                            history.addAll(produced)
+                            steps.clear()
+                            busy = false
+                        }
+                    },
+                    modifier = Modifier.size(42.dp).clip(CircleShape),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFF007AFF),
+                        contentColor = Color.White,
+                        disabledContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                        disabledContentColor = if (isDark) Color(0xFF8E8E93) else Color(0xFFAFAFB4),
+                    ),
+                ) {
+                    if (busy) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                    } else {
+                        Text("\u27A4", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -175,37 +229,60 @@ fun AiChatScreen(
 }
 
 @Composable
-private fun Intro(settings: AiSettings) {
-    Column(Modifier.padding(vertical = 24.dp)) {
-        Text("${settings.provider.label} · ${settings.model()}", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            stringResource(
-                if (settings.allowChanges) Res.string.ai_intro_changes else Res.string.ai_intro_readonly,
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(12.dp))
-        listOf(
-            Res.string.ai_example_hot,
-            Res.string.ai_example_nodata,
-            Res.string.ai_example_fastest,
-            Res.string.ai_example_mtu,
-        ).map { stringResource(it) }.forEach {
-            Text("· $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+private fun Intro(settings: AiSettings, isDark: Boolean) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            border = BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "${settings.provider.label} · ${settings.model()}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(
+                        if (settings.allowChanges) Res.string.ai_intro_changes else Res.string.ai_intro_readonly,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                )
+                Spacer(Modifier.height(14.dp))
+                listOf(
+                    Res.string.ai_example_hot,
+                    Res.string.ai_example_nodata,
+                    Res.string.ai_example_fastest,
+                    Res.string.ai_example_mtu,
+                ).map { stringResource(it) }.forEach {
+                    Text(
+                        "· $it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF007AFF),
+                        modifier = Modifier.padding(vertical = 3.dp),
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun TurnBubble(turn: AiTurn) {
+private fun TurnBubble(turn: AiTurn, isDark: Boolean) {
     if (turn.role == AiRole.TOOL) {
         Text(
             turn.results.joinToString("  ") { (if (it.failed) "✕ " else "✓ ") + it.name },
             style = MaterialTheme.typography.labelSmall,
             fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
             modifier = Modifier.padding(start = 8.dp),
         )
         return
@@ -217,24 +294,29 @@ private fun TurnBubble(turn: AiTurn) {
     Box(Modifier.fillMaxWidth(), contentAlignment = if (user) Alignment.CenterEnd else Alignment.CenterStart) {
         Box(
             Modifier
-                .fillMaxWidth(0.92f)
+                .fillMaxWidth(0.85f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(
                     when {
-                        error != null -> MaterialTheme.colorScheme.errorContainer
-                        user -> MaterialTheme.colorScheme.primaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
+                        error != null -> if (isDark) Color(0x33FF3B30) else Color(0x1AFF3B30)
+                        user -> Color(0xFF007AFF)
+                        else -> if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
                     },
                 )
-                .padding(12.dp),
+                .then(
+                    if (!user && error == null) {
+                        Modifier.border(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA), RoundedCornerShape(16.dp))
+                    } else Modifier
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp),
         ) {
             Text(
                 error ?: turn.text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = when {
-                    error != null -> MaterialTheme.colorScheme.onErrorContainer
-                    user -> MaterialTheme.colorScheme.onPrimaryContainer
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    error != null -> Color(0xFFFF3B30)
+                    user -> Color.White
+                    else -> if (isDark) Color.White else Color.Black
                 },
             )
         }
@@ -242,14 +324,14 @@ private fun TurnBubble(turn: AiTurn) {
 }
 
 @Composable
-private fun StepTrail(steps: List<String>) {
+private fun StepTrail(steps: List<String>, isDark: Boolean) {
     Column(Modifier.fillMaxWidth().padding(start = 8.dp)) {
         steps.takeLast(8).forEach {
             Text(
                 it,
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
             )
         }
     }

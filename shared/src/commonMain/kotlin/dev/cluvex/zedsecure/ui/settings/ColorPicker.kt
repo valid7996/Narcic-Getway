@@ -60,6 +60,9 @@ import dev.cluvex.zedsecure.ui.theme.toHex
 import dev.cluvex.zedsecure.ui.theme.toHsv
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontWeight
+
 @Composable
 fun ColorPickerDialog(
     title: String,
@@ -69,6 +72,7 @@ fun ColorPickerDialog(
     onReset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val initHsv = remember { initial.toHsv() }
     var hue by remember { mutableFloatStateOf(initHsv.h) }
     var sat by remember { mutableFloatStateOf(initHsv.s) }
@@ -78,16 +82,24 @@ fun ColorPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
         confirmButton = {
-            TextButton(onClick = { onPick(color) }) { Text(stringResource(Res.string.action_save)) }
+            TextButton(onClick = { onPick(color) }) {
+                Text(stringResource(Res.string.action_save), color = Color(0xFF007AFF), fontWeight = FontWeight.SemiBold)
+            }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onReset) { Text(stringResource(Res.string.personalize_reset)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
+                TextButton(onClick = onReset) {
+                    Text(stringResource(Res.string.personalize_reset), color = Color(0xFFFF3B30))
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(Res.string.action_cancel), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73))
+                }
             }
         },
-        title = { Text(title) },
+        title = { Text(title, fontWeight = FontWeight.Bold) },
         text = {
             Column(Modifier.fillMaxWidth()) {
                 preview(color)
@@ -128,6 +140,7 @@ fun ColorPickerDialog(
                             }
                         },
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
                         label = { Text(stringResource(Res.string.personalize_hex)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                         modifier = Modifier.weight(1f),

@@ -25,6 +25,15 @@ import org.jetbrains.compose.resources.painterResource
 import dev.cluvex.zedsecure.shared.resources.ic_keyboard_arrow_down
 import dev.cluvex.zedsecure.shared.resources.ic_chevron_right
 import dev.cluvex.zedsecure.shared.resources.openconnect_port
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -100,10 +109,22 @@ fun OpenConnectSheet(
 
     val valid = server.isNotBlank()
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val scrollState = rememberScrollState()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
+            )
+        },
     ) {
         Column(
             Modifier
@@ -262,8 +283,12 @@ fun OpenConnectSheet(
                     )
                 },
                 enabled = valid,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF007AFF),
+                    contentColor = Color.White,
+                ),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
             }
@@ -292,6 +317,7 @@ private fun Field(
         label = { Text(stringResource(labelRes)) },
         placeholder = placeholder?.let { { Text(it) } },
         singleLine = minLines == 1,
+        shape = RoundedCornerShape(12.dp),
         minLines = minLines,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -299,9 +325,20 @@ private fun Field(
 
 @Composable
 private fun SwitchRow(labelRes: StringResource, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(labelRes), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF34C759),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EA),
+                uncheckedBorderColor = Color.Transparent,
+            ),
+        )
     }
 }
 

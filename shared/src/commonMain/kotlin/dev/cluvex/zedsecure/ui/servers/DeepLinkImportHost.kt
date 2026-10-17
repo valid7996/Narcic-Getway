@@ -30,10 +30,15 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.shape.RoundedCornerShape
+
 @Composable
 fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val pending by DeepLinkBus.pending.collectAsStateWithLifecycle()
     val current = pending ?: return
     val request = current.request
@@ -42,12 +47,15 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = { DeepLinkBus.clear() },
-        icon = { Icon(painterResource(Res.drawable.ic_add_link), null) },
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        icon = { Icon(painterResource(Res.drawable.ic_add_link), null, tint = Color(0xFF007AFF)) },
         title = {
             Text(
                 stringResource(
                     if (isSubscription) Res.string.deeplink_subscription_title else Res.string.deeplink_config_title,
                 ),
+                fontWeight = FontWeight.Bold,
             )
         },
         text = {
@@ -134,11 +142,18 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
                     stringResource(
                         if (isSubscription) Res.string.deeplink_add_subscription else Res.string.deeplink_import,
                     ),
+                    color = Color(0xFF007AFF),
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         },
         dismissButton = {
-            TextButton(onClick = { DeepLinkBus.clear() }) { Text(stringResource(Res.string.action_cancel)) }
+            TextButton(onClick = { DeepLinkBus.clear() }) {
+                Text(
+                    stringResource(Res.string.action_cancel),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                )
+            }
         },
     )
 }

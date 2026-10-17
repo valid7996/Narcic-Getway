@@ -24,11 +24,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -107,11 +109,23 @@ fun SniSpoofSheet(
     val sniOk = fakeSni.trim().isNotBlank()
     val canSave = ipOk && portOk && sniOk
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
+            )
+        },
     ) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding()
@@ -261,8 +275,12 @@ fun SniSpoofSheet(
                         ),
                     )
                 },
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF007AFF),
+                    contentColor = Color.White,
+                ),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
             }
@@ -272,10 +290,18 @@ fun SniSpoofSheet(
     if (showLogsDialog) {
         AlertDialog(
             onDismissRequest = { showLogsDialog = false },
-            title = { Text(stringResource(Res.string.snispoof_view_logs)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    stringResource(Res.string.snispoof_view_logs),
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+            },
             text = {
                 Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp),
                 ) {
@@ -291,8 +317,11 @@ fun SniSpoofSheet(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showLogsDialog = false }) {
-                    Text(stringResource(Res.string.action_close))
+                TextButton(
+                    onClick = { showLogsDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
+                    Text(stringResource(Res.string.action_close), fontWeight = FontWeight.SemiBold)
                 }
             },
         )
@@ -315,6 +344,7 @@ private fun SniField(
         label = { Text(stringResource(labelRes)) },
         placeholder = placeholder?.let { { Text(it) } },
         singleLine = minLines == 1,
+        shape = RoundedCornerShape(12.dp),
         minLines = minLines,
         isError = isError,
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(

@@ -28,6 +28,14 @@ import dev.cluvex.zedsecure.ui.platform.LocalPlatform
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+
 private const val POLICY_URL = "https://cluvexstudio.github.io/ZedSecure-PrivacyPolicy/"
 
 @Composable
@@ -36,6 +44,8 @@ fun PrivacyPage(
     modifier: Modifier,
 ) {
     val platform = LocalPlatform.current
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
 
     SettingsPageScaffold(
         title = stringResource(Res.string.privacy_title),
@@ -45,25 +55,35 @@ fun PrivacyPage(
         titleIcon = Res.drawable.ic_policy,
     ) {
         Surface(
-            shape = MaterialTheme.shapes.largeIncreased,
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            shape = RoundedCornerShape(14.dp),
+            color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            border = BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         ) {
             Row(
-                Modifier.padding(16.dp),
+                Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Icon(
-                    painterResource(Res.drawable.ic_policy),
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                )
+                Box(
+                    Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF34C759)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(Res.drawable.ic_policy),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
                 Text(
                     stringResource(Res.string.privacy_headline),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color(0xFF000000),
                 )
             }
         }
@@ -77,62 +97,95 @@ fun PrivacyPage(
             Section(
                 stringResource(Res.string.privacy_client_title),
                 stringResource(Res.string.privacy_client_body),
+                isDark,
             )
             Section(
                 stringResource(Res.string.privacy_device_title),
                 stringResource(Res.string.privacy_device_body),
+                isDark,
             )
             Section(
                 stringResource(Res.string.privacy_nocollect_title),
                 stringResource(Res.string.privacy_nocollect_body),
+                isDark,
             )
             Section(
                 stringResource(Res.string.privacy_third_title),
                 stringResource(Res.string.privacy_third_body),
+                isDark,
             )
             Section(
                 stringResource(Res.string.privacy_perm_title),
                 stringResource(Res.string.privacy_perm_body),
+                isDark,
             )
             Section(
                 stringResource(Res.string.privacy_deviceid_title),
                 stringResource(Res.string.privacy_deviceid_body),
+                isDark,
             )
             Section(
                 stringResource(Res.string.privacy_limits_title),
                 stringResource(Res.string.privacy_limits_body),
+                isDark,
             )
         }
 
         Spacer(Modifier.height(14.dp))
 
         Surface(
-            shape = MaterialTheme.shapes.largeIncreased,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            shape = RoundedCornerShape(14.dp),
+            color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            border = BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .clickable { platform.openUri(POLICY_URL) },
         ) {
             Row(
-                Modifier.padding(16.dp),
+                Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(painterResource(Res.drawable.ic_description), contentDescription = null)
+                Box(
+                    Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF007AFF)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(Res.drawable.ic_description),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         stringResource(Res.string.privacy_read_full),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) Color.White else Color(0xFF000000),
                     )
                     Text(
                         stringResource(Res.string.privacy_read_full_sub),
                         style = MaterialTheme.typography.bodySmall,
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                     )
                 }
-                Icon(painterResource(Res.drawable.ic_chevron_right), contentDescription = null)
+                Icon(
+                    painter = painterResource(Res.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
+                    modifier = Modifier
+                        .size(18.dp)
+                        .androidx.compose.ui.graphics.graphicsLayer {
+                            if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                                rotationY = 180f
+                            }
+                        },
+                )
             }
         }
 
@@ -141,22 +194,24 @@ fun PrivacyPage(
 }
 
 @Composable
-private fun Section(title: String, body: String) {
+private fun Section(title: String, body: String, isDark: Boolean) {
     Surface(
-        shape = MaterialTheme.shapes.largeIncreased,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(14.dp),
+        color = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        border = BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 title,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
+                color = if (isDark) Color.White else Color(0xFF000000),
             )
             Text(
                 body,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
             )
         }
     }

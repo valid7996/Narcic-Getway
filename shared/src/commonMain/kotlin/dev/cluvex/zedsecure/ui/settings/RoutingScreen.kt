@@ -135,12 +135,14 @@ fun RoutingScreen(
         val target = rule
         AlertDialog(
             onDismissRequest = { deleting = null },
-            shape = RoundedCornerShape(28.dp),
-            containerColor = if (isDark) Color(0xFF0F243A) else Color.White,
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
             title = {
                 Text(
                     stringResource(Res.string.rule_delete_confirm_title),
-                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color.Black,
                 )
             },
             text = {
@@ -149,17 +151,23 @@ fun RoutingScreen(
                         Res.string.rule_delete_confirm_body,
                         target.remarks.ifBlank { target.outboundTag },
                     ),
-                    color = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6C6C70),
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    mutate { l -> l.filterNot { it.id == target.id } }
-                    deleting = null
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        mutate { l -> l.filterNot { it.id == target.id } }
+                        deleting = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { deleting = null }) {
+                TextButton(
+                    onClick = { deleting = null },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -183,38 +191,11 @@ fun RoutingScreen(
         }
     }
 
-    val glowColors = if (isDark) {
-        listOf(
-            Color(0xFF0168D1).copy(alpha = 0.40f),
-            Color(0xFF08C6AB).copy(alpha = 0.18f),
-            Color.Transparent,
-        )
-    } else {
-        listOf(
-            Color(0xFF60A5FA).copy(alpha = 0.20f),
-            Color(0xFF2DD4BF).copy(alpha = 0.14f),
-            Color.Transparent,
-        )
-    }
-
     Box(
         modifier
             .fillMaxSize()
-            .background(if (isDark) Color(0xFF030D18) else Color(0xFFF8FAFC)),
+            .background(if (isDark) Color(0xFF000000) else Color(0xFFF2F2F7)),
     ) {
-        // Top-left cosmic aurora / crescent glow curve from screenshot
-        Box(
-            Modifier
-                .size(360.dp)
-                .offset(x = (-80).dp, y = (-60).dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = glowColors,
-                        radius = 500f,
-                    ),
-                ),
-        )
 
         LazyColumn(
             state = listState,
@@ -288,7 +269,13 @@ fun RoutingScreen(
                         OutlinedButton(onClick = { presetOpen = true }) {
                             Text(stringResource(Res.string.routing_add_preset))
                         }
-                        DropdownMenu(expanded = presetOpen, onDismissRequest = { presetOpen = false }) {
+                        DropdownMenu(
+                            expanded = presetOpen,
+                            onDismissRequest = { presetOpen = false },
+                            shape = RoundedCornerShape(14.dp),
+                            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+                        ) {
                             RulesetPresets.all().forEach { preset ->
                                 DropdownMenuItem(
                                     text = { Text(preset.label) },
@@ -322,7 +309,13 @@ fun RoutingScreen(
                                 contentDescription = stringResource(Res.string.routing_ruleset_menu),
                             )
                         }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false },
+                            shape = RoundedCornerShape(14.dp),
+                            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+                        ) {
                             RoutingPresetType.entries.forEach { type ->
                                 DropdownMenuItem(
                                     text = { Text(type.label()) },
@@ -471,37 +464,19 @@ private fun RuleRow(
     }.joinToString(", ").ifBlank { stringResource(Res.string.routing_rule_no_match) }
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val shape = RoundedCornerShape(22.dp)
-    val cardBorder = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
-        )
-    }
-    val cardBg = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
-        )
-    }
+    val shape = RoundedCornerShape(14.dp)
+    val cardBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
+    val cardBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
 
     Surface(
         shape = shape,
-        color = Color.Transparent,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, cardBorder, shape),
+        color = cardBg,
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, cardBorder),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(cardBg)
                 .padding(start = 6.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -560,10 +535,20 @@ private fun RuleRow(
                     painterResource(Res.drawable.ic_delete),
                     contentDescription = stringResource(Res.string.action_delete),
                     tint = if (rule.locked) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.error,
+                    else Color(0xFFFF3B30),
                 )
             }
-            Switch(checked = rule.enabled, onCheckedChange = onToggle)
+            Switch(
+                checked = rule.enabled,
+                onCheckedChange = onToggle,
+                colors = androidx.compose.material3.SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF34C759),
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EA),
+                    uncheckedBorderColor = Color.Transparent,
+                ),
+            )
         }
     }
 }
@@ -575,6 +560,7 @@ private fun ToggleRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Row(
         Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -594,43 +580,35 @@ private fun ToggleRow(
                 )
             }
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF34C759),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EA),
+                uncheckedBorderColor = Color.Transparent,
+            ),
+        )
     }
 }
 
 @Composable
 private fun RoutingCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val shape = RoundedCornerShape(26.dp)
-    val cardBorder = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF20D8C0).copy(alpha = 0.50f), Color(0xFF2088FF).copy(alpha = 0.35f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0D9488).copy(alpha = 0.28f), Color(0xFF3B82F6).copy(alpha = 0.20f)),
-        )
-    }
-    val cardBg = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
-        )
-    }
+    val shape = RoundedCornerShape(14.dp)
+    val cardBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
+    val cardBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
     Surface(
         shape = shape,
-        color = Color.Transparent,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, cardBorder, shape),
+        color = cardBg,
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, cardBorder),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .background(cardBg)
                 .padding(16.dp),
             content = content,
         )

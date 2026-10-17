@@ -1437,17 +1437,36 @@ fun ServersScreen(
         val pending = obfuscateCandidates
         AlertDialog(
             onDismissRequest = { obfuscateCandidates = emptyList() },
-            title = { Text(stringResource(Res.string.wg_obfuscate_title)) },
-            text = { Text(stringResource(Res.string.wg_obfuscate_body, pending.size)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    stringResource(Res.string.wg_obfuscate_title),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            },
+            text = {
+                Text(
+                    stringResource(Res.string.wg_obfuscate_body, pending.size),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                )
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    val n = repository.enableWireguardObfuscation(pending)
-                    obfuscateCandidates = emptyList()
-                    toastRes(Res.string.wg_obfuscate_done, n)
-                }) { Text(stringResource(Res.string.wg_obfuscate_enable)) }
+                TextButton(
+                    onClick = {
+                        val n = repository.enableWireguardObfuscation(pending)
+                        obfuscateCandidates = emptyList()
+                        toastRes(Res.string.wg_obfuscate_done, n)
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) { Text(stringResource(Res.string.wg_obfuscate_enable), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { obfuscateCandidates = emptyList() }) {
+                TextButton(
+                    onClick = { obfuscateCandidates = emptyList() },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.wg_obfuscate_keep))
                 }
             },

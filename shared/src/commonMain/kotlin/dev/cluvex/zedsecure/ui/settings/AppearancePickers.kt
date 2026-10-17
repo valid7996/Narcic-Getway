@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,17 +77,18 @@ private fun ProfileCard(
     onClick: () -> Unit,
     preview: @Composable () -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier
                 .size(width = 92.dp, height = 148.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7))
                 .border(
-                    width = if (selected) 3.dp else 1.dp,
-                    color = if (selected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outlineVariant,
-                    shape = RoundedCornerShape(16.dp),
+                    width = if (selected) 2.dp else 0.5.dp,
+                    color = if (selected) Color(0xFF007AFF)
+                    else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+                    shape = RoundedCornerShape(14.dp),
                 )
                 .clickable(onClick = onClick)
                 .padding(8.dp),
@@ -208,6 +210,7 @@ fun ConnectStyleRow(
     nameOf: @Composable (ConnectButtonStyle) -> String,
     onSelect: (ConnectButtonStyle) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(label, style = MaterialTheme.typography.titleMedium)
         Text(
@@ -227,11 +230,11 @@ fun ConnectStyleRow(
                         Modifier
                             .size(width = 88.dp, height = 66.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .background(if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7))
                             .border(
-                                width = if (isSelected) 3.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outlineVariant,
+                                width = if (isSelected) 2.dp else 0.5.dp,
+                                color = if (isSelected) Color(0xFF007AFF)
+                                else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
                                 shape = RoundedCornerShape(14.dp),
                             )
                             .clickable { onSelect(style) },

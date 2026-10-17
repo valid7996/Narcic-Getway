@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +70,7 @@ fun MtuOptimizeRow(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             FilledTonalButton(
                 enabled = enabled && !busy,
+                shape = RoundedCornerShape(14.dp),
                 onClick = {
                     busy = true
                     result = null
@@ -94,8 +98,12 @@ fun MtuOptimizeRow(
             }
             val measured = result as? MtuResult.Measured
             if (measured != null) {
-                Button(onClick = { onApply(measured.recommended) }) {
-                    Text(stringResource(Res.string.mtu_apply, measured.recommended))
+                Button(
+                    onClick = { onApply(measured.recommended) },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF)),
+                ) {
+                    Text(stringResource(Res.string.mtu_apply, measured.recommended), fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                 }
             }
         }

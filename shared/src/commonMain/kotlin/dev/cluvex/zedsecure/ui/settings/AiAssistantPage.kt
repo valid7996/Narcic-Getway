@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -143,7 +145,7 @@ fun AiAssistantPage(
             onValueChange = { keyDraft = it.trim() },
             label = { Text(stringResource(Res.string.ai_key)) },
             singleLine = true,
-
+            shape = RoundedCornerShape(12.dp),
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
@@ -162,13 +164,14 @@ fun AiAssistantPage(
                 },
         )
         TextButton(onClick = { onOpenKeyPage(settings.provider.keyUrl) }) {
-            Text(stringResource(Res.string.ai_get_key, settings.provider.label))
+            Text(stringResource(Res.string.ai_get_key, settings.provider.label), color = Color(0xFF007AFF))
         }
 
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             FilledTonalButton(
                 enabled = keyDraft.isNotBlank() && !busy,
+                shape = RoundedCornerShape(14.dp),
                 onClick = {
                     busy = true
                     status = null
@@ -212,7 +215,7 @@ fun AiAssistantPage(
             Text(
                 it,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                color = if (failed) MaterialTheme.colorScheme.error else Color(0xFF007AFF),
             )
         }
 
@@ -240,6 +243,7 @@ fun AiAssistantPage(
             onValueChange = { onUpdate(settings.copy(extraPrompt = it)) },
             label = { Text(stringResource(Res.string.ai_standing)) },
             placeholder = { Text(stringResource(Res.string.ai_standing_hint)) },
+            shape = RoundedCornerShape(12.dp),
             minLines = 2,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -247,13 +251,15 @@ fun AiAssistantPage(
         Spacer(Modifier.height(16.dp))
         FilledTonalButton(
             enabled = settings.isReady(),
+            shape = RoundedCornerShape(14.dp),
             onClick = onOpenChat,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(50.dp),
         ) {
             Text(
                 stringResource(
                     if (settings.isReady()) Res.string.ai_open else Res.string.ai_need_setup,
                 ),
+                fontWeight = FontWeight.SemiBold,
             )
         }
         Spacer(Modifier.height(24.dp))
@@ -275,7 +281,14 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
             )
         }
         Spacer(Modifier.size(12.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF34C759),
+            ),
+        )
     }
 }
 
@@ -303,6 +316,7 @@ private fun ModelPicker(models: List<AiModel>, selected: String, onSelect: (Stri
                 )
             },
             singleLine = true,
+            shape = RoundedCornerShape(12.dp),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = open) },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)

@@ -16,6 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+
 @Composable
 fun <T> PickerField(
     label: String,
@@ -24,6 +30,7 @@ fun <T> PickerField(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     var expanded by remember { mutableStateOf(false) }
     val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: ""
 
@@ -37,12 +44,19 @@ fun <T> PickerField(
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
+            shape = RoundedCornerShape(12.dp),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            border = BorderStroke(0.5.dp, if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA)),
+        ) {
             options.forEach { (value, text) ->
                 DropdownMenuItem(
                     text = { Text(text) },

@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.core.VpnManager
@@ -497,12 +498,17 @@ private fun CoreCard(
 
 @Composable
 private fun MonitorCard(modifier: Modifier = Modifier, content: @Composable ColumnScopeAlias.() -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shape = RoundedCornerShape(16.dp)
+    val cardBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
+    val cardBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
     Surface(
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = shape,
+        color = cardBg,
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, cardBorder),
         modifier = modifier,
     ) {
-        Column(Modifier.padding(18.dp), content = content)
+        Column(Modifier.padding(16.dp), content = content)
     }
 }
 

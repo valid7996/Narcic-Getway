@@ -176,15 +176,15 @@ fun LogSheet(onDismiss: () -> Unit) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -224,7 +224,7 @@ fun LogSheet(onDismiss: () -> Unit) {
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 placeholder = { Text(stringResource(Res.string.logs_search)) },
                 leadingIcon = { Icon(painterResource(Res.drawable.ic_search), null, Modifier.size(18.dp)) },
                 trailingIcon = {
@@ -295,18 +295,17 @@ fun LogSheet(onDismiss: () -> Unit) {
                             modifier = Modifier.padding(12.dp),
                         )
                     } else {
-                        val logBoxShape = RoundedCornerShape(18.dp)
+                        val logBoxShape = RoundedCornerShape(14.dp)
                         Surface(
-                            color = if (isDark) Color(0xFF071224) else Color.White,
+                            color = if (isDark) Color(0xFF000000) else Color(0xFFF2F2F7),
                             shape = logBoxShape,
+                            border = androidx.compose.foundation.BorderStroke(
+                                0.5.dp,
+                                if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(420.dp)
-                                .border(
-                                    1.dp,
-                                    if (isDark) Color(0xFF2088FF).copy(alpha = 0.25f) else Color(0xFFE2E8F0),
-                                    logBoxShape,
-                                ),
+                                .height(420.dp),
                         ) {
                             LazyColumn(
                                 state = listState,

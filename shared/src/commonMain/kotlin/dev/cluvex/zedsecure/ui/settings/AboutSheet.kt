@@ -59,13 +59,13 @@ fun AboutSheet(onDismiss: () -> Unit) {
         containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
-            Box(
-                Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
-                    .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
-            )
+            Surface(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = if (isDark) Color(0xFF38383A) else Color(0xFFD1D1D6),
+                shape = RoundedCornerShape(2.5.dp),
+            ) {
+                Box(Modifier.height(5.dp).width(36.dp))
+            }
         },
     ) {
         Column(

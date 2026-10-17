@@ -82,15 +82,15 @@ fun SubscriptionsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -116,7 +116,7 @@ fun SubscriptionsSheet(
                 onValueChange = { name = it },
                 label = { Text(stringResource(Res.string.subs_name)) },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -124,7 +124,7 @@ fun SubscriptionsSheet(
                 onValueChange = { url = it },
                 label = { Text(stringResource(Res.string.subs_url)) },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             UserAgentPicker(userAgent) { userAgent = it }
@@ -147,12 +147,12 @@ fun SubscriptionsSheet(
                     }
                 },
                 enabled = url.isNotBlank(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    containerColor = Color(0xFF007AFF),
                     contentColor = Color.White,
                 ),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Text(stringResource(Res.string.subs_add_and_fetch), fontWeight = FontWeight.Bold)
             }
@@ -168,7 +168,7 @@ fun SubscriptionsSheet(
                     onValueChange = { groupName = it },
                     label = { Text(stringResource(Res.string.groups_name)) },
                     singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f),
                 )
                 Button(
@@ -177,48 +177,29 @@ fun SubscriptionsSheet(
                         groupName = ""
                     },
                     enabled = groupName.isNotBlank(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                        containerColor = Color(0xFF007AFF),
                         contentColor = Color.White,
                     ),
-                    modifier = Modifier.height(52.dp),
+                    modifier = Modifier.height(50.dp),
                 ) { Text(stringResource(Res.string.action_add), fontWeight = FontWeight.Bold) }
             }
 
             if (subs.isNotEmpty()) {
                 SectionTitle(stringResource(Res.string.subs_existing))
-                val subCardBorder = if (isDark) {
-                    Brush.horizontalGradient(
-                        listOf(Color(0xFF2088FF).copy(alpha = 0.50f), Color(0xFF20D8C0).copy(alpha = 0.30f)),
-                    )
-                } else {
-                    Brush.horizontalGradient(
-                        listOf(Color(0xFF3B82F6).copy(alpha = 0.25f), Color(0xFF0D9488).copy(alpha = 0.18f)),
-                    )
-                }
-                val subCardBg = if (isDark) {
-                    Brush.horizontalGradient(
-                        listOf(Color(0xFF0F243A).copy(alpha = 0.90f), Color(0xFF0A1828).copy(alpha = 0.82f)),
-                    )
-                } else {
-                    Brush.horizontalGradient(
-                        listOf(Color.White.copy(alpha = 0.96f), Color(0xFFF1F5F9).copy(alpha = 0.90f)),
-                    )
-                }
-                val subCardShape = RoundedCornerShape(22.dp)
+                val subCardBorder = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA)
+                val subCardBg = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
+                val subCardShape = RoundedCornerShape(14.dp)
                 subs.forEach { sub ->
                     Surface(
                         shape = subCardShape,
-                        color = Color.Transparent,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, subCardBorder, subCardShape),
+                        color = subCardBg,
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, subCardBorder),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                       Column(
-                          Modifier
-                              .fillMaxWidth()
-                              .background(subCardBg),
+                          Modifier.fillMaxWidth(),
                       ) {
                         Row(
                             Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
@@ -248,10 +229,17 @@ fun SubscriptionsSheet(
                             Switch(
                                 checked = sub.enabled,
                                 onCheckedChange = { repository.setSubscriptionEnabled(sub.id, it) },
+                                colors = androidx.compose.material3.SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF34C759),
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EA),
+                                    uncheckedBorderColor = Color.Transparent,
+                                ),
                             )
                             if (busyId == sub.id) {
                                 Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(Modifier.size(20.dp))
+                                    CircularProgressIndicator(Modifier.size(20.dp), color = Color(0xFF007AFF))
                                 }
                             } else {
                                 IconButton(onClick = {
@@ -286,6 +274,7 @@ fun SubscriptionsSheet(
                                 Icon(
                                     painterResource(Res.drawable.ic_delete),
                                     contentDescription = stringResource(Res.string.action_delete),
+                                    tint = Color(0xFFFF3B30),
                                 )
                             }
                         }
@@ -317,7 +306,15 @@ fun SubscriptionsSheet(
         var newUa by remember(target.id) { mutableStateOf(target.userAgent.orEmpty()) }
         AlertDialog(
             onDismissRequest = { renameTarget = null },
-            title = { Text(stringResource(Res.string.subs_edit)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    stringResource(Res.string.subs_edit),
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -325,6 +322,7 @@ fun SubscriptionsSheet(
                         onValueChange = { newName = it },
                         label = { Text(stringResource(Res.string.subs_name)) },
                         singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
 
@@ -333,19 +331,26 @@ fun SubscriptionsSheet(
                         onValueChange = { newUrl = it },
                         label = { Text(stringResource(Res.string.subs_url)) },
                         minLines = 2,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     UserAgentPicker(newUa) { newUa = it }
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    repository.editSubscription(target.id, newName, newUa, newUrl)
-                    renameTarget = null
-                }) { Text(stringResource(Res.string.action_save)) }
+                TextButton(
+                    onClick = {
+                        repository.editSubscription(target.id, newName, newUa, newUrl)
+                        renameTarget = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { renameTarget = null }) {
+                TextButton(
+                    onClick = { renameTarget = null },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -355,17 +360,36 @@ fun SubscriptionsSheet(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = { Text(stringResource(Res.string.subs_delete_confirm_title)) },
-            text = { Text(stringResource(Res.string.subs_delete_confirm_body, target.name)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
+            title = {
+                Text(
+                    stringResource(Res.string.subs_delete_confirm_title),
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+            },
+            text = {
+                Text(
+                    stringResource(Res.string.subs_delete_confirm_body, target.name),
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6C6C70),
+                )
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    repository.removeSubscription(target.id, alsoRemoveServers = true)
-                    deleteTarget = null
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        repository.removeSubscription(target.id, alsoRemoveServers = true)
+                        deleteTarget = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) {
+                TextButton(
+                    onClick = { deleteTarget = null },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },

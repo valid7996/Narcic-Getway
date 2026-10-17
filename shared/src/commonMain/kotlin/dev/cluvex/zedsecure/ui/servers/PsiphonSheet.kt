@@ -58,15 +58,15 @@ fun PsiphonSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
             )
         },
     ) {
@@ -91,7 +91,7 @@ fun PsiphonSheet(
                 onValueChange = { name = it },
                 label = { Text(stringResource(Res.string.manual_remark)) },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             PsiphonCountryField(
@@ -112,7 +112,7 @@ fun PsiphonSheet(
                 label = { Text(stringResource(Res.string.psiphon_cdn_ips)) },
                 supportingText = { Text(stringResource(Res.string.psiphon_cdn_hint)) },
                 minLines = 2,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -120,7 +120,7 @@ fun PsiphonSheet(
                 onValueChange = { cdnSni = it },
                 label = { Text(stringResource(Res.string.psiphon_cdn_sni)) },
                 minLines = 2,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             )
             // Beast mode: every protocol on every server at once; Psiphon also remembers the route that worked.
@@ -144,12 +144,12 @@ fun PsiphonSheet(
                         ),
                     )
                 },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    containerColor = Color(0xFF007AFF),
                     contentColor = Color.White,
                 ),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             }
