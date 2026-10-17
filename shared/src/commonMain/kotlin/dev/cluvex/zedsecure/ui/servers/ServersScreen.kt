@@ -898,8 +898,8 @@ fun ServersScreen(
                         onPingTcp = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
-                                // An Aether profile has no server to knock on: only a core started for it can be timed.
-                                val ms = if (profile.isAether || profile.isNoRootSniSpoof) {
+                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
+                                val ms = if (isSpoof) {
                                     PingService.realDelay(
                                         profile,
                                         url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
@@ -907,18 +907,19 @@ fun ServersScreen(
                                 } else {
                                     PingService.tcpPing(profile.address, profile.port)
                                 }
-                                val cc = if (ms > 0 && !profile.isAether && !profile.isNoRootSniSpoof) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !isSpoof) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
                         onPingReal = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
+                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
                                 val ms = PingService.realDelay(
                                     profile,
                                     url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
                                 )
-                                val cc = if (ms > 0 && !profile.isAether && !profile.isNoRootSniSpoof) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !isSpoof) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },

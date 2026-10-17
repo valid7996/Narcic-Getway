@@ -63,6 +63,12 @@ object RstaSpoofClient {
     fun release(context: Context) {
         if (holders > 0) holders--
         if (holders == 0 && current != null) {
+            val vpnActive = VpnManager.status.value.state.isActive
+            val spoofVpn = VpnManager.activeKind.value == VpnManager.KIND_SNISPOOF
+            if (vpnActive && spoofVpn) {
+                // Keep spoof engine alive while VPN connection is actively using it
+                return
+            }
             stop(context)
             current = null
         }

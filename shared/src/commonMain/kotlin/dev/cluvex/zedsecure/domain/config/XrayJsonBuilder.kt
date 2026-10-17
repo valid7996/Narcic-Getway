@@ -855,6 +855,90 @@ object XrayJsonBuilder {
         else prettyJson.encodeToString(JsonObject.serializer(), patched)
     }
 
+    fun rewriteToLoopbackSpoof(rawJson: String): String {
+        val root = leanJson.parseToJsonElement(Jsonc.strip(rawJson)) as? JsonObject ?: return rawJson
+        val outbounds = (root["outbounds"] as? JsonArray)?.mapNotNull { it as? JsonObject } ?: return rawJson
+        if (outbounds.isEmpty()) return rawJson
+
+        val patchedOutbounds = outbounds.mapIndexed { index, ob ->
+            if (index == 0) {
+                buildJsonObject {
+                    ob.forEach { (k, v) ->
+                        when (k) {
+                            "settings" -> {
+                                val settingsObj = v as? JsonObject
+                                if (settingsObj != null) {
+                                    putJsonObject("settings") {
+                                        settingsObj.forEach { (sk, sv) ->
+                                            when (sk) {
+                                                "vnext" -> {
+                                                    val vnextArr = sv as? JsonArray
+                                                    if (vnextArr != null && vnextArr.isNotEmpty()) {
+                                                        putJsonArray("vnext") {
+                                                            vnextArr.forEachIndexed { vi, ve ->
+                                                                val node = ve as? JsonObject
+                                                                if (vi == 0 && node != null) {
+                                                                    addJsonObject {
+                                                                        node.forEach { (nk, nv) ->
+                                                                            when (nk) {
+                                                                                "address" -> put("address", "127.0.0.1")
+                                                                                "port" -> put("port", SniSpoofConfig.RSTA_LOCAL_PORT)
+                                                                                else -> put(nk, nv)
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    add(ve)
+                                                                }
+                                                            }
+                                                        }
+                                                    } else put(sk, sv)
+                                                }
+                                                "servers" -> {
+                                                    val serversArr = sv as? JsonArray
+                                                    if (serversArr != null && serversArr.isNotEmpty()) {
+                                                        putJsonArray("servers") {
+                                                            serversArr.forEachIndexed { si, se ->
+                                                                val node = se as? JsonObject
+                                                                if (si == 0 && node != null) {
+                                                                    addJsonObject {
+                                                                        node.forEach { (nk, nv) ->
+                                                                            when (nk) {
+                                                                                "address" -> put("address", "127.0.0.1")
+                                                                                "port" -> put("port", SniSpoofConfig.RSTA_LOCAL_PORT)
+                                                                                else -> put(nk, nv)
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    add(se)
+                                                                }
+                                                            }
+                                                        }
+                                                    } else put(sk, sv)
+                                                }
+                                                else -> put(sk, sv)
+                                            }
+                                        }
+                                    }
+                                } else put(k, v)
+                            }
+                            else -> put(k, v)
+                        }
+                    }
+                }
+            } else ob
+        }
+        val patchedRoot = buildJsonObject {
+            root.forEach { (k, v) ->
+                if (k == "outbounds") {
+                    putJsonArray("outbounds") { patchedOutbounds.forEach { add(it) } }
+                } else put(k, v)
+            }
+        }
+        return leanJson.encodeToString(JsonObject.serializer(), patchedRoot)
+    }
+
     private fun withStatsPolicy(policy: JsonObject?): JsonObject {
         val base = statsPolicy()
         if (policy == null) return base

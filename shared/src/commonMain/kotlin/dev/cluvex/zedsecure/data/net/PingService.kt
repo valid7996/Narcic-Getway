@@ -49,7 +49,7 @@ object PingService {
 
     private const val PRECHECK_TIMEOUT_MS = 2_500
 
-    private const val PROBE_TIMEOUT_MS = 8_000L
+    private const val PROBE_TIMEOUT_MS = 12_000L
 
     private const val REQUEST_PROBE_TIMEOUT_MS = 8_000
 
@@ -140,7 +140,7 @@ object PingService {
         val customPermits = Semaphore(minOf(realPermits, CUSTOM_PROBE_CONCURRENCY))
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
-        val targets = profiles.filterNot { (it.isManagedTunnel && !it.isSingBoxConfig) || it.isDnsBasedTunnel }
+        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof) || it.isDnsBasedTunnel) }
         val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
@@ -156,11 +156,12 @@ object PingService {
             }
         }
         // The engine stays up for the whole batch when some profile points at it, instead of starting and stopping around each probe.
-        val batchLease = if (targets.any { it.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
+        val batchLease = if (targets.any { it.isSniSpoof || it.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
         try {
         (aetherJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
-                val heavy = useRealDelay || profile.isProxyChain
+                val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
+                val heavy = useRealDelay || profile.isProxyChain || isSpoof
                 val pool = if (heavy && profile.isCustom) customPermits else permits
                 val ms = pool.withPermit {
                     if (heavy) measureProfile(profile, url, chainConfig)
@@ -172,7 +173,7 @@ object PingService {
                 onResult(profile.id, latency, profile.countryCode)
                 doneLock.withPermit { onProgress(++done, total) }
 
-                if (latency > 0 && profile.countryCode == null) {
+                if (latency > 0 && profile.countryCode == null && !isSpoof) {
                     geoScope.launch {
                         val country = geoPermits.withPermit { GeoLookup.countryOf(profile.address) }
                         if (country != null) onResult(profile.id, latency, country)
@@ -219,7 +220,7 @@ object PingService {
     }
 
     fun shouldPrecheck(profile: VpnProfile): Boolean {
-        if (profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)) return false
+        if (profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)) return false
         if (profile.address.isBlank() || profile.address == "-") return false
         if (profile.port !in 1..65535) return false
         if (profile.isCustom) {
@@ -239,7 +240,7 @@ object PingService {
     private val UDP_OUTBOUND_PROTOCOLS = setOf("WIREGUARD", "AMNEZIAWG", "HYSTERIA")
 
     private suspend fun probeWithTimeout(profile: VpnProfile, config: String, url: String): Long {
-        val isSpoof = profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
+        val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
         if (!isSpoof) return probeCore(profile, config, url)
         val release = rstaSpoofLease?.invoke()
         if (release == null) {

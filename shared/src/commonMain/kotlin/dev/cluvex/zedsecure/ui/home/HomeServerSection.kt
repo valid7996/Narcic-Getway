@@ -772,8 +772,8 @@ private suspend fun pingOne(
     real: Boolean,
 ) {
     repository.clearPings(listOf(profile.id), persist = false)
-    // An Aether profile has no server to knock on: only a core started for it can be timed.
-    val ms = if (real || profile.isAether || profile.isNoRootSniSpoof) {
+    val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
+    val ms = if (real || isSpoof) {
         PingService.realDelay(
             profile,
             url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
@@ -781,6 +781,6 @@ private suspend fun pingOne(
     } else {
         PingService.tcpPing(profile.address, profile.port)
     }
-    val cc = if (ms > 0 && !profile.isAether && !profile.isNoRootSniSpoof) GeoLookup.countryOf(profile.address) else null
+    val cc = if (ms > 0 && !isSpoof) GeoLookup.countryOf(profile.address) else null
     repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
 }

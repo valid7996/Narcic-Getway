@@ -74,6 +74,37 @@ class PingPrecheckTest {
     fun `sni spoof profiles are not pre-checked`() {
         val spoofLink = linkProfile("vless://id@127.0.0.1:40443?encryption=none&security=tls#S")
         assertFalse(PingService.shouldPrecheck(spoofLink))
+
+        val spoofSource = VpnProfile.fromSniSpoof(
+            dev.cluvex.zedsecure.domain.config.SniSpoofProfile(
+                link = "vless://id@remote.example.com:443?encryption=none&security=tls#S",
+                fakeSni = "cdnjs.cloudflare.com",
+            ),
+            id = "z",
+            addedAt = 0L,
+            name = "SpoofSource",
+        )
+        assertFalse(PingService.shouldPrecheck(spoofSource))
+    }
+
+    @Test
+    fun `sni spoof profile speedtest routes to loopback spoof port`() {
+        val spoofSource = VpnProfile.fromSniSpoof(
+            dev.cluvex.zedsecure.domain.config.SniSpoofProfile(
+                link = "vless://id@remote.example.com:443?encryption=none&security=tls#S",
+                fakeSni = "cdnjs.cloudflare.com",
+            ),
+            id = "z",
+            addedAt = 0L,
+            name = "SpoofSource",
+        )
+        val speedtestCfg = spoofSource.toXrayConfigJson(forSpeedtest = true)
+        assertTrue(speedtestCfg.contains("\"address\": \"127.0.0.1\"") || speedtestCfg.contains("\"address\":\"127.0.0.1\""))
+        assertTrue(speedtestCfg.contains("40443"))
+        assertTrue(speedtestCfg.contains("remote.example.com"))
+
+        val liveCfg = spoofSource.toXrayConfigJson(forSpeedtest = false)
+        assertTrue(liveCfg.contains("remote.example.com"))
     }
 
     @Test

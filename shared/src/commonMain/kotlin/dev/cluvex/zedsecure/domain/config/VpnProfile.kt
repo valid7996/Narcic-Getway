@@ -263,8 +263,25 @@ data class VpnProfile(
             val parsed = SingBoxLinks.parse(src.link)
             XrayJsonBuilder.buildSingBox(parsed.fragment, parsed.name, options = options, forSpeedtest = forSpeedtest)
         } else {
+            val parsed = ConfigParser.parse(src.link)
+            val target = if (isLoopbackOrRstaPort && forSpeedtest) {
+                val serverName = parsed.tls.sni?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
+                    ?: parsed.transport.host?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
+                    ?: SniSpoofConfig.defaultFakeSni
+                parsed.copy(
+                    address = "127.0.0.1",
+                    port = SniSpoofConfig.RSTA_LOCAL_PORT,
+                    tls = parsed.tls.copy(
+                        sni = serverName,
+                        verifyPeerCertByName = parsed.tls.verifyPeerCertByName?.takeIf { it.isNotBlank() } ?: serverName,
+                        allowInsecure = true,
+                    ),
+                )
+            } else {
+                parsed
+            }
             XrayJsonBuilder.build(
-                ConfigParser.parse(src.link),
+                target,
                 options = options,
                 forSpeedtest = forSpeedtest,
             )
@@ -313,14 +330,38 @@ data class VpnProfile(
         }
 
         is ProfileSource.SniSpoof -> if (CustomConfig.looksLikeCustomJson(src.settings.link)) {
-            XrayJsonBuilder.normalizeRawJson(
+            val normalized = XrayJsonBuilder.normalizeRawJson(
                 src.settings.link,
                 forSpeedtest = forSpeedtest,
                 geoAssetsAvailable = options.geoAssetsAvailable,
             )
+            if (forSpeedtest) {
+                XrayJsonBuilder.rewriteToLoopbackSpoof(normalized)
+            } else {
+                normalized
+            }
         } else {
+            val parsed = ConfigParser.parse(src.settings.link)
+            val target = if (forSpeedtest) {
+                val serverName = parsed.tls.sni?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
+                    ?: parsed.transport.host?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
+                    ?: if (!SniSpoofConfig.isLoopback(parsed.address)) parsed.address else null
+                    ?: src.settings.fakeSni.ifBlank { SniSpoofConfig.defaultFakeSni }
+
+                parsed.copy(
+                    address = "127.0.0.1",
+                    port = SniSpoofConfig.RSTA_LOCAL_PORT,
+                    tls = parsed.tls.copy(
+                        sni = serverName,
+                        verifyPeerCertByName = parsed.tls.verifyPeerCertByName?.takeIf { it.isNotBlank() } ?: serverName,
+                        allowInsecure = true,
+                    ),
+                )
+            } else {
+                parsed
+            }
             XrayJsonBuilder.build(
-                ConfigParser.parse(src.settings.link),
+                target,
                 options = options,
                 forSpeedtest = forSpeedtest,
             )
