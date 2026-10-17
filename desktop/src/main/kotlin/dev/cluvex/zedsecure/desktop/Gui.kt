@@ -32,12 +32,6 @@ import dev.cluvex.zedsecure.shared.resources.ic_tray_connected
 import dev.cluvex.zedsecure.shared.resources.ic_tray_connecting
 import dev.cluvex.zedsecure.shared.resources.ic_tray_disconnected
 import dev.cluvex.zedsecure.shared.resources.ic_zed_mark
-import dev.cluvex.zedsecure.shared.resources.zsx_expired
-import dev.cluvex.zedsecure.shared.resources.zsx_invalid
-import dev.cluvex.zedsecure.shared.resources.zsx_legacy
-import dev.cluvex.zedsecure.core.VaultImportBus
-import dev.cluvex.zedsecure.crypto.ZsxLegacyException
-import org.jetbrains.compose.resources.getString
 import dev.cluvex.zedsecure.domain.config.LocalProxy
 import dev.cluvex.zedsecure.domain.model.RenderingMode
 import dev.cluvex.zedsecure.domain.model.RunMode
@@ -162,24 +156,6 @@ fun main(args: Array<String>) {
                     VpnManager.status.first { it.state == ConnectionState.Idle }
                 } ?: return@launch
                 DesktopVpn.toggle(configRepository)
-            }
-        }
-
-        fun importLockedConfig() {
-            trayScope.launch {
-                val pick = DesktopPlatform.pickFileBytes() ?: return@launch
-                val peeked = runCatching { configRepository.peekLocked(pick.bytes) }
-                val meta = peeked.getOrNull()
-                when {
-                    meta == null -> DesktopPlatform.toast(
-                        getString(
-                            if (peeked.exceptionOrNull() is ZsxLegacyException) Res.string.zsx_legacy
-                            else Res.string.zsx_invalid,
-                        ),
-                    )
-                    meta.isExpired -> DesktopPlatform.toast(getString(Res.string.zsx_expired))
-                    else -> VaultImportBus.request(pick.bytes, meta)
-                }
             }
         }
 
