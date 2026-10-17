@@ -27,13 +27,25 @@ jobs:
     uses: ./.github/workflows/android-release.yml
     secrets: inherit
 
+  desktop-natives:
+    needs: version
+    uses: ./.github/workflows/desktop-natives.yml
+    secrets: inherit
+
+  desktop:
+    needs: [version, desktop-natives]
+    uses: ./.github/workflows/desktop-release.yml
+    secrets: inherit
+
   publish:
-    needs: [version, android]
+    needs: [version, android, desktop]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with: { name: android-apks, path: dist }
-      - name: One draft with every APK
+      - uses: actions/download-artifact@v4
+        with: { pattern: "desktop-*", path: dist, merge-multiple: true }
+      - name: One draft with every platform
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -43,7 +55,8 @@ jobs:
           for f in "NarcicGetway-$V-arm64-v8a.apk" "NarcicGetway-$V-armeabi-v7a.apk" \
                    "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.apk" \
                    "NarcicGetway-$V-arm64-v8a-clean.apk" "NarcicGetway-$V-armeabi-v7a-clean.apk" \
-                   "NarcicGetway-$V-universal-clean.apk" "NarcicGetway-$V-x86_64-clean.apk"; do
+                   "NarcicGetway-$V-universal-clean.apk" "NarcicGetway-$V-x86_64-clean.apk" \
+                   "NarcicGetway-$V-x86_64.msi" "NarcicGetway-$V-windows-x86_64.zip"; do
             [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
           done
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
