@@ -412,7 +412,7 @@ class ZedVpnService : VpnService() {
                     }
                     tlsSettings.put("serverName", current)
                 }
-                tlsSettings.put("allowInsecure", true)
+                tlsSettings.remove("allowInsecure")
                 if (!tlsSettings.has("verifyPeerCertByName") && !tlsSettings.has("pinnedPeerCertSha256")) {
                     tlsSettings.put("verifyPeerCertByName", current)
                 }
@@ -430,6 +430,7 @@ class ZedVpnService : VpnService() {
                     }
                     realitySettings.put("serverName", current)
                 }
+                realitySettings.remove("allowInsecure")
             }
             // Remove domainStrategy UseIP since destination is 127.0.0.1
             stream.optJSONObject("sockopt")?.remove("domainStrategy")

@@ -1468,10 +1468,6 @@ private fun statsPolicy() = buildJsonObject {
                 if (sec == "tls") {
                     if (pinned != null) put("pinnedPeerCertSha256", pinned)
 
-                    if (isSpoof || s.tls.allowInsecure) {
-                        put("allowInsecure", true)
-                    }
-
                     val vcn = s.tls.verifyPeerCertByName?.takeIf { it.isNotBlank() }
                     if (vcn != null) put("verifyPeerCertByName", vcn)
                     else if (pinned == null && (s.tls.allowInsecure || isSpoof) && serverName != null) {
