@@ -193,6 +193,11 @@ jobs:
 
           echo "Building clean version without default subscriptions..."
           bash gradlew --no-daemon :app:assembleRelease -Pzedsecure.includeDefaultSubs=false
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src="app/build/outputs/apk/release/app-$abi-release.apk"
+            [ -f "$src" ] || { echo "::error::$src was not built"; exit 1; }
+            cp "$src" "dist/NarcicGetway-$V-$abi-clean.apk"
+          done
           python3 tools/universal-apk.py "app/build/outputs/apk/release/app-arm64-v8a-release.apk" /tmp/universal-clean.apk "app/build/outputs/apk/release/app-armeabi-v7a-release.apk"
           "$BT/zipalign" -f -P 16 4 /tmp/universal-clean.apk /tmp/universal-clean-aligned.apk
           if [ -f release.keystore ]; then

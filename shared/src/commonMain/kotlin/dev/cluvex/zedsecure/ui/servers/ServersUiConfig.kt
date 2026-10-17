@@ -11,7 +11,7 @@ object ServersUiConfig {
 
     /** Every import and engine option of the add sheet; false leaves the individually-enabled
      *  options below plus the clipboard and subscriptions. */
-    const val SHOW_ALL_ADD_OPTIONS: Boolean = false
+    const val SHOW_ALL_ADD_OPTIONS: Boolean = true
 
     /** The QR scan option of the add sheet. */
     const val SHOW_QR_SCAN: Boolean = true
@@ -20,10 +20,10 @@ object ServersUiConfig {
     const val SHOW_PSIPHON: Boolean = true
 
     /** The SNI spoof (no root) engine option of the add sheet. */
-    const val SHOW_SNI_SPOOF_NO_ROOT: Boolean = false
+    const val SHOW_SNI_SPOOF_NO_ROOT: Boolean = true
 
     /** The Tor engine option of the add sheet. */
-    const val SHOW_TOR: Boolean = false
+    const val SHOW_TOR: Boolean = true
 
     /** The Aether engine option of the add sheet. */
     const val SHOW_AETHER: Boolean = true

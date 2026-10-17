@@ -64,6 +64,13 @@ import dev.cluvex.zedsecure.ui.servers.ProxyChainSheet
 import dev.cluvex.zedsecure.ui.servers.CrossChainSheet
 import dev.cluvex.zedsecure.ui.components.QrDialog
 import dev.cluvex.zedsecure.ui.servers.SubscriptionsSheet
+import dev.cluvex.zedsecure.ui.servers.ManualConfigSheet
+import dev.cluvex.zedsecure.ui.servers.RawJsonSheet
+import dev.cluvex.zedsecure.ui.servers.DnsTunnelSheet
+import dev.cluvex.zedsecure.ui.servers.MasterDnsSheet
+import dev.cluvex.zedsecure.ui.servers.OpenConnectSheet
+import dev.cluvex.zedsecure.ui.servers.Ikev2Sheet
+import dev.cluvex.zedsecure.ui.servers.SshSheet
 import dev.cluvex.zedsecure.ui.theme.Personalization
 import dev.cluvex.zedsecure.ui.theme.ZedGreen
 import dev.cluvex.zedsecure.ui.theme.readableOn
@@ -121,6 +128,47 @@ internal fun HomeServerSection(
     var showAether by remember { mutableStateOf(false) }
     var showProxyChain by remember { mutableStateOf(false) }
     var showCrossChain by remember { mutableStateOf(false) }
+    var showManual by remember { mutableStateOf(false) }
+    var showCustomJson by remember { mutableStateOf(false) }
+    var showDnsTunnel by remember { mutableStateOf(false) }
+    var showMasterDns by remember { mutableStateOf(false) }
+    var showOpenConnect by remember { mutableStateOf(false) }
+    var showIkev2 by remember { mutableStateOf(false) }
+    var showSsh by remember { mutableStateOf(false) }
+    var ovpnPrompt by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
+    val torAddedToast = stringResource(Res.string.tor_added)
+
+    fun importFromFile() {
+        scope.launch {
+            val picked = platform.pickFileBytes() ?: return@launch
+            val text = picked.bytes.decodeToString()
+            if (text.isBlank()) {
+                platform.toast(importFailed)
+                return@launch
+            }
+            val fileName = picked.name.substringBeforeLast('.').takeIf { it.isNotBlank() }
+            val namedOvpn = picked.name.endsWith(".ovpn", ignoreCase = true)
+            val info = runCatching {
+                dev.cluvex.zedsecure.domain.config.OvpnConfig
+                    .takeIf { namedOvpn || it.looksLikeOvpn(text) }?.inspect(text)
+            }
+            val ovpn = info.getOrNull()
+            if (ovpn != null && ovpn.needsCredentials && !ovpn.hasInlineCredentials) {
+                ovpnPrompt = Pair(text, fileName ?: ovpn.name)
+                return@launch
+            }
+            if (ovpn != null) {
+                repository.addOvpn(text, name = fileName ?: ovpn.name)
+                    .onSuccess { platform.toast(importedTemplate.format(1)) }
+                    .onFailure { platform.toast(it.message ?: importFailed) }
+                return@launch
+            }
+            repository.importText(text)
+                .onSuccess { count -> platform.toast(importedTemplate.format(count)) }
+                .onFailure { platform.toast(it.message ?: importFailed) }
+        }
+    }
     var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
 
@@ -524,7 +572,10 @@ internal fun HomeServerSection(
                     }
                 }
             },
-            onImportFile = {},
+            onImportFile = {
+                showAdd = false
+                importFromFile()
+            },
             onScanQr = {
                 showAdd = false
                 platform.scanQrCode { text ->
@@ -536,19 +587,54 @@ internal fun HomeServerSection(
                     }
                 }
             },
-            onScanQrImage = {},
-            onManual = {},
-            onCustom = {},
+            onScanQrImage = {
+                showAdd = false
+                platform.scanQrFromImage { text ->
+                    if (text.isNullOrBlank()) return@scanQrFromImage
+                    scope.launch {
+                        repository.importText(text)
+                            .onSuccess { platform.toast(importedTemplate.format(it)) }
+                            .onFailure { platform.toast(importFailed) }
+                    }
+                }
+            },
+            onManual = {
+                showAdd = false
+                showManual = true
+            },
+            onCustom = {
+                showAdd = false
+                showCustomJson = true
+            },
             onPsiphon = {
                 showAdd = false
                 showPsiphon = true
             },
-            onDnsTunnel = {},
-            onMasterDns = {},
-            onOpenConnect = {},
-            onIkev2 = {},
-            onTor = {},
-            onSsh = {},
+            onDnsTunnel = {
+                showAdd = false
+                showDnsTunnel = true
+            },
+            onMasterDns = {
+                showAdd = false
+                showMasterDns = true
+            },
+            onOpenConnect = {
+                showAdd = false
+                showOpenConnect = true
+            },
+            onIkev2 = {
+                showAdd = false
+                showIkev2 = true
+            },
+            onTor = {
+                showAdd = false
+                repository.addTor("Tor")
+                platform.toast(torAddedToast)
+            },
+            onSsh = {
+                showAdd = false
+                showSsh = true
+            },
             onSniSpoof = {},
             onSniSpoofNoRoot = { showAdd = false; showSniSpoofNoRoot = true },
             onProxyChain = {
@@ -584,6 +670,136 @@ internal fun HomeServerSection(
             onSave = { name, innerId, outerId ->
                 showCrossChain = false
                 repository.addCrossChain(innerId = innerId, outerId = outerId, name = name)
+            },
+        )
+    }
+
+    if (showManual) {
+        ManualConfigSheet(
+            onDismiss = { showManual = false },
+            onSave = { link ->
+                showManual = false
+                repository.importText(link)
+                    .onSuccess { platform.toast(importedTemplate.format(it)) }
+                    .onFailure { platform.toast(it.message ?: importFailed) }
+            },
+        )
+    }
+
+    if (showCustomJson) {
+        RawJsonSheet(
+            title = stringResource(Res.string.servers_add_custom),
+            initial = "",
+            onDismiss = { showCustomJson = false },
+            onSave = { text ->
+                repository.importText(text).fold(
+                    onSuccess = { count ->
+                        if (count > 0) {
+                            platform.toast(importedTemplate.format(count))
+                            showCustomJson = false
+                            null
+                        } else {
+                            customJsonInvalid
+                        }
+                    },
+                    onFailure = { it.message?.take(160)?.ifBlank { null } ?: customJsonInvalid },
+                )
+            },
+            allowList = true,
+        )
+    }
+
+    if (showDnsTunnel) {
+        DnsTunnelSheet(
+            onDismiss = { showDnsTunnel = false },
+            onSave = { name, s ->
+                showDnsTunnel = false
+                repository.addDnsTunnel(s, name)
+            },
+        )
+    }
+
+    if (showMasterDns) {
+        MasterDnsSheet(
+            onDismiss = { showMasterDns = false },
+            onSave = { name, s ->
+                showMasterDns = false
+                repository.addMasterDns(s, name)
+            },
+        )
+    }
+
+    if (showOpenConnect) {
+        OpenConnectSheet(
+            onDismiss = { showOpenConnect = false },
+            onSave = { name, s ->
+                showOpenConnect = false
+                repository.addOpenConnect(s, name)
+            },
+        )
+    }
+
+    if (showIkev2) {
+        Ikev2Sheet(
+            onDismiss = { showIkev2 = false },
+            onSave = { name, s ->
+                showIkev2 = false
+                repository.addIkev2(s, name)
+            },
+        )
+    }
+
+    if (showSsh) {
+        SshSheet(
+            onDismiss = { showSsh = false },
+            onSave = { name, s ->
+                showSsh = false
+                repository.addSsh(s, name)
+            },
+        )
+    }
+
+    ovpnPrompt?.let { (text, name) ->
+        var username by remember(text) { mutableStateOf("") }
+        var password by remember(text) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { ovpnPrompt = null },
+            title = { Text(stringResource(Res.string.ovpn_credentials_title)) },
+            text = {
+                Column {
+                    Text(stringResource(Res.string.ovpn_credentials_body, name))
+                    Spacer(Modifier.height(12.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        singleLine = true,
+                        label = { Text(stringResource(Res.string.ovpn_username)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        singleLine = true,
+                        label = { Text(stringResource(Res.string.ovpn_password)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val user = username
+                    val pass = password
+                    ovpnPrompt = null
+                    scope.launch {
+                        repository.addOvpn(text, name = name, username = user, password = pass)
+                            .onSuccess { platform.toast(importedTemplate.format(1)) }
+                            .onFailure { platform.toast(it.message ?: importFailed) }
+                    }
+                }) { Text(stringResource(Res.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { ovpnPrompt = null }) { Text(stringResource(Res.string.action_cancel)) }
             },
         )
     }

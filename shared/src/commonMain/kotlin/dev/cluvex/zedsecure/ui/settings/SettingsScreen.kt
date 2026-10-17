@@ -291,17 +291,27 @@ private fun RootPage(
             ) { onOpen(SettingsPage.Assets) }
         }
 
-        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup(
+        if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_TUNNELS) SettingsGroup(
             stringResource(Res.string.title_tunnels_settings),
         ) {
             SettingsMenuRow(
                 stringResource(Res.string.title_dns_protocols),
                 stringResource(Res.string.summary_dns_protocols),
             ) { onOpen(SettingsPage.DnsProtocols) }
+            HorizontalDivider(
+                color = dividerColor,
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 14.dp),
+            )
             SettingsMenuRow(
                 stringResource(Res.string.title_tor_settings),
                 stringResource(Res.string.summary_tor_settings),
             ) { onOpen(SettingsPage.Tor) }
+            HorizontalDivider(
+                color = dividerColor,
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 14.dp),
+            )
             SettingsMenuRow(
                 stringResource(Res.string.title_ssh_settings),
                 stringResource(Res.string.summary_ssh_settings),
@@ -331,11 +341,18 @@ private fun RootPage(
                 iconTint = Color(0xFF38BDF8),
                 iconTile = true,
             ) { onOpen(SettingsPage.Core) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
-                stringResource(Res.string.title_mux_settings),
-                stringResource(Res.string.summary_mux_settings),
-            ) { onOpen(SettingsPage.Mux) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT) {
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
+                HorizontalDivider(
+                    color = dividerColor,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
+                    stringResource(Res.string.title_mux_settings),
+                    stringResource(Res.string.summary_mux_settings),
+                ) { onOpen(SettingsPage.Mux) }
+            }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_FRAGMENT || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
                 HorizontalDivider(
                     color = dividerColor,
                     thickness = 1.dp,
@@ -349,11 +366,18 @@ private fun RootPage(
                     iconTile = true,
                 ) { onOpen(SettingsPage.Fragment) }
             }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
-                stringResource(Res.string.title_singbox_settings),
-                stringResource(Res.string.summary_singbox_settings),
-            ) { onOpen(SettingsPage.SingBox) }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT) {
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
+                HorizontalDivider(
+                    color = dividerColor,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
+                    stringResource(Res.string.title_singbox_settings),
+                    stringResource(Res.string.summary_singbox_settings),
+                ) { onOpen(SettingsPage.SingBox) }
+            }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_AUTO_SELECT || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
                 HorizontalDivider(
                     color = dividerColor,
                     thickness = 1.dp,
@@ -367,10 +391,17 @@ private fun RootPage(
                     iconTile = true,
                 ) { onOpen(SettingsPage.Observatory) }
             }
-            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
-                stringResource(Res.string.title_advanced),
-                stringResource(Res.string.summary_advanced),
-            ) { onOpen(SettingsPage.Advanced) }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_CORE_FULL) {
+                HorizontalDivider(
+                    color = dividerColor,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
+                    stringResource(Res.string.title_advanced),
+                    stringResource(Res.string.summary_advanced),
+                ) { onOpen(SettingsPage.Advanced) }
+            }
         }
 
         SettingsGroup(

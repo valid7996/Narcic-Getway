@@ -29,4 +29,10 @@ object NavConfig {
 
     /** The Per-app proxy page. */
     const val SHOW_PER_APP: Boolean = true
+
+    /** The Tunnels settings section (DNS protocols, Tor, SSH). */
+    const val SHOW_TUNNELS: Boolean = true
+
+    /** The Core & local proxy complete options (Mux, SingBox, Advanced). */
+    const val SHOW_CORE_FULL: Boolean = true
 }
