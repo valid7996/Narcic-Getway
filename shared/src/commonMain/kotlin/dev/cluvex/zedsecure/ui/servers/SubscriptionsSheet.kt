@@ -268,17 +268,19 @@ fun SubscriptionsSheet(
                                 }
                             }
 
-                            IconButton(onClick = { qrTarget = sub.name to sub.url }) {
-                                Icon(
-                                    painterResource(Res.drawable.ic_qr_code_2),
-                                    contentDescription = stringResource(Res.string.action_share_qr),
-                                )
-                            }
-                            IconButton(onClick = { renameTarget = sub }) {
-                                Icon(
-                                    painterResource(Res.drawable.ic_edit),
-                                    contentDescription = stringResource(Res.string.subs_rename),
-                                )
+                            if (!ConfigRepository.isDefaultSubscription(sub.id)) {
+                                IconButton(onClick = { qrTarget = sub.name to sub.url }) {
+                                    Icon(
+                                        painterResource(Res.drawable.ic_qr_code_2),
+                                        contentDescription = stringResource(Res.string.action_share_qr),
+                                    )
+                                }
+                                IconButton(onClick = { renameTarget = sub }) {
+                                    Icon(
+                                        painterResource(Res.drawable.ic_edit),
+                                        contentDescription = stringResource(Res.string.subs_rename),
+                                    )
+                                }
                             }
                             IconButton(onClick = { deleteTarget = sub }) {
                                 Icon(

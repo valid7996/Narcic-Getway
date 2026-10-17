@@ -274,12 +274,28 @@ internal fun HomeServerSection(
                         onDismissRequest = { pingMenu = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
+                        val currentSub = subscriptions.firstOrNull { it.id == group }
+                        val currentScopeName = when (group) {
+                            "all" -> null
+                            "manual" -> stringResource(Res.string.group_manual)
+                            else -> currentSub?.name
+                        }
+                        val tcpPingLabel = if (currentScopeName != null) {
+                            "پینگ TCP سرورهای $currentScopeName"
+                        } else {
+                            stringResource(Res.string.ping_tcp_all)
+                        }
+                        val realPingLabel = if (currentScopeName != null) {
+                            "تأخیر واقعی سرورهای $currentScopeName"
+                        } else {
+                            stringResource(Res.string.ping_real_all)
+                        }
                         if (ServersUiConfig.SHOW_TCP_PING) DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.ping_tcp_all)) },
+                            text = { Text(tcpPingLabel) },
                             onClick = { pingMenu = false; pingAll(useRealDelay = false) },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.ping_real_all)) },
+                            text = { Text(realPingLabel) },
                             onClick = { pingMenu = false; pingAll(useRealDelay = true) },
                         )
                     }
@@ -310,10 +326,10 @@ internal fun HomeServerSection(
                                     val result = repository.updateSubscription(currentSub.id)
                                     val n = result.getOrElse { 0 }
                                     if (autoTestAfterUpdate && n > 0) {
-                                        val all = repository.profiles.value
-                                        repository.clearPings(all.map { it.id }, persist = false)
+                                        val targetServers = repository.profiles.value.filter { it.subscriptionId == currentSub.id }
+                                        repository.clearPings(targetServers.map { it.id }, persist = false)
                                         PingService.measureAll(
-                                            all,
+                                            targetServers,
                                             useRealDelay = true,
                                             concurrency = realPingConcurrency,
                                             delayUrl = delayTestUrl,

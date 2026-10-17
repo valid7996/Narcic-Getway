@@ -38,11 +38,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
+import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.domain.config.VpnProfile
+import dev.cluvex.zedsecure.ui.components.FlagBadge
 import dev.cluvex.zedsecure.ui.format.formatBytes
 import dev.cluvex.zedsecure.ui.theme.Personalization
 import dev.cluvex.zedsecure.ui.theme.ZedGreen
@@ -50,6 +53,24 @@ import dev.cluvex.zedsecure.ui.theme.pingColor
 import dev.cluvex.zedsecure.ui.theme.readableOn
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+
+private val REGIONAL_INDICATOR_REGEX = Regex("""[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]""")
+
+internal fun extractCountryCode(text: String): String? {
+    val match = REGIONAL_INDICATOR_REGEX.find(text) ?: return null
+    val flagStr = match.value
+    if (flagStr.length >= 4) {
+        val c1 = 'A' + (flagStr[1].code - 0xDDE6)
+        val c2 = 'A' + (flagStr[3].code - 0xDDE6)
+        return "$c1$c2"
+    }
+    return null
+}
+
+internal fun cleanProfileName(name: String): String {
+    val stripped = name.replace(REGIONAL_INDICATOR_REGEX, "").replace(Regex("""\s+"""), " ").trim()
+    return stripped.ifBlank { name }
+}
 
 /**
  * The server card of the servers list and the home list alike: the side rail, the active dot, the
@@ -167,9 +188,16 @@ internal fun ServerCard(
                             )
                             Spacer(Modifier.width(7.dp))
                         }
+                        val flagCountry = extractCountryCode(profile.name) ?: profile.countryCode
+                        if (!flagCountry.isNullOrBlank()) {
+                            FlagBadge(countryCode = flagCountry, size = 16.dp)
+                            Spacer(Modifier.width(6.dp))
+                        }
                         Text(
-                            text = profile.name,
-                            style = MaterialTheme.typography.titleMedium,
+                            text = cleanProfileName(profile.name),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                textDirection = TextDirection.ContentOrRtls,
+                            ),
                             fontWeight = FontWeight.SemiBold,
                             color = onContainer,
                             maxLines = 1,
@@ -251,7 +279,8 @@ internal fun ServerCard(
                         onDismissRequest = { menuOpen = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
-                        if (ServersUiConfig.SHOW_SHARE_ACTIONS) {
+                        val isDefaultConfig = ConfigRepository.isDefaultSubscription(profile.subscriptionId)
+                        if (ServersUiConfig.SHOW_SHARE_ACTIONS && !isDefaultConfig) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.action_share)) },
                                 leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null) },
@@ -266,20 +295,22 @@ internal fun ServerCard(
                                 onClick = { menuOpen = false; onShareQr() },
                             )
                         }
-                        onEdit?.let { edit ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_edit)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null) },
-                                enabled = profile.isEditable,
-                                onClick = { menuOpen = false; edit() },
-                            )
-                        }
-                        onRename?.let { rename ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.servers_rename)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_description), null) },
-                                onClick = { menuOpen = false; rename() },
-                            )
+                        if (!isDefaultConfig) {
+                            onEdit?.let { edit ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.action_edit)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null) },
+                                    enabled = profile.isEditable,
+                                    onClick = { menuOpen = false; edit() },
+                                )
+                            }
+                            onRename?.let { rename ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.servers_rename)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_description), null) },
+                                    onClick = { menuOpen = false; rename() },
+                                )
+                            }
                         }
                         onMoveGroup?.let { move ->
                             DropdownMenuItem(

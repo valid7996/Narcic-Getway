@@ -1552,24 +1552,64 @@ class ConfigRepository(private val store: KeyValueStore) {
 
     /** The subscriptions the app ships with, present the first time the store starts. */
     private fun defaultSubscriptions(): List<Subscription> = listOf(
-        Subscription(id = DEFAULT_SUB_IRANCELL, name = "Narcic irancell", url = DEFAULT_SUB_IRANCELL_URL),
-        Subscription(id = DEFAULT_SUB_MCI, name = "mci", url = DEFAULT_SUB_MCI_URL),
-        Subscription(id = DEFAULT_SUB_WIREGUARD, name = "wireguard", url = DEFAULT_SUB_WIREGUARD_URL),
+        Subscription(id = DEFAULT_SUB_IRANCELL, name = "ایرانسل", url = DEFAULT_SUB_IRANCELL_URL),
+        Subscription(id = DEFAULT_SUB_MCI, name = "همراه اول", url = DEFAULT_SUB_MCI_URL),
+        Subscription(id = DEFAULT_SUB_WIREGUARD, name = "وایرگارد", url = DEFAULT_SUB_WIREGUARD_URL),
+        Subscription(id = DEFAULT_SUB_SPOOF, name = "اسپوف", url = DEFAULT_SUB_SPOOF_URL),
     )
 
     /**
      * Writes the shipped subscriptions when the store has none, and with [autoFetch] fetches their
-     * servers once, quietly. The app calls this at startup; tests build repositories alone and see
-     * nothing of the defaults.
+     * servers once, quietly. Also updates existing default subscription names to Persian and adds
+     * any new default subscriptions (such as Spoof) on app updates.
      */
     fun ensureDefaultSubscriptions(autoFetch: Boolean) {
-        if (loadSubscriptions().isNotEmpty()) return
-        _subscriptions.value = defaultSubscriptions()
-        persistSubscriptions()
-        if (!autoFetch) return
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            listOf(DEFAULT_SUB_IRANCELL, DEFAULT_SUB_MCI, DEFAULT_SUB_WIREGUARD).forEach { id ->
-                runCatching { updateSubscription(id) }
+        val existing = loadSubscriptions().toMutableList()
+        val defaults = defaultSubscriptions()
+
+        if (existing.isEmpty()) {
+            _subscriptions.value = defaults
+            persistSubscriptions()
+            if (!autoFetch) return
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                DEFAULT_SUB_IDS.forEach { id ->
+                    runCatching { updateSubscription(id) }
+                }
+            }
+            return
+        }
+
+        var modified = false
+        val toFetch = mutableListOf<String>()
+
+        defaults.forEach { def ->
+            val idx = existing.indexOfFirst { it.id == def.id }
+            if (idx >= 0) {
+                val current = existing[idx]
+                if (current.name != def.name) {
+                    existing[idx] = current.copy(name = def.name)
+                    modified = true
+                }
+                if (_profiles.value.none { it.subscriptionId == def.id }) {
+                    toFetch.add(def.id)
+                }
+            } else {
+                existing.add(def)
+                modified = true
+                toFetch.add(def.id)
+            }
+        }
+
+        if (modified) {
+            _subscriptions.value = existing
+            persistSubscriptions()
+        }
+
+        if (autoFetch && toFetch.isNotEmpty()) {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                toFetch.distinct().forEach { id ->
+                    runCatching { updateSubscription(id) }
+                }
             }
         }
     }
@@ -1588,12 +1628,27 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_IRANCELL = "default-narcic-irancell"
         const val DEFAULT_SUB_MCI = "default-mci"
         const val DEFAULT_SUB_WIREGUARD = "default-wireguard"
+        const val DEFAULT_SUB_SPOOF = "default-spoof"
         const val DEFAULT_SUB_IRANCELL_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessirancell.txt"
         const val DEFAULT_SUB_MCI_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessmci.txt"
         const val DEFAULT_SUB_WIREGUARD_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/ngwirguard.txt"
+        const val DEFAULT_SUB_SPOOF_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
+
+        val DEFAULT_SUB_IDS = setOf(
+            DEFAULT_SUB_IRANCELL,
+            DEFAULT_SUB_MCI,
+            DEFAULT_SUB_WIREGUARD,
+            DEFAULT_SUB_SPOOF,
+        )
+
+        fun isDefaultSubscription(id: String?): Boolean {
+            if (id.isNullOrBlank()) return false
+            return id in DEFAULT_SUB_IDS
+        }
 
         val DEFAULT_UA = "v2rayNG/${AppInfo.versionName}"
 

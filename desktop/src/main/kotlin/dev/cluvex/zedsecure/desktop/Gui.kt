@@ -79,6 +79,7 @@ fun main(args: Array<String>) {
     }
     AppInfo.versionName = BUILD_VERSION
     Runtime.getRuntime().addShutdownHook(Thread { runCatching { DesktopVpn.shutdown() } })
+    configRepository.ensureDefaultSubscriptions(autoFetch = true)
 
     val rendering = DesktopRendering.apply(
         runCatching { desktopSettings.settings.value.renderingMode }.getOrDefault(RenderingMode.Auto),

@@ -368,8 +368,8 @@ fun ServersScreen(
     }
 
     val shown = when {
-        subscriptions.isEmpty() || groupIndex == 0 -> servers
-        groupIndex == 1 -> servers.filter { it.subscriptionId.isEmpty() }
+        subscriptions.isEmpty() || (showAllGroup && groupIndex == 0) -> servers
+        groupIndex == 1 || (!showAllGroup && groupIndex == 0) -> servers.filter { it.subscriptionId.isEmpty() }
         else -> subscriptions.getOrNull(groupIndex - 2)?.let { sub ->
             servers.filter { it.subscriptionId == sub.id }
         } ?: servers
@@ -467,8 +467,24 @@ fun ServersScreen(
                         onDismissRequest = { pingMenu = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
+                        val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
+                        val currentScopeName = when {
+                            subscriptions.isEmpty() || (showAllGroup && groupIndex == 0) -> null
+                            groupIndex == 1 || (!showAllGroup && groupIndex == 0) -> stringResource(Res.string.group_manual)
+                            else -> currentSub?.name
+                        }
+                        val tcpPingLabel = if (currentScopeName != null) {
+                            "پینگ TCP سرورهای $currentScopeName"
+                        } else {
+                            stringResource(Res.string.ping_tcp_all)
+                        }
+                        val realPingLabel = if (currentScopeName != null) {
+                            "تأخیر واقعی سرورهای $currentScopeName"
+                        } else {
+                            stringResource(Res.string.ping_real_all)
+                        }
                         if (ServersUiConfig.SHOW_TCP_PING) DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.ping_tcp_all)) },
+                            text = { Text(tcpPingLabel) },
                             onClick = {
                                 pingMenu = false
 
@@ -488,7 +504,7 @@ fun ServersScreen(
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.ping_real_all)) },
+                            text = { Text(realPingLabel) },
                             onClick = {
                                 pingMenu = false
                                 PingCoordinator.start(
@@ -563,10 +579,10 @@ fun ServersScreen(
                                         val n = result.getOrElse { 0 }
 
                                         if (autoTestAfterUpdate && n > 0) {
-                                            val all = repository.profiles.value
-                                            repository.clearPings(all.map { it.id }, persist = false)
+                                            val targetServers = repository.profiles.value.filter { it.subscriptionId == currentSub.id }
+                                            repository.clearPings(targetServers.map { it.id }, persist = false)
                                             PingService.measureAll(
-                                                all,
+                                                targetServers,
                                                 useRealDelay = true,
                                                 concurrency = realPingConcurrency,
                                                 delayUrl = delayTestUrl,
@@ -1627,15 +1643,26 @@ private fun GroupTab(
         color = bg,
         modifier = borderModifier,
     ) {
-        Text(
-            text = "$label  $count",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = contentColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-        )
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "$count",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Normal,
+                color = contentColor.copy(alpha = 0.85f),
+            )
+        }
     }
 }
 
