@@ -54,22 +54,34 @@ import dev.cluvex.zedsecure.ui.theme.readableOn
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-private val REGIONAL_INDICATOR_REGEX = Regex("""[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]""")
-
 internal fun extractCountryCode(text: String): String? {
-    val match = REGIONAL_INDICATOR_REGEX.find(text) ?: return null
-    val flagStr = match.value
-    if (flagStr.length >= 4) {
-        val c1 = 'A' + (flagStr[1].code - 0xDDE6)
-        val c2 = 'A' + (flagStr[3].code - 0xDDE6)
-        return "$c1$c2"
+    var i = 0
+    while (i <= text.length - 4) {
+        if (text[i] == '\uD83C' && text[i + 1] in '\uDDE6'..'\uDDFF' &&
+            text[i + 2] == '\uD83C' && text[i + 3] in '\uDDE6'..'\uDDFF') {
+            val c1 = ('A'.code + (text[i + 1].code - 0xDDE6)).toChar()
+            val c2 = ('A'.code + (text[i + 3].code - 0xDDE6)).toChar()
+            return "$c1$c2"
+        }
+        i++
     }
     return null
 }
 
 internal fun cleanProfileName(name: String): String {
-    val stripped = name.replace(REGIONAL_INDICATOR_REGEX, "").replace(Regex("""\s+"""), " ").trim()
-    return stripped.ifBlank { name }
+    val sb = StringBuilder(name.length)
+    var i = 0
+    while (i < name.length) {
+        if (i <= name.length - 4 &&
+            name[i] == '\uD83C' && name[i + 1] in '\uDDE6'..'\uDDFF' &&
+            name[i + 2] == '\uD83C' && name[i + 3] in '\uDDE6'..'\uDDFF') {
+            i += 4
+        } else {
+            sb.append(name[i])
+            i++
+        }
+    }
+    return sb.toString().replace(Regex("""\s+"""), " ").trim().ifBlank { name }
 }
 
 /**
@@ -196,7 +208,7 @@ internal fun ServerCard(
                         Text(
                             text = cleanProfileName(profile.name),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                textDirection = TextDirection.ContentOrRtls,
+                                textDirection = TextDirection.ContentOrRtl,
                             ),
                             fontWeight = FontWeight.SemiBold,
                             color = onContainer,
