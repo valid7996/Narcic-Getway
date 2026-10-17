@@ -232,16 +232,31 @@ private fun RootPage(
                     iconTint = Color(0xFF38BDF8),
                     iconTile = true,
                 ) { onOpen(SettingsPage.Mode) }
-                if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsMenuRow(
+            }
+            if (dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_MONITOR) {
+                HorizontalDivider(
+                    color = dividerColor,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
                     stringResource(Res.string.monitor_title),
                     stringResource(Res.string.monitor_subtitle),
+                    leadingIcon = Res.drawable.ic_speedometer,
+                    iconTint = Color(0xFF38BDF8),
+                    iconTile = true,
                 ) { onOpen(SettingsPage.Monitor) }
-                if (hasAi && dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
-                    SettingsMenuRow(
-                        stringResource(Res.string.ai_title),
-                        stringResource(Res.string.ai_subtitle),
-                    ) { onOpen(SettingsPage.Ai) }
-                }
+            }
+            if (hasAi && dev.cluvex.zedsecure.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
+                HorizontalDivider(
+                    color = dividerColor,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 14.dp),
+                )
+                SettingsMenuRow(
+                    stringResource(Res.string.ai_title),
+                    stringResource(Res.string.ai_subtitle),
+                ) { onOpen(SettingsPage.Ai) }
             }
         }
 

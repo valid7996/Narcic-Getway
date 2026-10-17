@@ -18,6 +18,9 @@ object NavConfig {
     /** The Mode page (VPN / proxy / system-proxy). */
     const val SHOW_MODE: Boolean = true
 
+    /** The Live Hardware Monitor page (CPU, RAM, temp, device pressure, active core). */
+    const val SHOW_MONITOR: Boolean = true
+
     /** The Routing page. */
     const val SHOW_ROUTING: Boolean = true
 
