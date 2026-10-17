@@ -363,10 +363,10 @@ fun main(args: Array<String>) {
                             settings = settings,
                             configRepository = configRepository,
                             onToggleConnection = { DesktopVpn.toggle(configRepository) },
-                            onImportZsx = { importLockedConfig() },
                             onActiveServerChanged = { reconnectIfRunning() },
                             onUpdateSettings = { transform -> desktopSettings.update(transform) },
                             onLanguage = { lang -> desktopSettings.update { it.copy(language = lang) } },
+                            appVersion = BUILD_VERSION,
                         )
                         val passwordRequest by AdminPassword.request.collectAsState()
                         passwordRequest?.let { request ->
