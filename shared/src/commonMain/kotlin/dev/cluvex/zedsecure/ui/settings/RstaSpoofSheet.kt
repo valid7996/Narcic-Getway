@@ -5,11 +5,13 @@ package dev.cluvex.zedsecure.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -21,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -44,10 +47,10 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDismiss: () -> Unit) {
     val platform = LocalPlatform.current
-    var ip by remember { mutableStateOf(settings.rstaSpoofConnectIp) }
-    var port by remember { mutableStateOf(settings.rstaSpoofConnectPort.toString()) }
-    var sni by remember { mutableStateOf(settings.rstaSpoofFakeSni) }
-    var method by remember { mutableStateOf(SniSpoofConfig.method(settings.rstaSpoofMethod)) }
+    var ip by rememberSaveable(settings.rstaSpoofConnectIp) { mutableStateOf(settings.rstaSpoofConnectIp) }
+    var port by rememberSaveable(settings.rstaSpoofConnectPort) { mutableStateOf(settings.rstaSpoofConnectPort.toString()) }
+    var sni by rememberSaveable(settings.rstaSpoofFakeSni) { mutableStateOf(settings.rstaSpoofFakeSni) }
+    var method by rememberSaveable(settings.rstaSpoofMethod) { mutableStateOf(SniSpoofConfig.method(settings.rstaSpoofMethod)) }
     var status by remember { mutableStateOf("") }
     var log by remember { mutableStateOf<List<String>>(emptyList()) }
     var showLog by remember { mutableStateOf(false) }
@@ -56,24 +59,29 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
     LaunchedEffect(Unit) {
         while (true) {
             withContext(Dispatchers.IO) { status = platform.rstaSpoofStatus(); log = platform.rstaSpoofLog() }
-            delay(1_000)
+            delay(1_500)
         }
     }
 
-    fun save(
-        newIp: String = ip, newPort: String = port, newSni: String = sni, newMethod: String = method,
-    ) {
+    fun applySave() {
+        val nextPort = port.toIntOrNull()?.takeIf { it in 1..65535 } ?: 443
+        val nextIp = ip.trim().ifEmpty { SniSpoofConfig.DEFAULT_CONNECT_IP }
+        val nextSni = sni.trim().ifEmpty { SniSpoofConfig.DEFAULT_FAKE_SNI }
+        val nextMethod = SniSpoofConfig.method(method)
         onUpdate(
             settings.copy(
-                rstaSpoofConnectIp = newIp.trim(),
-                rstaSpoofConnectPort = newPort.toIntOrNull()?.takeIf { it in 1..65535 } ?: 443,
-                rstaSpoofFakeSni = newSni.trim(),
-                rstaSpoofMethod = SniSpoofConfig.method(newMethod),
+                rstaSpoofConnectIp = nextIp,
+                rstaSpoofConnectPort = nextPort,
+                rstaSpoofFakeSni = nextSni,
+                rstaSpoofMethod = nextMethod,
             ),
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = {
+        applySave()
+        onDismiss()
+    }) {
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding()
                 .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
@@ -83,28 +91,45 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
             Text(stringResource(Res.string.rsta_note), style = MaterialTheme.typography.bodyMedium)
 
             OutlinedTextField(
-                value = ip, onValueChange = { ip = it; save(newIp = it) },
+                value = ip,
+                onValueChange = { ip = it },
                 label = { Text(stringResource(Res.string.rsta_connect_ip)) },
                 supportingText = { Text(stringResource(Res.string.rsta_connect_ip_hint)) },
-                singleLine = true, modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = port, onValueChange = { v -> val d = v.filter(Char::isDigit).take(5); port = d; save(newPort = d) },
+                value = port,
+                onValueChange = { port = it.filter(Char::isDigit).take(5) },
                 label = { Text(stringResource(Res.string.rsta_connect_port)) },
-                singleLine = true, modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = sni, onValueChange = { sni = it; save(newSni = it) },
+                value = sni,
+                onValueChange = { sni = it },
                 label = { Text(stringResource(Res.string.rsta_fake_sni)) },
                 supportingText = { Text(stringResource(Res.string.rsta_fake_sni_hint)) },
-                singleLine = true, modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
             )
             PickerField(
                 label = stringResource(Res.string.rsta_method),
                 options = SniSpoofConfig.METHODS.map { it to it },
                 selected = method,
-                onSelect = { method = it; save(newMethod = it) },
+                onSelect = { method = it },
             )
+
+            Button(
+                onClick = {
+                    applySave()
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+            ) {
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
+            }
 
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
