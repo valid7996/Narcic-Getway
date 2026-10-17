@@ -41,10 +41,12 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dev.cluvex.zedsecure.core.VpnManager
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.platform.LiveStats
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.max
@@ -61,6 +63,9 @@ fun LiveMonitorPage(contentPadding: PaddingValues, modifier: Modifier) {
     val memHistory = remember { mutableStateListOf<Float>() }
     val tempHistory = remember { mutableStateListOf<Float>() }
 
+    val activeKind by VpnManager.activeKind.collectAsStateWithLifecycle()
+    val vpnStatus by VpnManager.status.collectAsStateWithLifecycle()
+
     var crypto by remember { mutableStateOf("") }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         crypto = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -73,7 +78,7 @@ fun LiveMonitorPage(contentPadding: PaddingValues, modifier: Modifier) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { platform.liveStats() }
         sample()
         while (true) {
-            delay(1_000)
+            delay(2_000)
             val s = sample()
             stats = s
             deviceShare(s)?.let { cpuHistory.push(it) }
@@ -90,6 +95,8 @@ fun LiveMonitorPage(contentPadding: PaddingValues, modifier: Modifier) {
         contentPadding = contentPadding,
         modifier = modifier,
     ) {
+        DevicePressureCard(stats, computer, wide)
+        Spacer(Modifier.height(12.dp))
         Row(
             Modifier
                 .fillMaxWidth()
@@ -105,7 +112,7 @@ fun LiveMonitorPage(contentPadding: PaddingValues, modifier: Modifier) {
         Spacer(Modifier.height(12.dp))
         MemoryCard(stats, memHistory, wide)
         Spacer(Modifier.height(12.dp))
-        CoreCard(stats, crypto, wide)
+        CoreCard(stats, crypto, activeKind, vpnStatus, wide)
     }
 }
 
@@ -227,7 +234,7 @@ private fun HeatCard(stats: LiveStats, history: List<Float>, computer: Boolean, 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    if (temp == null) "—" else formatOneDecimal(tempShown) + "°",
+                    if (temp == null) "—" else formatOneDecimal(tempShown) + "°C",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -356,7 +363,83 @@ private fun MemoryCard(stats: LiveStats, history: List<Float>, modifier: Modifie
 }
 
 @Composable
-private fun CoreCard(stats: LiveStats, crypto: String, modifier: Modifier) {
+private fun DevicePressureCard(stats: LiveStats, computer: Boolean, modifier: Modifier) {
+    val temp = stats.tempC
+    val headroom = stats.thermalHeadroom
+    val cpu = deviceShare(stats) ?: 0f
+
+    val isHot = (temp != null && temp >= 43f) || (headroom != null && headroom >= 0.85f) || (stats.thermalStatus != null && stats.thermalStatus >= 2)
+    val isWarm = (temp != null && temp >= 39f) || (headroom != null && headroom >= 0.60f) || (cpu > 25f)
+
+    val (badgeText, badgeDesc, badgeColor) = when {
+        isHot -> Triple(
+            "فشار بالا و دمای زیاد",
+            if (computer) "دمای پردازنده یا سیستم بالاست؛ سیستم تحت فشار پردازشی است."
+            else "دمای باتری یا گوشی بالاست؛ توصیه می‌شود برای محافظت از سلامت باتری بار ترافیک سبک‌تر شود.",
+            MaterialTheme.colorScheme.error,
+        )
+        isWarm -> Triple(
+            "فشار کاری متوسط",
+            if (computer) "سیستم در حال پردازش معمول است و دما در محدوده پایدار است."
+            else "گوشی در حال پردازش معمولی است و دمای باتری در محدوده ایمن و استاندارد قرار دارد.",
+            MaterialTheme.colorScheme.tertiary,
+        )
+        else -> Triple(
+            "عالی و بدون فشار به گوشی",
+            if (computer) "پردازنده و حافظه در خنک‌ترین وضعیت کاری قرار دارند و فشاری به سیستم نیست."
+            else "پردازنده، باتری و حافظه در خنک‌ترین وضعیت قرار دارند و هیچ فشاری به گوشی وارد نمی‌شود.",
+            MaterialTheme.colorScheme.primary,
+        )
+    }
+
+    MonitorCard(modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(10.dp)
+                    .background(badgeColor, CircleShape),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                if (computer) "وضعیت فشار به سیستم: $badgeText" else "وضعیت فشار به گوشی: $badgeText",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = badgeColor,
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            badgeDesc,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CoreCard(
+    stats: LiveStats,
+    crypto: String,
+    activeKind: String?,
+    vpnStatus: VpnManager.Status,
+    modifier: Modifier,
+) {
+    val engineName = when (activeKind) {
+        VpnManager.KIND_XRAY -> "Xray-Core (v2ray)"
+        VpnManager.KIND_SINGBOX -> "Sing-Box Core"
+        VpnManager.KIND_SNISPOOF -> "RSTA SNI-Spoof"
+        VpnManager.KIND_PSIPHON -> "Psiphon Tunnel"
+        VpnManager.KIND_TOR -> "Tor Onion Routing"
+        VpnManager.KIND_SSH -> "SSH Tunnel"
+        VpnManager.KIND_OPENCONNECT -> "OpenConnect (Cisco)"
+        VpnManager.KIND_IKEV2 -> "IKEv2 / IPsec"
+        VpnManager.KIND_AETHER -> "Aether Engine"
+        VpnManager.KIND_DNS_TUNNEL -> "DNS Tunnel"
+        VpnManager.KIND_MASTERDNS -> "MasterDNS"
+        VpnManager.KIND_CROSS_CHAIN -> "Cross-Chain Tunnel"
+        else -> if (vpnStatus.state.isActive) "VPN Core" else stringResource(Res.string.state_idle)
+    }
+
     MonitorCard(modifier) {
         Text(
             stringResource(Res.string.monitor_core),
@@ -364,6 +447,26 @@ private fun CoreCard(stats: LiveStats, crypto: String, modifier: Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
+        LabelledValue(
+            "هسته در حال اجرا",
+            engineName,
+            valueColour = if (vpnStatus.state.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(6.dp))
+        if (vpnStatus.state.isActive) {
+            vpnStatus.serverName?.takeIf { it.isNotBlank() }?.let {
+                LabelledValue("پروفایل / سرور متصل", it)
+                Spacer(Modifier.height(6.dp))
+            }
+            VpnManager.activeSocksPort?.let { port ->
+                LabelledValue("پورت پراکسی محلی", "127.0.0.1:$port")
+                Spacer(Modifier.height(6.dp))
+            }
+        }
+        stats.threads?.let {
+            LabelledValue("تردهای پردازشی فعال", "$it ترد")
+            Spacer(Modifier.height(6.dp))
+        }
         stats.processUptimeMs?.let {
             LabelledValue(stringResource(Res.string.monitor_uptime), formatDuration(it))
             Spacer(Modifier.height(6.dp))
