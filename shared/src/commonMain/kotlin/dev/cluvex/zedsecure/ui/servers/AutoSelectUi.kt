@@ -90,6 +90,7 @@ fun AutoSelectCard(
     onDetails: () -> Unit,
     personalization: Personalization = Personalization.Default,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
@@ -104,9 +105,10 @@ fun AutoSelectCard(
         Color(0xFF121214)
     } else if (isAzkaban) {
         Color(0xFF091424)
+    } else if (isDark) {
+        personalization.serverCardColor ?: Color(0xFF1C1C1E)
     } else {
-        personalization.serverCardColor
-            ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
+        personalization.serverCardColor ?: Color(0xFFFFFFFF)
     }
     val onContainer = when {
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
@@ -115,7 +117,8 @@ fun AutoSelectCard(
         isNoir -> Color(0xFFF4F4F5)
         isAzkaban -> Color(0xFFF0F9FF)
         active -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
+        isDark -> Color(0xFFF2F2F7)
+        else -> Color(0xFF000000)
     }
     val phase = live?.status?.phase
     val frame = when {
@@ -125,7 +128,8 @@ fun AutoSelectCard(
         isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.22f)
         isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
         personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.40f)
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+        isDark -> Color(0xFF2C2C2E)
+        else -> Color(0xFFE5E5EA)
     }
     Surface(
         onClick = onSelect,
@@ -134,7 +138,7 @@ fun AutoSelectCard(
         contentColor = onContainer,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp)),
+            .border(0.5.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp)),
     ) {
         Row(
             Modifier
@@ -143,20 +147,19 @@ fun AutoSelectCard(
                 .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val cookieBg = if (isAzkaban) Color(0xFF0284C7) else phaseColor(phase)
-            val cookieTint = if (isAzkaban) Color(0xFFF0F9FF) else phaseColor(phase).readableOn()
+            val squircleBg = if (isAzkaban) Color(0xFF0284C7) else Color(0xFF007AFF)
             Box(
                 Modifier
-                    .size(42.dp)
-                    .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(cookieBg),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(squircleBg),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    painterResource(Res.drawable.ic_bolt),
+                    painterResource(Res.drawable.ic_sync),
                     contentDescription = null,
-                    tint = cookieTint,
-                    modifier = Modifier.size(22.dp),
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
                 )
             }
             Spacer(Modifier.width(12.dp))
@@ -211,8 +214,8 @@ fun AutoSelectSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier

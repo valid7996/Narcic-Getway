@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
@@ -118,6 +119,7 @@ internal fun ServerCard(
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
     val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: ZedGreen)
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val container = if (isSelectedCard) {
         MaterialTheme.colorScheme.secondaryContainer
     } else if (active) {
@@ -132,7 +134,7 @@ internal fun ServerCard(
         Color(0xFF091322)
     } else {
         personalization.serverCardColor
-            ?: MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
+            ?: if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
     }
     val frame = when {
         isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
@@ -142,7 +144,7 @@ internal fun ServerCard(
         isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.22f)
         isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
         personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.40f)
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+        else -> if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
     }
 
     val onContainer = when {
@@ -167,7 +169,7 @@ internal fun ServerCard(
                 .height(IntrinsicSize.Min)
                 .clip(RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
                 .background(container)
-                .border(1.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
+                .border(if (active) 1.dp else 0.5.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
                 .clickable(onClick = onClick),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -284,12 +286,18 @@ internal fun ServerCard(
                         Icon(
                             painterResource(Res.drawable.ic_more_vert),
                             contentDescription = stringResource(Res.string.servers_actions),
+                            tint = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                         )
                     }
                     DropdownMenu(
                         expanded = menuOpen,
                         onDismissRequest = { menuOpen = false },
-                        shape = MaterialTheme.shapes.largeIncreased,
+                        shape = RoundedCornerShape(14.dp),
+                        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.5.dp,
+                            if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                        ),
                     ) {
                         val isDefaultConfig = ConfigRepository.isDefaultSubscription(profile.subscriptionId)
                         if (ServersUiConfig.SHOW_SHARE_ACTIONS && !isDefaultConfig) {
@@ -344,10 +352,13 @@ internal fun ServerCard(
                                 onClick = { menuOpen = false; onPingReal() },
                             )
                         }
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                        )
                         DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_delete)) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+                            text = { Text(stringResource(Res.string.action_delete), color = Color(0xFFFF3B30), fontWeight = FontWeight.Medium) },
+                            leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
                             onClick = { menuOpen = false; onDelete() },
                         )
                     }

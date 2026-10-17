@@ -138,6 +138,7 @@ fun ServersScreen(
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
     val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     fun toastImportFailure(e: Throwable) {
         if (e is ConfigRepository.SubscriptionNotFetchedException) {
@@ -415,20 +416,30 @@ fun ServersScreen(
     if (showRealDelayNote) {
         AlertDialog(
             onDismissRequest = { showRealDelayNote = false },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
             confirmButton = {
-                TextButton(onClick = { showRealDelayNote = false }) {
-                    Text(stringResource(Res.string.action_ok))
+                TextButton(
+                    onClick = { showRealDelayNote = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
+                    Text(stringResource(Res.string.action_ok), fontWeight = FontWeight.SemiBold)
                 }
             },
-            icon = { Icon(painterResource(Res.drawable.ic_speed), contentDescription = null) },
-            title = { Text(stringResource(Res.string.real_delay_note_title)) },
+            icon = { Icon(painterResource(Res.drawable.ic_speed), contentDescription = null, tint = Color(0xFF007AFF)) },
+            title = {
+                Text(
+                    stringResource(Res.string.real_delay_note_title),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            },
             text = {
                 Text(
                     stringResource(Res.string.real_delay_note_body),
-
                     textAlign = androidx.compose.ui.text.style.TextAlign.Start,
-                    lineHeight = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-                        .fontSize * 1.55f,
+                    lineHeight = androidx.compose.material3.MaterialTheme.typography.bodyMedium.fontSize * 1.55f,
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
@@ -1091,16 +1102,34 @@ fun ServersScreen(
         var password by remember(prompt) { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { ovpnPrompt = null },
-            title = { Text(stringResource(Res.string.ovpn_credentials_title)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = {
+                Text(
+                    stringResource(Res.string.ovpn_credentials_title),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            },
             text = {
                 Column {
-                    Text(stringResource(Res.string.ovpn_credentials_body, prompt.name))
+                    Text(
+                        stringResource(Res.string.ovpn_credentials_body, prompt.name),
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                    )
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = username,
                         onValueChange = { username = it },
                         singleLine = true,
                         label = { Text(stringResource(Res.string.ovpn_username)) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF007AFF),
+                            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(8.dp))
@@ -1109,26 +1138,43 @@ fun ServersScreen(
                         onValueChange = { password = it },
                         singleLine = true,
                         label = { Text(stringResource(Res.string.ovpn_password)) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF007AFF),
+                            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val text = prompt.text
-                    val name = prompt.name
-                    val user = username
-                    val pass = password
-                    ovpnPrompt = null
-                    scope.launch {
-                        repository.addOvpn(text, name = name, username = user, password = pass)
-                            .onSuccess { platform.toast(getString(Res.string.servers_imported, 1)) }
-                            .onFailure { toastImportFailure(it) }
-                    }
-                }) { Text(stringResource(Res.string.action_save)) }
+                TextButton(
+                    onClick = {
+                        val text = prompt.text
+                        val name = prompt.name
+                        val user = username
+                        val pass = password
+                        ovpnPrompt = null
+                        scope.launch {
+                            repository.addOvpn(text, name = name, username = user, password = pass)
+                                .onSuccess { platform.toast(getString(Res.string.servers_imported, 1)) }
+                                .onFailure { toastImportFailure(it) }
+                        }
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFF007AFF),
+                    ),
+                ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { ovpnPrompt = null }) { Text(stringResource(Res.string.action_cancel)) }
+                TextButton(
+                    onClick = { ovpnPrompt = null },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFF007AFF),
+                    ),
+                ) { Text(stringResource(Res.string.action_cancel)) }
             },
         )
     }
@@ -1425,9 +1471,11 @@ fun ServersScreen(
     confirmDeleteInvalid?.let { count ->
         AlertDialog(
             onDismissRequest = { confirmDeleteInvalid = null },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = { Text(stringResource(Res.string.del_invalid)) },
-            text = { Text(stringResource(Res.string.del_invalid_confirm, count)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
+            title = { Text(stringResource(Res.string.del_invalid), color = if (isDark) Color.White else Color.Black, fontWeight = FontWeight.SemiBold) },
+            text = { Text(stringResource(Res.string.del_invalid_confirm, count), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)) },
             confirmButton = {
                 TextButton(
                     enabled = count > 0,
@@ -1435,10 +1483,14 @@ fun ServersScreen(
                         confirmDeleteInvalid = null
                         toastRes(Res.string.removed_count, repository.removeInvalid())
                     },
-                ) { Text(stringResource(Res.string.action_delete)) }
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteInvalid = null }) {
+                TextButton(
+                    onClick = { confirmDeleteInvalid = null },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -1455,13 +1507,17 @@ fun ServersScreen(
         }
         AlertDialog(
             onDismissRequest = { confirmDeleteSubscriptions = false },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
             title = {
                 Text(
                     stringResource(
                         if (currentSub != null) Res.string.del_this_subscription
                         else Res.string.del_subscriptions
-                    )
+                    ),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
                 )
             },
             text = {
@@ -1470,18 +1526,25 @@ fun ServersScreen(
                         stringResource(Res.string.del_this_subscription_confirm, currentSub.name, subCount)
                     } else {
                         stringResource(Res.string.del_subscriptions_confirm, subCount)
-                    }
+                    },
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDeleteSubscriptions = false
-                    val removed = repository.removeSubscriptionConfigs(targetSubId)
-                    toastRes(Res.string.removed_count, removed)
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        confirmDeleteSubscriptions = false
+                        val removed = repository.removeSubscriptionConfigs(targetSubId)
+                        toastRes(Res.string.removed_count, removed)
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteSubscriptions = false }) {
+                TextButton(
+                    onClick = { confirmDeleteSubscriptions = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -1491,20 +1554,27 @@ fun ServersScreen(
     if (confirmDeleteAll) {
         AlertDialog(
             onDismissRequest = { confirmDeleteAll = false },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = { Text(stringResource(Res.string.del_all)) },
-            text = { Text(stringResource(Res.string.del_all_confirm)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
+            title = { Text(stringResource(Res.string.del_all), color = if (isDark) Color.White else Color.Black, fontWeight = FontWeight.SemiBold) },
+            text = { Text(stringResource(Res.string.del_all_confirm), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)) },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDeleteAll = false
-
-                    val removed = servers.size
-                    repository.removeAll { !it.isLocked }
-                    toastRes(Res.string.removed_count, removed)
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        confirmDeleteAll = false
+                        val removed = servers.size
+                        repository.removeAll { !it.isLocked }
+                        toastRes(Res.string.removed_count, removed)
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteAll = false }) {
+                TextButton(
+                    onClick = { confirmDeleteAll = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -1514,7 +1584,9 @@ fun ServersScreen(
     if (moveSelectionTo) {
         AlertDialog(
             onDismissRequest = { moveSelectionTo = false },
-            title = { Text(stringResource(Res.string.groups_move)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = { Text(stringResource(Res.string.groups_move), color = if (isDark) Color.White else Color.Black, fontWeight = FontWeight.SemiBold) },
             text = {
                 Column {
                     listOf("" to stringResource(Res.string.groups_manual)).plus(
@@ -1529,6 +1601,7 @@ fun ServersScreen(
                                 selected = emptySet()
                                 toastRes(Res.string.select_moved, moved)
                             },
+                            colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = if (isDark) Color.White else Color.Black),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(label, modifier = Modifier.weight(1f))
@@ -1537,7 +1610,10 @@ fun ServersScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { moveSelectionTo = false }) {
+                TextButton(
+                    onClick = { moveSelectionTo = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -1547,20 +1623,28 @@ fun ServersScreen(
     if (confirmDeleteSelection) {
         AlertDialog(
             onDismissRequest = { confirmDeleteSelection = false },
-            title = { Text(stringResource(Res.string.action_delete)) },
-            text = { Text(stringResource(Res.string.select_delete_confirm, selected.size)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = { Text(stringResource(Res.string.action_delete), color = if (isDark) Color.White else Color.Black, fontWeight = FontWeight.SemiBold) },
+            text = { Text(stringResource(Res.string.select_delete_confirm, selected.size), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)) },
             confirmButton = {
-                TextButton(onClick = {
-                    val n = selected.size
-                    repository.removeAll(selected)
-                    confirmDeleteSelection = false
-                    selecting = false
-                    selected = emptySet()
-                    toastRes(Res.string.removed_count, n)
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        val n = selected.size
+                        repository.removeAll(selected)
+                        confirmDeleteSelection = false
+                        selecting = false
+                        selected = emptySet()
+                        toastRes(Res.string.removed_count, n)
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteSelection = false }) {
+                TextButton(
+                    onClick = { confirmDeleteSelection = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -1570,17 +1654,25 @@ fun ServersScreen(
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null) },
-            title = { Text(stringResource(Res.string.servers_delete_confirm_title)) },
-            text = { Text(stringResource(Res.string.servers_delete_confirm_body, target.name)) },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
+            title = { Text(stringResource(Res.string.servers_delete_confirm_title), color = if (isDark) Color.White else Color.Black, fontWeight = FontWeight.SemiBold) },
+            text = { Text(stringResource(Res.string.servers_delete_confirm_body, target.name), color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)) },
             confirmButton = {
-                TextButton(onClick = {
-                    repository.remove(target.id)
-                    deleteTarget = null
-                }) { Text(stringResource(Res.string.action_delete)) }
+                TextButton(
+                    onClick = {
+                        repository.remove(target.id)
+                        deleteTarget = null
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) {
+                TextButton(
+                    onClick = { deleteTarget = null },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -1743,8 +1835,8 @@ internal fun AddServerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
@@ -2042,27 +2134,16 @@ internal fun AddServerSheet(
 @Composable
 private fun OptionGroup(labelRes: StringResource) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val pipeColor = if (isDark) Color(0xFF20D8C0) else Color(0xFF0D9488)
-    Row(
-        Modifier
+    val textColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)
+    Text(
+        text = stringResource(labelRes).uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = textColor,
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 22.dp, end = 22.dp, top = 16.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier
-                .size(width = 3.5.dp, height = 18.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(pipeColor),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            stringResource(labelRes),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = pipeColor,
-        )
-    }
+            .padding(start = 22.dp, end = 22.dp, top = 16.dp, bottom = 6.dp),
+    )
 }
 
 @Composable
@@ -2077,77 +2158,41 @@ private fun GlassOptionCard(
     onClick: () -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val shape = RoundedCornerShape(22.dp)
-    val cardBorder = if (isDark) {
-        Brush.horizontalGradient(
-            listOf(
-                accentColor.copy(alpha = 0.85f),
-                accentColor.copy(alpha = 0.30f),
-            ),
-        )
-    } else {
-        Brush.horizontalGradient(
-            listOf(
-                accentColor.copy(alpha = 0.40f),
-                accentColor.copy(alpha = 0.18f),
-            ),
-        )
-    }
-    val cardBg = if (isDark) {
-        Brush.horizontalGradient(listOf(gradientStart, gradientEnd))
-    } else {
-        Brush.horizontalGradient(
-            listOf(
-                Color.White.copy(alpha = 0.95f),
-                Color(0xFFF1F5F9).copy(alpha = 0.85f),
-            ),
-        )
-    }
-    val tileBg = if (isDark) Color.Black.copy(alpha = 0.40f) else Color(0xFFE2E8F0).copy(alpha = 0.60f)
-    val tileBorder = if (isDark) accentColor.copy(alpha = 0.45f) else accentColor.copy(alpha = 0.30f)
-    val effectiveIconTint = if (isDark) {
-        iconTint
-    } else {
-        when (iconTint) {
-            Color(0xFF60E0B0), Color(0xFF20D8C0) -> Color(0xFF059669)
-            Color(0xFF38BDF8), Color(0xFF2088FF) -> Color(0xFF2563EB)
-            Color(0xFFD8B4FE), Color(0xFFB55FE6) -> Color(0xFF7C3AED)
-            else -> accentColor
-        }
-    }
-    val titleColor = if (isDark) Color.White else Color(0xFF0F172A)
-    val subtitleColor = if (isDark) Color(0xFFC0C0D0) else Color(0xFF64748B)
-    val chevronColor = if (isDark) Color(0xFFC0C0D0) else Color(0xFF94A3B8)
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val shape = RoundedCornerShape(14.dp)
+    val cardBg = if (isDark) Color(0xFF2C2C2E).copy(alpha = 0.45f) else Color(0xFFF2F2F7)
+    val cardBorder = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA)
+    val titleColor = if (isDark) Color(0xFFF2F2F7) else Color(0xFF000000)
+    val subtitleColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)
+    val chevronColor = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC)
 
     Surface(
         onClick = onClick,
         shape = shape,
-        color = Color.Transparent,
+        color = cardBg,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 5.dp)
-            .border(1.dp, cardBorder, shape),
+            .padding(horizontal = 18.dp, vertical = 4.dp)
+            .border(0.5.dp, cardBorder, shape),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .background(cardBg)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(tileBg)
-                    .border(1.dp, tileBorder, RoundedCornerShape(16.dp)),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .background(accentColor),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painterResource(icon),
                     contentDescription = null,
-                    tint = effectiveIconTint,
-                    modifier = Modifier.size(24.dp),
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
                 )
             }
 
@@ -2156,14 +2201,14 @@ private fun GlassOptionCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
                     color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (subtitle.isNotBlank()) {
-                    Spacer(Modifier.height(3.dp))
+                    Spacer(Modifier.height(2.dp))
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
@@ -2174,17 +2219,14 @@ private fun GlassOptionCard(
                 }
             }
 
-            Spacer(Modifier.width(8.dp))
-
-            val direction = LocalLayoutDirection.current
             Icon(
                 painter = painterResource(Res.drawable.ic_chevron_right),
                 contentDescription = null,
                 tint = chevronColor,
                 modifier = Modifier
-                    .size(20.dp)
-                    .graphicsLayer {
-                        if (direction == LayoutDirection.Rtl) {
+                    .size(18.dp)
+                    .androidx.compose.ui.graphics.graphicsLayer {
+                        if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
                             rotationY = 180f
                         }
                     },
@@ -2263,8 +2305,8 @@ internal fun RawJsonSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
@@ -2286,7 +2328,7 @@ internal fun RawJsonSheet(
                 title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) Color.White else Color(0xFF0F172A),
+                color = if (isDark) Color.White else Color.Black,
             )
 
             androidx.compose.foundation.layout.FlowRow(
@@ -2328,7 +2370,7 @@ internal fun RawJsonSheet(
                     },
                 ),
                 style = MaterialTheme.typography.labelSmall,
-                color = if (usable && saveError == null) (if (isDark) Color(0xFF60E0B0) else Color(0xFF0D9488))
+                color = if (usable && saveError == null) Color(0xFF34C759)
                 else MaterialTheme.colorScheme.error,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -2344,21 +2386,29 @@ internal fun RawJsonSheet(
                     autoCorrectEnabled = false,
                 ),
                 isError = text.isNotBlank() && !usable,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF007AFF),
+                    unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                    focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                    unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                ),
                 modifier = Modifier.fillMaxWidth().weight(1f),
             )
 
             Button(
                 onClick = { saveError = onSave(text.trim()) },
                 enabled = usable,
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    containerColor = Color(0xFF007AFF),
                     contentColor = Color.White,
+                    disabledContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                    disabledContentColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF8E8E93),
                 ),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
             }
         }
     }

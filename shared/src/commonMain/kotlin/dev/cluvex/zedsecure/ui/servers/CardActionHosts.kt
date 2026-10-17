@@ -290,12 +290,13 @@ internal fun CardActionHosts(
         var name by remember(target.id) { mutableStateOf(target.name) }
         AlertDialog(
             onDismissRequest = onDismissRename,
-            shape = RoundedCornerShape(28.dp),
-            containerColor = if (isDark) Color(0xFF0F243A) else Color.White,
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
             title = {
                 Text(
                     stringResource(Res.string.servers_rename),
-                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
                 )
             },
             text = {
@@ -303,18 +304,36 @@ internal fun CardActionHosts(
                     value = name,
                     onValueChange = { name = it },
                     singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF007AFF),
+                        unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                        focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                        unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    repository.rename(target.id, name.trim().ifBlank { target.name })
-                    onDismissRename()
-                }) { Text(stringResource(Res.string.action_save)) }
+                TextButton(
+                    onClick = {
+                        repository.rename(target.id, name.trim().ifBlank { target.name })
+                        onDismissRename()
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFF007AFF),
+                    ),
+                ) {
+                    Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
+                }
             },
             dismissButton = {
-                TextButton(onClick = onDismissRename) {
+                TextButton(
+                    onClick = onDismissRename,
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFF007AFF),
+                    ),
+                ) {
                     Text(stringResource(Res.string.action_cancel))
                 }
             },
@@ -325,12 +344,13 @@ internal fun CardActionHosts(
         val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
         AlertDialog(
             onDismissRequest = onDismissMove,
-            shape = RoundedCornerShape(28.dp),
-            containerColor = if (isDark) Color(0xFF0F243A) else Color.White,
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
             title = {
                 Text(
                     stringResource(Res.string.groups_move),
-                    color = if (isDark) Color.White else Color(0xFF0F172A),
+                    color = if (isDark) Color.White else Color.Black,
+                    fontWeight = FontWeight.SemiBold,
                 )
             },
             text = {
@@ -343,6 +363,9 @@ internal fun CardActionHosts(
                                 repository.moveToGroup(target.id, id)
                                 onDismissMove()
                             },
+                            colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                                contentColor = if (target.subscriptionId == id) Color(0xFF007AFF) else (if (isDark) Color.White else Color.Black),
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
@@ -355,7 +378,14 @@ internal fun CardActionHosts(
                 }
             },
             confirmButton = {
-                TextButton(onClick = onDismissMove) { Text(stringResource(Res.string.action_cancel)) }
+                TextButton(
+                    onClick = onDismissMove,
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFF007AFF),
+                    ),
+                ) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
             },
         )
     }

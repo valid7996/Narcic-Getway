@@ -180,15 +180,15 @@ fun ManualConfigSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xF20B1C38) else Color(0xF8F8FAFD),
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
             Box(
                 Modifier
                     .padding(top = 12.dp, bottom = 4.dp)
                     .size(width = 38.dp, height = 4.dp)
                     .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.5f) else Color(0xFF64748B).copy(alpha = 0.4f)),
+                    .background(if (isDark) Color.White.copy(alpha = 0.3f) else Color(0xFF3C3C43).copy(alpha = 0.3f)),
             )
         },
     ) {
@@ -204,7 +204,7 @@ fun ManualConfigSheet(
                 stringResource(Res.string.servers_add_manual),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) Color.White else Color(0xFF0F172A),
+                color = if (isDark) Color.White else Color(0xFF000000),
                 modifier = Modifier.padding(vertical = 4.dp),
             )
 
@@ -304,7 +304,17 @@ fun ManualConfigSheet(
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
-                            Switch(checked = awgAdvanced, onCheckedChange = { awgAdvanced = it })
+                            Switch(
+                                checked = awgAdvanced,
+                                onCheckedChange = { awgAdvanced = it },
+                                colors = androidx.compose.material3.SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF34C759),
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EB),
+                                    uncheckedBorderColor = Color.Transparent,
+                                ),
+                            )
                         }
                         if (awgAdvanced) {
                             AwgConfig.KEYS.filterNot { it in AwgConfig.CLASSIC_KEYS }.forEach { key ->
@@ -504,14 +514,20 @@ fun ManualConfigSheet(
                     Protocol.HYSTERIA -> secretKey.isNotBlank()
                     else -> userId.isNotBlank()
                 },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) dev.cluvex.zedsecure.ui.theme.ZedGreen else Color(0xFF0D9488),
+                    containerColor = Color(0xFF007AFF),
                     contentColor = Color.White,
+                    disabledContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                    disabledContentColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF8E8E93),
                 ),
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
-                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(Res.string.action_save),
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
     }
@@ -519,21 +535,34 @@ fun ManualConfigSheet(
 
 @Composable
 private fun LabeledSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
+            color = if (isDark) Color.White else Color.Black,
             modifier = Modifier.weight(1f),
         )
-        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF34C759),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EB),
+                uncheckedBorderColor = Color.Transparent,
+            ),
+        )
     }
 }
 
 @Composable
 private fun AwgField(key: String, value: String, onValueChange: (String) -> Unit) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val name = AwgConfig.CONF_NAME[key] ?: key
     val desc = AwgConfig.DESCRIPTION[key]
     OutlinedTextField(
@@ -541,7 +570,15 @@ private fun AwgField(key: String, value: String, onValueChange: (String) -> Unit
         onValueChange = onValueChange,
         label = { Text(if (desc == null) name else "$name — $desc") },
         singleLine = true,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007AFF),
+            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+            focusedLabelColor = Color(0xFF007AFF),
+            unfocusedLabelColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+        ),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -553,12 +590,21 @@ private fun Field(
     labelRes: StringResource,
     number: Boolean = false,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(stringResource(labelRes)) },
         singleLine = true,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007AFF),
+            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+            focusedLabelColor = Color(0xFF007AFF),
+            unfocusedLabelColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
+        ),
         keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Number)
         else KeyboardOptions.Default,
         modifier = Modifier.fillMaxWidth(),
