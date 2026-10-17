@@ -11,8 +11,9 @@ object PowerPolicy {
     )
 
     fun cadence(screenOn: Boolean): Cadence = if (screenOn) {
-        Cadence(tickMs = 1_000L, notifySeconds = 1, autoPollSeconds = 3)
+        Cadence(tickMs = 1_000L, notifySeconds = 2, autoPollSeconds = 5)
     } else {
-        Cadence(tickMs = 10_000L, notifySeconds = 30, autoPollSeconds = 45)
+        // When screen is off, suppress notification/widget repaints (notifySeconds = -1) to let device sleep
+        Cadence(tickMs = 15_000L, notifySeconds = -1, autoPollSeconds = 90)
     }
 }

@@ -17,7 +17,18 @@ import dev.cluvex.zedsecure.domain.model.ConnectionState
 import dev.cluvex.zedsecure.ui.format.formatBytes
 
 class ZedWidgetProvider : AppWidgetProvider() {
+    override fun onEnabled(ctx: Context) {
+        super.onEnabled(ctx)
+        hasWidgets = true
+    }
+
+    override fun onDisabled(ctx: Context) {
+        super.onDisabled(ctx)
+        hasWidgets = false
+    }
+
     override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
+        hasWidgets = ids.isNotEmpty()
         val views = render(localized(ctx))
         ids.forEach { mgr.updateAppWidget(it, views) }
     }
@@ -40,15 +51,17 @@ class ZedWidgetProvider : AppWidgetProvider() {
         private const val REQ_TOGGLE = 100
         private const val REQ_OPEN = 101
 
-        private const val MIN_INTERVAL_MS = 900L
+        private const val MIN_INTERVAL_MS = 2_000L
 
         private const val COMPACT_W = 110f
         private const val STANDARD_W = 250f
         private const val ROW_H = 110f
 
         @Volatile private var lastPush = 0L
+        @Volatile private var hasWidgets: Boolean? = null
 
         fun refresh(ctx: Context, force: Boolean = false) {
+            if (hasWidgets == false && !force) return
             val now = SystemClock.elapsedRealtime()
             if (!force && now - lastPush < MIN_INTERVAL_MS) return
             lastPush = now
@@ -59,6 +72,7 @@ class ZedWidgetProvider : AppWidgetProvider() {
             runCatching {
                 val mgr = AppWidgetManager.getInstance(ctx) ?: return
                 val ids = mgr.getAppWidgetIds(ComponentName(ctx, ZedWidgetProvider::class.java))
+                hasWidgets = ids.isNotEmpty()
                 if (ids.isEmpty()) return
                 val views = render(localized(ctx))
                 ids.forEach { mgr.updateAppWidget(it, views) }

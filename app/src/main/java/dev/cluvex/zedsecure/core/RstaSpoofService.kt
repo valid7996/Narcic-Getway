@@ -31,6 +31,8 @@ class RstaSpoofService : Service() {
         const val LOG_FILE = "snispf.log"
         private const val LOG_MAX_LINES = 200
 
+        private const val LOG_FLUSH_INTERVAL_MS = 3_000L
+
         private var activeSessionId = 0L
 
         @Volatile
@@ -39,9 +41,19 @@ class RstaSpoofService : Service() {
     }
 
     private val logLock = Any()
+    private val logBuffer = ArrayDeque<String>(LOG_MAX_LINES)
+    @Volatile private var lastLogFlushMs = 0L
 
     override fun onCreate() {
         super.onCreate()
+        synchronized(logLock) {
+            runCatching {
+                val file = File(filesDir, LOG_FILE)
+                if (file.isFile) {
+                    file.readLines().takeLast(LOG_MAX_LINES).forEach { logBuffer.addLast(it) }
+                }
+            }
+        }
         RstaSpoofEngine.logSink = { line -> appendLog(line) }
     }
 
@@ -76,6 +88,7 @@ class RstaSpoofService : Service() {
                 }
                 isRunning = false
                 writeStatus("inactive")
+                synchronized(logLock) { flushLogLocked() }
                 stopSelf()
             }
         }
@@ -89,6 +102,7 @@ class RstaSpoofService : Service() {
         }
         isRunning = false
         writeStatus("inactive")
+        synchronized(logLock) { flushLogLocked() }
         super.onDestroy()
     }
 
@@ -100,11 +114,22 @@ class RstaSpoofService : Service() {
 
     private fun appendLog(line: String) {
         synchronized(logLock) {
-            runCatching {
-                val file = File(filesDir, LOG_FILE)
-                val lines = if (file.isFile) file.readLines().takeLast(LOG_MAX_LINES - 1) else emptyList()
-                file.writeText((lines + line.trim()).joinToString("\n") + "\n")
+            if (logBuffer.size >= LOG_MAX_LINES) {
+                logBuffer.removeFirst()
             }
+            logBuffer.addLast(line.trim())
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (now - lastLogFlushMs >= LOG_FLUSH_INTERVAL_MS) {
+                lastLogFlushMs = now
+                flushLogLocked()
+            }
+        }
+    }
+
+    private fun flushLogLocked() {
+        runCatching {
+            val file = File(filesDir, LOG_FILE)
+            file.writeText(logBuffer.joinToString("\n") + "\n")
         }
     }
 }

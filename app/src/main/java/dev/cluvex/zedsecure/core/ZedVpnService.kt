@@ -830,7 +830,7 @@ class ZedVpnService : VpnService() {
                 pending?.cancel()
 
                 pending = scope.launch {
-                    delay(NETWORK_SETTLE_MS)
+                    delay(if (isScreenAwake) NETWORK_SETTLE_MS else NETWORK_SETTLE_MS * 3)
                     LogBus.append("I/Auto-select: network changed, re-measuring every server")
                     AutoSelect.networkChanged()
                 }
@@ -1042,6 +1042,7 @@ class ZedVpnService : VpnService() {
         VpnManager.onConnected(remark)
         notify(connectedNotification(0, 0, 0, 0))
         ZedWidgetProvider.refresh(this, force = true)
+        registerScreenReceiver()
         startStatsLoop()
     }
 
@@ -1101,6 +1102,40 @@ class ZedVpnService : VpnService() {
     }
 
     private val powerManager by lazy { getSystemService(POWER_SERVICE) as android.os.PowerManager }
+    @Volatile private var isScreenAwake = true
+    private var screenReceiver: android.content.BroadcastReceiver? = null
+
+    private fun registerScreenReceiver() {
+        if (screenReceiver != null) return
+        isScreenAwake = runCatching { powerManager.isInteractive }.getOrDefault(true)
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
+                when (intent?.action) {
+                    android.content.Intent.ACTION_SCREEN_ON -> {
+                        isScreenAwake = true
+                        if (connected) {
+                            statsJob?.cancel()
+                            startStatsLoop()
+                        }
+                    }
+                    android.content.Intent.ACTION_SCREEN_OFF -> {
+                        isScreenAwake = false
+                    }
+                }
+            }
+        }
+        val filter = android.content.IntentFilter().apply {
+            addAction(android.content.Intent.ACTION_SCREEN_ON)
+            addAction(android.content.Intent.ACTION_SCREEN_OFF)
+        }
+        runCatching { registerReceiver(receiver, filter) }
+            .onSuccess { screenReceiver = receiver }
+    }
+
+    private fun unregisterScreenReceiver() {
+        screenReceiver?.let { runCatching { unregisterReceiver(it) } }
+        screenReceiver = null
+    }
 
     private fun startStatsLoop() {
         statsJob?.cancel()
@@ -1114,7 +1149,7 @@ class ZedVpnService : VpnService() {
             var totalDown = 0L
             var totalUp = 0L
 
-            var waitMs = dev.cluvex.zedsecure.domain.power.PowerPolicy.cadence(screenOn = true).tickMs
+            var waitMs = dev.cluvex.zedsecure.domain.power.PowerPolicy.cadence(screenOn = isScreenAwake).tickMs
             var lastPollSec = 0
             var lastNotifySec = 0
             while (isActive) {
@@ -1139,7 +1174,7 @@ class ZedVpnService : VpnService() {
                 if (!running) { onTunnelFailed(null); break }
                 elapsed = ((android.os.SystemClock.elapsedRealtime() - startedAt) / 1000).toInt()
                 ticks++
-                val awake = runCatching { powerManager.isInteractive }.getOrDefault(true)
+                val awake = isScreenAwake
                 val cadence = dev.cluvex.zedsecure.domain.power.PowerPolicy.cadence(screenOn = awake)
                 waitMs = cadence.tickMs
 
@@ -1178,7 +1213,7 @@ class ZedVpnService : VpnService() {
                 val seconds = (waited / 1000L).coerceAtLeast(1L)
                 VpnManager.onMetrics(elapsed, down / seconds, up / seconds, totalDown, totalUp)
 
-                val repaint = elapsed - lastNotifySec >= cadence.notifySeconds
+                val repaint = if (cadence.notifySeconds > 0) elapsed - lastNotifySec >= cadence.notifySeconds else false
                 if (repaint) {
                     lastNotifySec = elapsed
                     if (showSpeed) notify(connectedNotification(down / seconds, up / seconds, totalDown, totalUp))
@@ -1390,6 +1425,7 @@ class ZedVpnService : VpnService() {
         VpnManager.onDisconnected()
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         ZedWidgetProvider.refresh(this, force = true)
+        unregisterScreenReceiver()
 
         if (Looper.myLooper() != Looper.getMainLooper()) {
             stopEngines()
@@ -1466,6 +1502,7 @@ class ZedVpnService : VpnService() {
 
     override fun onDestroy() {
         XrayController.onCoreShutdown = null
+        unregisterScreenReceiver()
         scope.cancel()
         super.onDestroy()
     }

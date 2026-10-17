@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -97,7 +99,11 @@ fun MontaaHero(
     }
 
     val painter = painterResource(Res.drawable.montaa_sheet)
-    val currentFrame = if (isMoving) frameProgress.toInt().coerceIn(0, 29) else 0
+    val currentFrame by remember(isMoving) {
+        derivedStateOf {
+            if (isMoving) frameProgress.toInt().coerceIn(0, 29) else 0
+        }
+    }
 
     Box(
         modifier = modifier
@@ -117,20 +123,21 @@ fun MontaaHero(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        // Soft ambient back glow (monochrome, soft and gentle)
+        // Soft ambient back glow (monochrome, soft and gentle) rendered in draw phase
         Box(
             modifier = Modifier
                 .size(size * 0.78f)
-                .background(
-                    Brush.radialGradient(
-                        listOf(
-                            Color.White.copy(alpha = if (isMoving) 0.14f * auraPulse else 0.04f),
-                            Color(0xFF27272A).copy(alpha = if (isMoving) 0.08f else 0.02f),
-                            Color.Transparent,
+                .drawBehind {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isMoving) 0.14f * auraPulse else 0.04f),
+                                Color(0xFF27272A).copy(alpha = if (isMoving) 0.08f else 0.02f),
+                                Color.Transparent,
+                            ),
                         ),
-                    ),
-                    shape = CircleShape,
-                ),
+                    )
+                },
         )
 
         // Montaa 30-frame sprite renderer (6 columns x 5 rows at 512x512)

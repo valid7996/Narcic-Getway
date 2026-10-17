@@ -666,7 +666,7 @@ private fun DecorativeBackdrop(
         Modifier
             .size(320.dp)
             .offset(x = 190.dp, y = (-140).dp)
-            .rotate(rotation),
+            .graphicsLayer { rotationZ = rotation },
     ) {
         Box(
             Modifier
@@ -803,7 +803,6 @@ private fun Hero(
     } else {
         remember { mutableFloatStateOf(1f) }
     }
-    val breathe by breatheState
     val targetColors = when (state) {
         ConnectionState.Connected -> listOf(ZedViolet, ZedCyan, ZedLime)
         ConnectionState.Connecting, ConnectionState.Reconnecting -> listOf(Color(0xFF1E4A9E), ZedCyan, ZedLime)
@@ -816,17 +815,11 @@ private fun Hero(
     Box(
         Modifier
             .size(size)
-            .then(
-                if (budget == MotionBudget.Full) {
-                    Modifier.scale(if (state.isActive) breathe else 1f)
-                } else {
-                    Modifier.graphicsLayer {
-                        val s = if (state.isActive) breatheState.value else 1f
-                        scaleX = s
-                        scaleY = s
-                    }
-                },
-            )
+            .graphicsLayer {
+                val s = if (state.isActive) breatheState.value else 1f
+                scaleX = s
+                scaleY = s
+            }
 
             .pointerInput(onTap) {
                 detectTapGestures(
