@@ -1449,8 +1449,8 @@ private fun statsPolicy() = buildJsonObject {
         if (sec == "tls" || sec == "reality") {
             put("security", sec)
             val isSpoof = SniSpoofConfig.isSpoofTarget(s.address, s.port)
-            val serverName = s.tls.sni?.takeIf { it.isNotBlank() }
-                ?: hostHeader?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
+            val serverName = s.tls.sni?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
+                ?: hostHeader?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
                 ?: if (isSpoof) SniSpoofConfig.defaultFakeSni else null
 
             val fingerprint = s.tls.fingerprint?.lowercase()?.takeIf { fp ->

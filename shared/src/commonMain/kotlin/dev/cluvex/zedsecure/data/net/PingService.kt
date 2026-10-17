@@ -156,7 +156,7 @@ object PingService {
             }
         }
         // The engine stays up for the whole batch when some profile points at it, instead of starting and stopping around each probe.
-        val batchLease = if (targets.any { SniSpoofConfig.isRstaTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
+        val batchLease = if (targets.any { it.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
         try {
         (aetherJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
@@ -211,16 +211,15 @@ object PingService {
         val config = if (profile.isProxyChain) {
             chainConfig(profile) ?: return -1L
         } else {
-            if (shouldPrecheck(profile)) {
-                if (tcpConnectMillis(profile.address, profile.port, PRECHECK_TIMEOUT_MS) < 0) return -1L
-            }
-
-            runCatching { profile.toXrayConfigJson(forSpeedtest = true) }.getOrElse { return -1L }
+            runCatching { profile.toXrayConfigJson(forSpeedtest = true) }
+                .onFailure { LogBus.append("W/PingService build config failed for ${profile.name}: ${it.message}") }
+                .getOrElse { return -1L }
         }
         return probeWithTimeout(profile, config, url)
     }
 
     fun shouldPrecheck(profile: VpnProfile): Boolean {
+        if (profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)) return false
         if (profile.address.isBlank() || profile.address == "-") return false
         if (profile.port !in 1..65535) return false
         if (profile.isCustom) {
@@ -240,9 +239,8 @@ object PingService {
     private val UDP_OUTBOUND_PROTOCOLS = setOf("WIREGUARD", "AMNEZIAWG", "HYSTERIA")
 
     private suspend fun probeWithTimeout(profile: VpnProfile, config: String, url: String): Long {
-        // A profile that points at the spoof engine is only measurable while the engine is up (and without it the
-        // number would be the time to a closed port on this device, not a delay).
-        if (!SniSpoofConfig.isRstaTarget(profile.address, profile.port)) return probeCore(profile, config, url)
+        val isSpoof = profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
+        if (!isSpoof) return probeCore(profile, config, url)
         val release = rstaSpoofLease?.invoke()
         if (release == null) {
             LogBus.append("W/PingService the SNI spoof engine did not start; ${profile.name} cannot be measured")
@@ -258,11 +256,22 @@ object PingService {
     private suspend fun probeCore(profile: VpnProfile, config: String, url: String): Long =
         withContext(Dispatchers.IO) {
             val job = async(Dispatchers.IO) {
-                runCatching { CoreProbe.measureOutboundDelay(config, url) }
+                val ms = runCatching { CoreProbe.measureOutboundDelay(config, url) }
                     .getOrElse {
                         LogBus.append("W/PingService real delay failed for ${profile.name}: ${it.message}")
                         -1L
                     }
+                if (ms > 0) return@async ms
+                val fallbackUrl = if (url != NetworkInfoRepository.DELAY_TEST_URL2) {
+                    NetworkInfoRepository.DELAY_TEST_URL2
+                } else {
+                    "http://cp.cloudflare.com/generate_204"
+                }
+                runCatching { CoreProbe.measureOutboundDelay(config, fallbackUrl) }
+                    .onFailure {
+                        LogBus.append("W/PingService fallback delay failed for ${profile.name}: ${it.message}")
+                    }
+                    .getOrDefault(-1L)
             }
             withTimeoutOrNull(PROBE_TIMEOUT_MS) { job.await() } ?: run {
                 job.cancel()

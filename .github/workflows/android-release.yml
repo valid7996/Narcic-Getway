@@ -190,6 +190,31 @@ jobs:
               --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
           fi
           rm -f /tmp/universal.apk /tmp/universal-aligned.apk
+
+          echo "Building clean version without default subscriptions..."
+          bash gradlew --no-daemon :app:assembleRelease -Pzedsecure.includeDefaultSubs=false
+          python3 tools/universal-apk.py "app/build/outputs/apk/release/app-arm64-v8a-release.apk" /tmp/universal-clean.apk "app/build/outputs/apk/release/app-armeabi-v7a-release.apk"
+          "$BT/zipalign" -f -P 16 4 /tmp/universal-clean.apk /tmp/universal-clean-aligned.apk
+          if [ -f release.keystore ]; then
+            STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
+            KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
+            "$BT/apksigner" sign --ks release.keystore \
+              --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
+              --ks-pass env:STORE_PW --key-pass env:KEY_PW \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
+              --out "dist/NarcicGetway-$V-universal-clean.apk" /tmp/universal-clean-aligned.apk
+          else
+            KS_FILE="$(grep '^storeFile=' keystore.properties | cut -d= -f2-)"
+            STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
+            KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
+            "$BT/apksigner" sign --ks "$KS_FILE" --ks-type PKCS12 \
+              --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
+              --ks-pass env:STORE_PW --key-pass env:KEY_PW \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
+              --out "dist/NarcicGetway-$V-universal-clean.apk" /tmp/universal-clean-aligned.apk
+          fi
+          rm -f /tmp/universal-clean.apk /tmp/universal-clean-aligned.apk
+
           for apk in dist/NarcicGetway-*.apk; do
             "$BT/apksigner" verify "$apk"
             a=$("$BT/apksigner" verify --print-certs "$apk" | grep -m1 'SHA-256' | awk '{print $NF}')
@@ -198,6 +223,8 @@ jobs:
           done
           "$BT/aapt2" dump badging "dist/NarcicGetway-$V-universal.apk" | grep -q "native-code: 'arm64-v8a' 'armeabi-v7a'" \
             || { echo "::error::the universal APK does not carry both ARM ABIs"; exit 1; }
+          "$BT/aapt2" dump badging "dist/NarcicGetway-$V-universal-clean.apk" | grep -q "native-code: 'arm64-v8a' 'armeabi-v7a'" \
+            || { echo "::error::the universal clean APK does not carry both ARM ABIs"; exit 1; }
           ( cd dist && sha256sum NarcicGetway-*.apk > SHA256SUMS-android.txt )
           "$JAVA_HOME/bin/keytool" -printcert -jarfile "dist/NarcicGetway-$V-arm64-v8a.apk" | grep -E 'Owner|SHA-256' | head -2
           ls -l dist

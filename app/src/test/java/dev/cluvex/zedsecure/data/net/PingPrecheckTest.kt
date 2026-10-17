@@ -71,6 +71,12 @@ class PingPrecheckTest {
     }
 
     @Test
+    fun `sni spoof profiles are not pre-checked`() {
+        val spoofLink = linkProfile("vless://id@127.0.0.1:40443?encryption=none&security=tls#S")
+        assertFalse(PingService.shouldPrecheck(spoofLink))
+    }
+
+    @Test
     fun `parser sanity for the link fixtures`() {
         assertTrue(ConfigParser.parse("trojan://pw@t.example:8443#T").port == 8443)
     }

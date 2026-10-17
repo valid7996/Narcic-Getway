@@ -32,6 +32,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+
+        val includeDefaultSubs = (project.findProperty("zedsecure.includeDefaultSubs") as? String) != "false"
+        buildConfigField("boolean", "INCLUDE_DEFAULT_SUBSCRIPTIONS", includeDefaultSubs.toString())
     }
 
     signingConfigs {

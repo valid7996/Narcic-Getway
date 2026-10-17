@@ -41,7 +41,8 @@ jobs:
           V='${{ needs.version.outputs.name }}'
           ls -l dist
           for f in "NarcicGetway-$V-arm64-v8a.apk" "NarcicGetway-$V-armeabi-v7a.apk" \
-                   "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.apk"; do
+                   "NarcicGetway-$V-universal.apk" "NarcicGetway-$V-x86_64.apk" \
+                   "NarcicGetway-$V-universal-clean.apk"; do
             [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
           done
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
