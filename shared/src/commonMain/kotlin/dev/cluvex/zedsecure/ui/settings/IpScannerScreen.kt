@@ -52,10 +52,39 @@ import dev.cluvex.zedsecure.ui.components.PageHeader
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
 import kotlinx.coroutines.Job
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun IpScannerSheet(
+    onDismiss: () -> Unit,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 38.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.3f) else Color(0xFF3C3C43).copy(alpha = 0.3f)),
+            )
+        },
+    ) {
+        dev.cluvex.zedsecure.ui.components.ProvidePageBack(onBack = onDismiss) {
+            IpScannerScreen(
+                contentPadding = PaddingValues(bottom = 28.dp),
+            )
+        }
+    }
+}
+
 @Composable
 fun IpScannerScreen(
-    settings: AppSettings,
-    contentPadding: PaddingValues,
+    settings: AppSettings? = null,
+    contentPadding: PaddingValues = PaddingValues(),
     modifier: Modifier = Modifier,
 ) {
     val platform = LocalPlatform.current

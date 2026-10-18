@@ -55,6 +55,8 @@ import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.ui.servers.AddServerSheet
+import dev.cluvex.zedsecure.ui.settings.IpScannerSheet
+import dev.cluvex.zedsecure.ui.settings.TelegramProxySheet
 import dev.cluvex.zedsecure.ui.servers.AetherSheet
 import dev.cluvex.zedsecure.ui.servers.AutoSelectCard
 import dev.cluvex.zedsecure.ui.servers.AutoSelectSheet
@@ -138,6 +140,8 @@ internal fun HomeServerSection(
     var showOpenConnect by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
+    var showIpScanner by remember { mutableStateOf(false) }
+    var showTelegramProxy by remember { mutableStateOf(false) }
     var ovpnPrompt by remember { mutableStateOf<Pair<String, String>?>(null) }
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val torAddedToast = stringResource(Res.string.tor_added)
@@ -679,7 +683,17 @@ internal fun HomeServerSection(
             },
             onAether = { showAdd = false; showAether = true },
             onSubscription = { showAdd = false; showSubs = true },
+            onIpScanner = { showAdd = false; showIpScanner = true },
+            onTelegramProxy = { showAdd = false; showTelegramProxy = true },
         )
+    }
+
+    if (showIpScanner) {
+        IpScannerSheet(onDismiss = { showIpScanner = false })
+    }
+
+    if (showTelegramProxy) {
+        TelegramProxySheet(onDismiss = { showTelegramProxy = false })
     }
 
     if (showProxyChain) {

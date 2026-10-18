@@ -116,6 +116,8 @@ import dev.cluvex.zedsecure.ui.theme.ZedLime
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import dev.cluvex.zedsecure.ui.platform.mouseDragScroll
+import dev.cluvex.zedsecure.ui.settings.IpScannerSheet
+import dev.cluvex.zedsecure.ui.settings.TelegramProxySheet
 
 @Composable
 fun ServersScreen(
@@ -293,6 +295,8 @@ fun ServersScreen(
 
     var showAddSheet by remember { mutableStateOf(false) }
     var showManual by remember { mutableStateOf(false) }
+    var showIpScanner by remember { mutableStateOf(false) }
+    var showTelegramProxy by remember { mutableStateOf(false) }
 
     var fanOpen by remember { mutableStateOf(false) }
     var showSubs by remember { mutableStateOf(false) }
@@ -1260,7 +1264,23 @@ fun ServersScreen(
                 showAddSheet = false
                 showSubs = true
             },
+            onIpScanner = {
+                showAddSheet = false
+                showIpScanner = true
+            },
+            onTelegramProxy = {
+                showAddSheet = false
+                showTelegramProxy = true
+            },
         )
+    }
+
+    if (showIpScanner) {
+        IpScannerSheet(onDismiss = { showIpScanner = false })
+    }
+
+    if (showTelegramProxy) {
+        TelegramProxySheet(onDismiss = { showTelegramProxy = false })
     }
 
     if (showManual) {
@@ -1849,6 +1869,8 @@ internal fun AddServerSheet(
     onProxyChain: () -> Unit,
     onCrossChain: () -> Unit,
     onSubscription: () -> Unit,
+    onIpScanner: (() -> Unit)? = null,
+    onTelegramProxy: (() -> Unit)? = null,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
@@ -1879,6 +1901,34 @@ internal fun AddServerSheet(
                 color = if (isDark) Color.White else Color(0xFF0F172A),
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
             )
+
+            if (onIpScanner != null || onTelegramProxy != null) {
+                OptionGroup("ابزارهای شبکه و اسکنر (Network Tools)")
+                if (onIpScanner != null) {
+                    GlassOptionCard(
+                        title = "اسکنر آی‌پی تمیز (CDN Scanner)",
+                        subtitle = "یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور",
+                        icon = Res.drawable.ic_speedometer,
+                        accentColor = Color(0xFF007AFF),
+                        iconTint = Color(0xFF60A5FA),
+                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                        onClick = onIpScanner,
+                    )
+                }
+                if (onTelegramProxy != null) {
+                    GlassOptionCard(
+                        title = "پروکسی‌های تلگرام (Telegram Proxies)",
+                        subtitle = "دریافت، تست پینگ زنده و اتصال مستقیم به پروکسی‌های MTProto",
+                        icon = Res.drawable.ic_public,
+                        accentColor = Color(0xFF34C759),
+                        iconTint = Color(0xFF4ADE80),
+                        gradientStart = Color(0xFF0D3320).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF081C12).copy(alpha = 0.75f),
+                        onClick = onTelegramProxy,
+                    )
+                }
+            }
 
             OptionGroup(Res.string.add_group_import)
             GlassOptionCard(
@@ -2152,10 +2202,15 @@ internal fun AddServerSheet(
 
 @Composable
 private fun OptionGroup(labelRes: StringResource) {
+    OptionGroup(stringResource(labelRes))
+}
+
+@Composable
+private fun OptionGroup(label: String) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val textColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73)
     Text(
-        text = stringResource(labelRes).uppercase(),
+        text = label.uppercase(),
         style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.SemiBold,
         color = textColor,
