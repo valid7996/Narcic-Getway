@@ -30,7 +30,7 @@ object TorBridges {
             ?: parts.getOrElse(1) { "" }
     }
 
-    suspend fun ping(bridge: Bridge, rendezvous: String = "amp", timeoutMs: Int = 4000): Long {
+    suspend fun ping(bridge: Bridge, rendezvous: String = "cdn77", timeoutMs: Int = 4000): Long {
         val (host, port) = reachabilityTarget(bridge, rendezvous) ?: return -1L
         return tcpConnectMillis(host, port, timeoutMs)
     }
@@ -50,9 +50,9 @@ object TorBridges {
     }
 
     private fun snowflakeTarget(rendezvous: String): Pair<String, Int> = when (rendezvous) {
-        "cdn77" -> "www.cdn77.com" to 443
+        "amp" -> "cdn.ampproject.org" to 443
         "amazon" -> "sqs.us-east-1.amazonaws.com" to 443
-        else -> "cdn.ampproject.org" to 443
+        else -> "www.cdn77.com" to 443
     }
 
     private fun isPlaceholderHost(host: String): Boolean =

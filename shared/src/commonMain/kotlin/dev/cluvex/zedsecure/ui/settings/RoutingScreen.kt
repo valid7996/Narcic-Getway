@@ -491,7 +491,7 @@ private fun RuleRow(
             Column(
                 Modifier.weight(1f)
 
-                    .clickable(enabled = !rule.locked, onClick = onEdit)
+                    .clickable(onClick = onEdit)
                     .padding(vertical = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

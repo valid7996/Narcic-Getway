@@ -66,11 +66,13 @@ object ConfigParser {
     }
 
     private fun parseVmess(link: String): ServerConfig {
-        val payload = link.removePrefix("vmess://")
+        val fullPayload = link.removePrefix("vmess://")
 
-        if (payload.contains('@') || (payload.contains('?') && payload.contains('&'))) {
-            return parseVmessStd(payload)
+        if (fullPayload.contains('@') || (fullPayload.contains('?') && fullPayload.contains('&'))) {
+            return parseVmessStd(fullPayload)
         }
+        val fragmentRemark = if (fullPayload.contains('#')) decodeRemark(fullPayload.substringAfter('#')) else ""
+        val payload = fullPayload.substringBefore('#')
         val obj = runCatching {
             json.parseToJsonElement(decodeBase64Utf8(payload)) as JsonObject
         }.getOrElse { throw ConfigParseException("Invalid vmess payload") }
@@ -85,9 +87,11 @@ object ConfigParser {
         val isGrpc = net == "grpc"
         val isKcp = net == "kcp" || net == "mkcp"
 
+        val remark = fragmentRemark.ifBlank { str("ps").orEmpty() }
+
         return ServerConfig(
             protocol = Protocol.VMESS,
-            remark = str("ps").orEmpty(),
+            remark = remark,
             address = str("add").orEmpty(),
             port = str("port")?.toIntOrNull() ?: 443,
             userId = str("id").orEmpty(),

@@ -72,6 +72,17 @@ class ConfigParserTest {
 
     @Test
     @OptIn(ExperimentalEncodingApi::class)
+    fun parsesVmessWithHashRemark() {
+        val payload = """{"v":"2","ps":"Old Name","add":"1.2.3.4","port":"443","id":"aaaa-bbbb","aid":"0","net":"ws","type":"none","host":"cdn.example.com","path":"/ray","tls":"tls","scy":"auto"}"""
+        val link = "vmess://" + Base64.Default.encode(payload.encodeToByteArray()) + "#Custom%20Remark%20Node"
+        val c = ConfigParser.parse(link)
+        assertEquals(Protocol.VMESS, c.protocol)
+        assertEquals("Custom Remark Node", c.remark)
+        assertEquals("1.2.3.4", c.address)
+    }
+
+    @Test
+    @OptIn(ExperimentalEncodingApi::class)
     fun parsesShadowsocksSip002() {
         val creds = Base64.Default.encode("aes-256-gcm:s3cr3t".encodeToByteArray())
         val link = "ss://$creds@ss.example.com:8388#SS%20Node"

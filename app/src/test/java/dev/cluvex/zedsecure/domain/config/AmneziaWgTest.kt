@@ -131,7 +131,7 @@ class AmneziaWgTest {
         for ((k, v) in c.awg.entries) {
             val emitted = AwgConfig.CONF_NAME.getValue(k)
             assertTrue("$k must be emitted as $emitted", json.contains("\"$emitted\""))
-            assertTrue("$k must keep the value $v", json.contains("\"$v\""))
+            assertTrue("$k must keep the value $v", json.contains(v))
         }
 
         val unset = AwgConfig.KEYS - c.awg.entries.map { it.first }.toSet()

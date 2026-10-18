@@ -448,7 +448,7 @@ data class AppSettings(
     val torIsolateDestAddr: Boolean = false,
     val torIsolateDestPort: Boolean = false,
 
-    val torSnowflakeRendezvous: String = "amp",
+    val torSnowflakeRendezvous: String = "cdn77",
 
     val torSnowflakeStun: String = "",
 

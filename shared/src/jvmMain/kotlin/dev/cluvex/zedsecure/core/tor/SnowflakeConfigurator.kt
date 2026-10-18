@@ -37,11 +37,11 @@ object SnowflakeConfigurator {
         val stun = stunOverride.split(',', '\n').map { it.trim() }.filter { it.matches(STUN_RE) }
             .ifEmpty { DEFAULT_STUN }
         val head = when (rendezvous) {
-            RENDEZVOUS_CDN77 -> "url=https://1098762253.rsc.cdn77.org/ " +
-                "fronts=www.cdn77.com,www.phpmyadmin.net"
-            RENDEZVOUS_AMAZON -> "fronts=ajax.aspnetcdn.com sqsqueue=$SQS_QUEUE sqscreds=$SQS_CREDS"
-            else -> "url=https://snowflake-broker.torproject.net.global.prod.fastly.net/ " +
+            RENDEZVOUS_AMP -> "url=https://snowflake-broker.torproject.net.global.prod.fastly.net/ " +
                 "ampcache=https://cdn.ampproject.org/ fronts=www.google.com"
+            RENDEZVOUS_AMAZON -> "fronts=ajax.aspnetcdn.com sqsqueue=$SQS_QUEUE sqscreds=$SQS_CREDS"
+            else -> "url=https://1098762253.rsc.cdn77.org/ " +
+                "fronts=www.cdn77.com,www.phpmyadmin.net"
         }
         return ANCHORS.map { anchor ->
             var line = "$anchor $head utls-imitate=$UTLS covertdtls-config=$COVERT_DTLS"

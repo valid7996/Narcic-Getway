@@ -256,7 +256,7 @@ fun HomeScreen(
             // travel together, so nothing is pinned mid-screen or clipped by the status bar.
             StageColumn(
                 viewport = if (isAzkabanLike) maxHeight * 0.65f else maxHeight * 0.58f,
-                stageMin = if (isAzkabanLike) 280.dp else STAGE_MIN,
+                stageMin = if (isAzkabanLike) 280.dp else if (compact) 110.dp else STAGE_MIN,
                 modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
             ) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -527,8 +527,8 @@ fun HomeScreen(
                         autoTestAfterUpdate = autoTestAfterUpdate,
                         autoRemoveInvalidAfterTest = autoRemoveInvalidAfterTest,
                     )
-                    Spacer(Modifier.height(12.dp))
                 }
+                Spacer(Modifier.height(96.dp))
             }
         }
 

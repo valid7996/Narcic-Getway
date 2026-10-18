@@ -1340,7 +1340,20 @@ private fun statsPolicy() = buildJsonObject {
                     val awgEntries = s.awg.entries
                     if (awgEntries.isNotEmpty()) {
                         putJsonObject("awg") {
-                            awgEntries.forEach { (k, v) -> put(AwgConfig.CONF_NAME[k] ?: k, v) }
+                            awgEntries.forEach { (k, v) ->
+                                val key = AwgConfig.CONF_NAME[k] ?: k
+                                val num = if (v.startsWith("0x", ignoreCase = true)) {
+                                    v.drop(2).toLongOrNull(16)
+                                } else {
+                                    v.toLongOrNull()
+                                }
+                                val bool = v.toBooleanStrictOrNull()
+                                when {
+                                    num != null -> put(key, num)
+                                    bool != null -> put(key, bool)
+                                    else -> put(key, v)
+                                }
+                            }
                         }
                     }
                 }
