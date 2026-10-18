@@ -52,7 +52,7 @@ import dev.cluvex.zedsecure.ui.theme.resetPersonalization
 
 enum class SettingsPage {
     Root, Ui, Vpn, Core, Routing, PerApp, Mux, Fragment, Observatory, Advanced, Mode, Assets, SingBox,
-    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat,
+    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy,
 }
 
 @Composable
@@ -162,6 +162,16 @@ fun SettingsScreen(
                     modifier = modifier,
                 )
             }
+            SettingsPage.IpScanner -> IpScannerScreen(
+                settings = settings,
+                contentPadding = contentPadding,
+                modifier = modifier,
+            )
+            SettingsPage.TelegramProxy -> TelegramProxyScreen(
+                settings = settings,
+                contentPadding = contentPadding,
+                modifier = modifier,
+            )
         }
     }
     }
@@ -242,6 +252,22 @@ private fun RootPage(
                     iconTint = Color(0xFFAF52DE),
                 ) { onOpen(SettingsPage.Ai) }
             }
+        }
+
+        SettingsGroup("ابزارهای شبکه (Network Tools)") {
+            SettingsMenuRow(
+                "اسکنر آی‌پی تمیز (CDN Scanner)",
+                "یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور",
+                leadingIcon = Res.drawable.ic_speedometer,
+                iconTint = Color(0xFF007AFF),
+            ) { onOpen(SettingsPage.IpScanner) }
+            SettingsDivider()
+            SettingsMenuRow(
+                "پروکسی‌های تلگرام (Telegram Proxies)",
+                "دریافت، تست پینگ زنده و اتصال مستقیم به پروکسی‌های MTProto",
+                leadingIcon = Res.drawable.ic_public,
+                iconTint = Color(0xFF34C759),
+            ) { onOpen(SettingsPage.TelegramProxy) }
         }
 
         SettingsGroup {
