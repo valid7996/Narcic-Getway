@@ -1,6 +1,5 @@
 package dev.cluvex.zedsecure.data.tools
 
-import dev.cluvex.zedsecure.platform.tcpConnectMillis
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -90,14 +89,27 @@ object PingEngine {
             if (match != null) {
                 match.groupValues[1].toFloat().toInt()
             } else {
-                // Fallback to high-precision TCP connect millis if ping binary returned non-zero (or non-Android)
-                val tcp = tcpConnectMillis(ip, port, 1000)
-                if (tcp > 0) tcp.toInt() else 999
+                // Fallback to TCP connect latency if ping binary returned non-zero (or non-Android)
+                measureTcp(ip, port, 1000)
             }
         } catch (e: Exception) {
             // Fallback for desktop / environments without /system/bin/ping
-            val tcp = tcpConnectMillis(ip, port, 1000)
-            if (tcp > 0) tcp.toInt() else 999
+            measureTcp(ip, port, 1000)
+        }
+    }
+
+    fun test(ip: String, port: Int = 443): Int = ping(ip, port)
+
+    private fun measureTcp(ip: String, port: Int, timeout: Int): Int {
+        return try {
+            val socket = Socket()
+            val start = System.currentTimeMillis()
+            socket.connect(InetSocketAddress(ip, port), timeout)
+            val elapsed = (System.currentTimeMillis() - start).toInt()
+            try { socket.close() } catch (_: Exception) {}
+            if (elapsed > 0) elapsed else 1
+        } catch (_: Exception) {
+            999
         }
     }
 }
