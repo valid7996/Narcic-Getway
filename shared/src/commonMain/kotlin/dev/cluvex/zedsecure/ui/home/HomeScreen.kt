@@ -1678,6 +1678,7 @@ private fun MergedDashboardCard(
     isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
+) {
     val shape = RoundedCornerShape(16.dp)
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isAmoled = personalization.amoledBlack
