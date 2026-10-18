@@ -89,6 +89,19 @@ fun TelegramProxyScreen(
 
     val proxies = remember { mutableStateListOf<TelegramProxyItem>().apply { addAll(TelegramProxyRepository.getInitialProxies()) } }
     var isTestingAll by remember { mutableStateOf(false) }
+    var isFetchingOnline by remember { mutableStateOf(false) }
+
+    fun fetchOnline() {
+        if (isFetchingOnline) return
+        isFetchingOnline = true
+        scope.launch {
+            val updated = TelegramProxyRepository.fetchOnlineProxies(limit = 40)
+            proxies.clear()
+            proxies.addAll(updated)
+            isFetchingOnline = false
+            platform.toast("${updated.size} پروکسی زنده و بروز دریافت شد")
+        }
+    }
 
     fun testAll() {
         if (isTestingAll) return
@@ -192,63 +205,93 @@ fun TelegramProxyScreen(
 
             // Controls Bar
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Button(
-                        onClick = { testAll() },
-                        enabled = !isTestingAll,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = accentColor,
-                            contentColor = Color.White,
-                        ),
-                        modifier = Modifier.weight(1.3f).height(46.dp),
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        if (isTestingAll) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp,
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("در حال تست...", fontSize = 13.sp)
-                        } else {
-                            Text("تست همه پینگ‌ها", fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = { fetchOnline() },
+                            enabled = !isFetchingOnline,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF34C759),
+                                contentColor = Color.White,
+                            ),
+                            modifier = Modifier.weight(1.2f).height(46.dp),
+                        ) {
+                            if (isFetchingOnline) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("در حال دریافت...", fontSize = 12.sp)
+                            } else {
+                                Text("بروزرسانی آنلاین 🔄", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+
+                        Button(
+                            onClick = { testAll() },
+                            enabled = !isTestingAll,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = accentColor,
+                                contentColor = Color.White,
+                            ),
+                            modifier = Modifier.weight(1.2f).height(46.dp),
+                        ) {
+                            if (isTestingAll) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("در حال تست...", fontSize = 12.sp)
+                            } else {
+                                Text("تست همه پینگ‌ها", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                     }
 
-                    Button(
-                        onClick = {
-                            proxies.sortWith(compareBy<TelegramProxyItem> {
-                                if (it.pingMs > 0) 0 else 1
-                            }.thenBy { if (it.pingMs > 0) it.pingMs else Long.MAX_VALUE })
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
-                            contentColor = if (isDark) Color.White else Color.Black,
-                        ),
-                        modifier = Modifier.weight(1f).height(46.dp),
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text("مرتب‌سازی", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    }
+                        Button(
+                            onClick = {
+                                proxies.sortWith(compareBy<TelegramProxyItem> {
+                                    if (it.pingMs > 0) 0 else 1
+                                }.thenBy { if (it.pingMs > 0) it.pingMs else Long.MAX_VALUE })
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                                contentColor = if (isDark) Color.White else Color.Black,
+                            ),
+                            modifier = Modifier.weight(1f).height(42.dp),
+                        ) {
+                            Text("مرتب‌سازی پینگ", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        }
 
-                    Button(
-                        onClick = {
-                            val allLinks = proxies.joinToString("\n\n") { "${it.title}: ${it.webUri}" }
-                            platform.copyToClipboard(allLinks)
-                            platform.toast("همه پروکسی‌ها کپی شدند")
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
-                            contentColor = if (isDark) Color.White else Color.Black,
-                        ),
-                        modifier = Modifier.weight(0.9f).height(46.dp),
-                    ) {
-                        Text("کپی همه", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        Button(
+                            onClick = {
+                                val allLinks = proxies.joinToString("\n\n") { "${it.title}: ${it.webUri}" }
+                                platform.copyToClipboard(allLinks)
+                                platform.toast("همه پروکسی‌ها کپی شدند")
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                                contentColor = if (isDark) Color.White else Color.Black,
+                            ),
+                            modifier = Modifier.weight(1f).height(42.dp),
+                        ) {
+                            Text("کپی همه", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
             }

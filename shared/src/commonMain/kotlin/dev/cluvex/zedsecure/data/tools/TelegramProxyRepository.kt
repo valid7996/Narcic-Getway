@@ -1,6 +1,7 @@
 package dev.cluvex.zedsecure.data.tools
 
 import dev.cluvex.zedsecure.data.net.PingService
+import dev.cluvex.zedsecure.platform.httpGetText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -115,5 +116,74 @@ object TelegramProxyRepository {
     ): TelegramProxyItem = withContext(Dispatchers.Default) {
         val latency = PingService.tcpPing(proxy.server, proxy.port, timeoutMs)
         proxy.copy(pingMs = latency, isTesting = false)
+    }
+
+    fun parseProxyUri(uri: String): TelegramProxyItem? {
+        val clean = uri.trim()
+        if (!clean.contains("proxy?") && !clean.contains("tg://proxy") && !clean.contains("t.me/proxy")) return null
+        val query = clean.substringAfter('?', "")
+        if (query.isEmpty()) return null
+        val params = query.split('&').associate {
+            val parts = it.split('=', limit = 2)
+            if (parts.size == 2) parts[0].lowercase().trim() to parts[1].trim() else parts[0].lowercase().trim() to ""
+        }
+        val server = params["server"]?.trimEnd('.') ?: return null
+        val port = params["port"]?.toIntOrNull() ?: return null
+        val secret = params["secret"] ?: return null
+        if (server.isBlank() || secret.isBlank()) return null
+
+        val country = when {
+            server.endsWith(".ir", true) || server.contains(".ir.") -> "🇮🇷"
+            server.endsWith(".de", true) || server.contains("germany") -> "🇩🇪"
+            server.endsWith(".nl", true) || server.contains("amsterdam") -> "🇳🇱"
+            server.endsWith(".uk", true) || server.endsWith(".co.uk", true) -> "🇬🇧"
+            server.endsWith(".fr", true) || server.contains("paris") -> "🇫🇷"
+            server.endsWith(".us", true) -> "🇺🇸"
+            server.endsWith(".ru", true) -> "🇷🇺"
+            server.endsWith(".top", true) || server.endsWith(".click", true) || server.endsWith(".xyz", true) || server.endsWith(".cc", true) || server.endsWith(".vip", true) -> "⚡"
+            else -> "🌐"
+        }
+
+        val title = server.substringBefore('.').replaceFirstChar { if (it.isLowerCase()) it.uppercase() else it.toString() }
+
+        return TelegramProxyItem(
+            id = "${server}_${port}_${secret.take(8)}",
+            server = server,
+            port = port,
+            secret = secret,
+            country = country,
+            title = title.ifBlank { "MTProto" },
+        )
+    }
+
+    suspend fun fetchOnlineProxies(
+        limit: Int = 35,
+    ): List<TelegramProxyItem> = withContext(Dispatchers.Default) {
+        val sources = listOf(
+            "https://raw.githubusercontent.com/tgmtproxy/telegram-mtproto-proxy-list/master/proxies.txt",
+            "https://raw.githubusercontent.com/SoliSpirit/mtproto/master/all_proxies.txt",
+        )
+        val collected = mutableListOf<TelegramProxyItem>()
+
+        for (url in sources) {
+            runCatching {
+                val content = httpGetText(url, "Mozilla/5.0 Narcic-Getway")
+                val lines = content.lines()
+                for (line in lines) {
+                    val parsed = parseProxyUri(line)
+                    if (parsed != null && collected.none { it.server == parsed.server && it.port == parsed.port }) {
+                        collected.add(parsed)
+                        if (collected.size >= limit) break
+                    }
+                }
+            }
+            if (collected.size >= limit) break
+        }
+
+        if (collected.isNotEmpty()) {
+            (collected + DEFAULT_PROXIES).distinctBy { "${it.server}:${it.port}" }
+        } else {
+            DEFAULT_PROXIES
+        }
     }
 }
