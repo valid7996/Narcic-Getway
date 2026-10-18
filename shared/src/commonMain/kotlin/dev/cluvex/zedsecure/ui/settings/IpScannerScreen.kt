@@ -3,6 +3,7 @@ package dev.cluvex.zedsecure.ui.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -24,6 +26,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.cluvex.zedsecure.data.tools.CdnProvider
 import dev.cluvex.zedsecure.data.tools.IpScannerEngine
 import dev.cluvex.zedsecure.data.tools.IpStatus
 import dev.cluvex.zedsecure.data.tools.OperatorFilter
@@ -92,6 +96,7 @@ fun IpScannerScreen(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val scope = rememberCoroutineScope()
 
+    var selectedCdn by remember { mutableStateOf(CdnProvider.All) }
     var selectedOperator by remember { mutableStateOf(OperatorFilter.All) }
     var portText by remember { mutableStateOf("443") }
     var customCidr by remember { mutableStateOf("") }
@@ -121,15 +126,14 @@ fun IpScannerScreen(
         results.clear()
         scannedCount = 0
         val targetPort = portText.toIntOrNull() ?: 443
-        val candidateIps = IpScannerEngine.getCandidateIps(selectedOperator, customCidr)
-        totalCount = candidateIps.size
+        val candidateTargets = IpScannerEngine.getCandidateTargets(selectedCdn, selectedOperator, customCidr)
+        totalCount = candidateTargets.size
         isScanning = true
 
         activeJob = IpScannerEngine.startScan(
             scope = scope,
-            ips = candidateIps,
+            targets = candidateTargets,
             port = targetPort,
-            operator = selectedOperator,
             onProgress = { scanned, total, ip, newResult ->
                 scannedCount = scanned
                 currentIp = ip
@@ -150,6 +154,18 @@ fun IpScannerScreen(
     val cardBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
     val accentColor = Color(0xFF007AFF)
 
+    fun getCdnBadgeColor(cdn: String): Color {
+        return when (cdn.uppercase()) {
+            "AKAMAI" -> Color(0xFF0077CC)
+            "FASTLY" -> Color(0xFFFF2825)
+            "BUNNY" -> Color(0xFFFF9F0A)
+            "CF", "CLOUDFLARE" -> Color(0xFFF38020)
+            "GCORE" -> Color(0xFF8A2BE2)
+            "CLOUDFRONT" -> Color(0xFF00A896)
+            else -> accentColor
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -163,15 +179,72 @@ fun IpScannerScreen(
         ) {
             item {
                 PageHeader(
-                    title = "اسکنر آی‌پی تمیز (CDN Scanner)",
-                    subtitle = "Cloudflare & CDN Clean IP Finder",
+                    title = "اسکنر آی‌پی تمیز (Multi-CDN Scanner)",
+                    subtitle = "Akamai, Fastly, Bunny CDN, Cloudflare & GCore Finder",
                 )
+            }
+
+            // CDN Provider Selector (Horizontal Carousel / Segmented)
+            item {
+                Text(
+                    text = "ارائه‌دهنده CDN هدف (CDN Provider)",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+                )
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = cardBg,
+                    border = BorderStroke(0.5.dp, cardBorder),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        CdnProvider.entries.forEach { cdn ->
+                            val isSelected = cdn == selectedCdn
+                            val badgeColor = getCdnBadgeColor(cdn.shortName)
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) badgeColor else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+                                modifier = Modifier.clickable {
+                                    selectedCdn = cdn
+                                    if (isScanning) startScan()
+                                },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) Color.White else badgeColor),
+                                    )
+                                    Text(
+                                        text = cdn.titleEn,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else (if (isDark) Color(0xFFE5E5EA) else Color(0xFF1C1C1E)),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // Operator Segmented Control
             item {
                 Text(
-                    text = "انتخاب اپراتور یا شبکه هدف",
+                    text = "انتخاب اپراتور یا شبکه هدف (Operator)",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
@@ -235,15 +308,23 @@ fun IpScannerScreen(
                                 label = { Text("پورت اسکن") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = accentColor,
+                                    unfocusedBorderColor = cardBorder,
+                                ),
                                 modifier = Modifier.weight(1f),
                             )
                             OutlinedTextField(
                                 value = customCidr,
                                 onValueChange = { customCidr = it },
-                                label = { Text("رنج دلخواه (اختیاری)") },
-                                placeholder = { Text("مثال: 104.16.0.0/16") },
+                                label = { Text("رنج CIDR دلخواه (اختیاری)") },
+                                placeholder = { Text("مثال: 89.187.160.0/20") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = accentColor,
+                                    unfocusedBorderColor = cardBorder,
+                                ),
                                 modifier = Modifier.weight(2f),
                             )
                         }
@@ -345,8 +426,9 @@ fun IpScannerScreen(
                         modifier = Modifier.weight(1.3f).height(46.dp),
                     ) {
                         Text(
-                            text = if (isScanning) "توقف اسکن" else "شروع اسکن",
+                            text = if (isScanning) "توقف اسکن ⏹" else "شروع اسکن 🚀",
                             fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
                         )
                     }
 
@@ -390,103 +472,111 @@ fun IpScannerScreen(
                 }
             }
 
-            // Scanned IPs List
-            if (results.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = if (isScanning) "در حال جستجو و پینگ آی‌پی‌ها..." else "دکمه «شروع اسکن» را بزنید تا آی‌پی‌های تمیز لیست شوند",
-                            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
-            } else {
-                items(results, key = { it.ip }) { item ->
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = cardBg,
-                        border = BorderStroke(0.5.dp, cardBorder),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
+            // Results List
+            items(results, key = { "${it.ip}:${it.port}" }) { item ->
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = cardBg,
+                    border = BorderStroke(0.5.dp, cardBorder),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(14.dp)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                // CDN Provider Badge
+                                val cdnColor = getCdnBadgeColor(item.cdn)
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = cdnColor.copy(alpha = 0.15f),
+                                ) {
                                     Text(
-                                        text = item.ip,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
-                                    )
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = ":${item.port}",
-                                        fontSize = 12.sp,
-                                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                                        text = item.cdn,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = cdnColor,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     )
                                 }
+
                                 Text(
-                                    text = item.operator,
-                                    fontSize = 11.sp,
+                                    text = item.ip,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
+                                )
+
+                                Text(
+                                    text = ":${item.port}",
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
                                     color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                                 )
                             }
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                val pillBg = when (item.status) {
-                                    IpStatus.Clean -> Color(0xFF34C759).copy(alpha = 0.15f)
-                                    IpStatus.Valid -> Color(0xFFFF9500).copy(alpha = 0.15f)
-                                    IpStatus.Failed -> Color(0xFFFF3B30).copy(alpha = 0.15f)
-                                }
-                                val pillColor = when (item.status) {
-                                    IpStatus.Clean -> Color(0xFF34C759)
-                                    IpStatus.Valid -> Color(0xFFFF9500)
-                                    IpStatus.Failed -> Color(0xFFFF3B30)
-                                }
+                            // Ping badge
+                            val (bg, fg) = when (item.status) {
+                                IpStatus.Clean -> Pair(Color(0xFF34C759).copy(alpha = 0.15f), Color(0xFF34C759))
+                                IpStatus.Valid -> Pair(Color(0xFFFF9500).copy(alpha = 0.15f), Color(0xFFFF9500))
+                                IpStatus.Failed -> Pair(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30))
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = bg,
+                            ) {
+                                Text(
+                                    text = "${item.pingMs} ms",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = fg,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
 
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = pillBg,
-                                ) {
-                                    Text(
-                                        text = if (item.pingMs > 0) "${item.pingMs} ms" else "ناموفق",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = pillColor,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    )
-                                }
+                        Spacer(Modifier.height(10.dp))
 
-                                Spacer(Modifier.width(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA))
-                                        .clickable {
-                                            platform.copyToClipboard(item.ip)
-                                            platform.toast("آی‌پی ${item.ip} کپی شد")
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                                ) {
-                                    Text(
-                                        text = "کپی",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isDark) Color.White else Color.Black,
-                                    )
-                                }
+                        // Action Buttons
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Button(
+                                onClick = {
+                                    platform.copyToClipboard(item.ip)
+                                    platform.toast("${item.ip} کپی شد")
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                                    contentColor = if (isDark) Color.White else Color.Black,
+                                ),
+                                modifier = Modifier.weight(1f).height(36.dp),
+                            ) {
+                                Text("کپی آی‌پی", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val full = "${item.ip}:${item.port}"
+                                    platform.copyToClipboard(full)
+                                    platform.toast("$full کپی شد")
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
+                                    contentColor = if (isDark) Color.White else Color.Black,
+                                ),
+                                modifier = Modifier.weight(1f).height(36.dp),
+                            ) {
+                                Text("کپی IP:Port", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }

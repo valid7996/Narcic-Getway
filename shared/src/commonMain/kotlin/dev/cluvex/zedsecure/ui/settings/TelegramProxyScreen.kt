@@ -3,6 +3,7 @@ package dev.cluvex.zedsecure.ui.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +18,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,6 +94,7 @@ fun TelegramProxyScreen(
     val scope = rememberCoroutineScope()
 
     val proxies = remember { mutableStateListOf<TelegramProxyItem>().apply { addAll(TelegramProxyRepository.getInitialProxies()) } }
+    var channelInput by remember { mutableStateOf("ProxyMTProto") }
     var isTestingAll by remember { mutableStateOf(false) }
     var isFetchingOnline by remember { mutableStateOf(false) }
     var activeFetchJob by remember { mutableStateOf<Job?>(null) }
@@ -102,15 +107,17 @@ fun TelegramProxyScreen(
         }
     }
 
-    fun fetchOnline() {
+    fun fetchFromChannel(targetChannel: String = channelInput) {
         if (isFetchingOnline) return
         isFetchingOnline = true
+        val channelToFetch = targetChannel.ifBlank { "ProxyMTProto" }
         activeFetchJob = scope.launch {
-            val updated = TelegramProxyRepository.fetchOnlineProxies(limit = 40)
+            val updated = TelegramProxyRepository.fetchOnlineProxies(channel = channelToFetch, limit = 45)
             proxies.clear()
             proxies.addAll(updated)
             isFetchingOnline = false
-            platform.toast("${updated.size} پروکسی زنده و بروز دریافت شد")
+            val cleanChannelName = channelToFetch.trim().removePrefix("@").removePrefix("https://t.me/")
+            platform.toast("${updated.size} پروکسی زنده از @$cleanChannelName دریافت شد")
         }
     }
 
@@ -138,6 +145,13 @@ fun TelegramProxyScreen(
     val cardBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
     val accentColor = Color(0xFF007AFF)
 
+    val quickChannels = listOf(
+        "ProxyMTProto",
+        "MTProxy",
+        "TelMTProto",
+        "ProxyMTProto_Tel",
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -152,14 +166,130 @@ fun TelegramProxyScreen(
             item {
                 PageHeader(
                     title = "پروکسی‌های تلگرام (Telegram Proxies)",
-                    subtitle = "MTProto Fast Channels & Direct Connect",
+                    subtitle = "MTProto Direct & Fast Channel Fetcher",
                 )
+            }
+
+            // Telegram Channel Source Card
+            item {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = cardBg,
+                    border = BorderStroke(0.5.dp, cardBorder),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "کانال تلگرام مبدأ پروکسی‌ها",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF1C1C1E),
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = accentColor.copy(alpha = 0.15f),
+                            ) {
+                                Text(
+                                    text = "کانال عمومی (Public)",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = accentColor,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OutlinedTextField(
+                                value = channelInput,
+                                onValueChange = { channelInput = it },
+                                label = { Text("آیدی کانال تلگرام") },
+                                placeholder = { Text("مثال: ProxyMTProto یا @ProxyMTProto") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = accentColor,
+                                    unfocusedBorderColor = cardBorder,
+                                ),
+                                modifier = Modifier.weight(1f),
+                            )
+
+                            Button(
+                                onClick = { fetchFromChannel(channelInput) },
+                                enabled = !isFetchingOnline,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF34C759),
+                                    contentColor = Color.White,
+                                ),
+                                modifier = Modifier.height(54.dp),
+                            ) {
+                                if (isFetchingOnline) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp,
+                                    )
+                                } else {
+                                    Text("دریافت 📥", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // Quick channel chips
+                        Text(
+                            text = "کانال‌های پیشنهادی:",
+                            fontSize = 12.sp,
+                            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            quickChannels.forEach { ch ->
+                                val isSelected = channelInput.equals(ch, ignoreCase = true)
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (isSelected) accentColor else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)),
+                                    modifier = Modifier.clickable {
+                                        channelInput = ch
+                                        fetchFromChannel(ch)
+                                    },
+                                ) {
+                                    Text(
+                                        text = "@$ch",
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else (if (isDark) Color(0xFFE5E5EA) else Color(0xFF1C1C1E)),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // Summary Info Card
             item {
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = cardBg,
                     border = BorderStroke(0.5.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth(),
@@ -205,7 +335,7 @@ fun TelegramProxyScreen(
 
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "با کلیک روی «اتصال در تلگرام»، اپلیکیشن تلگرام باز شده و پروکسی به‌طور خودکار فعال می‌گردد.",
+                            text = "پروکسی‌ها مستقیماً با پروتکل MTProto و استتار TLS باز می‌شوند. با زدن «اتصال در تلگرام»، اپلیکیشن تلگرام باز شده و پروکسی بلافاصله اضافه می‌شود.",
                             fontSize = 12.sp,
                             color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                             lineHeight = 18.sp,
@@ -221,29 +351,6 @@ fun TelegramProxyScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Button(
-                            onClick = { fetchOnline() },
-                            enabled = !isFetchingOnline,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF34C759),
-                                contentColor = Color.White,
-                            ),
-                            modifier = Modifier.weight(1.2f).height(46.dp),
-                        ) {
-                            if (isFetchingOnline) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp,
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text("در حال دریافت...", fontSize = 12.sp)
-                            } else {
-                                Text("بروزرسانی آنلاین 🔄", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            }
-                        }
-
                         Button(
                             onClick = { testAll() },
                             enabled = !isTestingAll,
@@ -263,15 +370,10 @@ fun TelegramProxyScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Text("در حال تست...", fontSize = 12.sp)
                             } else {
-                                Text("تست همه پینگ‌ها", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("تست همه پینگ‌ها ⚡", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             }
                         }
-                    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
                         Button(
                             onClick = {
                                 proxies.sortWith(compareBy<TelegramProxyItem> {
@@ -283,7 +385,7 @@ fun TelegramProxyScreen(
                                 containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
                                 contentColor = if (isDark) Color.White else Color.Black,
                             ),
-                            modifier = Modifier.weight(1f).height(42.dp),
+                            modifier = Modifier.weight(1f).height(46.dp),
                         ) {
                             Text("مرتب‌سازی پینگ", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
@@ -299,7 +401,7 @@ fun TelegramProxyScreen(
                                 containerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
                                 contentColor = if (isDark) Color.White else Color.Black,
                             ),
-                            modifier = Modifier.weight(1f).height(42.dp),
+                            modifier = Modifier.weight(0.9f).height(46.dp),
                         ) {
                             Text("کپی همه", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
@@ -325,9 +427,9 @@ fun TelegramProxyScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = proxy.country,
-                                    fontSize = 18.sp,
+                                    fontSize = 20.sp,
                                 )
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(10.dp))
                                 Column {
                                     Text(
                                         text = proxy.title.ifEmpty { "MTProto Proxy" },
@@ -335,6 +437,7 @@ fun TelegramProxyScreen(
                                         fontSize = 14.sp,
                                         color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
                                     )
+                                    Spacer(Modifier.height(2.dp))
                                     Text(
                                         text = "${proxy.server}:${proxy.port}",
                                         fontSize = 12.sp,
@@ -356,7 +459,7 @@ fun TelegramProxyScreen(
                                     proxy.pingMs in 1..299 -> Triple(Color(0xFF34C759).copy(alpha = 0.15f), Color(0xFF34C759), "${proxy.pingMs} ms")
                                     proxy.pingMs in 300..799 -> Triple(Color(0xFFFF9500).copy(alpha = 0.15f), Color(0xFFFF9500), "${proxy.pingMs} ms")
                                     proxy.pingMs >= 800 -> Triple(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30), "${proxy.pingMs} ms")
-                                    else -> Triple(if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA), if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73), "تست نشده")
+                                    else -> Triple(if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA), if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73), "تست پینگ")
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
@@ -390,7 +493,7 @@ fun TelegramProxyScreen(
                                 ),
                                 modifier = Modifier.weight(1.5f).height(38.dp),
                             ) {
-                                Text("اتصال در تلگرام", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("اتصال در تلگرام 🚀", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
 
                             Button(
