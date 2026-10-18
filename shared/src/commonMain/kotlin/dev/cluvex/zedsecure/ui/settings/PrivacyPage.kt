@@ -34,7 +34,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.LayoutDirection
 
 private const val POLICY_URL = "https://cluvexstudio.github.io/ZedSecure-PrivacyPolicy/"
 
@@ -180,8 +182,8 @@ fun PrivacyPage(
                     tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
                     modifier = Modifier
                         .size(18.dp)
-                        .androidx.compose.ui.graphics.graphicsLayer {
-                            if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                        .graphicsLayer {
+                            if (direction == LayoutDirection.Rtl) {
                                 rotationY = 180f
                             }
                         },

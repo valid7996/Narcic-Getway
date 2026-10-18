@@ -101,6 +101,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -1215,8 +1216,8 @@ private fun ActiveConfigCard(
                 tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
                 modifier = Modifier
                     .size(18.dp)
-                    .androidx.compose.ui.graphics.graphicsLayer {
-                        if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                    .graphicsLayer {
+                        if (direction == LayoutDirection.Rtl) {
                             rotationY = 180f
                         }
                     },

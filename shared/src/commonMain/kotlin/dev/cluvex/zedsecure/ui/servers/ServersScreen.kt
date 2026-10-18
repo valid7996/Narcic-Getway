@@ -2244,8 +2244,8 @@ private fun GlassOptionCard(
                 tint = chevronColor,
                 modifier = Modifier
                     .size(18.dp)
-                    .androidx.compose.ui.graphics.graphicsLayer {
-                        if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                    .graphicsLayer {
+                        if (direction == LayoutDirection.Rtl) {
                             rotationY = 180f
                         }
                     },

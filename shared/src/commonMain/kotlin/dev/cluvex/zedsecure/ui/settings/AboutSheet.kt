@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -64,7 +67,7 @@ fun AboutSheet(onDismiss: () -> Unit) {
                 color = if (isDark) Color(0xFF38383A) else Color(0xFFD1D1D6),
                 shape = RoundedCornerShape(2.5.dp),
             ) {
-                Box(Modifier.height(5.dp).width(36.dp))
+                Box(Modifier.size(width = 36.dp, height = 5.dp))
             }
         },
     ) {
@@ -230,8 +233,8 @@ private fun LinkRow(iconRes: DrawableResource, title: String, subtitle: String, 
                 tint = if (isDark) Color(0xFF545458) else Color(0xFFC7C7CC),
                 modifier = Modifier
                     .size(18.dp)
-                    .androidx.compose.ui.graphics.graphicsLayer {
-                        if (direction == androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                    .graphicsLayer {
+                        if (direction == LayoutDirection.Rtl) {
                             rotationY = 180f
                         }
                     },

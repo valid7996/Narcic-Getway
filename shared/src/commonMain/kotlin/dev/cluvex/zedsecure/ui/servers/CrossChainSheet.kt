@@ -3,6 +3,7 @@
 package dev.cluvex.zedsecure.ui.servers
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -87,7 +89,7 @@ fun CrossChainSheet(
                 color = if (isDark) Color(0xFF38383A) else Color(0xFFD1D1D6),
                 shape = RoundedCornerShape(2.5.dp),
             ) {
-                androidx.compose.foundation.layout.Box(Modifier.height(5.dp).androidx.compose.foundation.layout.width(36.dp))
+                Box(Modifier.size(width = 36.dp, height = 5.dp))
             }
         },
     ) {

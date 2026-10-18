@@ -3,11 +3,13 @@
 package dev.cluvex.zedsecure.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -95,7 +97,7 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                 color = if (isDark) Color(0xFF38383A) else Color(0xFFD1D1D6),
                 shape = RoundedCornerShape(2.5.dp),
             ) {
-                androidx.compose.foundation.layout.Box(Modifier.height(5.dp).androidx.compose.foundation.layout.width(36.dp))
+                Box(Modifier.size(width = 36.dp, height = 5.dp))
             }
         },
     ) {

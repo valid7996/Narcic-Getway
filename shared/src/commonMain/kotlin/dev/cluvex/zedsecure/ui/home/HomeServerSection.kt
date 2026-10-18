@@ -996,6 +996,7 @@ private fun GroupTab(
     selected: Boolean,
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
+) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
