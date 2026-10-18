@@ -288,13 +288,15 @@ object TelegramProxyRepository {
                             readTimeoutMs = 5_000,
                         ).body
                     }.getOrNull()
-                } else null ?: httpGetText(
+                } else null
+
+                val text = content ?: httpGetText(
                     url = url,
                     userAgent = "Mozilla/5.0 Narcic-Getway",
                     connectTimeoutMs = 3_500,
                     readTimeoutMs = 5_000,
                 )
-                val lines = content.lines()
+                val lines = text.lines()
                 for (line in lines) {
                     val parsed = parseProxyUri(line)
                     if (parsed != null && collected.none { it.server == parsed.server && it.port == parsed.port }) {
