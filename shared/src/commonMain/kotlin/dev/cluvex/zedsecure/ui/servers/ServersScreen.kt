@@ -297,6 +297,7 @@ fun ServersScreen(
     var showManual by remember { mutableStateOf(false) }
     var showIpScanner by remember { mutableStateOf(false) }
     var showTelegramProxy by remember { mutableStateOf(false) }
+    var showPatt by remember { mutableStateOf(false) }
 
     var fanOpen by remember { mutableStateOf(false) }
     var showSubs by remember { mutableStateOf(false) }
@@ -1272,6 +1273,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showTelegramProxy = true
             },
+            onPatt = {
+                showAddSheet = false
+                showPatt = true
+            },
         )
     }
 
@@ -1281,6 +1286,18 @@ fun ServersScreen(
 
     if (showTelegramProxy) {
         TelegramProxySheet(onDismiss = { showTelegramProxy = false })
+    }
+
+    if (showPatt) {
+        dev.cluvex.zedsecure.ui.settings.patt.PattSheet(
+            onDismiss = { showPatt = false },
+            onImportConfig = { json ->
+                showPatt = false
+                repository.importText(json)
+                    .onSuccess { toastRes(Res.string.servers_imported, it) }
+                    .onFailure { toastImportFailure(it) }
+            },
+        )
     }
 
     if (showManual) {
@@ -1871,6 +1888,7 @@ internal fun AddServerSheet(
     onSubscription: () -> Unit,
     onIpScanner: (() -> Unit)? = null,
     onTelegramProxy: (() -> Unit)? = null,
+    onPatt: (() -> Unit)? = null,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
@@ -2193,6 +2211,18 @@ internal fun AddServerSheet(
                         gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
                         gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
                         onClick = onIpScanner,
+                    )
+                }
+                if (onPatt != null) {
+                    GlassOptionCard(
+                        title = "ابزارهای Patt (Patt's Tools)",
+                        subtitle = "تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH به کانفیگ‌ها",
+                        icon = Res.drawable.ic_tune,
+                        accentColor = Color(0xFFFF9500),
+                        iconTint = Color(0xFFFBBF24),
+                        gradientStart = Color(0xFF332005).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF1E1303).copy(alpha = 0.75f),
+                        onClick = onPatt,
                     )
                 }
             }

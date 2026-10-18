@@ -142,6 +142,7 @@ internal fun HomeServerSection(
     var showSsh by remember { mutableStateOf(false) }
     var showIpScanner by remember { mutableStateOf(false) }
     var showTelegramProxy by remember { mutableStateOf(false) }
+    var showPatt by remember { mutableStateOf(false) }
     var ovpnPrompt by remember { mutableStateOf<Pair<String, String>?>(null) }
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val torAddedToast = stringResource(Res.string.tor_added)
@@ -685,6 +686,7 @@ internal fun HomeServerSection(
             onSubscription = { showAdd = false; showSubs = true },
             onIpScanner = { showAdd = false; showIpScanner = true },
             onTelegramProxy = { showAdd = false; showTelegramProxy = true },
+            onPatt = { showAdd = false; showPatt = true },
         )
     }
 
@@ -694,6 +696,18 @@ internal fun HomeServerSection(
 
     if (showTelegramProxy) {
         TelegramProxySheet(onDismiss = { showTelegramProxy = false })
+    }
+
+    if (showPatt) {
+        dev.cluvex.zedsecure.ui.settings.patt.PattSheet(
+            onDismiss = { showPatt = false },
+            onImportConfig = { json ->
+                showPatt = false
+                repository.importText(json)
+                    .onSuccess { count -> platform.toast(importedTemplate.format(count)) }
+                    .onFailure { platform.toast(it.message ?: importFailed) }
+            },
+        )
     }
 
     if (showProxyChain) {

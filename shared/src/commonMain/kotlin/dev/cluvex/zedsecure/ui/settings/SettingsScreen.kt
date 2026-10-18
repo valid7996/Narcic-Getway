@@ -52,7 +52,7 @@ import dev.cluvex.zedsecure.ui.theme.resetPersonalization
 
 enum class SettingsPage {
     Root, Ui, Vpn, Core, Routing, PerApp, Mux, Fragment, Observatory, Advanced, Mode, Assets, SingBox,
-    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy,
+    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy, Patt,
 }
 
 @Composable
@@ -172,6 +172,10 @@ fun SettingsScreen(
                 contentPadding = contentPadding,
                 modifier = modifier,
             )
+            SettingsPage.Patt -> dev.cluvex.zedsecure.ui.settings.patt.PattScreen(
+                contentPadding = contentPadding,
+                modifier = modifier,
+            )
         }
     }
     }
@@ -268,6 +272,13 @@ private fun RootPage(
                 leadingIcon = Res.drawable.ic_public,
                 iconTint = Color(0xFF34C759),
             ) { onOpen(SettingsPage.TelegramProxy) }
+            SettingsDivider()
+            SettingsMenuRow(
+                "ابزارهای Patt (Patt's Tools)",
+                "تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH به کانفیگ‌ها",
+                leadingIcon = Res.drawable.ic_tune,
+                iconTint = Color(0xFFFF9500),
+            ) { onOpen(SettingsPage.Patt) }
         }
 
         SettingsGroup {
