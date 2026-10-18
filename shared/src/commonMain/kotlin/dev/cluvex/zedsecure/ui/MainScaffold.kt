@@ -226,6 +226,7 @@ fun MainScaffold(
                     contentPadding = innerPadding,
                     onUpdate = onUpdateSettings,
                     onLanguage = onLanguage,
+                    configRepository = configRepository,
 
                     serverTargets = profiles
                         .filter { it.source is dev.cluvex.zedsecure.domain.config.ProfileSource.Link }

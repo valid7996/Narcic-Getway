@@ -6,7 +6,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -36,14 +38,18 @@ www.speedtest.net
 val kDefaultSniPorts = listOf(443)
 val kAllSniPorts = listOf(443, 2053, 2083, 2087, 2096, 8443)
 
-private const val PUBLIC_IP_API_URL = "http://chabokan.net/ip/"
-private const val FALLBACK_IP_API_URL = "https://api.ipify.org"
+private val PUBLIC_IP_API_URLS = listOf(
+    "http://chabokan.net/ip/",
+    "https://api.ipify.org",
+    "https://icanhazip.com",
+    "https://cloudflare.com/cdn-cgi/trace",
+)
 
 data class SniSpoofCheckConfig(
     val ports: List<Int> = kDefaultSniPorts,
-    val timeout: Int = 5,
-    val retries: Int = 3,
-    val concurrency: Int = 20,
+    val timeout: Int = 3,
+    val retries: Int = 2,
+    val concurrency: Int = 15,
     val enableIpCheck: Boolean = true,
     val manualIp: String? = null,
 )
@@ -65,6 +71,7 @@ data class SniPortResult(
 data class SniIpCheckResult(
     val matched: Boolean,
     val detectedIp: String? = null,
+    val tlsSuccess: Boolean = false,
 )
 
 data class SniIpResult(
@@ -154,31 +161,25 @@ class SniSpoofCheckService(
         }
 
         suspend fun getUserPublicIp(): String? = withContext(Dispatchers.IO) {
-            for (attempt in 0 until 3) {
+            for (url in PUBLIC_IP_API_URLS) {
                 try {
                     val body = httpGetText(
-                        url = PUBLIC_IP_API_URL,
+                        url = url,
                         userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                        connectTimeoutMs = 7_000,
-                        readTimeoutMs = 10_000,
-                    )
-                    val match = Regex(""""ip"\s*:\s*"([^"]+)"""").find(body)
-                    if (match != null) return@withContext match.groupValues[1]
+                        connectTimeoutMs = 3_500,
+                        readTimeoutMs = 3_500,
+                    ).trim()
 
-                    val plainIp = Regex("""\b(\d{1,3}\.){3}\d{1,3}\b""").find(body)
-                    if (plainIp != null) return@withContext plainIp.value
+                    val match = Regex("""(?m)^(?:ip=)?\s*(\d{1,3}(?:\.\d{1,3}){3})\b""").find(body)
+                        ?: Regex(""""ip"\s*:\s*"([^"]+)"""").find(body)
+                    if (match != null) {
+                        val ip = match.groupValues[1]
+                        if (IPV4_REGEX.matches(ip)) return@withContext ip
+                    }
+                    if (IPV4_REGEX.matches(body)) return@withContext body
                 } catch (_: Exception) {
-                    try {
-                        val fallback = httpGetText(
-                            url = FALLBACK_IP_API_URL,
-                            userAgent = "curl/7.68.0",
-                            connectTimeoutMs = 7_000,
-                            readTimeoutMs = 10_000,
-                        ).trim()
-                        if (IPV4_REGEX.matches(fallback)) return@withContext fallback
-                    } catch (_: Exception) {}
+                    // Try next fallback endpoint
                 }
-                delay(800)
             }
             null
         }
@@ -201,7 +202,7 @@ class SniSpoofCheckService(
 
             if (ok.isNotEmpty()) {
                 sb.appendLine()
-                sb.appendLine("=== OK (at least one open port) [${ok.size}] ===")
+                sb.appendLine("=== OK (Clean / Open ports) [${ok.size}] ===")
                 ok.forEach { sb.appendLine(it.toDisplayString()) }
             }
 
@@ -230,11 +231,13 @@ class SniSpoofCheckService(
     }
 
     suspend fun checkPort(ip: String, port: Int): Boolean = withContext(Dispatchers.IO) {
-        for (attempt in 0 until config.retries) {
+        val timeoutMs = (config.timeout.coerceIn(1, 10)) * 1000
+        val retries = config.retries.coerceIn(1, 3)
+        for (attempt in 0 until retries) {
             if (isCancelled) return@withContext false
             try {
                 val socket = Socket()
-                socket.connect(InetSocketAddress(ip, port), config.timeout * 1000)
+                socket.connect(InetSocketAddress(ip, port), timeoutMs)
                 try { socket.close() } catch (_: Exception) {}
                 return@withContext true
             } catch (_: Exception) {
@@ -249,8 +252,10 @@ class SniSpoofCheckService(
             var rawSocket: Socket? = null
             var sslSocket: SSLSocket? = null
             try {
+                val timeoutMs = (config.timeout.coerceIn(2, 8)) * 1000
                 rawSocket = Socket()
-                rawSocket.connect(InetSocketAddress(ip, 443), 10_000)
+                rawSocket.connect(InetSocketAddress(ip, 443), timeoutMs)
+                rawSocket.soTimeout = timeoutMs
 
                 val sslContext = SSLContext.getInstance("TLS")
                 val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
@@ -264,7 +269,7 @@ class SniSpoofCheckService(
                 val params = sslSocket.sslParameters
                 params.serverNames = listOf(SNIHostName(domain))
                 sslSocket.sslParameters = params
-                sslSocket.soTimeout = 10_000
+                sslSocket.soTimeout = timeoutMs
 
                 sslSocket.startHandshake()
 
@@ -277,7 +282,7 @@ class SniSpoofCheckService(
                 val sb = StringBuilder()
                 var line = reader.readLine()
                 var linesRead = 0
-                while (line != null && linesRead < 50) {
+                while (line != null && linesRead < 40) {
                     sb.append(line).append("\n")
                     line = reader.readLine()
                     linesRead++
@@ -286,16 +291,17 @@ class SniSpoofCheckService(
                 val responseStr = sb.toString()
                 val ipMatch = Regex("""(?m)^ip=(.+)$""").find(responseStr)
                 if (ipMatch == null) {
-                    return@withContext SniIpCheckResult(matched = false)
+                    return@withContext SniIpCheckResult(matched = false, tlsSuccess = true)
                 }
 
                 val detectedIp = ipMatch.groupValues[1].trim()
                 SniIpCheckResult(
                     matched = detectedIp.equals(userPublicIp.trim(), ignoreCase = true),
                     detectedIp = detectedIp,
+                    tlsSuccess = true,
                 )
             } catch (_: Exception) {
-                SniIpCheckResult(matched = false)
+                SniIpCheckResult(matched = false, tlsSuccess = false)
             } finally {
                 try { sslSocket?.close() } catch (_: Exception) {}
                 try { rawSocket?.close() } catch (_: Exception) {}
@@ -304,63 +310,44 @@ class SniSpoofCheckService(
 
     suspend fun scanTargets(
         targets: List<String>,
-        onProgress: (SniSpoofScanProgress) -> Unit,
+        userPublicIp: String?,
+        onTargetResult: (List<SniIpResult>, completed: Int, total: Int) -> Unit,
     ) = coroutineScope {
         isCancelled = false
         if (targets.isEmpty()) return@coroutineScope
 
-        var userPublicIp: String? = null
-        if (config.enableIpCheck) {
-            userPublicIp = if (!config.manualIp.isNullOrBlank()) {
-                config.manualIp
-            } else {
-                getUserPublicIp()
-            }
-        }
+        var completedCount = 0
+        val sem = Semaphore(config.concurrency.coerceIn(1, 30))
 
-        var completedTargets = 0
-        val allResults = mutableListOf<SniIpResult>()
-
-        val chunks = targets.chunked(config.concurrency)
-        for (chunk in chunks) {
-            if (isCancelled) break
-
-            val chunkDeferred = chunk.map { target ->
-                async(Dispatchers.IO) {
-                    processTarget(target, userPublicIp)
+        val jobs = targets.map { target ->
+            launch(Dispatchers.IO) {
+                sem.withPermit {
+                    if (isCancelled) return@withPermit
+                    val results = processTarget(target, userPublicIp)
+                    if (!isCancelled) {
+                        synchronized(this@SniSpoofCheckService) {
+                            completedCount++
+                            onTargetResult(results, completedCount, targets.size)
+                        }
+                    }
                 }
             }
-
-            val chunkResults = chunkDeferred.awaitAll()
-            for (targetResults in chunkResults) {
-                if (isCancelled) break
-                completedTargets++
-                allResults.addAll(targetResults)
-
-                onProgress(
-                    SniSpoofScanProgress(
-                        latestResult = targetResults.lastOrNull(),
-                        completedTargets = completedTargets,
-                        totalTargets = targets.size,
-                        allResults = allResults.toList(),
-                    ),
-                )
-            }
         }
+        jobs.forEach { it.join() }
     }
 
     private suspend fun processTarget(
         target: String,
         userPublicIp: String?,
-    ): List<SniIpResult> {
+    ): List<SniIpResult> = coroutineScope {
         val ips = resolveTarget(target)
         if (ips.isEmpty()) {
-            return listOf(
+            return@coroutineScope listOf(
                 SniIpResult(
                     target = target,
                     ip = "",
                     status = SniResultStatus.ERROR,
-                    errorMessage = "Could not resolve",
+                    errorMessage = "عدم پاسخ DNS / عدم ترجمه دامنه",
                 ),
             )
         }
@@ -369,7 +356,7 @@ class SniSpoofCheckService(
         for (ip in ips) {
             if (isCancelled) break
 
-            if (ip.startsWith("10.")) {
+            if (ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("127.")) {
                 results.add(
                     SniIpResult(
                         target = target,
@@ -380,19 +367,19 @@ class SniSpoofCheckService(
                 continue
             }
 
-            val portResults = mutableListOf<SniPortResult>()
-            var openCount = 0
-
-            for (port in config.ports) {
-                if (isCancelled) break
-                val isOpen = checkPort(ip, port)
-                portResults.add(SniPortResult(port = port, isOpen = isOpen))
-                if (isOpen) openCount++
+            // Check all ports for this IP concurrently
+            val portDeferreds = config.ports.map { port ->
+                async(Dispatchers.IO) {
+                    val isOpen = checkPort(ip, port)
+                    SniPortResult(port = port, isOpen = isOpen)
+                }
             }
+            val portResults = portDeferreds.awaitAll()
+            val openCount = portResults.count { it.isOpen }
 
             if (openCount > 0) {
                 var ipCheckResult: SniIpCheckResult? = null
-                if (config.enableIpCheck && userPublicIp != null && !isIpAddress(target)) {
+                if (config.enableIpCheck && userPublicIp != null && !isIpAddress(target) && portResults.any { it.port == 443 && it.isOpen }) {
                     ipCheckResult = checkIp(target, ip, userPublicIp)
                 }
 
@@ -416,7 +403,7 @@ class SniSpoofCheckService(
                 )
             }
         }
-        return results
+        results
     }
 }
 
@@ -441,18 +428,20 @@ object SniSpoofCheckEngine {
         val targets = parseTargets(targetsText)
         if (targets.isEmpty()) return
         val service = SniSpoofCheckService(config)
+
+        var publicIp: String? = null
         if (config.enableIpCheck) {
-            val ip = config.manualIp ?: getUserPublicIp()
-            if (ip != null) onPublicIpDetected(ip)
+            publicIp = config.manualIp ?: getUserPublicIp()
+            if (publicIp != null) onPublicIpDetected(publicIp)
         }
 
-        service.scanTargets(targets) { progress ->
-            val latest = progress.latestResult
-            if (latest != null) {
-                onResult(latest)
+        onProgress(0, targets.size, "در حال بررسی دامنه‌ها...")
+
+        service.scanTargets(targets, publicIp) { targetResults, completed, total ->
+            for (res in targetResults) {
+                onResult(res)
             }
-            onProgress(progress.completedTargets, progress.totalTargets, "بررسی ${progress.completedTargets} از ${progress.totalTargets}...")
+            onProgress(completed, total, "بررسی $completed از $total دامنه...")
         }
     }
 }
-

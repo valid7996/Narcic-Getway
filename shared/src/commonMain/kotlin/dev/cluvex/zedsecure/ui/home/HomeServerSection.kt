@@ -178,6 +178,8 @@ internal fun HomeServerSection(
         }
     }
     var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var lockShareTarget by remember { mutableStateOf<Pair<VpnProfile, String>?>(null) }
+    var showBackupRestore by remember { mutableStateOf(false) }
     val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
 
     val allServers = profiles.filterNot { it.isLocked }
@@ -518,6 +520,10 @@ internal fun HomeServerSection(
                             val pl = runCatching { repository.shareLinkOf(profile) }.getOrNull()
                             if (pl == null) platform.toast(lockedCannotShare) else platform.shareText(pl)
                         },
+                        onShareLocked = {
+                            val pl = runCatching { repository.shareLinkOf(profile) }.getOrNull()
+                            if (pl == null) platform.toast(lockedCannotShare) else lockShareTarget = profile to pl
+                        },
                         onShareQr = {
                             qrTarget = runCatching { repository.shareLinkOf(profile) }.getOrNull()
                                 ?.let { profile.name to it }
@@ -687,6 +693,24 @@ internal fun HomeServerSection(
             onIpScanner = { showAdd = false; showIpScanner = true },
             onTelegramProxy = { showAdd = false; showTelegramProxy = true },
             onPatt = { showAdd = false; showPatt = true },
+            onBackupRestore = { showAdd = false; showBackupRestore = true },
+        )
+    }
+
+    if (showBackupRestore) {
+        dev.cluvex.zedsecure.ui.settings.backup.BackupRestoreSheet(
+            settings = dev.cluvex.zedsecure.domain.model.AppSettings(),
+            repository = repository,
+            onDismiss = { showBackupRestore = false },
+            onUpdateSettings = {},
+        )
+    }
+
+    lockShareTarget?.let { (prof, payload) ->
+        dev.cluvex.zedsecure.ui.servers.LockShareSheet(
+            profile = prof,
+            rawPayload = payload,
+            onDismiss = { lockShareTarget = null },
         )
     }
 

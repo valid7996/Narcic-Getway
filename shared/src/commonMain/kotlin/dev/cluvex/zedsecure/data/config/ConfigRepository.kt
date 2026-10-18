@@ -133,6 +133,18 @@ class ConfigRepository(private val store: KeyValueStore) {
             return@runCatching 1
         }
 
+        if (trimmed.startsWith("zsx://", ignoreCase = true)) {
+            val base64 = trimmed.substring(6).trim()
+            val bytes = Base64.decode(base64)
+            val meta = ZsxCrypto.peek(bytes)
+            if (meta.isExpired) throw ZsxExpiredException()
+            if (meta.passwordProtected) {
+                throw dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException()
+            }
+            importLocked(bytes, null).getOrThrow()
+            return@runCatching 1
+        }
+
         if (SsdLink.isSsdLink(trimmed)) {
             val links = SsdLink.parse(trimmed)
             require(links.isNotEmpty()) { "no servers in this ssd:// subscription" }
@@ -1507,6 +1519,59 @@ class ConfigRepository(private val store: KeyValueStore) {
         persistProfiles()
         if (_activeId.value == null) setActive(profile.id)
         profile
+    }
+
+    fun importZsxLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> = runCatching {
+        val trimmed = linkOrBase64.trim()
+        val base64 = if (trimmed.startsWith("zsx://", ignoreCase = true)) {
+            trimmed.substring(6).trim()
+        } else {
+            trimmed
+        }
+        val bytes = Base64.decode(base64)
+        importLocked(bytes, userKey?.ifBlank { null }).getOrThrow()
+    }
+
+    fun restoreBackupData(
+        newProfiles: List<VpnProfile>?,
+        newSubscriptions: List<Subscription>?,
+        replaceProfiles: Boolean = false,
+        replaceSubscriptions: Boolean = false,
+    ): Pair<Int, Int> {
+        var addedProfiles = 0
+        var addedSubs = 0
+
+        if (newSubscriptions != null) {
+            if (replaceSubscriptions) {
+                _subscriptions.value = newSubscriptions
+                addedSubs = newSubscriptions.size
+            } else {
+                val existingIds = _subscriptions.value.map { it.id }.toSet()
+                val existingUrls = _subscriptions.value.map { it.url.lowercase() }.toSet()
+                val toAdd = newSubscriptions.filter { it.id !in existingIds && it.url.lowercase() !in existingUrls }
+                _subscriptions.value = _subscriptions.value + toAdd
+                addedSubs = toAdd.size
+            }
+            persistSubscriptions()
+        }
+
+        if (newProfiles != null) {
+            if (replaceProfiles) {
+                _profiles.value = newProfiles
+                addedProfiles = newProfiles.size
+            } else {
+                val existingIds = _profiles.value.map { it.id }.toSet()
+                val toAdd = newProfiles.filter { it.id !in existingIds }
+                _profiles.value = _profiles.value + toAdd
+                addedProfiles = toAdd.size
+            }
+            persistProfiles()
+            if (_activeId.value == null || profile(_activeId.value!!) == null) {
+                _profiles.value.firstOrNull()?.id?.let { setActive(it) }
+            }
+        }
+
+        return Pair(addedProfiles, addedSubs)
     }
 
     private fun persistProfiles() {

@@ -82,9 +82,11 @@ import dev.cluvex.zedsecure.shared.resources.ic_bolt
 import dev.cluvex.zedsecure.shared.resources.ic_check
 import dev.cluvex.zedsecure.shared.resources.ic_close
 import dev.cluvex.zedsecure.shared.resources.ic_content_paste
+import dev.cluvex.zedsecure.shared.resources.ic_description
 import dev.cluvex.zedsecure.shared.resources.ic_dns
 import dev.cluvex.zedsecure.shared.resources.ic_encrypted
 import dev.cluvex.zedsecure.shared.resources.ic_info
+import dev.cluvex.zedsecure.shared.resources.ic_ios_share
 import dev.cluvex.zedsecure.shared.resources.ic_public
 import dev.cluvex.zedsecure.shared.resources.ic_speed
 import dev.cluvex.zedsecure.shared.resources.ic_tune
@@ -207,6 +209,8 @@ private fun SniCheckTab(isDark: Boolean) {
     var scanReportCopied by remember { mutableStateOf(false) }
 
     val results = remember { mutableStateListOf<SniIpResult>() }
+
+    var cleanIpsCopied by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -335,78 +339,125 @@ private fun SniCheckTab(isDark: Boolean) {
         }
 
         // Action Buttons Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                onClick = {
-                    if (isScanning) {
-                        scanJob?.cancel()
-                        isScanning = false
-                        currentStatus = "متوقف شد"
-                    } else {
-                        isScanning = true
-                        results.clear()
-                        scanReportCopied = false
-                        scanJob = scope.launch {
-                            val config = SniSpoofCheckConfig(
-                                ports = selectedPorts.toList(),
-                                timeout = timeout,
-                                retries = retries,
-                                concurrency = concurrency,
-                                enableIpCheck = enableIpCheck,
-                                manualIp = manualIp.ifBlank { null },
-                            )
-                            SniSpoofCheckEngine.runScan(
-                                targetsText = targetsText,
-                                config = config,
-                                onPublicIpDetected = { userPublicIp = it },
-                                onProgress = { cur, tot, status ->
-                                    progress = if (tot > 0) cur.toFloat() / tot else 0f
-                                    currentStatus = status
-                                },
-                                onResult = { res ->
-                                    results.add(res)
-                                },
-                            )
-                            isScanning = false
-                            currentStatus = "اسکن کامل شد (${results.size} نتیجه)"
-                        }
-                    }
-                },
-                modifier = Modifier.weight(1f).height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isScanning) Color(0xFFFF3B30) else Color(0xFFFF9500),
-                ),
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(
-                    painter = painterResource(if (isScanning) Res.drawable.ic_close else Res.drawable.ic_bolt),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(if (isScanning) "توقف اسکن" else "شروع تست SNI Spoof", fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = {
+                        if (isScanning) {
+                            scanJob?.cancel()
+                            scanJob = null
+                            isScanning = false
+                            currentStatus = "متوقف شد"
+                        } else {
+                            scanJob?.cancel()
+                            isScanning = true
+                            results.clear()
+                            scanReportCopied = false
+                            cleanIpsCopied = false
+                            currentStatus = "در حال شروع اسکن..."
+                            scanJob = scope.launch {
+                                try {
+                                    val config = SniSpoofCheckConfig(
+                                        ports = selectedPorts.toList(),
+                                        timeout = timeout,
+                                        retries = retries,
+                                        concurrency = concurrency,
+                                        enableIpCheck = enableIpCheck,
+                                        manualIp = manualIp.ifBlank { null },
+                                    )
+                                    SniSpoofCheckEngine.runScan(
+                                        targetsText = targetsText,
+                                        config = config,
+                                        onPublicIpDetected = { userPublicIp = it },
+                                        onProgress = { cur, tot, status ->
+                                            progress = if (tot > 0) cur.toFloat() / tot else 0f
+                                            currentStatus = status
+                                        },
+                                        onResult = { res ->
+                                            results.add(res)
+                                        },
+                                    )
+                                    currentStatus = "اسکن کامل شد (${results.size} نتیجه)"
+                                } catch (_: kotlinx.coroutines.CancellationException) {
+                                    currentStatus = "متوقف شد"
+                                } catch (e: Exception) {
+                                    currentStatus = "خطا: ${e.message}"
+                                } finally {
+                                    isScanning = false
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isScanning) Color(0xFFFF3B30) else Color(0xFFFF9500),
+                    ),
+                ) {
+                    Icon(
+                        painter = painterResource(if (isScanning) Res.drawable.ic_close else Res.drawable.ic_bolt),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (isScanning) "توقف اسکن" else "شروع تست SNI Spoof", fontWeight = FontWeight.Bold)
+                }
             }
 
             if (results.isNotEmpty()) {
-                OutlinedButton(
-                    onClick = {
-                        val report = SniSpoofCheckEngine.generateReport(results, userPublicIp)
-                        platform.copyToClipboard(report)
-                        scanReportCopied = true
-                    },
-                    modifier = Modifier.height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
+                val okIps = results.filter { it.status == SniResultStatus.OK && it.ip.isNotBlank() }
+                    .map { it.ip }.distinct()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        painter = painterResource(if (scanReportCopied) Res.drawable.ic_check else Res.drawable.ic_content_paste),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(if (scanReportCopied) "کپی شد" else "کپی گزارش")
+                    if (okIps.isNotEmpty()) {
+                        OutlinedButton(
+                            onClick = {
+                                platform.copyToClipboard(okIps.joinToString("\n"))
+                                cleanIpsCopied = true
+                                platform.toast("تعداد ${okIps.size} آی‌پی سالم کپی شد")
+                            },
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(if (cleanIpsCopied) Res.drawable.ic_check else Res.drawable.ic_content_paste),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF34C759),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                if (cleanIpsCopied) "کپی شد" else "کپی آی‌پی‌های سالم (${okIps.size})",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF34C759),
+                            )
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            val report = SniSpoofCheckEngine.generateReport(results, userPublicIp)
+                            platform.copyToClipboard(report)
+                            scanReportCopied = true
+                            platform.toast("گزارش تست کپی شد")
+                        },
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(if (scanReportCopied) Res.drawable.ic_check else Res.drawable.ic_description),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(if (scanReportCopied) "کپی شد" else "کپی کل گزارش", fontSize = 12.sp)
+                    }
                 }
             }
         }
@@ -456,6 +507,7 @@ private fun SniCheckTab(isDark: Boolean) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SniResultCard(res: SniIpResult, isDark: Boolean) {
+    val platform = LocalPlatform.current
     val statusColor = when (res.status) {
         SniResultStatus.OK -> Color(0xFF34C759)
         SniResultStatus.FAIL -> Color(0xFFFF3B30)
@@ -474,22 +526,58 @@ private fun SniResultCard(res: SniIpResult, isDark: Boolean) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(res.target, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(res.ip, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Color.Gray)
+                    if (res.ip.isNotBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(res.ip, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Color.Gray)
+                            Spacer(Modifier.width(4.dp))
+                            IconButton(
+                                onClick = {
+                                    platform.copyToClipboard(res.ip)
+                                    platform.toast("آی‌پی ${res.ip} کپی شد")
+                                },
+                                modifier = Modifier.size(24.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_content_paste),
+                                    contentDescription = "Copy IP",
+                                    tint = Color(0xFFFF9500),
+                                    modifier = Modifier.size(13.dp),
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = statusColor.copy(alpha = 0.15f),
-                ) {
-                    Text(
-                        res.status.name,
-                        color = statusColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(
+                        onClick = {
+                            platform.copyToClipboard(res.toDisplayString())
+                            platform.toast("نتیجه سطر کپی شد")
+                        },
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_ios_share),
+                            contentDescription = "Copy full row",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(15.dp),
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = statusColor.copy(alpha = 0.15f),
+                    ) {
+                        Text(
+                            res.status.name,
+                            color = statusColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
                 }
             }
 
@@ -517,11 +605,17 @@ private fun SniResultCard(res: SniIpResult, isDark: Boolean) {
             // Direct TLS IP Handshake Match
             if (res.ipCheckResult != null) {
                 val ipMatch = res.ipCheckResult.matched
-                val checkColor = if (ipMatch) Color(0xFF34C759) else Color(0xFFFF9500)
+                val checkColor = if (ipMatch) Color(0xFF34C759) else if (res.ipCheckResult.tlsSuccess) Color(0xFF32ADE6) else Color(0xFFFF9500)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (ipMatch) "✔ تأیید هویت IP کلادفلر (IP Verified)"
-                        else "✖ هویت IP تأیید نشد (${res.ipCheckResult.detectedIp ?: "بدون پاسخ"})",
+                        when {
+                            ipMatch -> "✔ تأیید هویت IP کلادفلر (IP Verified)"
+                            res.ipCheckResult.tlsSuccess && res.ipCheckResult.detectedIp != null ->
+                                "✔ هندشیک TLS موفق (IP شناسایی‌شده: ${res.ipCheckResult.detectedIp})"
+                            res.ipCheckResult.tlsSuccess ->
+                                "✔ هندشیک TLS با SNI موفق (SNI Spoof OK)"
+                            else -> "✖ هویت IP تأیید نشد (${res.ipCheckResult.detectedIp ?: "بدون پاسخ"})"
+                        },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = checkColor,

@@ -52,7 +52,7 @@ import dev.cluvex.zedsecure.ui.theme.resetPersonalization
 
 enum class SettingsPage {
     Root, Ui, Vpn, Core, Routing, PerApp, Mux, Fragment, Observatory, Advanced, Mode, Assets, SingBox,
-    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy, Patt,
+    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy, Patt, Backup,
 }
 
 @Composable
@@ -68,6 +68,7 @@ fun SettingsScreen(
     mtuHint: dev.cluvex.zedsecure.data.net.MtuServerHint? = null,
 
     ai: dev.cluvex.zedsecure.ui.settings.AiSection? = null,
+    configRepository: dev.cluvex.zedsecure.data.config.ConfigRepository? = null,
 ) {
     var page by rememberSaveable { mutableStateOf(SettingsPage.Root) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
@@ -176,6 +177,15 @@ fun SettingsScreen(
                 contentPadding = contentPadding,
                 modifier = modifier,
             )
+            SettingsPage.Backup -> configRepository?.let { repo ->
+                dev.cluvex.zedsecure.ui.settings.backup.BackupRestoreScreen(
+                    settings = settings,
+                    repository = repo,
+                    contentPadding = contentPadding,
+                    onUpdateSettings = onUpdate,
+                    modifier = modifier,
+                )
+            }
         }
     }
     }
@@ -279,6 +289,15 @@ private fun RootPage(
                 leadingIcon = Res.drawable.ic_tune,
                 iconTint = Color(0xFFFF9500),
             ) { onOpen(SettingsPage.Patt) }
+        }
+
+        SettingsGroup("پشتیبان‌گیری و انتقال داده (Backup & Data)") {
+            SettingsMenuRow(
+                "پشتیبان‌گیری و بازیابی (Backup & Restore)",
+                "پشتیبان‌گیری کامل از تنظیمات و سرورها و بازیابی سریع اطلاعات",
+                leadingIcon = Res.drawable.ic_sync,
+                iconTint = Color(0xFF34C759),
+            ) { onOpen(SettingsPage.Backup) }
         }
 
         SettingsGroup {

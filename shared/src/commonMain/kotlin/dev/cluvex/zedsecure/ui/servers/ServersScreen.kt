@@ -184,6 +184,8 @@ fun ServersScreen(
         scope.launch { platform.toast(getString(res, *args)) }
     }
 
+    var pendingUnlock by remember { mutableStateOf<Pair<ByteArray, dev.cluvex.zedsecure.crypto.ZsxMetadata>?>(null) }
+
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val singBoxJsonInvalid = stringResource(Res.string.singbox_json_invalid)
 
@@ -199,6 +201,31 @@ fun ServersScreen(
     }
 
     fun importScanned(text: String) {
+        val trimmed = text.trim()
+        if (trimmed.startsWith("zsx://", ignoreCase = true)) {
+            val b64 = trimmed.substring(6).trim()
+            val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
+            if (bytes != null) {
+                val meta = runCatching { repository.peekLocked(bytes) }.getOrNull()
+                if (meta != null) {
+                    if (meta.isExpired) {
+                        platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+                        return
+                    }
+                    if (meta.passwordProtected) {
+                        pendingUnlock = bytes to meta
+                        return
+                    }
+                    val imported = repository.importLocked(bytes, null)
+                    imported.fold(
+                        onSuccess = { toastRes(Res.string.servers_imported, 1) },
+                        onFailure = { toastImportFailure(it) },
+                    )
+                    return
+                }
+            }
+        }
+
         scope.launch(kotlinx.coroutines.Dispatchers.Default) {
             var outcome: Result<dev.cluvex.zedsecure.data.config.ConfigRepository.PastedImport>? = null
             offerObfuscationAfter { outcome = repository.importPasted(text) }
@@ -214,7 +241,18 @@ fun ServersScreen(
                         },
                     )
                 }
-                .onFailure { toastImportFailure(it) }
+                .onFailure { err ->
+                    if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
+                        val b64 = if (trimmed.startsWith("zsx://", ignoreCase = true)) trimmed.substring(6).trim() else trimmed
+                        val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
+                        val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
+                        if (bytes != null && meta != null) {
+                            pendingUnlock = bytes to meta
+                            return@onFailure
+                        }
+                    }
+                    toastImportFailure(err)
+                }
         }
     }
 
@@ -271,6 +309,31 @@ fun ServersScreen(
             return
         }
 
+        val trimmed = text.trim()
+        if (trimmed.startsWith("zsx://", ignoreCase = true)) {
+            val b64 = trimmed.substring(6).trim()
+            val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
+            if (bytes != null) {
+                val meta = runCatching { repository.peekLocked(bytes) }.getOrNull()
+                if (meta != null) {
+                    if (meta.isExpired) {
+                        platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+                        return
+                    }
+                    if (meta.passwordProtected) {
+                        pendingUnlock = bytes to meta
+                        return
+                    }
+                    val imported = repository.importLocked(bytes, null)
+                    imported.fold(
+                        onSuccess = { toastRes(Res.string.servers_imported, 1) },
+                        onFailure = { toastImportFailure(it) },
+                    )
+                    return
+                }
+            }
+        }
+
         scope.launch(kotlinx.coroutines.Dispatchers.Default) {
             var outcome: Result<dev.cluvex.zedsecure.data.config.ConfigRepository.PastedImport>? = null
             offerObfuscationAfter { outcome = repository.importPasted(text) }
@@ -286,7 +349,18 @@ fun ServersScreen(
                         },
                     )
                 }
-                .onFailure { toastImportFailure(it) }
+                .onFailure { err ->
+                    if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
+                        val b64 = if (trimmed.startsWith("zsx://", ignoreCase = true)) trimmed.substring(6).trim() else trimmed
+                        val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
+                        val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
+                        if (bytes != null && meta != null) {
+                            pendingUnlock = bytes to meta
+                            return@onFailure
+                        }
+                    }
+                    toastImportFailure(err)
+                }
         }
     }
     val profiles by repository.profiles.collectAsStateWithLifecycle()
@@ -298,6 +372,8 @@ fun ServersScreen(
     var showIpScanner by remember { mutableStateOf(false) }
     var showTelegramProxy by remember { mutableStateOf(false) }
     var showPatt by remember { mutableStateOf(false) }
+    var showBackupRestore by remember { mutableStateOf(false) }
+    var lockShareTarget by remember { mutableStateOf<Pair<VpnProfile, String>?>(null) }
 
     var fanOpen by remember { mutableStateOf(false) }
     var showSubs by remember { mutableStateOf(false) }
@@ -920,6 +996,10 @@ fun ServersScreen(
                             val pl = runCatching { repository.shareLinkOf(profile) }.getOrNull()
                             if (pl == null) platform.toast(lockedCannotShare) else platform.shareText(pl)
                         },
+                        onShareLocked = {
+                            val pl = runCatching { repository.shareLinkOf(profile) }.getOrNull()
+                            if (pl == null) platform.toast(lockedCannotShare) else lockShareTarget = profile to pl
+                        },
                         onShareQr = {
                             qrTarget = runCatching { repository.shareLinkOf(profile) }.getOrNull()
                                 ?.let { profile.name to it }
@@ -1277,6 +1357,37 @@ fun ServersScreen(
                 showAddSheet = false
                 showPatt = true
             },
+            onBackupRestore = {
+                showAddSheet = false
+                showBackupRestore = true
+            },
+        )
+    }
+
+    if (showBackupRestore) {
+        dev.cluvex.zedsecure.ui.settings.backup.BackupRestoreSheet(
+            settings = dev.cluvex.zedsecure.domain.model.AppSettings(),
+            repository = repository,
+            onDismiss = { showBackupRestore = false },
+            onUpdateSettings = {},
+        )
+    }
+
+    lockShareTarget?.let { (prof, payload) ->
+        LockShareSheet(
+            profile = prof,
+            rawPayload = payload,
+            onDismiss = { lockShareTarget = null },
+        )
+    }
+
+    pendingUnlock?.let { (bytes, meta) ->
+        UnlockConfigDialog(
+            zsxBytes = bytes,
+            metadata = meta,
+            repository = repository,
+            onDismiss = { pendingUnlock = null },
+            onSuccess = { pendingUnlock = null },
         )
     }
 
@@ -1889,6 +2000,7 @@ internal fun AddServerSheet(
     onIpScanner: (() -> Unit)? = null,
     onTelegramProxy: (() -> Unit)? = null,
     onPatt: (() -> Unit)? = null,
+    onBackupRestore: (() -> Unit)? = null,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
@@ -2223,6 +2335,18 @@ internal fun AddServerSheet(
                         gradientStart = Color(0xFF332005).copy(alpha = 0.90f),
                         gradientEnd = Color(0xFF1E1303).copy(alpha = 0.75f),
                         onClick = onPatt,
+                    )
+                }
+                if (onBackupRestore != null) {
+                    GlassOptionCard(
+                        title = "پشتیبان‌گیری و بازیابی (Backup & Restore)",
+                        subtitle = "خروجی گرفتن و بازیابی کامل سرورها، اشتراک‌ها و تنظیمات",
+                        icon = Res.drawable.ic_sync,
+                        accentColor = Color(0xFF34C759),
+                        iconTint = Color(0xFF4ADE80),
+                        gradientStart = Color(0xFF092913).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF05170B).copy(alpha = 0.75f),
+                        onClick = onBackupRestore,
                     )
                 }
             }

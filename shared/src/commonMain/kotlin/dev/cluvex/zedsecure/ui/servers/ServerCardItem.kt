@@ -97,6 +97,7 @@ internal fun ServerCard(
     subscriptionName: String?,
     onClick: () -> Unit,
     onShare: () -> Unit = {},
+    onShareLocked: (() -> Unit)? = null,
     onShareQr: () -> Unit = {},
 
     shareLink: String? = null,
@@ -308,6 +309,14 @@ internal fun ServerCard(
                                 enabled = shareLink != null,
                                 onClick = { menuOpen = false; onShare() },
                             )
+                            onShareLocked?.let { shareLocked ->
+                                DropdownMenuItem(
+                                    text = { Text("قفل و اشتراک امن (ZSX)") },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_lock), null, tint = Color(0xFFFF9500)) },
+                                    enabled = shareLink != null,
+                                    onClick = { menuOpen = false; shareLocked() },
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.action_share_qr)) },
                                 leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null) },
