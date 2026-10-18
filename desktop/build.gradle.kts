@@ -68,13 +68,19 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+val desktopPackageVersion = when (zedVersion.count { it == '.' }) {
+    0 -> "$zedVersion.0.0"
+    1 -> "$zedVersion.0"
+    else -> zedVersion
+}
+
 compose.desktop {
     application {
         mainClass = "dev.cluvex.zedsecure.desktop.GuiKt"
         nativeDistributions {
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.AppImage, TargetFormat.Msi, TargetFormat.Dmg)
             packageName = "Narcic Getway"
-            packageVersion = zedVersion
+            packageVersion = desktopPackageVersion
             description = "Narcic Getway VPN client"
             vendor = "Cluvex Studio"
             linux {

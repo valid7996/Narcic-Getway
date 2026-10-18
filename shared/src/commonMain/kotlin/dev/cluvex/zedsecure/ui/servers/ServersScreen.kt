@@ -2186,7 +2186,7 @@ internal fun AddServerSheet(
                 if (onIpScanner != null) {
                     GlassOptionCard(
                         title = "اسکنر Narcic Scanner",
-                        subtitle = "اسکنر پیشرفته CDN و دامنه (برگرفته از Soldier Scanner)",
+                        subtitle = "اسکنر پیشرفته CDN و دامنه (Narcic Scanner)",
                         icon = Res.drawable.ic_speedometer,
                         accentColor = Color(0xFF007AFF),
                         iconTint = Color(0xFF60A5FA),

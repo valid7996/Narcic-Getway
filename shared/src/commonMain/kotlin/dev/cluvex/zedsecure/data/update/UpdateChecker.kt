@@ -82,7 +82,7 @@ object UpdateChecker {
         val root = releaseJson.parseToJsonElement(body) as? JsonObject ?: return null
         fun JsonObject.text(key: String) = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
         val tag = root.text("tag_name") ?: return null
-        val version = Regex("""\d+(?:\.\d+)+""").find(tag)?.value ?: return null
+        val version = Regex("""\d+(?:\.\d+)*""").find(tag)?.value ?: return null
         val assets = (root["assets"] as? JsonArray).orEmpty().mapNotNull { element ->
             val asset = element as? JsonObject ?: return@mapNotNull null
             val name = asset.text("name") ?: return@mapNotNull null

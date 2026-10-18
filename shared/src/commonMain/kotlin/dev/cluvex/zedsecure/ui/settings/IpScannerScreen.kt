@@ -182,7 +182,7 @@ fun IpScannerScreen(
             item {
                 PageHeader(
                     title = "اسکنر Narcic Scanner",
-                    subtitle = "Soldier Scanner Pro Engine & TLS Certificate Checker",
+                    subtitle = "Narcic Scanner Pro Engine & TLS Certificate Checker",
                 )
             }
 
@@ -321,7 +321,7 @@ fun IpScannerScreen(
                 }
             }
 
-            // Action Buttons matching Soldier Scanner: START SCAN, STOP, CLEAR, GREEN, TOP16, COPY ALL
+            // Action Buttons for Narcic Scanner: START SCAN, STOP, CLEAR, GREEN, TOP16, COPY ALL
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Row 1: Start / Stop / Clear
