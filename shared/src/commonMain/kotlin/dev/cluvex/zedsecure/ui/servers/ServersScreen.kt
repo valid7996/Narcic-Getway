@@ -1902,34 +1902,6 @@ internal fun AddServerSheet(
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
             )
 
-            if (onIpScanner != null || onTelegramProxy != null) {
-                OptionGroup("ابزارهای شبکه و اسکنر (Network Tools)")
-                if (onIpScanner != null) {
-                    GlassOptionCard(
-                        title = "اسکنر آی‌پی تمیز (CDN Scanner)",
-                        subtitle = "یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور",
-                        icon = Res.drawable.ic_speedometer,
-                        accentColor = Color(0xFF007AFF),
-                        iconTint = Color(0xFF60A5FA),
-                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
-                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
-                        onClick = onIpScanner,
-                    )
-                }
-                if (onTelegramProxy != null) {
-                    GlassOptionCard(
-                        title = "پروکسی‌های تلگرام (Telegram Proxies)",
-                        subtitle = "دریافت، تست پینگ زنده و اتصال مستقیم به پروکسی‌های MTProto",
-                        icon = Res.drawable.ic_public,
-                        accentColor = Color(0xFF34C759),
-                        iconTint = Color(0xFF4ADE80),
-                        gradientStart = Color(0xFF0D3320).copy(alpha = 0.90f),
-                        gradientEnd = Color(0xFF081C12).copy(alpha = 0.75f),
-                        onClick = onTelegramProxy,
-                    )
-                }
-            }
-
             OptionGroup(Res.string.add_group_import)
             GlassOptionCard(
                 title = stringResource(Res.string.servers_add_clipboard),
@@ -2196,6 +2168,34 @@ internal fun AddServerSheet(
                 gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
                 onClick = onSubscription,
             )
+
+            if (onTelegramProxy != null || onIpScanner != null) {
+                OptionGroup("ابزارهای شبکه و اسکنر (Network Tools)")
+                if (onTelegramProxy != null) {
+                    GlassOptionCard(
+                        title = "پروکسی‌های تلگرام (Telegram Proxies)",
+                        subtitle = "دریافت، تست پینگ زنده و اتصال مستقیم به پروکسی‌های MTProto",
+                        icon = Res.drawable.ic_public,
+                        accentColor = Color(0xFF34C759),
+                        iconTint = Color(0xFF4ADE80),
+                        gradientStart = Color(0xFF0D3320).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF081C12).copy(alpha = 0.75f),
+                        onClick = onTelegramProxy,
+                    )
+                }
+                if (onIpScanner != null) {
+                    GlassOptionCard(
+                        title = "اسکنر Narcic Scanner",
+                        subtitle = "اسکنر پیشرفته CDN و دامنه (برگرفته از Soldier Scanner)",
+                        icon = Res.drawable.ic_speedometer,
+                        accentColor = Color(0xFF007AFF),
+                        iconTint = Color(0xFF60A5FA),
+                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                        onClick = onIpScanner,
+                    )
+                }
+            }
         }
     }
 }
