@@ -5,6 +5,8 @@ import dev.cluvex.zedsecure.platform.httpGetText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
 data class TelegramProxyItem(
@@ -98,12 +100,16 @@ object TelegramProxyRepository {
 
     suspend fun pingAll(
         proxies: List<TelegramProxyItem>,
-        timeoutMs: Int = 2_200,
+        timeoutMs: Int = 1_500,
+        concurrency: Int = 8,
     ): List<TelegramProxyItem> = withContext(Dispatchers.Default) {
+        val semaphore = Semaphore(concurrency)
         proxies.map { proxy ->
             async {
-                val latency = PingService.tcpPing(proxy.server, proxy.port, timeoutMs)
-                proxy.copy(pingMs = latency, isTesting = false)
+                semaphore.withPermit {
+                    val latency = PingService.tcpPing(proxy.server, proxy.port, timeoutMs)
+                    proxy.copy(pingMs = latency, isTesting = false)
+                }
             }
         }.awaitAll().sortedWith(compareBy<TelegramProxyItem> {
             if (it.pingMs > 0) 0 else 1
@@ -112,7 +118,7 @@ object TelegramProxyRepository {
 
     suspend fun pingSingle(
         proxy: TelegramProxyItem,
-        timeoutMs: Int = 2_200,
+        timeoutMs: Int = 1_500,
     ): TelegramProxyItem = withContext(Dispatchers.Default) {
         val latency = PingService.tcpPing(proxy.server, proxy.port, timeoutMs)
         proxy.copy(pingMs = latency, isTesting = false)
@@ -167,7 +173,12 @@ object TelegramProxyRepository {
 
         for (url in sources) {
             runCatching {
-                val content = httpGetText(url, "Mozilla/5.0 Narcic-Getway")
+                val content = httpGetText(
+                    url = url,
+                    userAgent = "Mozilla/5.0 Narcic-Getway",
+                    connectTimeoutMs = 3_500,
+                    readTimeoutMs = 5_000,
+                )
                 val lines = content.lines()
                 for (line in lines) {
                     val parsed = parseProxyUri(line)

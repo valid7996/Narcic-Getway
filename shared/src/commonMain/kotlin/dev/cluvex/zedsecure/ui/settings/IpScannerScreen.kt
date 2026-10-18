@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -107,6 +108,12 @@ fun IpScannerScreen(
         activeJob?.cancel()
         activeJob = null
         isScanning = false
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            stopScan()
+        }
     }
 
     fun startScan() {

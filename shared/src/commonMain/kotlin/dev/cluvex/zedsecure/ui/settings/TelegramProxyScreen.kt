@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ import dev.cluvex.zedsecure.data.tools.TelegramProxyRepository
 import dev.cluvex.zedsecure.domain.model.AppSettings
 import dev.cluvex.zedsecure.ui.components.PageHeader
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -90,11 +92,20 @@ fun TelegramProxyScreen(
     val proxies = remember { mutableStateListOf<TelegramProxyItem>().apply { addAll(TelegramProxyRepository.getInitialProxies()) } }
     var isTestingAll by remember { mutableStateOf(false) }
     var isFetchingOnline by remember { mutableStateOf(false) }
+    var activeFetchJob by remember { mutableStateOf<Job?>(null) }
+    var activeTestJob by remember { mutableStateOf<Job?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            activeFetchJob?.cancel()
+            activeTestJob?.cancel()
+        }
+    }
 
     fun fetchOnline() {
         if (isFetchingOnline) return
         isFetchingOnline = true
-        scope.launch {
+        activeFetchJob = scope.launch {
             val updated = TelegramProxyRepository.fetchOnlineProxies(limit = 40)
             proxies.clear()
             proxies.addAll(updated)
@@ -106,7 +117,7 @@ fun TelegramProxyScreen(
     fun testAll() {
         if (isTestingAll) return
         isTestingAll = true
-        scope.launch {
+        activeTestJob = scope.launch {
             val updated = TelegramProxyRepository.pingAll(proxies)
             proxies.clear()
             proxies.addAll(updated)

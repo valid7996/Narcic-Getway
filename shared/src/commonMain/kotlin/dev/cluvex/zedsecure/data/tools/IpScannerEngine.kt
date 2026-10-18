@@ -113,8 +113,8 @@ object IpScannerEngine {
         ips: List<String>,
         port: Int = 443,
         operator: OperatorFilter,
-        timeoutMs: Int = 2_200,
-        concurrency: Int = 12,
+        timeoutMs: Int = 1_500,
+        concurrency: Int = 8,
         onProgress: (scanned: Int, total: Int, currentIp: String, newResult: ScannedIp?) -> Unit,
         onComplete: () -> Unit,
     ): Job {
@@ -129,6 +129,7 @@ object IpScannerEngine {
                     semaphore.withPermit {
                         if (!isActive) return@withPermit
                         val ping = PingService.tcpPing(ip, port, timeoutMs)
+                        if (!isActive) return@withPermit
                         val status = when {
                             ping in 1..299 -> IpStatus.Clean
                             ping in 300..799 -> IpStatus.Valid
@@ -148,13 +149,17 @@ object IpScannerEngine {
                         scanMutex.withLock {
                             scanned++
                         }
-                        onProgress(scanned, total, ip, result)
+                        withContext(Dispatchers.Main) {
+                            onProgress(scanned, total, ip, result)
+                        }
                     }
                 }
             }
 
             jobs.forEach { it.join() }
-            onComplete()
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
         }
     }
 }
