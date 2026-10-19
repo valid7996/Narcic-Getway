@@ -72,12 +72,19 @@ fun SettingsScreen(
 ) {
     var page by rememberSaveable { mutableStateOf(SettingsPage.Root) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
+    var showDeviceCode by rememberSaveable { mutableStateOf(false) }
 
     val goUp: () -> Unit = {
         page = if (page == SettingsPage.TorBridges) SettingsPage.Tor else SettingsPage.Root
     }
 
     if (showAbout) AboutSheet(onDismiss = { showAbout = false })
+    if (showDeviceCode && configRepository != null) {
+        dev.cluvex.zedsecure.ui.servers.DeviceCodeDialog(
+            code = configRepository.nrgDeviceId(),
+            onDismiss = { showDeviceCode = false },
+        )
+    }
 
     BackHandler(enabled = page != SettingsPage.Root) { goUp() }
 
@@ -113,6 +120,7 @@ fun SettingsScreen(
                 modifier = modifier,
                 onOpen = { page = it },
                 onAbout = { showAbout = true },
+                onDeviceCode = if (configRepository != null) { { showDeviceCode = true } } else null,
                 onUpdate = onUpdate,
                 hasAi = ai != null,
             )
@@ -209,6 +217,7 @@ private fun RootPage(
     onUpdate: ((AppSettings) -> AppSettings) -> Unit,
 
     hasAi: Boolean,
+    onDeviceCode: (() -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
 
@@ -475,6 +484,17 @@ private fun RootPage(
                 iconTint = Color(0xFF007AFF),
             ) {
                 onAbout()
+            }
+            if (onDeviceCode != null) {
+                SettingsDivider()
+                SettingsMenuRow(
+                    "کد دستگاه من (برای کانفیگ قفل‌شده)",
+                    "مشاهده و کپی کد یکتای این دستگاه جهت دریافت کانفیگ قفل‌شده",
+                    leadingIcon = Res.drawable.ic_lock,
+                    iconTint = Color(0xFFFF9500),
+                ) {
+                    onDeviceCode()
+                }
             }
         }
 

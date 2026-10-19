@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -110,6 +111,27 @@ fun UnlockConfigDialog(
                                 }
                             }
                             Text("اعتبار: $expiryText", fontSize = 11.sp, color = Color(0xFF007AFF), fontWeight = FontWeight.Medium)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "کد این دستگاه: ${repository.nrgDeviceId()}",
+                                fontSize = 11.sp,
+                                color = Color(0xFFFF9500),
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            TextButton(
+                                onClick = {
+                                    platform.copyToClipboard(repository.nrgDeviceId())
+                                    platform.toast("کد دستگاه کپی شد")
+                                },
+                            ) {
+                                Text("کپی", fontSize = 11.sp, color = Color(0xFFFF9500))
+                            }
                         }
                     }
                 }
