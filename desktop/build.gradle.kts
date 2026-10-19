@@ -49,7 +49,11 @@ configurations.configureEach {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-    testLogging { showStandardStreams = false }
+    testLogging {
+        showStandardStreams = true
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 dependencies {

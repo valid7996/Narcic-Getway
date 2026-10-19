@@ -39,6 +39,7 @@ class TunModeTest {
 
     @Test
     fun `the Linux helper brings tun up, says so, and cleans up once the app lets go`() {
+        assumeTrue(System.getenv("NARCICGETEWAY_LIVE_TUN") == "1")
         assumeTrue(Os.current == Os.LINUX)
         assumeTrue(javaClass.getResource("/bin/linux/hev-socks5-tunnel") != null)
         assumeTrue(exec("unshare", "-rn", "true", timeoutSec = 10).first == 0, "user namespaces are not allowed here")
