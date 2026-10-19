@@ -42,6 +42,7 @@ class TunModeTest {
         assumeTrue(Os.current == Os.LINUX)
         assumeTrue(javaClass.getResource("/bin/linux/hev-socks5-tunnel") != null)
         assumeTrue(exec("unshare", "-rn", "true", timeoutSec = 10).first == 0, "user namespaces are not allowed here")
+        assumeTrue(exec("unshare", "-rn", "sh", "-c", "ip tuntap add mode tun test_tun 2>/dev/null && ip tuntap del mode tun test_tun 2>/dev/null", timeoutSec = 10).first == 0, "creating tun interface in unshare is not allowed here")
 
         val dir = Files.createTempDirectory("tunmode").toFile()
         val hev = BundledBinary.extract(dir, "hev-socks5-tunnel", "hev-socks5-tunnel.exe")!!
