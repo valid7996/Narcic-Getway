@@ -2275,6 +2275,18 @@ internal fun AddServerSheet(
                     gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
                     onClick = onOpenConnect,
                 )
+                if (ServersUiConfig.SHOW_AETHER) {
+                    GlassOptionCard(
+                        title = stringResource(Res.string.aether_add_title),
+                        subtitle = stringResource(Res.string.aether_add_title_sub),
+                        icon = Res.drawable.ic_bolt,
+                        accentColor = Color(0xFF2088FF),
+                        iconTint = Color(0xFF38BDF8),
+                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                        onClick = onAether,
+                    )
+                }
                 GlassOptionCard(
                     title = stringResource(Res.string.ikev2_add_title),
                     subtitle = "",
