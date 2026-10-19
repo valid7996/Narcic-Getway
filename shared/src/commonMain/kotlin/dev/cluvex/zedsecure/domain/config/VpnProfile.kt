@@ -98,6 +98,7 @@ data class VpnProfile(
     val bytesUp: Long = 0,
 
     val note: String? = null,
+    val expiresAt: Long? = null,
 ) {
     val isCustom: Boolean get() = source is ProfileSource.RawJson
 

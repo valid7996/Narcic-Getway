@@ -133,15 +133,19 @@ class ConfigRepository(private val store: KeyValueStore) {
             return@runCatching 1
         }
 
-        if (trimmed.startsWith("nrg://", ignoreCase = true) || trimmed.startsWith("zsx://", ignoreCase = true)) {
-            val base64 = when {
-                trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
-                trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
-                else -> trimmed
-            }
+        val nrgMatch = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractLink(trimmed)
+        if (nrgMatch != null) {
+            val base64 = nrgMatch.substringAfter("://").trim()
             val bytes = Base64.decode(base64)
             val meta = ZsxCrypto.peek(bytes)
             if (meta.isExpired) throw ZsxExpiredException()
+
+            val extractedKey = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractKey(trimmed)
+            if (meta.passwordProtected && extractedKey != null && !isKeyConsumed(extractedKey)) {
+                val imp = importLocked(bytes, extractedKey)
+                if (imp.isSuccess) return@runCatching 1
+            }
+
             if (meta.passwordProtected) {
                 throw dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException()
             }
@@ -1537,6 +1541,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             source = ProfileSource.Sealed(Base64.encode(resealed)),
             addedAt = currentTimeMillis(),
             isLocked = true,
+            expiresAt = meta.expiresAt,
             note = meta.note.takeIf { it.isNotBlank() },
         )
         profile.toXrayConfigJson()

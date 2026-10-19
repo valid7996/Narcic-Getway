@@ -14,10 +14,11 @@ object ZsxSharing {
     fun shareText(context: Context, fileName: String, text: String) {
         runCatching {
             val dir = File(context.cacheDir, "shared").apply { mkdirs() }
-            val file = File(dir, dev.cluvex.zedsecure.crypto.zsxFileName(fileName)).apply { writeText(text) }
+            val targetName = if (fileName.endsWith(".json") || fileName.endsWith(".txt")) fileName else dev.cluvex.zedsecure.crypto.nrgFileName(fileName)
+            val file = File(dir, targetName).apply { writeText(text) }
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
             val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
+                type = if (targetName.endsWith(".json")) "application/json" else "text/plain"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
@@ -33,17 +34,19 @@ object ZsxSharing {
         val dir = File(context.cacheDir, "shared").apply { mkdirs() }
         val uris = ArrayList<Uri>()
         files.forEach { (name, bytes) ->
-            val file = File(dir, dev.cluvex.zedsecure.crypto.zsxFileName(name)).apply { writeBytes(bytes) }
+            val targetName = if (name.endsWith(".json") || name.endsWith(".txt") || name.endsWith(".nrg") || name.endsWith(".zsx")) name else dev.cluvex.zedsecure.crypto.nrgFileName(name)
+            val file = File(dir, targetName).apply { writeBytes(bytes) }
             uris += FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         }
+        val isJson = files.all { it.first.endsWith(".json") }
         val intent = if (uris.size == 1) {
             Intent(Intent.ACTION_SEND).apply {
-                type = "application/octet-stream"
+                type = if (isJson) "application/json" else "application/octet-stream"
                 putExtra(Intent.EXTRA_STREAM, uris[0])
             }
         } else {
             Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-                type = "application/octet-stream"
+                type = if (isJson) "application/json" else "application/octet-stream"
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
             }
         }

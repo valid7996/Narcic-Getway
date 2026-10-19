@@ -40,7 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -113,6 +115,7 @@ fun BackupRestoreScreen(
     val platform = LocalPlatform.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
+    val scope = rememberCoroutineScope()
     val profiles = repository.profiles.value
     val subscriptions = repository.subscriptions.value
 
@@ -192,7 +195,29 @@ fun BackupRestoreScreen(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text(if (backupCopied) "کپی شد" else "کپی بکاپ", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(if (backupCopied) "کپی شد" else "کپی بکاپ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Button(
+                        onClick = {
+                            val backupText = BackupManager.exportBackup(
+                                settings = settings,
+                                profiles = profiles,
+                                subscriptions = subscriptions,
+                            )
+                            platform.shareFiles(listOf("narcic-backup.json" to backupText.encodeToByteArray()))
+                        },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_download),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("ذخیره فایل JSON", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     OutlinedButton(
@@ -204,16 +229,15 @@ fun BackupRestoreScreen(
                             )
                             platform.shareText(backupText)
                         },
-                        modifier = Modifier.weight(1f).height(44.dp),
+                        modifier = Modifier.height(44.dp),
                         shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp),
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_ios_share),
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                         )
-                        Spacer(Modifier.width(6.dp))
-                        Text("اشتراک‌گذاری", fontSize = 13.sp)
                     }
                 }
             }
@@ -246,27 +270,54 @@ fun BackupRestoreScreen(
                         )
                     }
 
-                    OutlinedButton(
-                        onClick = {
-                            val clip = platform.readClipboard()
-                            if (!clip.isNullOrBlank()) {
-                                restoreInput = clip.trim()
-                                platform.toast("متن از کلیپ‌بورد جای‌گذاری شد")
-                            } else {
-                                platform.toast("کلیپ‌بورد خالی است")
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(34.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_content_paste),
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("جای‌گذاری", fontSize = 11.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val picked = platform.pickFileBytes() ?: return@launch
+                                    val text = picked.bytes.decodeToString().trim()
+                                    if (text.isNotBlank()) {
+                                        restoreInput = text
+                                        restoreMessage = null
+                                        platform.toast("فایل ${picked.name} انتخاب شد")
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(34.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_description),
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("انتخاب فایل JSON", fontSize = 11.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val clip = platform.readClipboard()
+                                if (!clip.isNullOrBlank()) {
+                                    restoreInput = clip.trim()
+                                    platform.toast("متن از کلیپ‌بورد جای‌گذاری شد")
+                                } else {
+                                    platform.toast("کلیپ‌بورد خالی است")
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(34.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_content_paste),
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("جای‌گذاری", fontSize = 11.sp)
+                        }
                     }
                 }
 

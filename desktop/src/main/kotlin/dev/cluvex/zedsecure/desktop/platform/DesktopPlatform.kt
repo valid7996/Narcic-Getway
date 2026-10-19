@@ -58,7 +58,10 @@ object DesktopPlatform : Platform {
 
     override fun shareFiles(files: List<Pair<String, ByteArray>>) {
         if (files.isEmpty()) return
-        val named = uniqueNames(files.map { (name, bytes) -> dev.cluvex.zedsecure.crypto.zsxFileName(name) to bytes })
+        val named = uniqueNames(files.map { (name, bytes) ->
+            val safeName = if (name.endsWith(".json") || name.endsWith(".txt") || name.endsWith(".nrg") || name.endsWith(".zsx")) name else dev.cluvex.zedsecure.crypto.nrgFileName(name)
+            safeName to bytes
+        })
         val home = File(System.getProperty("user.home"))
         if (named.size == 1) {
             val (name, bytes) = named.first()
@@ -81,10 +84,11 @@ object DesktopPlatform : Platform {
     internal fun uniqueNames(files: List<Pair<String, ByteArray>>): List<Pair<String, ByteArray>> {
         val used = mutableSetOf<String>()
         return files.map { (name, bytes) ->
-            val stem = name.removeSuffix(".zsx")
+            val ext = if (name.contains('.')) "." + name.substringAfterLast('.') else ""
+            val stem = if (ext.isNotEmpty()) name.removeSuffix(ext) else name
             var candidate = name
             var n = 2
-            while (!used.add(candidate)) candidate = "$stem-${n++}.zsx"
+            while (!used.add(candidate)) candidate = "$stem-${n++}$ext"
             candidate to bytes
         }
     }

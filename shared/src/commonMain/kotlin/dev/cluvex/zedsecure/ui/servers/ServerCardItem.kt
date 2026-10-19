@@ -42,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.cluvex.zedsecure.platform.currentTimeMillis
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
 import dev.cluvex.zedsecure.data.config.ConfigRepository
@@ -258,18 +260,48 @@ internal fun ServerCard(
                         )
                     }
                 }
-                profile.lastPingMs?.takeIf { it >= 0 }?.takeIf { personalization.showServerPing }?.let { ping ->
-                    Surface(
-                        shape = CircleShape,
-                        color = pingColor(ping, container).copy(alpha = 0.16f),
-                        contentColor = pingColor(ping, container),
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(end = 4.dp),
+                ) {
+                    profile.lastPingMs?.takeIf { it >= 0 }?.takeIf { personalization.showServerPing }?.let { ping ->
+                        Surface(
+                            shape = CircleShape,
+                            color = pingColor(ping, container).copy(alpha = 0.16f),
+                            contentColor = pingColor(ping, container),
+                        ) {
+                            Text(
+                                text = if (ping < 0) "$ping" else "$ping ms",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
+                    profile.expiresAt?.let { exp ->
+                        val remainingMs = exp - currentTimeMillis()
+                        val (expText, expColor) = if (remainingMs <= 0) {
+                            "منقضی" to Color(0xFFFF3B30)
+                        } else {
+                            val totalMinutes = remainingMs / 60_000
+                            val days = totalMinutes / (24 * 60)
+                            val hours = (totalMinutes % (24 * 60)) / 60
+                            val minutes = totalMinutes % 60
+                            val formatted = when {
+                                days > 0 -> if (hours > 0) "$days روز $hours س" else "$days روز"
+                                hours > 0 -> if (minutes > 0) "$hours س $minutes د" else "$hours ساعت"
+                                else -> "${minutes.coerceAtLeast(1)} دقیقه"
+                            }
+                            formatted to if (remainingMs < 30 * 60_000) Color(0xFFFF9500) else (if (isDark) Color(0xFFAAAAAA) else Color(0xFF666666))
+                        }
+                        Spacer(Modifier.height(2.dp))
                         Text(
-                            text = if (ping < 0) "$ping" else "$ping ms",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            text = expText,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = expColor,
+                            maxLines = 1,
                         )
                     }
                 }

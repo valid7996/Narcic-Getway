@@ -16,6 +16,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +41,7 @@ import dev.cluvex.zedsecure.crypto.ZsxMetadata
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.platform.currentTimeMillis
 import dev.cluvex.zedsecure.shared.resources.Res
+import dev.cluvex.zedsecure.shared.resources.ic_content_paste
 import dev.cluvex.zedsecure.shared.resources.ic_key
 import dev.cluvex.zedsecure.shared.resources.ic_lock
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
@@ -97,9 +99,15 @@ fun UnlockConfigDialog(
                         if (metadata.expiresAt != null) {
                             val diffMs = metadata.expiresAt - currentTimeMillis()
                             val expiryText = if (diffMs <= 0) "منقضی شده" else {
-                                val d = diffMs / (24 * 3600 * 1000L)
-                                val h = (diffMs % (24 * 3600 * 1000L)) / (3600 * 1000L)
-                                "$d روز و $h ساعت باقی‌مانده"
+                                val totalMinutes = diffMs / 60_000
+                                val d = totalMinutes / (24 * 60)
+                                val h = (totalMinutes % (24 * 60)) / 60
+                                val m = totalMinutes % 60
+                                when {
+                                    d > 0 -> if (h > 0) "$d روز و $h ساعت باقی‌مانده" else "$d روز باقی‌مانده"
+                                    h > 0 -> if (m > 0) "$h ساعت و $m دقیقه باقی‌مانده" else "$h ساعت باقی‌مانده"
+                                    else -> "$m دقیقه باقی‌مانده"
+                                }
                             }
                             Text("اعتبار: $expiryText", fontSize = 11.sp, color = Color(0xFF007AFF), fontWeight = FontWeight.Medium)
                         }
@@ -107,7 +115,7 @@ fun UnlockConfigDialog(
                 }
 
                 Text(
-                    "این کانفیگ با کلید اختصاصی یک‌بار مصرف قفل شده است. لطفاً کلید دریافتی را جهت فعال‌سازی روی این دستگاه وارد نمایید:",
+                    "این کانفیگ با کلید اختصاصی قفل شده است. لطفاً کلید دریافتی را جهت فعال‌سازی روی این دستگاه وارد نمایید:",
                     fontSize = 12.sp,
                     color = if (isDark) Color.LightGray else Color.DarkGray,
                 )
@@ -119,8 +127,8 @@ fun UnlockConfigDialog(
                         errorMessage = null
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("کلید اختصاصی یک‌بار مصرف کاربر") },
-                    placeholder = { Text("مثلاً: NG-XXXXXX") },
+                    label = { Text("کلید اختصاصی کاربر") },
+                    placeholder = { Text("مثلاً: NG-XXXX-XXXX-XXXX") },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -132,7 +140,16 @@ fun UnlockConfigDialog(
                         fontWeight = FontWeight.Bold,
                     ),
                     trailingIcon = {
-                        Icon(painter = painterResource(Res.drawable.ic_key), contentDescription = null, tint = Color(0xFFFF9500))
+                        IconButton(onClick = {
+                            val clip = platform.readClipboard()
+                            if (!clip.isNullOrBlank()) {
+                                val extracted = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractKey(clip) ?: clip.trim()
+                                userKeyInput = extracted
+                                errorMessage = null
+                            }
+                        }) {
+                            Icon(painter = painterResource(Res.drawable.ic_content_paste), contentDescription = "جای‌گذاری کلید از کلیپ‌بورد", tint = Color(0xFFFF9500))
+                        }
                     },
                 )
 

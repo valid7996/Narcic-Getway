@@ -94,6 +94,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cluvex.zedsecure.shared.resources.Res
 import dev.cluvex.zedsecure.shared.resources.*
+import dev.cluvex.zedsecure.data.backup.BackupManager
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.data.net.GeoLookup
 import dev.cluvex.zedsecure.data.net.PingCoordinator
@@ -102,6 +103,7 @@ import dev.cluvex.zedsecure.core.AutoSelect
 import dev.cluvex.zedsecure.domain.config.AutoSelectIds
 import dev.cluvex.zedsecure.domain.config.ConfigParseException
 import dev.cluvex.zedsecure.domain.config.ConfigParser
+import dev.cluvex.zedsecure.domain.config.LockedConfigExtractor
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
 import dev.cluvex.zedsecure.ui.format.formatBytes
@@ -208,36 +210,40 @@ fun ServersScreen(
         if (fresh.isNotEmpty()) obfuscateCandidates = repository.plainWireguardAmong(fresh)
     }
 
-    fun importScanned(text: String) {
-        val trimmed = text.trim()
-        val isNrgOrZsx = trimmed.startsWith("nrg://", ignoreCase = true) || trimmed.startsWith("zsx://", ignoreCase = true)
-        if (isNrgOrZsx) {
-            val b64 = when {
-                trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
-                trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
-                else -> trimmed
-            }
-            val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
-            if (bytes != null) {
-                val meta = runCatching { repository.peekLocked(bytes) }.getOrNull()
-                if (meta != null) {
-                    if (meta.isExpired) {
-                        platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
-                        return
-                    }
-                    if (meta.passwordProtected) {
-                        pendingUnlock = bytes to meta
-                        return
-                    }
-                    val imported = repository.importLocked(bytes, null)
-                    imported.fold(
-                        onSuccess = { toastRes(Res.string.servers_imported, 1) },
-                        onFailure = { toastImportFailure(it) },
-                    )
-                    return
-                }
-            }
+    fun tryHandleLocked(text: String): Boolean {
+        val link = LockedConfigExtractor.extractLink(text) ?: return false
+        val b64 = link.substring(6).trim()
+        val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull() ?: return false
+        val meta = runCatching { repository.peekLocked(bytes) }.getOrNull() ?: return false
+        if (meta.isExpired) {
+            platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+            return true
         }
+        val key = LockedConfigExtractor.extractKey(text)
+        if (meta.passwordProtected) {
+            if (key != null) {
+                val imported = repository.importLocked(bytes, key)
+                imported.fold(
+                    onSuccess = { toastRes(Res.string.servers_imported, 1) },
+                    onFailure = {
+                        pendingUnlock = bytes to meta
+                    },
+                )
+            } else {
+                pendingUnlock = bytes to meta
+            }
+            return true
+        }
+        val imported = repository.importLocked(bytes, null)
+        imported.fold(
+            onSuccess = { toastRes(Res.string.servers_imported, 1) },
+            onFailure = { toastImportFailure(it) },
+        )
+        return true
+    }
+
+    fun importScanned(text: String) {
+        if (tryHandleLocked(text)) return
 
         scope.launch(kotlinx.coroutines.Dispatchers.Default) {
             var outcome: Result<dev.cluvex.zedsecure.data.config.ConfigRepository.PastedImport>? = null
@@ -256,11 +262,8 @@ fun ServersScreen(
                 }
                 .onFailure { err ->
                     if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
-                        val b64 = when {
-                            trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
-                            trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
-                            else -> trimmed
-                        }
+                        val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
+                        val b64 = if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) link.substring(6).trim() else link
                         val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
                         val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                         if (bytes != null && meta != null) {
@@ -281,6 +284,25 @@ fun ServersScreen(
                 toastRes(Res.string.config_invalid)
                 return@launch
             }
+
+            // Check if it is a JSON backup file
+            val parsedBackup = BackupManager.parseBackup(text)
+            if (parsedBackup.isSuccess) {
+                val backup = parsedBackup.getOrNull()
+                if (backup != null && (backup.profiles?.isNotEmpty() == true || backup.subscriptions?.isNotEmpty() == true)) {
+                    val (restoredProfiles, restoredSubs) = repository.restoreBackupData(
+                        newProfiles = backup.profiles,
+                        newSubscriptions = backup.subscriptions,
+                        replaceProfiles = false,
+                        replaceSubscriptions = false,
+                    )
+                    platform.toast("نسخه پشتیبان بازیابی شد: $restoredProfiles سرور، $restoredSubs اشتراک")
+                    return@launch
+                }
+            }
+
+            if (tryHandleLocked(text)) return@launch
+
             val fileName = picked.name.substringBeforeLast('.').takeIf { it.isNotBlank() }
 
             val namedOvpn = picked.name.endsWith(".ovpn", ignoreCase = true)
@@ -326,35 +348,7 @@ fun ServersScreen(
             return
         }
 
-        val trimmed = text.trim()
-        val isNrgOrZsx = trimmed.startsWith("nrg://", ignoreCase = true) || trimmed.startsWith("zsx://", ignoreCase = true)
-        if (isNrgOrZsx) {
-            val b64 = when {
-                trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
-                trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
-                else -> trimmed
-            }
-            val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
-            if (bytes != null) {
-                val meta = runCatching { repository.peekLocked(bytes) }.getOrNull()
-                if (meta != null) {
-                    if (meta.isExpired) {
-                        platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
-                        return
-                    }
-                    if (meta.passwordProtected) {
-                        pendingUnlock = bytes to meta
-                        return
-                    }
-                    val imported = repository.importLocked(bytes, null)
-                    imported.fold(
-                        onSuccess = { toastRes(Res.string.servers_imported, 1) },
-                        onFailure = { toastImportFailure(it) },
-                    )
-                    return
-                }
-            }
-        }
+        if (tryHandleLocked(text)) return
 
         scope.launch(kotlinx.coroutines.Dispatchers.Default) {
             var outcome: Result<dev.cluvex.zedsecure.data.config.ConfigRepository.PastedImport>? = null
@@ -373,11 +367,8 @@ fun ServersScreen(
                 }
                 .onFailure { err ->
                     if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
-                        val b64 = when {
-                            trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
-                            trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
-                            else -> trimmed
-                        }
+                        val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
+                        val b64 = if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) link.substring(6).trim() else link
                         val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
                         val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                         if (bytes != null && meta != null) {

@@ -218,3 +218,18 @@ data class DeepLinkPreview(
         }
     }
 }
+
+object LockedConfigExtractor {
+    val LINK_REGEX = Regex("""(nrg|zsx)://([A-Za-z0-9+/=_-]+)""", RegexOption.IGNORE_CASE)
+    val KEY_REGEX_1 = Regex("""(?:کلید(?: اختصاصی| خصوصی)?|user key|secret key|password|key)\s*[:：=]\s*([A-Za-z0-9_-]+)""", RegexOption.IGNORE_CASE)
+    val KEY_REGEX_2 = Regex("""\b(NG-[A-Za-z0-9_-]+)\b""", RegexOption.IGNORE_CASE)
+
+    fun extractLink(text: String): String? = LINK_REGEX.find(text)?.value
+
+    fun extractKey(text: String): String? {
+        val m1 = KEY_REGEX_1.find(text)
+        if (m1 != null) return m1.groupValues[1].trim()
+        val m2 = KEY_REGEX_2.find(text)
+        return m2?.groupValues?.get(1)?.trim()
+    }
+}

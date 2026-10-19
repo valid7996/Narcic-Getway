@@ -80,23 +80,33 @@ import kotlin.random.Random
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-private fun generateUserKey(): String {
+private fun generateUserKey(advanced: Boolean = true): String {
     val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    val rand = (1..6).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-    return "NG-$rand"
+    return if (advanced) {
+        val part1 = (1..4).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        val part2 = (1..4).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        val part3 = (1..4).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        "NG-$part1-$part2-$part3"
+    } else {
+        val rand = (1..6).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        "NG-$rand"
+    }
 }
 
 private fun formatExpiryTimestamp(epochMs: Long): String {
     val diffMs = epochMs - currentTimeMillis()
     if (diffMs <= 0) return "منقضی شده"
-    val hours = diffMs / (3600 * 1000L)
-    val days = hours / 24
-    val remHours = hours % 24
+    val totalMinutes = diffMs / (60 * 1000L)
+    val days = totalMinutes / (24 * 60)
+    val remMinutesAfterDays = totalMinutes % (24 * 60)
+    val hours = remMinutesAfterDays / 60
+    val minutes = remMinutesAfterDays % 60
     return when {
-        days > 0 && remHours > 0 -> "$days روز و $remHours ساعت دیگر"
+        days > 0 && hours > 0 -> "$days روز و $hours ساعت دیگر"
         days > 0 -> "$days روز دیگر"
+        hours > 0 && minutes > 0 -> "$hours ساعت و $minutes دقیقه دیگر"
         hours > 0 -> "$hours ساعت دیگر"
-        else -> "کمتر از ۱ ساعت دیگر"
+        else -> "$minutes دقیقه دیگر"
     }
 }
 
@@ -112,9 +122,12 @@ fun LockShareSheet(
     var configTitle by remember { mutableStateOf(profile.name) }
     var userNote by remember { mutableStateOf("") }
     var requireKey by remember { mutableStateOf(true) }
-    var userKey by remember { mutableStateOf(generateUserKey()) }
-    var selectedExpiryOption by remember { mutableIntStateOf(3) } // 0: None, 1: 6h, 2: 24h, 3: 3d, 4: 7d, 5: 30d, 6: custom
-    var customDays by remember { mutableIntStateOf(14) }
+    var isAdvancedKey by remember { mutableStateOf(true) }
+    var userKey by remember { mutableStateOf(generateUserKey(advanced = true)) }
+    var selectedExpiryOption by remember { mutableIntStateOf(5) } // 0: None, 1: 5m, 2: 1h, 3: 6h, 4: 24h, 5: 3d, 6: 7d, 7: 30d, 8: custom
+    var customDays by remember { mutableIntStateOf(0) }
+    var customHours by remember { mutableIntStateOf(0) }
+    var customMinutes by remember { mutableIntStateOf(5) }
 
     var generatedNrgLink by remember { mutableStateOf<String?>(null) }
     var generatedExpiresAt by remember { mutableStateOf<Long?>(null) }
@@ -196,32 +209,64 @@ fun LockShareSheet(
                         }
 
                         AnimatedVisibility(visible = requireKey) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                OutlinedTextField(
-                                    value = userKey,
-                                    onValueChange = { userKey = it },
-                                    modifier = Modifier.weight(1f),
-                                    label = { Text("کلید خصوصی") },
-                                    shape = RoundedCornerShape(10.dp),
-                                    singleLine = true,
-                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFFF9500),
-                                    ),
-                                )
-                                OutlinedButton(
-                                    onClick = { userKey = generateUserKey() },
-                                    modifier = Modifier.height(52.dp),
-                                    shape = RoundedCornerShape(10.dp),
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
-                                    Icon(painter = painterResource(Res.drawable.ic_sync), contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("تولید", fontSize = 12.sp)
+                                    FilterChip(
+                                        selected = isAdvancedKey,
+                                        onClick = {
+                                            isAdvancedKey = true
+                                            userKey = generateUserKey(advanced = true)
+                                        },
+                                        label = { Text("کلید پیشرفته (۱۲ کاراکتر)", fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFFFF9500).copy(alpha = 0.2f),
+                                            selectedLabelColor = Color(0xFFFF9500),
+                                        ),
+                                    )
+                                    FilterChip(
+                                        selected = !isAdvancedKey,
+                                        onClick = {
+                                            isAdvancedKey = false
+                                            userKey = generateUserKey(advanced = false)
+                                        },
+                                        label = { Text("کلید ساده (۶ کاراکتر)", fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFFFF9500).copy(alpha = 0.2f),
+                                            selectedLabelColor = Color(0xFFFF9500),
+                                        ),
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    OutlinedTextField(
+                                        value = userKey,
+                                        onValueChange = { userKey = it },
+                                        modifier = Modifier.weight(1f),
+                                        label = { Text("کلید خصوصی اختصاصی") },
+                                        shape = RoundedCornerShape(10.dp),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFFF9500),
+                                        ),
+                                    )
+                                    OutlinedButton(
+                                        onClick = { userKey = generateUserKey(advanced = isAdvancedKey) },
+                                        modifier = Modifier.height(52.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                    ) {
+                                        Icon(painter = painterResource(Res.drawable.ic_sync), contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("تولید", fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }
@@ -240,12 +285,14 @@ fun LockShareSheet(
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 val expiryOptions = listOf(
                                     0 to "دائمی (بدون انقضا)",
-                                    1 to "۶ ساعت",
-                                    2 to "۲۴ ساعت (۱ روز)",
-                                    3 to "۳ روز",
-                                    4 to "۷ روز (یک هفته)",
-                                    5 to "۳۰ روز (یک ماه)",
-                                    6 to "سفارشی",
+                                    1 to "۵ دقیقه (تست سریع)",
+                                    2 to "۱ ساعت (تست)",
+                                    3 to "۶ ساعت",
+                                    4 to "۲۴ ساعت (۱ روز)",
+                                    5 to "۳ روز",
+                                    6 to "۷ روز (یک هفته)",
+                                    7 to "۳۰ روز (یک ماه)",
+                                    8 to "سفارشی",
                                 )
                                 expiryOptions.forEach { (code, label) ->
                                     val isSelected = selectedExpiryOption == code
@@ -261,15 +308,42 @@ fun LockShareSheet(
                                 }
                             }
 
-                            AnimatedVisibility(visible = selectedExpiryOption == 6) {
-                                OutlinedTextField(
-                                    value = if (customDays > 0) customDays.toString() else "",
-                                    onValueChange = { customDays = it.toIntOrNull() ?: 0 },
-                                    label = { Text("تعداد روز اعتبار") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(10.dp),
-                                    singleLine = true,
-                                )
+                            AnimatedVisibility(visible = selectedExpiryOption == 8) {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("تنظیم دقیق روز، ساعت و دقیقه اعتبار:", fontSize = 11.sp, color = Color.Gray)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        OutlinedTextField(
+                                            value = if (customDays > 0) customDays.toString() else "",
+                                            onValueChange = { customDays = it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0 },
+                                            label = { Text("روز") },
+                                            placeholder = { Text("0") },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            singleLine = true,
+                                        )
+                                        OutlinedTextField(
+                                            value = if (customHours > 0) customHours.toString() else "",
+                                            onValueChange = { customHours = it.filter { c -> c.isDigit() }.toIntOrNull()?.coerceIn(0, 23) ?: 0 },
+                                            label = { Text("ساعت") },
+                                            placeholder = { Text("0") },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            singleLine = true,
+                                        )
+                                        OutlinedTextField(
+                                            value = if (customMinutes > 0) customMinutes.toString() else "",
+                                            onValueChange = { customMinutes = it.filter { c -> c.isDigit() }.toIntOrNull()?.coerceIn(0, 59) ?: 0 },
+                                            label = { Text("دقیقه") },
+                                            placeholder = { Text("5") },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            singleLine = true,
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -279,12 +353,17 @@ fun LockShareSheet(
                                 val now = currentTimeMillis()
                                 val expiresAt: Long? = when (selectedExpiryOption) {
                                     0 -> null
-                                    1 -> now + 6 * 3600 * 1000L
-                                    2 -> now + 24 * 3600 * 1000L
-                                    3 -> now + 3 * 24 * 3600 * 1000L
-                                    4 -> now + 7 * 24 * 3600 * 1000L
-                                    5 -> now + 30 * 24 * 3600 * 1000L
-                                    6 -> now + customDays.coerceAtLeast(1) * 24 * 3600 * 1000L
+                                    1 -> now + 5 * 60 * 1000L
+                                    2 -> now + 60 * 60 * 1000L
+                                    3 -> now + 6 * 3600 * 1000L
+                                    4 -> now + 24 * 3600 * 1000L
+                                    5 -> now + 3 * 24 * 3600 * 1000L
+                                    6 -> now + 7 * 24 * 3600 * 1000L
+                                    7 -> now + 30 * 24 * 3600 * 1000L
+                                    8 -> {
+                                        val totalMs = (customDays * 24 * 3600L + customHours * 3600L + customMinutes * 60L) * 1000L
+                                        if (totalMs > 0) now + totalMs else null
+                                    }
                                     else -> null
                                 }
 
