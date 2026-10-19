@@ -476,19 +476,19 @@ fun ServersScreen(
     var showProxyChain by remember { mutableStateOf(false) }
     var showCrossChain by remember { mutableStateOf(false) }
 
-    val servers = profiles.filterNot { it.isLocked }
+    val servers = profiles
 
     val chainCandidates = servers.filter {
-        it.rawPayload() != null && (!it.isCustom || it.isServerless) && !it.isManagedTunnel && !it.isProxyChain &&
+        !it.isLocked && it.rawPayload() != null && (!it.isCustom || it.isServerless) && !it.isManagedTunnel && !it.isProxyChain &&
             !it.isSingBoxConfig
     }
 
     val spoofCandidates = servers.filter {
-        it.rawPayload() != null && !it.isManagedTunnel && !it.isProxyChain &&
+        !it.isLocked && it.rawPayload() != null && !it.isManagedTunnel && !it.isProxyChain &&
             !it.isCrossChain && !it.isSniSpoof
     }
-    val crossCarriers = servers.filter { it.canCarryChain && !it.isCrossChain }
-    val crossExits = servers.filter { it.canDialThroughProxy && !it.isCrossChain }
+    val crossCarriers = servers.filter { !it.isLocked && it.canCarryChain && !it.isCrossChain }
+    val crossExits = servers.filter { !it.isLocked && it.canDialThroughProxy && !it.isCrossChain }
 
     val udpMismatchTemplate = stringResource(Res.string.crosschain_udp_unsupported)
     val crossPairError: (VpnProfile, VpnProfile) -> String? = { inner, outer ->
@@ -1078,7 +1078,8 @@ fun ServersScreen(
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
                                 val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
-                                val ms = if (isSpoof) {
+                                val isSealed = profile.isLocked || profile.source is dev.cluvex.zedsecure.domain.config.ProfileSource.Sealed
+                                val ms = if (isSpoof || isSealed) {
                                     PingService.realDelay(
                                         profile,
                                         url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
@@ -1086,7 +1087,7 @@ fun ServersScreen(
                                 } else {
                                     PingService.tcpPing(profile.address, profile.port)
                                 }
-                                val cc = if (ms > 0 && !isSpoof) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
@@ -1094,11 +1095,12 @@ fun ServersScreen(
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
                                 val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
+                                val isSealed = profile.isLocked || profile.source is dev.cluvex.zedsecure.domain.config.ProfileSource.Sealed
                                 val ms = PingService.realDelay(
                                     profile,
                                     url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
                                 )
-                                val cc = if (ms > 0 && !isSpoof) GeoLookup.countryOf(profile.address) else null
+                                val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(profile.address) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },

@@ -182,7 +182,7 @@ internal fun HomeServerSection(
     var showBackupRestore by remember { mutableStateOf(false) }
     val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
 
-    val allServers = profiles.filterNot { it.isLocked }
+    val allServers = profiles
     val manualCount = allServers.count { it.subscriptionId.isEmpty() }
     val servers = when (group) {
         "all" -> allServers
@@ -192,11 +192,11 @@ internal fun HomeServerSection(
     val subscriptionNames = subscriptions.associate { it.id to it.name }
 
     val chainCandidates = allServers.filter {
-        it.rawPayload() != null && (!it.isCustom || it.isServerless) && !it.isManagedTunnel && !it.isProxyChain &&
+        !it.isLocked && it.rawPayload() != null && (!it.isCustom || it.isServerless) && !it.isManagedTunnel && !it.isProxyChain &&
             !it.isSingBoxConfig
     }
-    val crossCarriers = allServers.filter { it.canCarryChain && !it.isCrossChain }
-    val crossExits = allServers.filter { it.canDialThroughProxy && !it.isCrossChain }
+    val crossCarriers = allServers.filter { !it.isLocked && it.canCarryChain && !it.isCrossChain }
+    val crossExits = allServers.filter { !it.isLocked && it.canDialThroughProxy && !it.isCrossChain }
     val udpMismatchTemplate = stringResource(Res.string.crosschain_udp_unsupported)
     val crossPairError: (VpnProfile, VpnProfile) -> String? = { inner, outer ->
         repository.udpMismatch(inner, outer)?.let {
@@ -1124,7 +1124,8 @@ private suspend fun pingOne(
 ) {
     repository.clearPings(listOf(profile.id), persist = false)
     val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
-    val ms = if (real || isSpoof) {
+    val isSealed = profile.isLocked || profile.source is dev.cluvex.zedsecure.domain.config.ProfileSource.Sealed
+    val ms = if (real || isSpoof || isSealed) {
         PingService.realDelay(
             profile,
             url = delayTestUrl.ifBlank { dev.cluvex.zedsecure.data.net.NetworkInfoRepository.DELAY_TEST_URL },
@@ -1132,6 +1133,6 @@ private suspend fun pingOne(
     } else {
         PingService.tcpPing(profile.address, profile.port)
     }
-    val cc = if (ms > 0 && !isSpoof) GeoLookup.countryOf(profile.address) else null
+    val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(profile.address) else null
     repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
 }

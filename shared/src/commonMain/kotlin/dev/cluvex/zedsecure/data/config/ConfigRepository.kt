@@ -1136,11 +1136,7 @@ class ConfigRepository(private val store: KeyValueStore) {
 
     fun sortByTestResults() {
         _profiles.value = _profiles.value.sortedWith(
-            compareBy(
-                { it.isLocked },
-
-                { it.lastPingMs?.takeIf { ms -> ms > 0 } ?: Int.MAX_VALUE },
-            ),
+            compareBy { it.lastPingMs?.takeIf { ms -> ms > 0 } ?: Int.MAX_VALUE },
         )
         persistProfiles()
     }

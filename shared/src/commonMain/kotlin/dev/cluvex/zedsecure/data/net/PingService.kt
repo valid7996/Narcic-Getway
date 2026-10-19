@@ -161,8 +161,9 @@ object PingService {
         (aetherJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
                 val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
-                val heavy = useRealDelay || profile.isProxyChain || isSpoof
-                val pool = if (heavy && profile.isCustom) customPermits else permits
+                val isSealed = profile.isLocked || profile.source is dev.cluvex.zedsecure.domain.config.ProfileSource.Sealed
+                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed
+                val pool = if (heavy && (profile.isCustom || isSealed)) customPermits else permits
                 val ms = pool.withPermit {
                     if (heavy) measureProfile(profile, url, chainConfig)
                     else tcpPing(profile.address, profile.port)
@@ -173,7 +174,7 @@ object PingService {
                 onResult(profile.id, latency, profile.countryCode)
                 doneLock.withPermit { onProgress(++done, total) }
 
-                if (latency > 0 && profile.countryCode == null && !isSpoof) {
+                if (latency > 0 && profile.countryCode == null && !isSpoof && !isSealed) {
                     geoScope.launch {
                         val country = geoPermits.withPermit { GeoLookup.countryOf(profile.address) }
                         if (country != null) onResult(profile.id, latency, country)
