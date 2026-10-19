@@ -52,6 +52,10 @@ class StartPlanner(context: Context) {
     fun plan(profile: VpnProfile?, allowProxyOnly: Boolean = true): Plan {
         AutoSelect.clearPrepared()
         if (profile == null) return Plan.Failure(appContext.getString(R.string.select_config_first))
+        val exp = profile.expiresAt
+        if (profile.isLocked && exp != null && System.currentTimeMillis() >= exp) {
+            return Plan.Failure(appContext.getString(R.string.zsx_expired))
+        }
         profile.ikev2Settings()?.let { return Plan.Ikev2(profile.name, it) }
         val kind = engineKindOf(profile)
         val configJson = try {

@@ -79,6 +79,21 @@ fun MainScaffold(
         }
     }
 
+    val connectionState by connectionVm.ui.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(connectionState.state, activeProfile?.id, activeProfile?.expiresAt) {
+        if (!connectionState.state.isActive) return@LaunchedEffect
+        val profile = activeProfile ?: return@LaunchedEffect
+        if (!profile.isLocked) return@LaunchedEffect
+        val exp = profile.expiresAt ?: return@LaunchedEffect
+        val remaining = exp - dev.cluvex.zedsecure.platform.currentTimeMillis()
+        if (remaining <= 0) {
+            onToggleConnection()
+        } else {
+            kotlinx.coroutines.delay(remaining)
+            onToggleConnection()
+        }
+    }
+
     val mtuHint = remember(activeProfile) {
         val link = (activeProfile?.source as? dev.cluvex.zedsecure.domain.config.ProfileSource.Link)?.link
         val parsed = link?.let {

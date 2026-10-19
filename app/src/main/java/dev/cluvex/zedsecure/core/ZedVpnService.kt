@@ -1172,6 +1172,15 @@ class ZedVpnService : VpnService() {
                     else -> XrayController.isRunning
                 }
                 if (!running) { onTunnelFailed(null); break }
+                val activeProfile = container.configRepository.activeProfile()
+                val exp = activeProfile?.expiresAt
+                if (activeProfile?.isLocked == true && exp != null && System.currentTimeMillis() >= exp) {
+                    Log.i(TAG, "Active locked profile has expired; disconnecting VPN immediately")
+                    userStop = true
+                    stopEverything()
+                    VpnManager.onError(getString(R.string.zsx_expired))
+                    break
+                }
                 elapsed = ((android.os.SystemClock.elapsedRealtime() - startedAt) / 1000).toInt()
                 ticks++
                 val awake = isScreenAwake

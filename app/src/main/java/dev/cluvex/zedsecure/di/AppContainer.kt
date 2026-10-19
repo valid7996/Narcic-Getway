@@ -102,6 +102,25 @@ class AppContainer(context: Context) {
                 }
             }
         }
+
+        scope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(1000)
+                if (VpnManager.status.value.state.isActive) {
+                    val active = configRepository.activeProfile()
+                    val exp = active?.expiresAt
+                    if (active?.isLocked == true && exp != null && System.currentTimeMillis() >= exp) {
+                        android.util.Log.i("AppContainer", "Active locked profile has expired, disconnecting VPN")
+                        if (dev.cluvex.zedsecure.core.Ikev2Controller.isActive) {
+                            dev.cluvex.zedsecure.core.Ikev2Controller.stop(context)
+                        } else {
+                            dev.cluvex.zedsecure.core.AndroidVpn.stop(context)
+                        }
+                        VpnManager.onError(context.getString(dev.cluvex.zedsecure.R.string.zsx_expired))
+                    }
+                }
+            }
+        }
     }
 }
 

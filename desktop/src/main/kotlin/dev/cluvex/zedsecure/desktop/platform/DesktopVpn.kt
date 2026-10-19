@@ -70,6 +70,11 @@ object DesktopVpn {
         val state = VpnManager.status.value.state
         if (state.isActive || state.isTransitioning) { stop(); return }
         val profile = config.activeProfile() ?: run { VpnManager.onError("Select a config first"); return }
+        val exp = profile.expiresAt
+        if (profile.isLocked && exp != null && System.currentTimeMillis() >= exp) {
+            VpnManager.onError("این کانفیگ قفل‌شده منقضی شده است")
+            return
+        }
 
         runMode = settingsProvider().runMode
 
