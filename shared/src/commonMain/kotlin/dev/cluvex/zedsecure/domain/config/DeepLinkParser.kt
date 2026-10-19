@@ -87,7 +87,8 @@ object DeepLinkParser {
     private fun configText(text: String): DeepLinkRequest? {
         val t = text.trim()
         val readable = ConfigParser.isSupportedLink(t) && !t.startsWith("http", ignoreCase = true) ||
-            SniSpoofLink.isSniSpoofLink(t) || ZedLink.isZedLink(t) || AetherLink.isAetherLink(t)
+            SniSpoofLink.isSniSpoofLink(t) || ZedLink.isZedLink(t) || AetherLink.isAetherLink(t) ||
+            t.startsWith("nrg://", ignoreCase = true) || t.startsWith("zsx://", ignoreCase = true)
         return if (readable) DeepLinkRequest.ConfigText(t) else null
     }
 
@@ -171,6 +172,15 @@ data class DeepLinkPreview(
             }
             if (AetherLink.isAetherLink(text)) {
                 return DeepLinkPreview(AetherLink.parse(text)?.first?.takeIf { it.isNotBlank() }, "Aether")
+            }
+            if (text.startsWith("nrg://", ignoreCase = true) || text.startsWith("zsx://", ignoreCase = true)) {
+                val b64 = text.substringAfter("://").trim()
+                val meta = runCatching {
+                    val bytes = kotlin.io.encoding.Base64.decode(b64)
+                    dev.cluvex.zedsecure.crypto.ZsxCrypto.peek(bytes)
+                }.getOrNull()
+                val name = meta?.let { it.nameEn.ifBlank { it.nameFa } }?.takeIf { it.isNotBlank() }
+                return DeepLinkPreview(name = name, detail = "Locked · NRG")
             }
             if (SingBoxLinks.handles(text)) {
                 val singBox = runCatching { SingBoxLinks.parse(text) }.getOrNull()
