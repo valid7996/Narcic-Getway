@@ -116,7 +116,7 @@ fun LockShareSheet(
     var selectedExpiryOption by remember { mutableIntStateOf(3) } // 0: None, 1: 6h, 2: 24h, 3: 3d, 4: 7d, 5: 30d, 6: custom
     var customDays by remember { mutableIntStateOf(14) }
 
-    var generatedZsxLink by remember { mutableStateOf<String?>(null) }
+    var generatedNrgLink by remember { mutableStateOf<String?>(null) }
     var generatedExpiresAt by remember { mutableStateOf<Long?>(null) }
     var generatedKey by remember { mutableStateOf<String?>(null) }
 
@@ -150,8 +150,8 @@ fun LockShareSheet(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 PageHeader(
-                    title = "اشتراک امن و قفل‌شده",
-                    subtitle = "قفل کانفیگ با کلید اختصاصی کاربر و محدودیت زمان انقضا",
+                    title = "اشتراک امن و قفل‌شده (NRG)",
+                    subtitle = "قفل کانفیگ با کلید یک‌بار مصرف کاربر و زمان انقضا",
                 )
 
                 // ─── Settings Card ────────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ fun LockShareSheet(
                         OutlinedTextField(
                             value = userNote,
                             onValueChange = { userNote = it },
-                            label = { Text("یادداشت / نام کاربر (اختیاری)") },
+                            label = { Text("یادداشت / نام خریدار (اختیاری)") },
                             placeholder = { Text("مثلاً: اختصاصی برای مهندس احمدی") },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
@@ -188,9 +188,9 @@ fun LockShareSheet(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column {
-                                Text("کلید اختصاصی کاربر (User Private Key)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                Text("فقط با وارد کردن این کلید کانفیگ باز می‌شود", fontSize = 11.sp, color = Color.Gray)
+                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text("کلید خصوصی یک‌بار مصرف (User Key)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text("فقط یک بار جهت فعال‌سازی روی دستگاه مقصد استفاده می‌شود", fontSize = 11.sp, color = Color.Gray)
                             }
                             Switch(checked = requireKey, onCheckedChange = { requireKey = it })
                         }
@@ -300,7 +300,7 @@ fun LockShareSheet(
 
                                 val sealedBytes = ZsxCrypto.seal(sealReq)
                                 val base64 = Base64.encode(sealedBytes)
-                                generatedZsxLink = "zsx://$base64"
+                                generatedNrgLink = "nrg://$base64"
                                 generatedExpiresAt = expiresAt
                                 generatedKey = finalKey
                                 linkCopied = false
@@ -314,33 +314,33 @@ fun LockShareSheet(
                         ) {
                             Icon(painter = painterResource(Res.drawable.ic_lock), contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("تولید کانفیگ قفل‌شده (ZSX)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("تولید کانفیگ قفل‌شده (NRG)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
 
                 // ─── Result Output Card ────────────────────────────────────────────────────
-                AnimatedVisibility(visible = generatedZsxLink != null) {
-                    val zsxLink = generatedZsxLink ?: ""
+                AnimatedVisibility(visible = generatedNrgLink != null) {
+                    val nrgLink = generatedNrgLink ?: ""
                     val expiresAt = generatedExpiresAt
                     val currentKey = generatedKey
 
                     val fullPackageText = buildString {
-                        appendLine("🔒 کانفیگ اختصاصی قفل‌شده Narcic Getway")
+                        appendLine("🔒 کانفیگ اختصاصی و قفل‌شده Narcic Gateway")
                         appendLine("🏷️ نام کانفیگ: $configTitle")
                         appendLine("⏳ تاریخ انقضا: ${if (expiresAt != null) formatExpiryTimestamp(expiresAt) else "دائمی (بدون انقضا)"}")
                         if (currentKey != null) {
-                            appendLine("🔑 کلید اختصاصی شما: $currentKey")
-                            appendLine("(این کلید را کپی کرده و هنگام افزودن کانفیگ در برنامه وارد کنید)")
+                            appendLine("🔑 کلید خصوصی یک‌بار مصرف شما: $currentKey")
+                            appendLine("⚠️ توجه: این کلید اختصاصی و یک‌بار مصرف است و فقط روی دستگاه شما فعال می‌شود.")
                         }
                         if (userNote.isNotBlank()) {
                             appendLine("📝 یادداشت: $userNote")
                         }
                         appendLine()
                         appendLine("🔗 لینک کانفیگ:")
-                        appendLine(zsxLink)
+                        appendLine(nrgLink)
                         appendLine()
-                        appendLine("جهت استفاده، لینک بالا را کپی کرده و در برنامه Narcic Getway باز کنید.")
+                        appendLine("جهت فعال‌سازی، لینک بالا را کپی کرده و در برنامه Narcic Gateway وارد نمایید.")
                     }
 
                     Surface(
@@ -374,7 +374,7 @@ fun LockShareSheet(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        zsxLink,
+                                        nrgLink,
                                         modifier = Modifier.weight(1f),
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
@@ -383,7 +383,7 @@ fun LockShareSheet(
                                     )
                                     IconButton(
                                         onClick = {
-                                            platform.copyToClipboard(zsxLink)
+                                            platform.copyToClipboard(nrgLink)
                                             linkCopied = true
                                             platform.toast("لینک کانفیگ کپی شد")
                                         },
@@ -478,8 +478,8 @@ fun LockShareSheet(
         }
     }
 
-    if (showQrDialog && generatedZsxLink != null) {
-        val link = generatedZsxLink!!
+    if (showQrDialog && generatedNrgLink != null) {
+        val link = generatedNrgLink!!
         QrDialog(
             title = configTitle,
             text = link,

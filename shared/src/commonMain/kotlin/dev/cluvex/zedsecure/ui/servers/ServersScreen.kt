@@ -143,6 +143,14 @@ fun ServersScreen(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     fun toastImportFailure(e: Throwable) {
+        if (e is dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException) {
+            scope.launch { platform.toast("این کلید اختصاصی قبلاً یک بار استفاده شده و باطل گردیده است (کلید یک‌بار مصرف).") }
+            return
+        }
+        if (e is dev.cluvex.zedsecure.crypto.ZsxExpiredException) {
+            scope.launch { platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.") }
+            return
+        }
         if (e is ConfigRepository.SubscriptionNotFetchedException) {
             scope.launch {
                 platform.toast(
@@ -202,8 +210,13 @@ fun ServersScreen(
 
     fun importScanned(text: String) {
         val trimmed = text.trim()
-        if (trimmed.startsWith("zsx://", ignoreCase = true)) {
-            val b64 = trimmed.substring(6).trim()
+        val isNrgOrZsx = trimmed.startsWith("nrg://", ignoreCase = true) || trimmed.startsWith("zsx://", ignoreCase = true)
+        if (isNrgOrZsx) {
+            val b64 = when {
+                trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
+                trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
+                else -> trimmed
+            }
             val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
             if (bytes != null) {
                 val meta = runCatching { repository.peekLocked(bytes) }.getOrNull()
@@ -243,7 +256,11 @@ fun ServersScreen(
                 }
                 .onFailure { err ->
                     if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
-                        val b64 = if (trimmed.startsWith("zsx://", ignoreCase = true)) trimmed.substring(6).trim() else trimmed
+                        val b64 = when {
+                            trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
+                            trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
+                            else -> trimmed
+                        }
                         val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
                         val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                         if (bytes != null && meta != null) {
@@ -310,8 +327,13 @@ fun ServersScreen(
         }
 
         val trimmed = text.trim()
-        if (trimmed.startsWith("zsx://", ignoreCase = true)) {
-            val b64 = trimmed.substring(6).trim()
+        val isNrgOrZsx = trimmed.startsWith("nrg://", ignoreCase = true) || trimmed.startsWith("zsx://", ignoreCase = true)
+        if (isNrgOrZsx) {
+            val b64 = when {
+                trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
+                trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
+                else -> trimmed
+            }
             val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
             if (bytes != null) {
                 val meta = runCatching { repository.peekLocked(bytes) }.getOrNull()
@@ -351,7 +373,11 @@ fun ServersScreen(
                 }
                 .onFailure { err ->
                     if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
-                        val b64 = if (trimmed.startsWith("zsx://", ignoreCase = true)) trimmed.substring(6).trim() else trimmed
+                        val b64 = when {
+                            trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
+                            trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
+                            else -> trimmed
+                        }
                         val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
                         val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                         if (bytes != null && meta != null) {

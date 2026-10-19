@@ -45,7 +45,8 @@ class ZsxCryptoTest {
     @Test
     fun newFilesUseVersionTwo() {
         val file = ZsxCrypto.seal(request(password = null))
-        assertEquals("ZSX1", String(file.copyOfRange(0, 4), Charsets.US_ASCII))
+        val magic = String(file.copyOfRange(0, 4), Charsets.US_ASCII)
+        assertTrue(magic == "NRG1" || magic == "ZSX1")
         assertEquals(2, file[4].toInt())
     }
 

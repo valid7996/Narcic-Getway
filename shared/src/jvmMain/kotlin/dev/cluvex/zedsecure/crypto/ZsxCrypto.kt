@@ -15,7 +15,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
 actual object ZsxCrypto {
-    private val MAGIC = "ZSX1".toByteArray(Charsets.US_ASCII)
+    private val MAGIC_ZSX = "ZSX1".toByteArray(Charsets.US_ASCII)
+    private val MAGIC_NRG = "NRG1".toByteArray(Charsets.US_ASCII)
     private const val LEGACY_VERSION: Byte = 1
     private const val VERSION: Byte = 2
     private const val NONCE_LEN = 12
@@ -66,9 +67,9 @@ actual object ZsxCrypto {
         val innerBytes = json.encodeToString(ZsxInner.serializer(), inner).toByteArray()
 
         val outerNonce = randomBytes(NONCE_LEN)
-        val outerCipher = aesGcmEncrypt(openKey, outerNonce, aad(), innerBytes)
+        val outerCipher = aesGcmEncrypt(openKey, outerNonce, aad(MAGIC_NRG), innerBytes)
 
-        return MAGIC + byteArrayOf(VERSION) + outerNonce + outerCipher
+        return MAGIC_NRG + byteArrayOf(VERSION) + outerNonce + outerCipher
     }
 
     actual fun peek(bytes: ByteArray): ZsxMetadata = readInner(bytes).let { inner ->
@@ -109,19 +110,24 @@ actual object ZsxCrypto {
     }
 
     private fun readInner(bytes: ByteArray): ZsxInner {
-        if (bytes.size < MAGIC.size + 1) throw ZsxTamperException()
-        if (!bytes.copyOfRange(0, MAGIC.size).contentEquals(MAGIC)) throw ZsxTamperException()
-        when (bytes[MAGIC.size]) {
+        if (bytes.size < 5) throw ZsxTamperException()
+        val magic4 = bytes.copyOfRange(0, 4)
+        val isNrg = magic4.contentEquals(MAGIC_NRG)
+        val isZsx = magic4.contentEquals(MAGIC_ZSX)
+        if (!isNrg && !isZsx) throw ZsxTamperException()
+        val usedMagic = if (isNrg) MAGIC_NRG else MAGIC_ZSX
+
+        when (bytes[4]) {
             VERSION -> Unit
             LEGACY_VERSION -> throw ZsxLegacyException()
             else -> throw ZsxVersionException()
         }
-        if (bytes.size < MAGIC.size + 1 + NONCE_LEN + 16) throw ZsxTamperException()
-        val nonceStart = MAGIC.size + 1
+        if (bytes.size < 4 + 1 + NONCE_LEN + 16) throw ZsxTamperException()
+        val nonceStart = 4 + 1
         val outerNonce = bytes.copyOfRange(nonceStart, nonceStart + NONCE_LEN)
         val outerCipher = bytes.copyOfRange(nonceStart + NONCE_LEN, bytes.size)
         val innerBytes = try {
-            aesGcmDecrypt(openKey, outerNonce, aad(), outerCipher)
+            aesGcmDecrypt(openKey, outerNonce, aad(usedMagic), outerCipher)
         } catch (e: AEADBadTagException) {
             throw ZsxTamperException()
         }
@@ -132,7 +138,7 @@ actual object ZsxCrypto {
         }
     }
 
-    private fun aad(): ByteArray = MAGIC + byteArrayOf(VERSION)
+    private fun aad(magic: ByteArray = MAGIC_NRG): ByteArray = magic + byteArrayOf(VERSION)
 
     private fun aesGcmEncrypt(key: ByteArray, nonce: ByteArray, aad: ByteArray, plain: ByteArray): ByteArray {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")

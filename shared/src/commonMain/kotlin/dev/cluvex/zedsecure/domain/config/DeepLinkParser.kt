@@ -10,12 +10,12 @@ object DeepLinkParser {
     val SCHEMES: Set<String> = setOf(
         "narcicgeteway", "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
         "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard",
-        "socks", "socks5", "snispoof", "aether",
+        "socks", "socks5", "snispoof", "aether", "nrg", "zsx",
     )
 
     private val CONFIG_SCHEMES = setOf(
         "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "socks", "socks5",
-        "snispoof", "aether",
+        "snispoof", "aether", "nrg", "zsx",
     )
 
     private const val MAX_LENGTH = 64 * 1024

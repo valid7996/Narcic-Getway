@@ -107,7 +107,7 @@ fun UnlockConfigDialog(
                 }
 
                 Text(
-                    "این کانفیگ توسط فرستنده با کلید اختصاصی قفل شده است. لطفاً کلید دریافتی را وارد نمایید:",
+                    "این کانفیگ با کلید اختصاصی یک‌بار مصرف قفل شده است. لطفاً کلید دریافتی را جهت فعال‌سازی روی این دستگاه وارد نمایید:",
                     fontSize = 12.sp,
                     color = if (isDark) Color.LightGray else Color.DarkGray,
                 )
@@ -119,7 +119,7 @@ fun UnlockConfigDialog(
                         errorMessage = null
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("کلید اختصاصی کاربر") },
+                    label = { Text("کلید اختصاصی یک‌بار مصرف کاربر") },
                     placeholder = { Text("مثلاً: NG-XXXXXX") },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
@@ -164,6 +164,7 @@ fun UnlockConfigDialog(
                             errorMessage = when {
                                 err is dev.cluvex.zedsecure.crypto.ZsxWrongPasswordException -> "کلید اختصاصی وارد شده اشتباه است."
                                 err is dev.cluvex.zedsecure.crypto.ZsxExpiredException -> "این کانفیگ منقضی شده است و اعتبار آن پایان یافته است."
+                                err is dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException -> "این کلید اختصاصی قبلاً یک بار استفاده شده و باطل گردیده است (کلید یک‌بار مصرف)."
                                 else -> "خطا در بازگشایی کانفیگ: ${err.message}"
                             }
                         },

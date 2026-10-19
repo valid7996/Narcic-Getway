@@ -133,8 +133,12 @@ class ConfigRepository(private val store: KeyValueStore) {
             return@runCatching 1
         }
 
-        if (trimmed.startsWith("zsx://", ignoreCase = true)) {
-            val base64 = trimmed.substring(6).trim()
+        if (trimmed.startsWith("nrg://", ignoreCase = true) || trimmed.startsWith("zsx://", ignoreCase = true)) {
+            val base64 = when {
+                trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
+                trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
+                else -> trimmed
+            }
             val bytes = Base64.decode(base64)
             val meta = ZsxCrypto.peek(bytes)
             if (meta.isExpired) throw ZsxExpiredException()
@@ -1483,6 +1487,20 @@ class ConfigRepository(private val store: KeyValueStore) {
     private fun resolveUa(userAgent: String?): String =
         userAgent?.trim()?.takeIf { it.isNotBlank() } ?: DEFAULT_UA
 
+    fun isKeyConsumed(key: String): Boolean {
+        val clean = key.trim().uppercase()
+        val consumed = store.getString(KEY_CONSUMED_KEYS)?.split(",")?.toSet() ?: emptySet()
+        return clean in consumed
+    }
+
+    private fun markKeyConsumed(key: String) {
+        val clean = key.trim().uppercase()
+        if (clean.isBlank()) return
+        val current = store.getString(KEY_CONSUMED_KEYS)?.split(",")?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf()
+        current.add(clean)
+        store.putString(KEY_CONSUMED_KEYS, current.joinToString(","))
+    }
+
     fun createLockedZsx(request: ZsxSealRequest): ByteArray = ZsxCrypto.seal(request)
 
     fun peekLocked(bytes: ByteArray): ZsxMetadata = ZsxCrypto.peek(bytes)
@@ -1490,7 +1508,14 @@ class ConfigRepository(private val store: KeyValueStore) {
     fun importLocked(bytes: ByteArray, password: String?): Result<VpnProfile> = runCatching {
         val meta = ZsxCrypto.peek(bytes)
         if (meta.isExpired) throw ZsxExpiredException()
-        val payload = ZsxCrypto.open(bytes, password)
+        val cleanKey = password?.trim()?.takeIf { it.isNotBlank() }
+        if (cleanKey != null && isKeyConsumed(cleanKey)) {
+            throw dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException()
+        }
+        val payload = ZsxCrypto.open(bytes, cleanKey)
+        if (cleanKey != null) {
+            markKeyConsumed(cleanKey)
+        }
         val resealed = ZsxCrypto.seal(
             ZsxSealRequest(
                 configPayload = payload,
@@ -1508,7 +1533,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             protocol = "LOCKED",
             address = "•••",
             port = 0,
-            transportLabel = "Locked · .zsx",
+            transportLabel = "Locked · .nrg",
             source = ProfileSource.Sealed(Base64.encode(resealed)),
             addedAt = currentTimeMillis(),
             isLocked = true,
@@ -1521,16 +1546,19 @@ class ConfigRepository(private val store: KeyValueStore) {
         profile
     }
 
-    fun importZsxLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> = runCatching {
+    fun importLockedLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> = runCatching {
         val trimmed = linkOrBase64.trim()
-        val base64 = if (trimmed.startsWith("zsx://", ignoreCase = true)) {
-            trimmed.substring(6).trim()
-        } else {
-            trimmed
+        val base64 = when {
+            trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
+            trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
+            else -> trimmed
         }
         val bytes = Base64.decode(base64)
         importLocked(bytes, userKey?.ifBlank { null }).getOrThrow()
     }
+
+    fun importZsxLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> =
+        importLockedLink(linkOrBase64, userKey)
 
     fun restoreBackupData(
         newProfiles: List<VpnProfile>?,
@@ -1685,6 +1713,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         private const val KEY_SUBS = "subscriptions"
         private const val KEY_ACTIVE = "active_id"
         private const val KEY_AUTO_PICK = "auto_pick:"
+        private const val KEY_CONSUMED_KEYS = "consumed_nrg_keys"
         const val KEY_SNISPOOF_IP = "snispoof_default_ip"
         const val KEY_SNISPOOF_PORT = "snispoof_default_port"
         const val KEY_SNISPOOF_SNI = "snispoof_default_sni"

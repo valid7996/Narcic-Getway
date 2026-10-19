@@ -311,7 +311,7 @@ internal fun ServerCard(
                             )
                             onShareLocked?.let { shareLocked ->
                                 DropdownMenuItem(
-                                    text = { Text("قفل و اشتراک امن (ZSX)") },
+                                    text = { Text("قفل و اشتراک امن (NRG)") },
                                     leadingIcon = { Icon(painterResource(Res.drawable.ic_lock), null, tint = Color(0xFFFF9500)) },
                                     enabled = shareLink != null,
                                     onClick = { menuOpen = false; shareLocked() },
