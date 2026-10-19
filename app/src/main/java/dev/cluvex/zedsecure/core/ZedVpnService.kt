@@ -35,6 +35,7 @@ import org.json.JSONObject
 
 class ZedVpnService : VpnService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val container: dev.cluvex.zedsecure.di.AppContainer get() = (application as dev.cluvex.zedsecure.ZedSecureApp).container
     private var tun: ParcelFileDescriptor? = null
     private var statsJob: Job? = null
     private var remark: String = ""
