@@ -145,6 +145,10 @@ fun ServersScreen(
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     fun toastImportFailure(e: Throwable) {
+        if (e.message?.contains("قفل شده است") == true) {
+            scope.launch { platform.toast(e.message ?: "این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است.") }
+            return
+        }
         if (e is dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException) {
             scope.launch { platform.toast("این کلید اختصاصی قبلاً یک بار استفاده شده و باطل گردیده است (کلید یک‌بار مصرف).") }
             return
@@ -243,6 +247,27 @@ fun ServersScreen(
         val meta = runCatching { repository.peekLocked(bytes) }.getOrNull() ?: return false
         if (meta.isExpired) {
             platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+            return true
+        }
+        if (meta.deviceBound) {
+            val autoImp = repository.importLocked(bytes, null)
+            autoImp.fold(
+                onSuccess = { toastRes(Res.string.servers_imported, 1) },
+                onFailure = {
+                    val key = LockedConfigExtractor.extractKey(text)
+                    if (key != null) {
+                        val keyImp = repository.importLocked(bytes, key)
+                        keyImp.fold(
+                            onSuccess = { toastRes(Res.string.servers_imported, 1) },
+                            onFailure = {
+                                platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                            },
+                        )
+                    } else {
+                        platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                    }
+                },
+            )
             return true
         }
         val key = LockedConfigExtractor.extractKey(text)

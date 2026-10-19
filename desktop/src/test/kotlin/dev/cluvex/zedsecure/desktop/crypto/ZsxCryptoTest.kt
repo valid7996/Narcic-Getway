@@ -185,4 +185,14 @@ class ZsxCryptoTest {
             ZsxCrypto.open(file, password = "NG-1\u0000device-B")
         }
     }
+
+    @Test
+    fun pureDeviceLockRoundtripAndWrongDeviceFails() {
+        val file = ZsxCrypto.seal(request(password = "device-A").copy(deviceBound = true))
+        assertTrue(ZsxCrypto.peek(file).deviceBound)
+        assertEquals(sampleConfig, ZsxCrypto.open(file, password = "device-A"))
+        assertFailsWith<ZsxWrongPasswordException> {
+            ZsxCrypto.open(file, password = "device-B")
+        }
+    }
 }

@@ -182,6 +182,10 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
                                     return@onFailure
                                 }
                             }
+                            if (e.message?.contains("قفل شده است") == true) {
+                                platform.toast(e.message ?: "این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است.")
+                                return@onFailure
+                            }
                             if (e is dev.cluvex.zedsecure.crypto.ZsxExpiredException) {
                                 platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
                                 return@onFailure

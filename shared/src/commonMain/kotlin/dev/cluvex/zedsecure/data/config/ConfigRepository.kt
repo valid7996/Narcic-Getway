@@ -139,6 +139,21 @@ class ConfigRepository(private val store: KeyValueStore) {
             val meta = ZsxCrypto.peek(bytes)
             if (meta.isExpired) throw ZsxExpiredException()
 
+            if (meta.deviceBound) {
+                // First try automatic unlock with this device's own ID
+                val autoImp = importLocked(bytes, null)
+                if (autoImp.isSuccess) return@runCatching 1
+
+                val extractedKey = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractKey(trimmed)
+                if (extractedKey != null) {
+                    val keyImp = importLocked(bytes, extractedKey)
+                    if (keyImp.isSuccess) return@runCatching 1
+                }
+
+                // If both failed, this config was locked for a different device
+                throw IllegalArgumentException("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+            }
+
             val extractedKey = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractKey(trimmed)
             if (meta.passwordProtected && extractedKey != null && !isKeyConsumed(extractedKey)) {
                 val imp = importLocked(bytes, extractedKey)
@@ -1520,9 +1535,20 @@ class ConfigRepository(private val store: KeyValueStore) {
         if (cleanKey != null && isKeyConsumed(cleanKey)) {
             throw dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException()
         }
-        // A config sealed for one device is encrypted with key + that device's code: any other device fails to open it.
-        val effective = if (cleanKey != null && meta.deviceBound) cleanKey + "\u0000" + nrgDeviceId() else cleanKey
-        val payload = ZsxCrypto.open(bytes, effective)
+        val payload = if (meta.deviceBound) {
+            val myDevice = nrgDeviceId()
+            if (cleanKey != null) {
+                runCatching { ZsxCrypto.open(bytes, cleanKey) }
+                    .getOrElse {
+                        runCatching { ZsxCrypto.open(bytes, cleanKey + "\u0000" + myDevice) }
+                            .getOrElse { ZsxCrypto.open(bytes, myDevice) }
+                    }
+            } else {
+                ZsxCrypto.open(bytes, myDevice)
+            }
+        } else {
+            ZsxCrypto.open(bytes, cleanKey)
+        }
         if (cleanKey != null) {
             markKeyConsumed(cleanKey)
         }

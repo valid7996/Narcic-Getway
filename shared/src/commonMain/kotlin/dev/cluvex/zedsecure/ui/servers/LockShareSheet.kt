@@ -88,16 +88,6 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-private const val KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // 32 symbols -> 5 random bits each, no modulo bias
-
-private fun randomChars(n: Int): String {
-    val bytes = ZsxCrypto.secureRandomBytes(n)
-    return String(CharArray(n) { KEY_ALPHABET[bytes[it].toInt() and 31] })
-}
-
-private fun generateUserKey(advanced: Boolean = true): String =
-    if (advanced) "NG-${randomChars(4)}-${randomChars(4)}-${randomChars(4)}" else "NG-${randomChars(6)}"
-
 private fun formatExpiryTimestamp(epochMs: Long): String {
     val diffMs = epochMs - currentTimeMillis()
     if (diffMs <= 0) return "منقضی شده"
@@ -130,9 +120,7 @@ fun LockShareSheet(
 
     var configTitle by remember { mutableStateOf(profile.name) }
     var userNote by remember { mutableStateOf("") }
-    val requireKey = true // an open (key-less) lock is only obfuscation, so the key is always on
-    var isAdvancedKey by remember { mutableStateOf(true) }
-    var userKey by remember { mutableStateOf(generateUserKey(advanced = true)) }
+    var buyerDeviceCode by remember { mutableStateOf("") }
     var selectedExpiryOption by remember { mutableIntStateOf(5) } // 0: None, 1: 5m, 2: 1h, 3: 6h, 4: 24h, 5: 3d, 6: 7d, 7: 30d, 8: custom
     var customDays by remember { mutableIntStateOf(0) }
     var customHours by remember { mutableIntStateOf(0) }
@@ -142,14 +130,12 @@ fun LockShareSheet(
     var relayUrlInput by remember { mutableStateOf(relayEndpoint) }
     var relayTokenInput by remember { mutableStateOf(relayToken) }
     var generating by remember { mutableStateOf(false) }
-    var buyerDeviceCode by remember { mutableStateOf("") }
 
     var generatedNrgLink by remember { mutableStateOf<String?>(null) }
     var generatedExpiresAt by remember { mutableStateOf<Long?>(null) }
-    var generatedKey by remember { mutableStateOf<String?>(null) }
+    var generatedDeviceCode by remember { mutableStateOf<String?>(null) }
 
     var linkCopied by remember { mutableStateOf(false) }
-    var keyCopied by remember { mutableStateOf(false) }
     var packageCopied by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
 
@@ -178,8 +164,8 @@ fun LockShareSheet(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 PageHeader(
-                    title = "اشتراک امن و قفل‌شده (NRG)",
-                    subtitle = "قفل کانفیگ با کلید یک‌بار مصرف کاربر و زمان انقضا",
+                    title = "اشتراک امن و قفل اختصاصی (NRG)",
+                    subtitle = "قفل کانفیگ بر روی کد دستگاه خریدار با زمان انقضا",
                 )
 
                 // ─── Settings Card ────────────────────────────────────────────────────────
@@ -210,91 +196,63 @@ fun LockShareSheet(
 
                         HorizontalDivider(color = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
 
-                        // User Key Section
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                                Text("کلید خصوصی یک‌بار مصرف (User Key)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                Text("با وارد کردن کد دستگاه خریدار، کانفیگ فقط روی همان دستگاه باز می‌شود؛ کلید پس از اولین استفاده باطل می‌شود. همه‌چیز داخل برنامه است و به سرور نیاز ندارد", fontSize = 11.sp, color = Color.Gray)
+                        // Device Lock Section
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_lock),
+                                    contentDescription = null,
+                                    tint = Color(0xFFFF9500),
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Text(
+                                    "کد دستگاه خریدار (قفل اختصاصی):",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
                             }
-                            Switch(checked = true, onCheckedChange = null, enabled = false)
-                        }
 
-                        AnimatedVisibility(visible = requireKey) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    FilterChip(
-                                        selected = isAdvancedKey,
-                                        onClick = {
-                                            isAdvancedKey = true
-                                            userKey = generateUserKey(advanced = true)
-                                        },
-                                        label = { Text("کلید پیشرفته (۱۲ کاراکتر)", fontSize = 11.sp) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = Color(0xFFFF9500).copy(alpha = 0.2f),
-                                            selectedLabelColor = Color(0xFFFF9500),
-                                        ),
+                            OutlinedTextField(
+                                value = buyerDeviceCode,
+                                onValueChange = { buyerDeviceCode = it },
+                                label = { Text("کد دستگاه خریدار") },
+                                placeholder = { Text("مثلاً: NG-XXXX-XXXX") },
+                                supportingText = {
+                                    Text(
+                                        "خریدار کد دستگاه خود را از بخش «تنظیمات ← درباره ← کد دستگاه من» کپی کرده و ارسال می‌کند. کانفیگ رمزنگاری شده و منحصراً بر روی همان دستگاه باز می‌شود.",
+                                        fontSize = 11.sp,
+                                        color = Color.Gray,
                                     )
-                                    FilterChip(
-                                        selected = !isAdvancedKey,
-                                        onClick = {
-                                            isAdvancedKey = false
-                                            userKey = generateUserKey(advanced = false)
-                                        },
-                                        label = { Text("کلید ساده (۶ کاراکتر)", fontSize = 11.sp) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = Color(0xFFFF9500).copy(alpha = 0.2f),
-                                            selectedLabelColor = Color(0xFFFF9500),
-                                        ),
-                                    )
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    OutlinedTextField(
-                                        value = userKey,
-                                        onValueChange = { userKey = it },
-                                        modifier = Modifier.weight(1f),
-                                        label = { Text("کلید خصوصی اختصاصی") },
-                                        shape = RoundedCornerShape(10.dp),
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFFF9500),
-                                        ),
-                                    )
-                                    OutlinedButton(
-                                        onClick = { userKey = generateUserKey(advanced = isAdvancedKey) },
-                                        modifier = Modifier.height(52.dp),
-                                        shape = RoundedCornerShape(10.dp),
-                                    ) {
-                                        Icon(painter = painterResource(Res.drawable.ic_sync), contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(4.dp))
-                                        Text("تولید", fontSize = 12.sp)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFF9500),
+                                ),
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        val clip = platform.readClipboard()
+                                        if (!clip.isNullOrBlank()) {
+                                            buyerDeviceCode = clip.trim()
+                                        }
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(Res.drawable.ic_content_paste),
+                                            contentDescription = "جای‌گذاری کد دستگاه",
+                                            tint = Color(0xFFFF9500),
+                                            modifier = Modifier.size(18.dp),
+                                        )
                                     }
-                                }
-                            }
+                                },
+                            )
                         }
-
-                        OutlinedTextField(
-                            value = buyerDeviceCode,
-                            onValueChange = { buyerDeviceCode = it },
-                            label = { Text("کد دستگاه خریدار (قفل روی یک دستگاه)") },
-                            supportingText = { Text("خریدار از «افزودن سرور ← کد دستگاه من» می‌فرستد. با آن، کانفیگ فقط روی همان دستگاه باز می‌شود. خالی = بدون قفل دستگاه") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            singleLine = true,
-                        )
 
                         HorizontalDivider(color = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
 
@@ -415,6 +373,12 @@ fun LockShareSheet(
                         // Generate Button
                         Button(
                             onClick = {
+                                val device = buyerDeviceCode.trim()
+                                if (device.isEmpty()) {
+                                    platform.toast("لطفاً ابتدا کد دستگاه خریدار را وارد نمایید")
+                                    return@Button
+                                }
+
                                 val now = currentTimeMillis()
                                 val expiresAt: Long? = when (selectedExpiryOption) {
                                     0 -> null
@@ -432,16 +396,14 @@ fun LockShareSheet(
                                     else -> null
                                 }
 
-                                val finalKey = userKey.trim().ifBlank { generateUserKey(isAdvancedKey) }
-                                val device = buyerDeviceCode.trim()
                                 val sealReq = ZsxSealRequest(
                                     configPayload = rawPayload,
                                     nameEn = configTitle,
                                     nameFa = configTitle,
                                     note = userNote,
                                     expiresAt = expiresAt,
-                                    password = if (device.isEmpty()) finalKey else finalKey + "\u0000" + device,
-                                    deviceBound = device.isNotEmpty(),
+                                    password = device,
+                                    deviceBound = true,
                                 )
 
                                 if (generating) return@Button
@@ -457,7 +419,7 @@ fun LockShareSheet(
                                                 platform.toast("آدرس سرور رله نامعتبر است؛ لینک کامل ساخته شد")
                                             } else {
                                                 val up = runCatching {
-                                                    NrgRelay.upload(relayUrlInput, relayTokenInput, sealedBytes, expiresAt, finalKey)
+                                                    NrgRelay.upload(relayUrlInput, relayTokenInput, sealedBytes, expiresAt, null)
                                                 }
                                                 up.onSuccess {
                                                     link = NrgLink.relayLink(it)
@@ -469,11 +431,10 @@ fun LockShareSheet(
                                         }
                                         generatedNrgLink = link
                                         generatedExpiresAt = expiresAt
-                                        generatedKey = finalKey
+                                        generatedDeviceCode = device
                                         linkCopied = false
-                                        keyCopied = false
                                         packageCopied = false
-                                        platform.toast("کانفیگ امن و قفل‌شده با موفقیت تولید شد")
+                                        platform.toast("کانفیگ اختصاصی با موفقیت قفل و تولید شد")
                                     } catch (e: Throwable) {
                                         platform.toast("خطا در ساخت کانفیگ قفل‌شده: ${e.message}")
                                     } finally {
@@ -496,15 +457,15 @@ fun LockShareSheet(
                 AnimatedVisibility(visible = generatedNrgLink != null) {
                     val nrgLink = generatedNrgLink ?: ""
                     val expiresAt = generatedExpiresAt
-                    val currentKey = generatedKey
+                    val lockedDevice = generatedDeviceCode ?: ""
 
                     val fullPackageText = buildString {
                         appendLine("🔒 کانفیگ اختصاصی و قفل‌شده Narcic Gateway")
                         appendLine("🏷️ نام کانفیگ: $configTitle")
-                        appendLine("⏳ تاریخ انقضا: ${if (expiresAt != null) formatExpiryTimestamp(expiresAt) else "دائمی (بدون انقضا)"}")
-                        if (currentKey != null) {
-                            appendLine("🔑 کلید خصوصی یک‌بار مصرف شما: $currentKey")
-                            appendLine("⚠️ توجه: این کلید اختصاصی و یک‌بار مصرف است و فقط روی دستگاه شما فعال می‌شود.")
+                        appendLine("⏳ مدت اعتبار: ${if (expiresAt != null) formatExpiryTimestamp(expiresAt) else "دائمی (بدون انقضا)"}")
+                        if (lockedDevice.isNotEmpty()) {
+                            appendLine("📱 قفل اختصاصی برای کد دستگاه: $lockedDevice")
+                            appendLine("⚠️ توجه: این کانفیگ اختصاصی بوده و منحصراً بر روی دستگاه ثبت‌شده شما فعال می‌شود و روی سایر دستگاه‌ها کار نخواهد کرد.")
                         }
                         if (userNote.isNotBlank()) {
                             appendLine("📝 یادداشت: $userNote")
@@ -513,7 +474,7 @@ fun LockShareSheet(
                         appendLine("🔗 لینک کانفیگ:")
                         appendLine(nrgLink)
                         appendLine()
-                        appendLine("جهت فعال‌سازی، لینک بالا را کپی کرده و در برنامه Narcic Gateway وارد نمایید.")
+                        appendLine("جهت فعال‌سازی، لینک بالا را کپی کرده و در برنامه Narcic Gateway وارد نمایید (کانفیگ به صورت خودکار شناسایی و اضافه خواهد شد).")
                     }
 
                     Surface(
@@ -578,8 +539,8 @@ fun LockShareSheet(
                                 }
                             }
 
-                            // Key Box (if password protected)
-                            if (currentKey != null) {
+                            // Device Code Badge
+                            if (lockedDevice.isNotEmpty()) {
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
                                     color = if (isDark) Color(0xFF28241D) else Color(0xFFFFF8EC),
@@ -588,27 +549,23 @@ fun LockShareSheet(
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(painter = painterResource(Res.drawable.ic_key), contentDescription = null, tint = Color(0xFFFF9500), modifier = Modifier.size(18.dp))
-                                            Spacer(Modifier.width(8.dp))
-                                            Column {
-                                                Text("کلید اختصاصی این کاربر:", fontSize = 11.sp, color = Color.Gray)
-                                                Text(currentKey, fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color(0xFFFF9500))
-                                            }
-                                        }
-
-                                        OutlinedButton(
-                                            onClick = {
-                                                platform.copyToClipboard(currentKey)
-                                                keyCopied = true
-                                                platform.toast("کلید کاربر کپی شد")
-                                            },
-                                            shape = RoundedCornerShape(8.dp),
-                                            modifier = Modifier.height(34.dp),
-                                        ) {
-                                            Text(if (keyCopied) "کپی شد" else "کپی کلید", fontSize = 11.sp)
+                                        Icon(
+                                            painter = painterResource(Res.drawable.ic_lock),
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF9500),
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Column {
+                                            Text("قفل اختصاصی برای کد دستگاه:", fontSize = 11.sp, color = Color.Gray)
+                                            Text(
+                                                lockedDevice,
+                                                fontSize = 13.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFFF9500),
+                                            )
                                         }
                                     }
                                 }
