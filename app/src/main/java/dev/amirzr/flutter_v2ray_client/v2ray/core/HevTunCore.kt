@@ -2,7 +2,7 @@ package dev.amirzr.flutter_v2ray_client.v2ray.core
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
-import dev.cluvex.zedsecure.core.AppLog as Log
+import dev.valid7996.narcicgeteway.core.AppLog as Log
 import hev.htproxy.TProxyService
 import java.io.File
 

@@ -32,10 +32,10 @@
 -dontwarn org.bouncycastle.**
 -dontwarn javax.naming.**
 
--keepclassmembers class dev.cluvex.zedsecure.** {
+-keepclassmembers class dev.valid7996.narcicgeteway.** {
     *** Companion;
 }
--keep @kotlinx.serialization.Serializable class dev.cluvex.zedsecure.** { *; }
+-keep @kotlinx.serialization.Serializable class dev.valid7996.narcicgeteway.** { *; }
 
 -allowaccessmodification
 
@@ -52,8 +52,8 @@
 -dontwarn com.jcraft.jsch.**
 
 -keep class org.infradead.libopenconnect.** { *; }
--keep class dev.cluvex.zedsecure.core.OpenConnectController { *; }
--keep class dev.cluvex.zedsecure.core.OpenConnectController$* { *; }
+-keep class dev.valid7996.narcicgeteway.core.OpenConnectController { *; }
+-keep class dev.valid7996.narcicgeteway.core.OpenConnectController$* { *; }
 
 -dontwarn com.google.zxing.**
 -keep class com.google.zxing.qrcode.** { *; }

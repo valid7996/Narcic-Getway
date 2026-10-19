@@ -31,7 +31,7 @@ jobs:
             echo "ok=true" >> "$GITHUB_OUTPUT"
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::CluvexStudio/Openconnect could not be cloned, so this build has no OpenConnect. It is private: either make it public - LGPL-2.1 asks for the source of a modified OpenConnect anyway - or add a CORE_TOKEN secret with repo scope."
+            echo "::warning::valid7996/Openconnect could not be cloned, so this build has no OpenConnect. It is private: either make it public - LGPL-2.1 asks for the source of a modified OpenConnect anyway - or add a CORE_TOKEN secret with repo scope."
           fi
           cp /tmp/all-sources.txt tools/core-sources.txt
 

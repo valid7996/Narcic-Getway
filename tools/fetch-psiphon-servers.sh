@@ -13,7 +13,7 @@ __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # The list is checked here against the same key before it ships, so a broken or foreign download never does.
 # Ported from PattNG's fetch-psiphon-servers.sh.
 
-KEY_SOURCE="$__dir/app/src/main/java/dev/cluvex/zedsecure/core/PsiphonServerList.kt"
+KEY_SOURCE="$__dir/app/src/main/java/dev/valid7996/narcicgeteway/core/PsiphonServerList.kt"
 TARGET="$__dir/app/src/main/assets/psiphon_servers.dat"
 URL="${PSIPHON_SERVERS_URL:-https://s3.amazonaws.com//psiphon/web/mjr4-p23r-puwl/server_list_compressed}"
 

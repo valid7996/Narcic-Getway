@@ -323,7 +323,7 @@
     <string name="about_built_on">基于 Xray 核心构建，并集成 Psiphon、Tor、Snowflake、obfs4、Conjure、DNSTT、VayDNS、MasterDNS、AmneziaWG、OpenConnect 与 IKEv2。</string>
     <string name="about_telegram">Telegram 频道</string>
     <string name="about_github">GitHub</string>
-    <string name="about_thanks_cluvex">特别感谢 RobinHood</string>
+    <string name="about_thanks_valid7996">特别感谢 RobinHood</string>
     <string name="about_source_title">开源核心</string>
     <string name="about_source_body">承载流量的核心基于采用 GPL-3.0、LGPL-3.0 和 MPL-2.0 许可的开源项目构建。我们已按这些许可的要求公开了修改后的源代码。</string>
     <string name="about_source_xray">Xray 核心 — 我们的修改</string>
@@ -910,7 +910,7 @@
     <string name="personalize_upload_tile_sub">为它们后面的矩形着色</string>
     <string name="subs_ua_preset">User-Agent</string>
     <string name="subs_ua_v2rayng">v2rayNG（推荐）</string>
-    <string name="subs_ua_zedsecure">Narcic Getway</string>
+    <string name="subs_ua_narcicgeteway">Narcic Getway</string>
     <string name="subs_ua_custom">自定义</string>
     <string name="subs_ua_hint">许多提供商只向 v2rayNG User-Agent 返回其 JSON 自定义配置，对其他客户端则返回普通链接。</string>
     <string name="subs_edit">编辑订阅</string>

@@ -18,8 +18,8 @@ jobs:
       - name: The tag matches the version
         id: v
         run: |
-          v=$(grep '^zedsecure.versionName=' gradle.properties | cut -d= -f2)
-          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "::error::tag $GITHUB_REF_NAME does not match zedsecure.versionName=$v"; exit 1; }
+          v=$(grep '^narcicgeteway.versionName=' gradle.properties | cut -d= -f2)
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "::error::tag $GITHUB_REF_NAME does not match narcicgeteway.versionName=$v"; exit 1; }
           echo "name=$v" >> "$GITHUB_OUTPUT"
 
   android:

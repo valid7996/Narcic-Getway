@@ -322,7 +322,7 @@
     <string name="about_built_on">Built on the Xray core, with Psiphon, Tor, Snowflake, obfs4, Conjure, DNSTT, VayDNS, MasterDNS, AmneziaWG, OpenConnect and IKEv2.</string>
     <string name="about_telegram">Telegram channel</string>
     <string name="about_github">GitHub</string>
-    <string name="about_thanks_cluvex">Special thanks to RobinHood</string>
+    <string name="about_thanks_valid7996">Special thanks to RobinHood</string>
     <string name="about_app_description_title">About &amp; Guide</string>
     <string name="about_app_description_body">Narcic Gateway is an advanced, multi-core secure proxy and VPN client supporting V2Ray (VLESS/VMess/Trojan/Shadowsocks), Aether, Hysteria 2, Psiphon, WireGuard, and DNS tunnels. Import your subscriptions or configs via narcicgeteway:// links, clipboard, or QR codes to enjoy fast, private, and censorship-resistant internet.</string>
     <string name="about_source_title">Open-source core</string>
@@ -911,7 +911,7 @@
     <string name="personalize_upload_tile_sub">Colours the rectangle behind them</string>
     <string name="subs_ua_preset">User-Agent</string>
     <string name="subs_ua_v2rayng">v2rayNG (recommended)</string>
-    <string name="subs_ua_zedsecure">Narcic Getway</string>
+    <string name="subs_ua_narcicgeteway">Narcic Getway</string>
     <string name="subs_ua_custom">Custom</string>
     <string name="subs_ua_hint">Many providers only send their JSON custom configs to the v2rayNG User-Agent, and send plain links to anything else.</string>
     <string name="subs_edit">Edit subscription</string>

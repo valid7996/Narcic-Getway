@@ -22,7 +22,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
-        android:name=".ZedSecureApp"
+        android:name=".NrgSecureApp"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -31,12 +31,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:enableOnBackInvokedCallback="true"
-        android:theme="@style/Theme.ZedSecure">
+        android:theme="@style/Theme.NrgSecure">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.ZedSecure"
+            android:theme="@style/Theme.NrgSecure"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -91,7 +91,7 @@
         </provider>
 
         <service
-            android:name=".core.ZedVpnService"
+            android:name=".core.NrgVpnService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_VPN_SERVICE">
@@ -134,21 +134,21 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
-            android:name=".core.ZedWidgetProvider"
+            android:name=".core.NrgWidgetProvider"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="dev.cluvex.zedsecure.widget.TOGGLE" />
+                <action android:name="dev.valid7996.narcicgeteway.widget.TOGGLE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/appwidget_zed" />
+                android:resource="@xml/appwidget_nrg" />
         </receiver>
 
         <service
-            android:name=".core.ZedTileService"
+            android:name=".core.NrgTileService"
             android:exported="true"
-            android:icon="@drawable/ic_tile_zed"
+            android:icon="@drawable/ic_tile_nrg"
             android:label="@string/tile_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
@@ -163,7 +163,7 @@
             android:name=".qr.QrScanActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.ZedSecure" />
+            android:theme="@style/Theme.NrgSecure" />
     </application>
 
 </manifest>

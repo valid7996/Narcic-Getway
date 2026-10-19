@@ -17,7 +17,7 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
-    namespace = "dev.cluvex.zedsecure"
+    namespace = "dev.valid7996.narcicgeteway"
 
     compileSdk {
         version = release(37)
@@ -27,13 +27,13 @@ android {
         applicationId = "com.narcic.getway"
         minSdk = 24
         targetSdk = 36
-        versionCode = (project.property("zedsecure.versionCode") as String).toInt()
-        versionName = project.property("zedsecure.versionName") as String
+        versionCode = (project.property("narcicgeteway.versionCode") as String).toInt()
+        versionName = project.property("narcicgeteway.versionName") as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
 
-        val includeDefaultSubs = (project.findProperty("zedsecure.includeDefaultSubs") as? String) != "false"
+        val includeDefaultSubs = (project.findProperty("narcicgeteway.includeDefaultSubs") as? String) != "false"
         buildConfigField("boolean", "INCLUDE_DEFAULT_SUBSCRIPTIONS", includeDefaultSubs.toString())
     }
 
@@ -159,7 +159,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bouncycastle)
 
-    implementation(files("libs/zedcore.aar"))
+    implementation(files("libs/nrgcore.aar"))
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

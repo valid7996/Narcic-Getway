@@ -20,7 +20,7 @@ jobs:
 
       - name: Read the version
         id: v
-        run: echo "name=$(grep '^zedsecure.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        run: echo "name=$(grep '^narcicgeteway.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Tools for .rpm and .AppImage
         run: |
@@ -86,13 +86,13 @@ jobs:
           rm -rf AppDir && mkdir -p AppDir/usr
           cp -a "$APP." AppDir/usr/
           BIN=$(find AppDir/usr/bin -maxdepth 1 -type f -executable | head -1)
-          cp desktop/icons/zedsecure.png AppDir/zedsecure.png
-          cat > AppDir/zedsecure.desktop <<EOF
+          cp desktop/icons/narcicgeteway.png AppDir/narcicgeteway.png
+          cat > AppDir/narcicgeteway.desktop <<EOF
           [Desktop Entry]
           Type=Application
           Name=Narcic Getway
           Exec=$(basename "$BIN")
-          Icon=zedsecure
+          Icon=narcicgeteway
           Categories=Network;
           Terminal=false
           EOF
@@ -139,7 +139,7 @@ jobs:
       - name: Read the version
         id: v
         shell: bash
-        run: echo "name=$(grep '^zedsecure.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        run: echo "name=$(grep '^narcicgeteway.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Fetch the bundled engines
         shell: bash
@@ -181,7 +181,7 @@ jobs:
           ls -l "$dest"
 
       - name: Check the engines the desktop launches are all here
-        # The live TUN traffic check (ZEDSECURE_LIVE_TUN) needs a real Windows
+        # The live TUN traffic check (NARCICGETEWAY_LIVE_TUN) needs a real Windows
         # network stack; ephemeral CI VMs cannot route it, so it stays off here.
         run: bash gradlew --no-daemon :desktop:test
 
@@ -223,7 +223,7 @@ jobs:
 
       - name: Read the version
         id: v
-        run: echo "name=$(grep '^zedsecure.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        run: echo "name=$(grep '^narcicgeteway.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Fetch the bundled engines
         env:

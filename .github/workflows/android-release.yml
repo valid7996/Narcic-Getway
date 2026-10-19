@@ -23,7 +23,7 @@ jobs:
     uses: ./.github/workflows/android-natives.yml
 
   core:
-    name: zedcore.aar
+    name: nrgcore.aar
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -76,14 +76,14 @@ jobs:
 
       - name: Build the combined core
         env:
-          ZEDCORE_TMPDIR: ${{ runner.temp }}/zedcore
+          NRGCORE_TMPDIR: ${{ runner.temp }}/nrgcore
         run: |
-          mkdir -p "$ZEDCORE_TMPDIR"
-          bash tools/build-zedcore.sh
-          ls -l app/libs/zedcore.aar
+          mkdir -p "$NRGCORE_TMPDIR"
+          bash tools/build-nrgcore.sh
+          ls -l app/libs/nrgcore.aar
 
       - uses: actions/upload-artifact@v4
-        with: { name: zedcore, path: app/libs/zedcore.aar, retention-days: 5 }
+        with: { name: nrgcore, path: app/libs/nrgcore.aar, retention-days: 5 }
 
   apk:
     needs: [core, natives]
@@ -97,10 +97,10 @@ jobs:
 
       - name: Read the version
         id: v
-        run: echo "name=$(grep '^zedsecure.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        run: echo "name=$(grep '^narcicgeteway.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/download-artifact@v4
-        with: { name: zedcore, path: artifacts/zedcore }
+        with: { name: nrgcore, path: artifacts/nrgcore }
       - uses: actions/download-artifact@v4
         with: { pattern: "native-*", path: artifacts }
 
@@ -108,7 +108,7 @@ jobs:
         run: |
           set -e
           mkdir -p app/libs app/src/main/jniLibs
-          cp artifacts/zedcore/zedcore.aar app/libs/
+          cp artifacts/nrgcore/nrgcore.aar app/libs/
           for a in artifacts/native-*/; do cp -r "$a"* app/src/main/jniLibs/ 2>/dev/null || true; done
           echo "engines in place:"; find app/src/main/jniLibs -name '*.so' | sort
           for abi in arm64-v8a armeabi-v7a x86_64; do
@@ -192,7 +192,7 @@ jobs:
           rm -f /tmp/universal.apk /tmp/universal-aligned.apk
 
           echo "Building clean version without default subscriptions..."
-          bash gradlew --no-daemon :app:assembleRelease -Pzedsecure.includeDefaultSubs=false
+          bash gradlew --no-daemon :app:assembleRelease -Pnarcicgeteway.includeDefaultSubs=false
           for abi in arm64-v8a armeabi-v7a x86_64; do
             src="app/build/outputs/apk/release/app-$abi-release.apk"
             [ -f "$src" ] || { echo "::error::$src was not built"; exit 1; }
