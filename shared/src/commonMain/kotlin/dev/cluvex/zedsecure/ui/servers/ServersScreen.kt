@@ -210,10 +210,36 @@ fun ServersScreen(
         if (fresh.isNotEmpty()) obfuscateCandidates = repository.plainWireguardAmong(fresh)
     }
 
+    var relayKeyPrompt by remember { mutableStateOf<String?>(null) }
+
+    fun relayFailure(text: String, err: Throwable) {
+        when (err) {
+            is dev.cluvex.zedsecure.data.config.RelayKeyRequiredException -> relayKeyPrompt = text
+            is dev.cluvex.zedsecure.data.config.RelayAlreadyClaimedException ->
+                platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده و دیگر قابل استفاده نیست.")
+            is dev.cluvex.zedsecure.crypto.ZsxWrongPasswordException ->
+                platform.toast("کلید اختصاصی وارد شده اشتباه است.")
+            else -> platform.toast("دریافت کانفیگ از سرور لینک کوتاه ناموفق بود: ${err.message}")
+        }
+    }
+
     fun tryHandleLocked(text: String): Boolean {
+        if (dev.cluvex.zedsecure.crypto.NrgLink.findRelay(text) != null) {
+            scope.launch {
+                val resolved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.resolveNrgRelay(text)
+                }
+                resolved.fold(
+                    onSuccess = { resolvedText ->
+                        if (!tryHandleLocked(resolvedText)) toastRes(Res.string.config_invalid)
+                    },
+                    onFailure = { relayFailure(text, it) },
+                )
+            }
+            return true
+        }
         val link = LockedConfigExtractor.extractLink(text) ?: return false
-        val b64 = link.substring(6).trim()
-        val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull() ?: return false
+        val bytes = runCatching { dev.cluvex.zedsecure.crypto.NrgLink.decode(link) }.getOrNull() ?: return false
         val meta = runCatching { repository.peekLocked(bytes) }.getOrNull() ?: return false
         if (meta.isExpired) {
             platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
@@ -263,8 +289,7 @@ fun ServersScreen(
                 .onFailure { err ->
                     if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
                         val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
-                        val b64 = if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) link.substring(6).trim() else link
-                        val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
+                        val bytes = runCatching { dev.cluvex.zedsecure.crypto.NrgLink.decode(link) }.getOrNull()
                         val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                         if (bytes != null && meta != null) {
                             pendingUnlock = bytes to meta
@@ -368,8 +393,7 @@ fun ServersScreen(
                 .onFailure { err ->
                     if (err is dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException) {
                         val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
-                        val b64 = if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) link.substring(6).trim() else link
-                        val bytes = runCatching { kotlin.io.encoding.Base64.decode(b64) }.getOrNull()
+                        val bytes = runCatching { dev.cluvex.zedsecure.crypto.NrgLink.decode(link) }.getOrNull()
                         val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                         if (bytes != null && meta != null) {
                             pendingUnlock = bytes to meta
@@ -390,6 +414,7 @@ fun ServersScreen(
     var showTelegramProxy by remember { mutableStateOf(false) }
     var showPatt by remember { mutableStateOf(false) }
     var showBackupRestore by remember { mutableStateOf(false) }
+    var showDeviceCode by remember { mutableStateOf(false) }
     var lockShareTarget by remember { mutableStateOf<Pair<VpnProfile, String>?>(null) }
 
     var fanOpen by remember { mutableStateOf(false) }
@@ -1378,7 +1403,15 @@ fun ServersScreen(
                 showAddSheet = false
                 showBackupRestore = true
             },
+            onDeviceCode = {
+                showAddSheet = false
+                showDeviceCode = true
+            },
         )
+    }
+
+    if (showDeviceCode) {
+        DeviceCodeDialog(code = repository.nrgDeviceId(), onDismiss = { showDeviceCode = false })
     }
 
     if (showBackupRestore) {
@@ -1394,7 +1427,31 @@ fun ServersScreen(
         LockShareSheet(
             profile = prof,
             rawPayload = payload,
+            relayEndpoint = repository.nrgRelayEndpoint,
+            relayToken = repository.nrgRelayToken,
+            onRelayChanged = { endpoint, token ->
+                repository.nrgRelayEndpoint = endpoint
+                repository.nrgRelayToken = token
+            },
             onDismiss = { lockShareTarget = null },
+        )
+    }
+
+    relayKeyPrompt?.let { pendingText ->
+        RelayKeyDialog(
+            onDismiss = { relayKeyPrompt = null },
+            onSubmit = { key ->
+                relayKeyPrompt = null
+                scope.launch {
+                    val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                        repository.resolveNrgRelay(pendingText, key)
+                    }
+                    r.fold(
+                        onSuccess = { if (!tryHandleLocked(it)) toastRes(Res.string.config_invalid) },
+                        onFailure = { relayFailure(pendingText, it) },
+                    )
+                }
+            },
         )
     }
 
@@ -2018,6 +2075,7 @@ internal fun AddServerSheet(
     onTelegramProxy: (() -> Unit)? = null,
     onPatt: (() -> Unit)? = null,
     onBackupRestore: (() -> Unit)? = null,
+    onDeviceCode: (() -> Unit)? = null,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
@@ -2352,6 +2410,18 @@ internal fun AddServerSheet(
                         gradientStart = Color(0xFF332005).copy(alpha = 0.90f),
                         gradientEnd = Color(0xFF1E1303).copy(alpha = 0.75f),
                         onClick = onPatt,
+                    )
+                }
+                if (onDeviceCode != null) {
+                    GlassOptionCard(
+                        title = "کد دستگاه من (برای کانفیگ قفل‌شده)",
+                        subtitle = "کد را برای فروشنده بفرستید تا کانفیگ فقط روی همین دستگاه باز شود",
+                        icon = Res.drawable.ic_lock,
+                        accentColor = Color(0xFFFF9500),
+                        iconTint = Color(0xFFFFB340),
+                        gradientStart = Color(0xFF2A1A05).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF170E03).copy(alpha = 0.75f),
+                        onClick = onDeviceCode,
                     )
                 }
                 if (onBackupRestore != null) {

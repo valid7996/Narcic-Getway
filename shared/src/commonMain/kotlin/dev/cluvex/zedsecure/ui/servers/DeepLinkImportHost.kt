@@ -9,7 +9,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -17,6 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.cluvex.zedsecure.core.DeepLinkBus
+import dev.cluvex.zedsecure.crypto.ZsxMetadata
+import dev.cluvex.zedsecure.crypto.ZsxPasswordRequiredException
 import dev.cluvex.zedsecure.data.config.ConfigRepository
 import dev.cluvex.zedsecure.domain.config.ConfigParseException
 import dev.cluvex.zedsecure.domain.config.DeepLinkPreview
@@ -40,6 +44,49 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val pending by DeepLinkBus.pending.collectAsStateWithLifecycle()
+
+    // The key prompt has to outlive the confirm dialog (DeepLinkBus is cleared as soon as the user taps "import").
+    var unlock by remember { mutableStateOf<Pair<ByteArray, ZsxMetadata>?>(null) }
+    unlock?.let { (bytes, meta) ->
+        UnlockConfigDialog(
+            zsxBytes = bytes,
+            metadata = meta,
+            repository = repository,
+            onDismiss = { unlock = null },
+            onSuccess = {
+                unlock = null
+                onImported()
+            },
+        )
+    }
+
+    var relayPrompt by remember { mutableStateOf<String?>(null) }
+    relayPrompt?.let { pendingText ->
+        RelayKeyDialog(
+            onDismiss = { relayPrompt = null },
+            onSubmit = { key ->
+                relayPrompt = null
+                scope.launch(Dispatchers.Default) {
+                    repository.resolveNrgRelay(pendingText, key)
+                        .mapCatching { resolved -> repository.importPasted(resolved).getOrThrow() }
+                        .onSuccess { r ->
+                            platform.toast(getString(Res.string.servers_imported, r.count))
+                            if (r.count > 0) launch(Dispatchers.Main) { onImported() }
+                        }
+                        .onFailure { err ->
+                            when (err) {
+                                is dev.cluvex.zedsecure.data.config.RelayAlreadyClaimedException ->
+                                    platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده است.")
+                                is dev.cluvex.zedsecure.crypto.ZsxWrongPasswordException ->
+                                    platform.toast("کلید اختصاصی وارد شده اشتباه است.")
+                                else -> platform.toast(getString(Res.string.config_invalid))
+                            }
+                        }
+                }
+            },
+        )
+    }
+
     val current = pending ?: return
     val request = current.request
     val preview = remember(current) { DeepLinkPreview.of(request) }
@@ -117,6 +164,32 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
                             if (r.count > 0) launch(Dispatchers.Main) { onImported() }
                         }
                         .onFailure { e ->
+                            if (e is dev.cluvex.zedsecure.data.config.RelayKeyRequiredException &&
+                                request is DeepLinkRequest.ConfigText
+                            ) {
+                                launch(Dispatchers.Main) { relayPrompt = request.text }
+                                return@onFailure
+                            }
+                            if (e is dev.cluvex.zedsecure.data.config.RelayAlreadyClaimedException) {
+                                platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده و دیگر قابل استفاده نیست.")
+                                return@onFailure
+                            }
+                            if (e is ZsxPasswordRequiredException && request is DeepLinkRequest.ConfigText) {
+                                val text = repository.resolveNrgRelay(request.text).getOrDefault(request.text)
+                                val locked = repository.lockedFromText(text)
+                                if (locked != null) {
+                                    launch(Dispatchers.Main) { unlock = locked }
+                                    return@onFailure
+                                }
+                            }
+                            if (e is dev.cluvex.zedsecure.crypto.ZsxExpiredException) {
+                                platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+                                return@onFailure
+                            }
+                            if (e is dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException) {
+                                platform.toast("این کلید اختصاصی قبلاً استفاده شده و باطل گردیده است.")
+                                return@onFailure
+                            }
                             if (e is ConfigRepository.SubscriptionNotFetchedException && e.savedForLater) {
                                 platform.toast(getString(Res.string.subs_saved_unreachable, e.name))
                                 return@onFailure

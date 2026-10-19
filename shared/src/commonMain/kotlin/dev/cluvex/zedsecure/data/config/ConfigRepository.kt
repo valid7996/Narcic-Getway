@@ -135,8 +135,7 @@ class ConfigRepository(private val store: KeyValueStore) {
 
         val nrgMatch = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractLink(trimmed)
         if (nrgMatch != null) {
-            val base64 = nrgMatch.substringAfter("://").trim()
-            val bytes = Base64.decode(base64)
+            val bytes = dev.cluvex.zedsecure.crypto.NrgLink.decode(nrgMatch)
             val meta = ZsxCrypto.peek(bytes)
             if (meta.isExpired) throw ZsxExpiredException()
 
@@ -1175,7 +1174,12 @@ class ConfigRepository(private val store: KeyValueStore) {
         if (persist) persistProfiles()
     }
 
-    suspend fun importPasted(text: String): Result<PastedImport> {
+    suspend fun importPasted(rawText: String): Result<PastedImport> {
+        val text = if (dev.cluvex.zedsecure.crypto.NrgLink.findRelay(rawText) != null) {
+            resolveNrgRelay(rawText).getOrElse { return Result.failure(it) }
+        } else {
+            rawText
+        }
         subscriptionUrlIn(text)?.let { return importSubscriptionUrl(it, name = null) }
         val parsed = runCatching {
             lastImportDuplicates = 0
@@ -1516,7 +1520,9 @@ class ConfigRepository(private val store: KeyValueStore) {
         if (cleanKey != null && isKeyConsumed(cleanKey)) {
             throw dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException()
         }
-        val payload = ZsxCrypto.open(bytes, cleanKey)
+        // A config sealed for one device is encrypted with key + that device's code: any other device fails to open it.
+        val effective = if (cleanKey != null && meta.deviceBound) cleanKey + "\u0000" + nrgDeviceId() else cleanKey
+        val payload = ZsxCrypto.open(bytes, effective)
         if (cleanKey != null) {
             markKeyConsumed(cleanKey)
         }
@@ -1544,7 +1550,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             expiresAt = meta.expiresAt,
             note = meta.note.takeIf { it.isNotBlank() },
         )
-        profile.toXrayConfigJson()
+        runCatching { profile.toXrayConfigJson() }
         _profiles.value = _profiles.value + profile
         persistProfiles()
         if (_activeId.value == null) setActive(profile.id)
@@ -1552,15 +1558,53 @@ class ConfigRepository(private val store: KeyValueStore) {
     }
 
     fun importLockedLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> = runCatching {
-        val trimmed = linkOrBase64.trim()
-        val base64 = when {
-            trimmed.startsWith("nrg://", ignoreCase = true) -> trimmed.substring(6).trim()
-            trimmed.startsWith("zsx://", ignoreCase = true) -> trimmed.substring(6).trim()
-            else -> trimmed
-        }
-        val bytes = Base64.decode(base64)
+        val bytes = dev.cluvex.zedsecure.crypto.NrgLink.decode(linkOrBase64)
         importLocked(bytes, userKey?.ifBlank { null }).getOrThrow()
     }
+
+    /**
+     * If [text] contains a short relay link (nrg://r.<id>@<host>) downloads the encrypted blob from the relay and
+     * returns the text with a normal self-contained nrg:// link in its place. Text without a relay link is returned as is.
+     */
+    suspend fun resolveNrgRelay(text: String, key: String? = null): Result<String> = runCatching {
+        val relay = dev.cluvex.zedsecure.crypto.NrgLink.findRelay(text) ?: return@runCatching text
+        val userKey = key?.trim()?.takeIf { it.isNotEmpty() }
+            ?: dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractKey(text)
+        val blob = NrgRelay.download(relay, userKey, nrgDeviceId())
+        val link = dev.cluvex.zedsecure.crypto.NrgLink.encode(blob)
+        val replaced = dev.cluvex.zedsecure.crypto.NrgLink.replaceRelay(text, link)
+        // A key typed in the prompt is not part of the pasted text: add it so the normal import path finds it.
+        if (key != null && dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractKey(text) == null) {
+            replaced + "\nkey: " + key.trim()
+        } else {
+            replaced
+        }
+    }
+
+    /** Random id of this installation; the relay uses it to tell "same device again" from "another device". */
+    fun nrgDeviceId(): String {
+        store.getString(KEY_NRG_DEVICE)?.takeIf { it.isNotBlank() }?.let { return it }
+        val id = dev.cluvex.zedsecure.crypto.NrgLink.toUrlSafe(ZsxCrypto.secureRandomBytes(12))
+        store.putString(KEY_NRG_DEVICE, id)
+        return id
+    }
+
+    /** Reads the sealed bytes + metadata out of a pasted message (self-contained links only; resolve relay links first). */
+    fun lockedFromText(text: String): Pair<ByteArray, ZsxMetadata>? {
+        val link = dev.cluvex.zedsecure.domain.config.LockedConfigExtractor.extractLink(text) ?: return null
+        val bytes = runCatching { dev.cluvex.zedsecure.crypto.NrgLink.decode(link) }.getOrNull() ?: return null
+        val meta = runCatching { ZsxCrypto.peek(bytes) }.getOrNull() ?: return null
+        return bytes to meta
+    }
+
+    /** Seller-side settings of the optional short-link relay. */
+    var nrgRelayEndpoint: String
+        get() = store.getString(KEY_NRG_RELAY_URL).orEmpty()
+        set(value) = store.putString(KEY_NRG_RELAY_URL, value.trim().ifBlank { null })
+
+    var nrgRelayToken: String
+        get() = store.getString(KEY_NRG_RELAY_TOKEN).orEmpty()
+        set(value) = store.putString(KEY_NRG_RELAY_TOKEN, value.trim().ifBlank { null })
 
     fun importZsxLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> =
         importLockedLink(linkOrBase64, userKey)
@@ -1719,6 +1763,9 @@ class ConfigRepository(private val store: KeyValueStore) {
         private const val KEY_ACTIVE = "active_id"
         private const val KEY_AUTO_PICK = "auto_pick:"
         private const val KEY_CONSUMED_KEYS = "consumed_nrg_keys"
+        private const val KEY_NRG_DEVICE = "nrg_device_id"
+        private const val KEY_NRG_RELAY_URL = "nrg_relay_url"
+        private const val KEY_NRG_RELAY_TOKEN = "nrg_relay_token"
         const val KEY_SNISPOOF_IP = "snispoof_default_ip"
         const val KEY_SNISPOOF_PORT = "snispoof_default_port"
         const val KEY_SNISPOOF_SNI = "snispoof_default_sni"

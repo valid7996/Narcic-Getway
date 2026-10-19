@@ -43,11 +43,11 @@ class ZsxCryptoTest {
     }
 
     @Test
-    fun newFilesUseVersionTwo() {
+    fun newFilesUseVersionThree() {
         val file = ZsxCrypto.seal(request(password = null))
         val magic = String(file.copyOfRange(0, 4), Charsets.US_ASCII)
         assertTrue(magic == "NRG1" || magic == "ZSX1")
-        assertEquals(2, file[4].toInt())
+        assertEquals(3, file[4].toInt())
     }
 
     @Test
@@ -112,5 +112,60 @@ class ZsxCryptoTest {
         val a = ZsxCrypto.seal(request(password = null))
         val b = ZsxCrypto.seal(request(password = null))
         assertFalse(a.contentEquals(b))
+    }
+
+    @Test
+    fun largeJsonConfigIsCompressed() {
+        val big = buildString {
+            append("{\"outbounds\":[")
+            repeat(150) { i ->
+                if (i > 0) append(',')
+                append("{\"tag\":\"node-$i\",\"protocol\":\"vless\",\"settings\":{\"vnext\":[{\"address\":\"n$i.example.com\",\"port\":443}]}}")
+            }
+            append("]}")
+        }
+        val file = ZsxCrypto.seal(request(password = "k").copy(configPayload = big))
+        assertTrue("file ${file.size} should be well under raw ${big.length}", file.size < big.length / 2)
+        assertEquals(big, ZsxCrypto.open(file, password = "k"))
+    }
+
+    @Test
+    fun linkRoundtripAndLinkIsUrlSafe() {
+        val file = ZsxCrypto.seal(request(password = "k"))
+        val link = NrgLink.encode(file)
+        assertTrue(link.startsWith("nrg://"))
+        assertFalse(link.substring(6).any { it == '+' || it == '/' || it == '=' })
+        assertEquals(sampleConfig, ZsxCrypto.open(NrgLink.decode(link), password = "k"))
+    }
+
+    @Test
+    fun decoderAcceptsOldStandardBase64WrappedLinks() {
+        val file = ZsxCrypto.seal(request(password = null))
+        @OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+        val std = kotlin.io.encoding.Base64.encode(file)
+        val wrapped = "nrg://" + std.chunked(40).joinToString("\n")
+        assertEquals(sampleConfig, ZsxCrypto.open(NrgLink.decode(wrapped), password = null))
+        assertEquals(sampleConfig, ZsxCrypto.open(NrgLink.decode(std), password = null))
+    }
+
+    @Test
+    fun relayLinkIsFoundInsideAMessage() {
+        val msg = "🔗 لینک کانفیگ:\nnrg://r.Ab3dEf9hJk@nrg.example.workers.dev.\nبرنامه را باز کنید"
+        val relay = NrgLink.findRelay(msg)
+        assertEquals("Ab3dEf9hJk", relay?.id)
+        assertEquals("nrg.example.workers.dev", relay?.host)
+    }
+
+    @Test
+    fun secureRandomBytesHaveRequestedLength() {
+        assertEquals(12, ZsxCrypto.secureRandomBytes(12).size)
+    }
+
+    @Test
+    fun deviceBoundFlagIsExposedAndWrongDeviceFails() {
+        val file = ZsxCrypto.seal(request(password = "NG-1\u0000device-A").copy(deviceBound = true))
+        assertTrue(ZsxCrypto.peek(file).deviceBound)
+        assertEquals(sampleConfig, ZsxCrypto.open(file, password = "NG-1\u0000device-A"))
+        assertThrows(ZsxWrongPasswordException::class.java) { ZsxCrypto.open(file, password = "NG-1\u0000device-B") }
     }
 }

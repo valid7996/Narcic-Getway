@@ -9,6 +9,7 @@ data class ZsxMetadata(
     val note: String,
     val createdAt: Long,
     val expiresAt: Long?,
+    val deviceBound: Boolean = false,
 ) {
     val isExpired: Boolean
         get() = expiresAt != null && currentTimeMillis() > expiresAt
@@ -21,6 +22,8 @@ data class ZsxSealRequest(
     val note: String,
     val expiresAt: Long?,
     val password: String?,
+    /** The password already includes the buyer's device code; stored as a flag so the app knows to add its own. */
+    val deviceBound: Boolean = false,
 )
 
 sealed class ZsxException(message: String) : Exception(message)

@@ -1,4 +1,8 @@
-@file:OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    kotlin.io.encoding.ExperimentalEncodingApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
+)
 
 package dev.cluvex.zedsecure.ui.servers
 
@@ -43,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,8 +58,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.cluvex.zedsecure.crypto.NrgLink
 import dev.cluvex.zedsecure.crypto.ZsxCrypto
 import dev.cluvex.zedsecure.crypto.ZsxSealRequest
+import dev.cluvex.zedsecure.data.config.NrgRelay
 import dev.cluvex.zedsecure.domain.config.VpnProfile
 import dev.cluvex.zedsecure.platform.currentTimeMillis
 import dev.cluvex.zedsecure.shared.resources.Res
@@ -75,23 +82,21 @@ import dev.cluvex.zedsecure.ui.components.PageHeader
 import dev.cluvex.zedsecure.ui.components.ProvidePageBack
 import dev.cluvex.zedsecure.ui.components.QrDialog
 import dev.cluvex.zedsecure.ui.platform.LocalPlatform
-import kotlin.io.encoding.Base64
-import kotlin.random.Random
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-private fun generateUserKey(advanced: Boolean = true): String {
-    val chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-    return if (advanced) {
-        val part1 = (1..4).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-        val part2 = (1..4).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-        val part3 = (1..4).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-        "NG-$part1-$part2-$part3"
-    } else {
-        val rand = (1..6).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-        "NG-$rand"
-    }
+private const val KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // 32 symbols -> 5 random bits each, no modulo bias
+
+private fun randomChars(n: Int): String {
+    val bytes = ZsxCrypto.secureRandomBytes(n)
+    return String(CharArray(n) { KEY_ALPHABET[bytes[it].toInt() and 31] })
 }
+
+private fun generateUserKey(advanced: Boolean = true): String =
+    if (advanced) "NG-${randomChars(4)}-${randomChars(4)}-${randomChars(4)}" else "NG-${randomChars(6)}"
 
 private fun formatExpiryTimestamp(epochMs: Long): String {
     val diffMs = epochMs - currentTimeMillis()
@@ -115,19 +120,29 @@ fun LockShareSheet(
     profile: VpnProfile,
     rawPayload: String,
     onDismiss: () -> Unit,
+    relayEndpoint: String = "",
+    relayToken: String = "",
+    onRelayChanged: (endpoint: String, token: String) -> Unit = { _, _ -> },
 ) {
     val platform = LocalPlatform.current
+    val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     var configTitle by remember { mutableStateOf(profile.name) }
     var userNote by remember { mutableStateOf("") }
-    var requireKey by remember { mutableStateOf(true) }
+    val requireKey = true // an open (key-less) lock is only obfuscation, so the key is always on
     var isAdvancedKey by remember { mutableStateOf(true) }
     var userKey by remember { mutableStateOf(generateUserKey(advanced = true)) }
     var selectedExpiryOption by remember { mutableIntStateOf(5) } // 0: None, 1: 5m, 2: 1h, 3: 6h, 4: 24h, 5: 3d, 6: 7d, 7: 30d, 8: custom
     var customDays by remember { mutableIntStateOf(0) }
     var customHours by remember { mutableIntStateOf(0) }
     var customMinutes by remember { mutableIntStateOf(5) }
+
+    var useRelay by remember { mutableStateOf(relayEndpoint.isNotBlank()) }
+    var relayUrlInput by remember { mutableStateOf(relayEndpoint) }
+    var relayTokenInput by remember { mutableStateOf(relayToken) }
+    var generating by remember { mutableStateOf(false) }
+    var buyerDeviceCode by remember { mutableStateOf("") }
 
     var generatedNrgLink by remember { mutableStateOf<String?>(null) }
     var generatedExpiresAt by remember { mutableStateOf<Long?>(null) }
@@ -203,9 +218,9 @@ fun LockShareSheet(
                         ) {
                             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                                 Text("کلید خصوصی یک‌بار مصرف (User Key)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                Text("فقط یک بار جهت فعال‌سازی روی دستگاه مقصد استفاده می‌شود", fontSize = 11.sp, color = Color.Gray)
+                                Text("با وارد کردن کد دستگاه خریدار، کانفیگ فقط روی همان دستگاه باز می‌شود؛ کلید پس از اولین استفاده باطل می‌شود. همه‌چیز داخل برنامه است و به سرور نیاز ندارد", fontSize = 11.sp, color = Color.Gray)
                             }
-                            Switch(checked = requireKey, onCheckedChange = { requireKey = it })
+                            Switch(checked = true, onCheckedChange = null, enabled = false)
                         }
 
                         AnimatedVisibility(visible = requireKey) {
@@ -271,6 +286,16 @@ fun LockShareSheet(
                             }
                         }
 
+                        OutlinedTextField(
+                            value = buyerDeviceCode,
+                            onValueChange = { buyerDeviceCode = it },
+                            label = { Text("کد دستگاه خریدار (قفل روی یک دستگاه)") },
+                            supportingText = { Text("خریدار از «افزودن سرور ← کد دستگاه من» می‌فرستد. با آن، کانفیگ فقط روی همان دستگاه باز می‌شود. خالی = بدون قفل دستگاه") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            singleLine = true,
+                        )
+
                         HorizontalDivider(color = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
 
                         // Expiration Section
@@ -281,7 +306,6 @@ fun LockShareSheet(
                                 Text("مدت اعتبار و تاریخ انقضا (Expiration):", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             }
 
-                            OptIn(ExperimentalLayoutApi::class)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 val expiryOptions = listOf(
                                     0 to "دائمی (بدون انقضا)",
@@ -347,6 +371,47 @@ fun LockShareSheet(
                             }
                         }
 
+                        HorizontalDivider(color = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
+
+                        // Short link (relay)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text("لینک کوتاه (از طریق سرور رله)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "فقط برای کوتاه‌شدن لینک (اختیاری): کانفیگ رمزشده روی سرور شما می‌ماند و در لینک فقط یک شناسه است.",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray,
+                                )
+                            }
+                            Switch(checked = useRelay, onCheckedChange = { useRelay = it })
+                        }
+
+                        AnimatedVisibility(visible = useRelay) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = relayUrlInput,
+                                    onValueChange = { relayUrlInput = it },
+                                    label = { Text("آدرس سرور رله") },
+                                    placeholder = { Text("https://nrg.example.workers.dev") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    singleLine = true,
+                                )
+                                OutlinedTextField(
+                                    value = relayTokenInput,
+                                    onValueChange = { relayTokenInput = it },
+                                    label = { Text("توکن آپلود (اختیاری)") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    singleLine = true,
+                                )
+                            }
+                        }
+
                         // Generate Button
                         Button(
                             onClick = {
@@ -367,25 +432,54 @@ fun LockShareSheet(
                                     else -> null
                                 }
 
-                                val finalKey = if (requireKey) userKey.trim().ifBlank { null } else null
+                                val finalKey = userKey.trim().ifBlank { generateUserKey(isAdvancedKey) }
+                                val device = buyerDeviceCode.trim()
                                 val sealReq = ZsxSealRequest(
                                     configPayload = rawPayload,
                                     nameEn = configTitle,
                                     nameFa = configTitle,
                                     note = userNote,
                                     expiresAt = expiresAt,
-                                    password = finalKey,
+                                    password = if (device.isEmpty()) finalKey else finalKey + "\u0000" + device,
+                                    deviceBound = device.isNotEmpty(),
                                 )
 
-                                val sealedBytes = ZsxCrypto.seal(sealReq)
-                                val base64 = Base64.encode(sealedBytes)
-                                generatedNrgLink = "nrg://$base64"
-                                generatedExpiresAt = expiresAt
-                                generatedKey = finalKey
-                                linkCopied = false
-                                keyCopied = false
-                                packageCopied = false
-                                platform.toast("کانفیگ امن و قفل‌شده با موفقیت تولید شد")
+                                if (generating) return@Button
+                                generating = true
+                                scope.launch {
+                                    try {
+                                        // Argon2 (64 MiB) + compression: keep it off the UI thread.
+                                        val sealedBytes = withContext(Dispatchers.Default) { ZsxCrypto.seal(sealReq) }
+                                        var link = NrgLink.encode(sealedBytes)
+                                        if (useRelay) {
+                                            val hostOk = NrgRelay.hostOf(relayUrlInput) != null
+                                            if (!hostOk) {
+                                                platform.toast("آدرس سرور رله نامعتبر است؛ لینک کامل ساخته شد")
+                                            } else {
+                                                val up = runCatching {
+                                                    NrgRelay.upload(relayUrlInput, relayTokenInput, sealedBytes, expiresAt, finalKey)
+                                                }
+                                                up.onSuccess {
+                                                    link = NrgLink.relayLink(it)
+                                                    onRelayChanged(relayUrlInput, relayTokenInput)
+                                                }.onFailure {
+                                                    platform.toast("آپلود روی سرور رله ناموفق بود (${it.message}) ؛ لینک کامل ساخته شد")
+                                                }
+                                            }
+                                        }
+                                        generatedNrgLink = link
+                                        generatedExpiresAt = expiresAt
+                                        generatedKey = finalKey
+                                        linkCopied = false
+                                        keyCopied = false
+                                        packageCopied = false
+                                        platform.toast("کانفیگ امن و قفل‌شده با موفقیت تولید شد")
+                                    } catch (e: Throwable) {
+                                        platform.toast("خطا در ساخت کانفیگ قفل‌شده: ${e.message}")
+                                    } finally {
+                                        generating = false
+                                    }
+                                }
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
@@ -393,7 +487,7 @@ fun LockShareSheet(
                         ) {
                             Icon(painter = painterResource(Res.drawable.ic_lock), contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("تولید کانفیگ قفل‌شده (NRG)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(if (generating) "در حال ساخت…" else "تولید کانفیگ قفل‌شده (NRG)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -441,6 +535,12 @@ fun LockShareSheet(
                                     color = Color.Gray,
                                 )
                             }
+
+                            Text(
+                                "طول لینک: ${nrgLink.length} کاراکتر" + if (nrgLink.startsWith("nrg://r.")) " (لینک کوتاه)" else "",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                            )
 
                             // Link Box
                             Surface(

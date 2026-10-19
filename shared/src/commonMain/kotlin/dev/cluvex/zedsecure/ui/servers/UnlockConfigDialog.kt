@@ -179,7 +179,9 @@ fun UnlockConfigDialog(
                         },
                         onFailure = { err ->
                             errorMessage = when {
-                                err is dev.cluvex.zedsecure.crypto.ZsxWrongPasswordException -> "کلید اختصاصی وارد شده اشتباه است."
+                                err is dev.cluvex.zedsecure.crypto.ZsxWrongPasswordException ->
+                                    if (metadata.deviceBound) "کلید اشتباه است، یا این کانفیگ برای دستگاه دیگری ساخته شده. کد دستگاه خود را (از «افزودن سرور ← کد دستگاه من») برای فروشنده بفرستید."
+                                    else "کلید اختصاصی وارد شده اشتباه است."
                                 err is dev.cluvex.zedsecure.crypto.ZsxExpiredException -> "این کانفیگ منقضی شده است و اعتبار آن پایان یافته است."
                                 err is dev.cluvex.zedsecure.crypto.ZsxKeyConsumedException -> "این کلید اختصاصی قبلاً یک بار استفاده شده و باطل گردیده است (کلید یک‌بار مصرف)."
                                 else -> "خطا در بازگشایی کانفیگ: ${err.message}"

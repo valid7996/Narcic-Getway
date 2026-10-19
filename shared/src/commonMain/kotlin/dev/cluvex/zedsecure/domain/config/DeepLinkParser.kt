@@ -18,7 +18,7 @@ object DeepLinkParser {
         "snispoof", "aether", "nrg", "zsx",
     )
 
-    private const val MAX_LENGTH = 64 * 1024
+    private const val MAX_LENGTH = 2 * 1024 * 1024
 
     private val NAME_KEYS = listOf("name", "remarks", "remark", "title")
 
@@ -174,9 +174,11 @@ data class DeepLinkPreview(
                 return DeepLinkPreview(AetherLink.parse(text)?.first?.takeIf { it.isNotBlank() }, "Aether")
             }
             if (text.startsWith("nrg://", ignoreCase = true) || text.startsWith("zsx://", ignoreCase = true)) {
-                val b64 = text.substringAfter("://").trim()
+                if (dev.cluvex.zedsecure.crypto.NrgLink.findRelay(text) != null) {
+                    return DeepLinkPreview(name = null, detail = "Locked · NRG (online)")
+                }
                 val meta = runCatching {
-                    val bytes = kotlin.io.encoding.Base64.decode(b64)
+                    val bytes = dev.cluvex.zedsecure.crypto.NrgLink.decode(text)
                     dev.cluvex.zedsecure.crypto.ZsxCrypto.peek(bytes)
                 }.getOrNull()
                 val name = meta?.let { it.nameEn.ifBlank { it.nameFa } }?.takeIf { it.isNotBlank() }
@@ -220,11 +222,26 @@ data class DeepLinkPreview(
 }
 
 object LockedConfigExtractor {
-    val LINK_REGEX = Regex("""(nrg|zsx)://([A-Za-z0-9+/=_-]+)""", RegexOption.IGNORE_CASE)
-    val KEY_REGEX_1 = Regex("""(?:کلید(?: اختصاصی| خصوصی)?|user key|secret key|password|key)\s*[:：=]\s*([A-Za-z0-9_-]+)""", RegexOption.IGNORE_CASE)
+    // '.' and '@' are only used by relay links (nrg://r.<id>@<host>); base64/base64url never contain them.
+    val LINK_REGEX = Regex("""(nrg|zsx)://([A-Za-z0-9+/=_.@:-]+)""", RegexOption.IGNORE_CASE)
+    val KEY_REGEX_1 = Regex(
+        """(?:کلید|user key|secret key|password|key)[^\n:：=]{0,40}[:：=]\s*([A-Za-z0-9_-]+)""",
+        RegexOption.IGNORE_CASE,
+    )
     val KEY_REGEX_2 = Regex("""\b(NG-[A-Za-z0-9_-]+)\b""", RegexOption.IGNORE_CASE)
 
-    fun extractLink(text: String): String? = LINK_REGEX.find(text)?.value
+    private val LINK_ALPHABET_ONLY = Regex("""(nrg|zsx)://[A-Za-z0-9+/=_.@:\s\u200E\u200F\u200B-]+""", RegexOption.IGNORE_CASE)
+
+    /**
+     * Finds the nrg:// link inside a pasted message. When the whole text is just a link that was wrapped over several
+     * lines by a messenger / mail client, the line breaks are removed first.
+     */
+    fun extractLink(text: String): String? {
+        val t = text.trim()
+        val whole = if (LINK_ALPHABET_ONLY.matches(t)) t.filterNot { it.isWhitespace() || it == '\u200E' || it == '\u200F' || it == '\u200B' } else t
+        val raw = LINK_REGEX.find(whole)?.value ?: return null
+        return raw.trimEnd('.', ':')
+    }
 
     fun extractKey(text: String): String? {
         val m1 = KEY_REGEX_1.find(text)
