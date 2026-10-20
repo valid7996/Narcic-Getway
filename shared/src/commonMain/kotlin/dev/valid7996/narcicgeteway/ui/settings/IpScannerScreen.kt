@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -119,7 +120,7 @@ fun IpScannerScreen(
             platform.toast("نتیجه‌ای برای مرتب‌سازی وجود ندارد")
             return
         }
-        val sorted = results.sortedWith(
+        val sorted = results.distinctBy { it.ip }.sortedWith(
             compareBy<ScanResult> {
                 when (it.status) {
                     Status.GREEN -> 0
@@ -184,10 +185,15 @@ fun IpScannerScreen(
                 cdnType = selectedCdn,
             ) { result ->
                 if (!isScanning) return@scan
-                if (result.status == Status.GREEN) {
-                    results.add(0, result)
+                val existingIndex = results.indexOfFirst { it.ip == result.ip }
+                if (existingIndex >= 0) {
+                    results[existingIndex] = result
                 } else {
-                    results.add(result)
+                    if (result.status == Status.GREEN) {
+                        results.add(0, result)
+                    } else {
+                        results.add(result)
+                    }
                 }
                 scannedCount++
             }
@@ -536,7 +542,7 @@ fun IpScannerScreen(
             }
 
             // Scan Results List
-            items(results, key = { it.ip }) { item ->
+            itemsIndexed(results, key = { index, item -> "${item.ip}_$index" }) { index, item ->
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = cardBg,
