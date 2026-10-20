@@ -61,6 +61,8 @@ import kotlinx.coroutines.launch
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun IpScannerSheet(
+    settings: AppSettings? = null,
+    onUpdateSettings: ((AppSettings) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -81,6 +83,8 @@ fun IpScannerSheet(
     ) {
         dev.valid7996.narcicgeteway.ui.components.ProvidePageBack(onBack = onDismiss) {
             IpScannerScreen(
+                settings = settings,
+                onUpdateSettings = onUpdateSettings,
                 contentPadding = PaddingValues(bottom = 28.dp),
             )
         }
@@ -90,6 +94,7 @@ fun IpScannerSheet(
 @Composable
 fun IpScannerScreen(
     settings: AppSettings? = null,
+    onUpdateSettings: ((AppSettings) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(),
     modifier: Modifier = Modifier,
 ) {
@@ -108,6 +113,27 @@ fun IpScannerScreen(
     var scanJob by remember { mutableStateOf<Job?>(null) }
 
     val results = remember { mutableStateListOf<ScanResult>() }
+
+    fun sortByGreenFirst() {
+        if (results.isEmpty()) {
+            platform.toast("نتیجه‌ای برای مرتب‌سازی وجود ندارد")
+            return
+        }
+        val sorted = results.sortedWith(
+            compareBy<ScanResult> {
+                when (it.status) {
+                    Status.GREEN -> 0
+                    Status.YELLOW -> 1
+                    Status.RED -> 2
+                }
+            }.thenBy {
+                if (it.latency <= 0) 9999 else it.latency
+            }
+        )
+        results.clear()
+        results.addAll(sorted)
+        platform.toast("مرتب‌سازی: سبزها با کمترین پینگ در بالا")
+    }
 
     fun stopScan() {
         isScanning = false
@@ -155,9 +181,14 @@ fun IpScannerScreen(
                 ipPerRange = 150,
                 threadCount = 6,
                 checkCert = checkCert,
+                cdnType = selectedCdn,
             ) { result ->
                 if (!isScanning) return@scan
-                results.add(0, result)
+                if (result.status == Status.GREEN) {
+                    results.add(0, result)
+                } else {
+                    results.add(result)
+                }
                 scannedCount++
             }
             isScanning = false
@@ -367,11 +398,23 @@ fun IpScannerScreen(
                         }
                     }
 
-                    // Row 2: GREEN, TOP16, COPY ALL
+                    // Row 2: SORT, GREEN, TOP16, COPY ALL
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
+                        Button(
+                            onClick = { sortByGreenFirst() },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = accentColor.copy(alpha = 0.2f),
+                                contentColor = accentColor,
+                            ),
+                            modifier = Modifier.weight(1.2f).height(42.dp),
+                        ) {
+                            Text("SORT ⚡", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        }
+
                         Button(
                             onClick = {
                                 val text = results.filter { it.status == Status.GREEN }.joinToString("\n") { it.ip }
@@ -389,7 +432,7 @@ fun IpScannerScreen(
                             ),
                             modifier = Modifier.weight(1f).height(42.dp),
                         ) {
-                            Text("GREEN", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("GREEN", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
 
                         Button(
@@ -413,7 +456,7 @@ fun IpScannerScreen(
                             ),
                             modifier = Modifier.weight(1f).height(42.dp),
                         ) {
-                            Text("TOP 16", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("TOP 16", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
 
                         Button(
@@ -433,7 +476,7 @@ fun IpScannerScreen(
                             ),
                             modifier = Modifier.weight(1f).height(42.dp),
                         ) {
-                            Text("COPY ALL", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("COPY", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                         }
                     }
                 }
@@ -453,18 +496,41 @@ fun IpScannerScreen(
                         color = if (isDark) Color.White else Color.Black,
                     )
 
-                    val greenCount = results.count { it.status == Status.GREEN }
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF34C759).copy(alpha = 0.15f),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "سالم: $greenCount",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF34C759),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = accentColor.copy(alpha = 0.15f),
+                            modifier = Modifier.clickable { sortByGreenFirst() },
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "⚡ SORT (سبزها بالا)",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = accentColor,
+                                )
+                            }
+                        }
+
+                        val greenCount = results.count { it.status == Status.GREEN }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF34C759).copy(alpha = 0.15f),
+                        ) {
+                            Text(
+                                text = "سالم: $greenCount",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF34C759),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -477,7 +543,7 @@ fun IpScannerScreen(
                     border = BorderStroke(0.5.dp, cardBorder),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -485,48 +551,173 @@ fun IpScannerScreen(
                                 platform.toast("${item.ip} کپی شد")
                             }
                             .padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val dotColor = when (item.status) {
-                                Status.GREEN -> Color(0xFF34C759)
-                                Status.YELLOW -> Color(0xFFFF9500)
-                                Status.RED -> Color(0xFFFF3B30)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(dotColor),
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                text = item.ip,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                fontFamily = FontFamily.Monospace,
-                                color = if (isDark) Color.White else Color.Black,
-                            )
-                        }
-
-                        val (badgeBg, badgeFg, label) = when (item.status) {
-                            Status.GREEN -> Triple(Color(0xFF34C759).copy(alpha = 0.15f), Color(0xFF34C759), "${item.latency} ms")
-                            Status.YELLOW -> Triple(Color(0xFFFF9500).copy(alpha = 0.15f), Color(0xFFFF9500), "${item.latency} ms")
-                            Status.RED -> Triple(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30), if (item.latency >= 999) "خطا" else "${item.latency} ms")
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = badgeBg,
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = label,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = badgeFg,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                val dotColor = when (item.status) {
+                                    Status.GREEN -> Color(0xFF34C759)
+                                    Status.YELLOW -> Color(0xFFFF9500)
+                                    Status.RED -> Color(0xFFFF3B30)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(dotColor),
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = item.ip,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = if (isDark) Color.White else Color.Black,
+                                )
+                            }
+
+                            val (badgeBg, badgeFg, label) = when (item.status) {
+                                Status.GREEN -> Triple(Color(0xFF34C759).copy(alpha = 0.15f), Color(0xFF34C759), "⚡ ${item.latency} ms")
+                                Status.YELLOW -> Triple(Color(0xFFFF9500).copy(alpha = 0.15f), Color(0xFFFF9500), "${item.latency} ms")
+                                Status.RED -> Triple(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30), if (item.latency >= 999) "خطا" else "${item.latency} ms")
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = badgeBg,
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = badgeFg,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
+
+                        // Domain, Ping, Certificate / Subdomain info
+                        if (item.status != Status.RED) {
+                            Spacer(Modifier.height(8.dp))
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isDark) Color(0xFF2C2C2E).copy(alpha = 0.6f) else Color(0xFFF2F2F7))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                // Explicit Ping / Latency row for healthy connection
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "⚡ پینگ اتصال (Ping):",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (item.status == Status.GREEN) Color(0xFF34C759) else Color(0xFFFF9500),
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        text = "${item.latency} ms",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (item.status == Status.GREEN) Color(0xFF34C759) else Color(0xFFFF9500),
+                                        fontFamily = FontFamily.Monospace,
+                                    )
+                                }
+                                if (item.domain != null) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "🌐 دامنه سالم:",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = item.domain,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (isDark) Color(0xFFE5E5EA) else Color(0xFF1C1C1E),
+                                            fontFamily = FontFamily.Monospace,
+                                        )
+                                    }
+                                }
+
+                                if (item.certDomain != null) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "📜 زیرمجموعه گواهی:",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = item.certDomain,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF34C759),
+                                            fontFamily = FontFamily.Monospace,
+                                        )
+                                    }
+                                }
+
+                                if (item.cdnType != null) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "☁️ شبکه CDN:",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = item.cdnType,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = accentColor,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Option to set this IP in SNI Spoof Settings if settings and onUpdateSettings are present
+                        if (item.status == Status.GREEN && onUpdateSettings != null && settings != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = accentColor.copy(alpha = 0.12f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val portInt = portText.toIntOrNull() ?: 443
+                                        val sniHost = item.domain ?: ScannerEngine.getDefaultDomainForCdn(selectedCdn)
+                                        val updated = settings.copy(
+                                            rstaSpoofConnectIp = item.ip,
+                                            rstaSpoofConnectPort = portInt,
+                                            rstaSpoofFakeSni = sniHost,
+                                        )
+                                        onUpdateSettings(updated)
+                                        platform.toast("آی‌پی ${item.ip} و SNI در تنظیمات Spoof ذخیره شد")
+                                    },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "⚡ ست کردن در جعل SNI (Spoof)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

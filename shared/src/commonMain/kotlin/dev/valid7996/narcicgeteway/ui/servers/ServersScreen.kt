@@ -138,6 +138,8 @@ fun ServersScreen(
     autoSortAfterTest: Boolean = false,
 
     personalization: Personalization = Personalization.Default,
+    settings: dev.valid7996.narcicgeteway.domain.model.AppSettings? = null,
+    onUpdateSettings: (((dev.valid7996.narcicgeteway.domain.model.AppSettings) -> dev.valid7996.narcicgeteway.domain.model.AppSettings) -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
@@ -329,7 +331,27 @@ fun ServersScreen(
     fun importFromFile() {
         scope.launch {
             val picked = platform.pickFileBytes() ?: return@launch
-            val text = picked.bytes.decodeToString()
+            val bytes = picked.bytes
+            if (bytes.isEmpty()) {
+                toastRes(Res.string.config_invalid)
+                return@launch
+            }
+
+            // Check if it is a binary .nrg / .zsx sealed file
+            val isNrgBinary = bytes.size >= 4 && (
+                (bytes[0] == 'N'.code.toByte() && bytes[1] == 'R'.code.toByte() && bytes[2] == 'G'.code.toByte() && bytes[3] == '1'.code.toByte()) ||
+                (bytes[0] == 'Z'.code.toByte() && bytes[1] == 'S'.code.toByte() && bytes[2] == 'X'.code.toByte() && bytes[3] == '1'.code.toByte())
+            )
+            if (isNrgBinary || picked.name.endsWith(".nrg", ignoreCase = true) || picked.name.endsWith(".zsx", ignoreCase = true)) {
+                val link = if (isNrgBinary) {
+                    dev.valid7996.narcicgeteway.crypto.NrgLink.encode(bytes)
+                } else {
+                    bytes.decodeToString().trim()
+                }
+                if (tryHandleLocked(link)) return@launch
+            }
+
+            val text = bytes.decodeToString()
             if (text.isBlank()) {
                 toastRes(Res.string.config_invalid)
                 return@launch
@@ -1493,7 +1515,11 @@ fun ServersScreen(
     }
 
     if (showIpScanner) {
-        IpScannerSheet(onDismiss = { showIpScanner = false })
+        IpScannerSheet(
+            settings = settings,
+            onUpdateSettings = onUpdateSettings,
+            onDismiss = { showIpScanner = false },
+        )
     }
 
     if (showTelegramProxy) {
@@ -1503,6 +1529,8 @@ fun ServersScreen(
     if (showPatt) {
         dev.valid7996.narcicgeteway.ui.settings.patt.PattSheet(
             onDismiss = { showPatt = false },
+            settings = settings,
+            onUpdateSettings = onUpdateSettings,
             onImportConfig = { json ->
                 showPatt = false
                 repository.importText(json)

@@ -204,6 +204,30 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return false
         val data = intent.data ?: return false
         val scheme = data.scheme?.lowercase() ?: return false
+        if (scheme == "content" || scheme == "file") {
+            try {
+                val stream = contentResolver.openInputStream(data)
+                val bytes = stream?.use { it.readBytes() }
+                if (bytes != null && bytes.isNotEmpty()) {
+                    val isNrgBinary = bytes.size >= 4 && (
+                        (bytes[0] == 'N'.code.toByte() && bytes[1] == 'R'.code.toByte() && bytes[2] == 'G'.code.toByte() && bytes[3] == '1'.code.toByte()) ||
+                        (bytes[0] == 'Z'.code.toByte() && bytes[1] == 'S'.code.toByte() && bytes[2] == 'X'.code.toByte() && bytes[3] == '1'.code.toByte())
+                    )
+                    val textToImport = if (isNrgBinary) {
+                        dev.valid7996.narcicgeteway.crypto.NrgLink.encode(bytes)
+                    } else {
+                        bytes.decodeToString()
+                    }
+                    val req = dev.valid7996.narcicgeteway.domain.config.DeepLinkParser.parse(textToImport)
+                        ?: dev.valid7996.narcicgeteway.domain.config.DeepLinkRequest.ConfigText(textToImport)
+                    dev.valid7996.narcicgeteway.core.DeepLinkBus.request(req)
+                    return true
+                }
+            } catch (_: Throwable) {
+                // Ignore and fall through
+            }
+            return false
+        }
         if (scheme !in dev.valid7996.narcicgeteway.domain.config.DeepLinkParser.SCHEMES) return false
         val request = dev.valid7996.narcicgeteway.domain.config.DeepLinkParser.parse(intent.dataString.orEmpty())
         if (request == null) {

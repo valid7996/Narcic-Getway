@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.data.tools.patt.CloudflareFixEngine
 import dev.valid7996.narcicgeteway.data.tools.patt.CloudflareFixResult
 import dev.valid7996.narcicgeteway.data.tools.patt.EchEngine
@@ -101,6 +102,8 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun PattSheet(
     onDismiss: () -> Unit,
+    settings: AppSettings? = null,
+    onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)? = null,
     onImportConfig: ((String) -> Unit)? = null,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -122,6 +125,8 @@ fun PattSheet(
         ProvidePageBack(onBack = onDismiss) {
             PattScreen(
                 contentPadding = PaddingValues(bottom = 28.dp),
+                settings = settings,
+                onUpdateSettings = onUpdateSettings,
                 onImportConfig = onImportConfig,
             )
         }
@@ -131,6 +136,8 @@ fun PattSheet(
 @Composable
 fun PattScreen(
     contentPadding: PaddingValues = PaddingValues(),
+    settings: AppSettings? = null,
+    onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)? = null,
     modifier: Modifier = Modifier,
     onImportConfig: ((String) -> Unit)? = null,
 ) {
@@ -173,7 +180,7 @@ fun PattScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
             when (selectedTab) {
-                0 -> SniCheckTab(isDark = isDark)
+                0 -> SniCheckTab(isDark = isDark, settings = settings, onUpdateSettings = onUpdateSettings)
                 1 -> CloudflareFixTab(isDark = isDark, onImportConfig = onImportConfig)
                 2 -> AddEchTab(isDark = isDark, onImportConfig = onImportConfig)
             }
@@ -187,7 +194,11 @@ fun PattScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SniCheckTab(isDark: Boolean) {
+private fun SniCheckTab(
+    isDark: Boolean,
+    settings: AppSettings? = null,
+    onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)? = null,
+) {
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
 
@@ -498,7 +509,20 @@ private fun SniCheckTab(isDark: Boolean) {
             )
 
             results.forEach { res ->
-                SniResultCard(res = res, isDark = isDark)
+                SniResultCard(
+                    res = res,
+                    isDark = isDark,
+                    onApplySniSpoof = { ip, port, sni ->
+                        onUpdateSettings?.invoke { s ->
+                            s.copy(
+                                rstaSpoofConnectIp = ip,
+                                rstaSpoofConnectPort = port,
+                                rstaSpoofFakeSni = sni,
+                            )
+                        }
+                        platform.toast("در تنظیمات جعل SNI ست شد:\nIP: $ip\nPort: $port\nSNI: $sni")
+                    },
+                )
             }
         }
     }
@@ -506,7 +530,11 @@ private fun SniCheckTab(isDark: Boolean) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SniResultCard(res: SniIpResult, isDark: Boolean) {
+private fun SniResultCard(
+    res: SniIpResult,
+    isDark: Boolean,
+    onApplySniSpoof: ((ip: String, port: Int, sni: String) -> Unit)? = null,
+) {
     val platform = LocalPlatform.current
     val statusColor = when (res.status) {
         SniResultStatus.OK -> Color(0xFF34C759)
@@ -585,13 +613,25 @@ private fun SniResultCard(res: SniIpResult, isDark: Boolean) {
             if (res.portResults.isNotEmpty()) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     res.portResults.forEach { p ->
-                        val portColor = if (p.isOpen) Color(0xFF34C759) else Color(0xFFFF3B30)
+                        val portColor = when {
+                            p.tlsSuccess -> Color(0xFF34C759)
+                            p.isOpen -> Color(0xFFFF9500)
+                            else -> Color(0xFFFF3B30)
+                        }
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = portColor.copy(alpha = 0.12f),
                         ) {
+                            val label = when {
+                                p.tlsSuccess -> {
+                                    val codeStr = p.httpStatus?.let { " HTTP $it" } ?: ""
+                                    "${p.port} TLS+HTTP✔$codeStr (${p.latencyMs}ms)"
+                                }
+                                p.isOpen -> "${p.port} (TCP Only ⚠)"
+                                else -> "${p.port} ✖"
+                            }
                             Text(
-                                "${p.port} ${if (p.isOpen) "✔" else "✖"}",
+                                label,
                                 color = portColor,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -599,6 +639,36 @@ private fun SniResultCard(res: SniIpResult, isDark: Boolean) {
                             )
                         }
                     }
+                }
+            }
+
+            // Apply to SNI Spoof Settings Button
+            if (res.status == SniResultStatus.OK && res.ip.isNotBlank() && onApplySniSpoof != null) {
+                val healthyPort = res.portResults.firstOrNull { it.tlsSuccess }?.port
+                    ?: res.portResults.firstOrNull { it.isOpen }?.port
+                    ?: 443
+                Button(
+                    onClick = {
+                        onApplySniSpoof(res.ip, healthyPort, res.target)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(38.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF34C759),
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_tune),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "ست کردن در تنظیمات جعل SNI (Spoof)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
 

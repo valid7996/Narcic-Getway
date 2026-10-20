@@ -190,6 +190,8 @@ fun HomeScreen(
     personalization: Personalization = Personalization.Default,
 
     connectStyle: ConnectButtonStyle = ConnectButtonStyle.Pill,
+    settings: dev.valid7996.narcicgeteway.domain.model.AppSettings? = null,
+    onUpdateSettings: (((dev.valid7996.narcicgeteway.domain.model.AppSettings) -> dev.valid7996.narcicgeteway.domain.model.AppSettings) -> Unit)? = null,
     homeVm: HomeViewModel = viewModel { HomeViewModel() },
 ) {
     val ui by connectionVm.ui.collectAsStateWithLifecycle()
@@ -526,6 +528,8 @@ fun HomeScreen(
                         autoSortAfterTest = autoSortAfterTest,
                         autoTestAfterUpdate = autoTestAfterUpdate,
                         autoRemoveInvalidAfterTest = autoRemoveInvalidAfterTest,
+                        settings = settings,
+                        onUpdateSettings = onUpdateSettings,
                     )
                 }
                 Spacer(Modifier.height(96.dp))

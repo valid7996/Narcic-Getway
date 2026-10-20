@@ -97,6 +97,8 @@ internal fun HomeServerSection(
     autoSortAfterTest: Boolean,
     autoTestAfterUpdate: Boolean,
     autoRemoveInvalidAfterTest: Boolean,
+    settings: dev.valid7996.narcicgeteway.domain.model.AppSettings? = null,
+    onUpdateSettings: (((dev.valid7996.narcicgeteway.domain.model.AppSettings) -> dev.valid7996.narcicgeteway.domain.model.AppSettings) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val platform = dev.valid7996.narcicgeteway.ui.platform.LocalPlatform.current
@@ -715,7 +717,11 @@ internal fun HomeServerSection(
     }
 
     if (showIpScanner) {
-        IpScannerSheet(onDismiss = { showIpScanner = false })
+        IpScannerSheet(
+            settings = settings,
+            onUpdateSettings = onUpdateSettings,
+            onDismiss = { showIpScanner = false },
+        )
     }
 
     if (showTelegramProxy) {
@@ -725,6 +731,8 @@ internal fun HomeServerSection(
     if (showPatt) {
         dev.valid7996.narcicgeteway.ui.settings.patt.PattSheet(
             onDismiss = { showPatt = false },
+            settings = settings,
+            onUpdateSettings = onUpdateSettings,
             onImportConfig = { json ->
                 showPatt = false
                 repository.importText(json)

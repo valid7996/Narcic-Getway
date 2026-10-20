@@ -212,6 +212,8 @@ fun MainScaffold(
                     autoSortAfterTest = settings.autoSortAfterTest,
                     autoTestAfterUpdate = settings.autoTestAfterUpdate,
                     autoRemoveInvalidAfterTest = settings.autoRemoveInvalidAfterTest,
+                    settings = settings,
+                    onUpdateSettings = onUpdateSettings,
                     contentPadding = innerPadding,
                     onToggleConnection = onToggleConnection,
 
@@ -230,6 +232,8 @@ fun MainScaffold(
                     autoRemoveInvalidAfterTest = settings.autoRemoveInvalidAfterTest,
                     autoSortAfterTest = settings.autoSortAfterTest,
                     personalization = settings.toPersonalization(),
+                    settings = settings,
+                    onUpdateSettings = onUpdateSettings,
                     onServerActivated = {
                         if (settings.homeAfterSelect) current = TopDestination.Home
 

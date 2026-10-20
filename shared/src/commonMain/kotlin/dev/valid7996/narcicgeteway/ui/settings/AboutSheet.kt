@@ -169,6 +169,38 @@ fun AboutSheet(onDismiss: () -> Unit) {
                 )
             }
 
+            Spacer(Modifier.size(4.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = if (isDark) Color(0xFF2C2C2E).copy(alpha = 0.45f) else Color(0xFFF2F2F7),
+                border = androidx.compose.foundation.BorderStroke(
+                    0.5.dp,
+                    if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        "تشکر خاص از:",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color(0xFFFF9500) else Color(0xFFD97706),
+                    )
+                    Text(
+                        "cluvex • patterniha • anonvector • mahsaaNG • pashmforsh",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDark) Color(0xFFE5E5EA) else Color(0xFF1C1C1E),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
             Text(
                 stringResource(Res.string.about_thanks_valid7996),
                 style = MaterialTheme.typography.bodySmall,

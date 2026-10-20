@@ -10,15 +10,22 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import javax.net.ssl.SNIHostName
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 import kotlin.random.Random
 
 data class ScanResult(
     val ip: String,
     val latency: Int,
     val status: Status,
+    val domain: String? = null,
+    val certDomain: String? = null,
+    val cdnType: String? = null,
 )
 
 enum class Status {
@@ -115,39 +122,110 @@ object PingEngine {
 }
 
 object TlsEngine {
-    fun test(
+    data class TlsResult(
+        val success: Boolean,
+        val latencyMs: Int,
+        val verifiedDomain: String?,
+        val certSubject: String?,
+    )
+
+    fun testDirect(
         ip: String,
         host: String,
         port: Int = 443,
-        timeout: Int = 3000,
-    ): Boolean {
-        return try {
-            val socket = Socket()
-            socket.connect(InetSocketAddress(ip, port), timeout)
+        timeout: Int = 2000,
+    ): TlsResult {
+        var rawSocket: Socket? = null
+        var sslSocket: SSLSocket? = null
+        val start = System.currentTimeMillis()
+        try {
+            rawSocket = Socket()
+            rawSocket.connect(InetSocketAddress(ip, port), timeout)
+            rawSocket.soTimeout = timeout
+            val tcpLatency = (System.currentTimeMillis() - start).toInt().coerceAtLeast(1)
+
+            if (port == 80) {
+                try { rawSocket.close() } catch (_: Exception) {}
+                return TlsResult(
+                    success = true,
+                    latencyMs = tcpLatency,
+                    verifiedDomain = host.ifBlank { null },
+                    certSubject = null,
+                )
+            }
 
             val context = SSLContext.getInstance("TLS")
-            context.init(null, null, null)
+            val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+            })
+            context.init(null, trustAll, SecureRandom())
 
-            val sslSocket = context.socketFactory.createSocket(
-                socket,
-                host,
+            sslSocket = context.socketFactory.createSocket(
+                rawSocket,
+                host.ifBlank { ip },
                 port,
                 true,
             ) as SSLSocket
 
             val params = sslSocket.sslParameters
-            params.serverNames = listOf(SNIHostName(host))
+            if (host.isNotBlank()) {
+                params.serverNames = listOf(SNIHostName(host))
+            }
             sslSocket.sslParameters = params
             sslSocket.soTimeout = timeout
 
             sslSocket.startHandshake()
-            sslSocket.close()
+            val totalLatency = (System.currentTimeMillis() - start).toInt().coerceAtLeast(1)
 
-            true
+            var certCn: String? = null
+            try {
+                val cert = sslSocket.session.peerCertificates.firstOrNull() as? X509Certificate
+                if (cert != null) {
+                    val dn = cert.subjectX500Principal.name
+                    val cnMatch = Regex("""CN=([^,]+)""", RegexOption.IGNORE_CASE).find(dn)
+                    val extractedCn = cnMatch?.groupValues?.get(1)?.trim()
+
+                    val sans = cert.subjectAlternativeNames
+                        ?.filter { it.size >= 2 && (it[0] as? Number)?.toInt() == 2 }
+                        ?.mapNotNull { it[1] as? String }
+                        ?: emptyList()
+
+                    certCn = when {
+                        !extractedCn.isNullOrBlank() -> extractedCn
+                        sans.isNotEmpty() -> sans.first()
+                        else -> null
+                    }
+                }
+            } catch (_: Exception) {}
+
+            return TlsResult(
+                success = true,
+                latencyMs = totalLatency,
+                verifiedDomain = host.ifBlank { certCn },
+                certSubject = certCn,
+            )
         } catch (e: Exception) {
-            false
+            val elapsed = (System.currentTimeMillis() - start).toInt()
+            return TlsResult(
+                success = false,
+                latencyMs = if (elapsed > 0) elapsed else 999,
+                verifiedDomain = null,
+                certSubject = null,
+            )
+        } finally {
+            try { sslSocket?.close() } catch (_: Exception) {}
+            try { rawSocket?.close() } catch (_: Exception) {}
         }
     }
+
+    fun test(
+        ip: String,
+        host: String,
+        port: Int = 443,
+        timeout: Int = 3000,
+    ): Boolean = testDirect(ip, host, port, timeout).success
 }
 
 object ScannerEngine {
@@ -260,6 +338,25 @@ object ScannerEngine {
         }
     }
 
+    fun getDefaultDomainForCdn(cdnType: String): String {
+        return when (cdnType) {
+            "Cloudflare" -> "speed.cloudflare.com"
+            "Akamai" -> "www.akamai.com"
+            "Fastly" -> "www.fastly.com"
+            "Bunny" -> "bunny.net"
+            "EdgeCenter" -> "edgecenter.ru"
+            "Gcore" -> "gcore.com"
+            "CDN77" -> "www.cdn77.com"
+            "Edgio" -> "edg.io"
+            "Imperva" -> "www.imperva.com"
+            "Azure Front Door" -> "azureedge.net"
+            "Netlify" -> "www.netlify.com"
+            "Google Cloud CDN" -> "cloud.google.com"
+            "Vercel" -> "vercel.com"
+            else -> "speed.cloudflare.com"
+        }
+    }
+
     fun stop() {
         stopRequested = true
     }
@@ -271,10 +368,17 @@ object ScannerEngine {
         ipPerRange: Int = 150,
         threadCount: Int = 6,
         checkCert: Boolean = false,
+        cdnType: String = "Cloudflare",
         onResult: (ScanResult) -> Unit,
     ) = coroutineScope {
         stopRequested = false
         val jobs = mutableListOf<Deferred<Unit>>()
+
+        val effectiveHost = if (domain.isNotBlank()) {
+            domain.trim()
+        } else {
+            getDefaultDomainForCdn(cdnType)
+        }
 
         for (range in ranges) {
             if (stopRequested) break
@@ -292,25 +396,26 @@ object ScannerEngine {
                     chunk.forEach { ip ->
                         if (stopRequested) return@async
 
-                        // Ping latency measurement
-                        val latency = PingEngine.ping(ip, port)
+                        // Accurate TLS+TCP direct verification
+                        val tlsRes = TlsEngine.testDirect(
+                            ip = ip,
+                            host = effectiveHost,
+                            port = port,
+                            timeout = 2500,
+                        )
                         if (stopRequested) return@async
 
-                        // TLS Certificate check (if enabled and domain provided)
-                        var tlsOk = true
-                        if (checkCert && domain.isNotBlank()) {
-                            tlsOk = TlsEngine.test(
-                                ip = ip,
-                                host = domain,
-                                port = port,
-                            )
-                        }
-
-                        val status = when {
-                            !tlsOk -> Status.RED
-                            latency <= 150 -> Status.GREEN
-                            latency <= 250 -> Status.YELLOW
-                            else -> Status.RED
+                        val (status, latency) = if (tlsRes.success) {
+                            val l = tlsRes.latencyMs
+                            val s = when {
+                                l <= 220 -> Status.GREEN
+                                l <= 450 -> Status.YELLOW
+                                else -> Status.RED
+                            }
+                            Pair(s, l)
+                        } else {
+                            // If TLS/TCP failed
+                            Pair(Status.RED, tlsRes.latencyMs)
                         }
 
                         onResult(
@@ -318,10 +423,13 @@ object ScannerEngine {
                                 ip = ip,
                                 latency = latency,
                                 status = status,
+                                domain = if (tlsRes.success) (tlsRes.verifiedDomain ?: effectiveHost) else null,
+                                certDomain = tlsRes.certSubject,
+                                cdnType = cdnType,
                             ),
                         )
 
-                        delay(40)
+                        delay(30)
                     }
                 }
             }

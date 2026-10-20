@@ -66,6 +66,9 @@ enum class SniResultStatus {
 data class SniPortResult(
     val port: Int,
     val isOpen: Boolean,
+    val tlsSuccess: Boolean = false,
+    val httpStatus: Int? = null,
+    val latencyMs: Int = 0,
 )
 
 data class SniIpCheckResult(
@@ -83,6 +86,7 @@ data class SniIpResult(
     val errorMessage: String? = null,
 ) {
     val openPortCount: Int get() = portResults.count { it.isOpen }
+    val tlsPortCount: Int get() = portResults.count { it.tlsSuccess }
 
     fun toDisplayString(): String {
         val tag = "[${status.name}]"
@@ -94,7 +98,12 @@ data class SniIpResult(
         }
 
         val portStr = portResults.joinToString(" ") { p ->
-            "${p.port}${if (p.isOpen) "✔" else "✖"}"
+            val flag = when {
+                p.tlsSuccess -> "✔(TLS+HTTP${p.httpStatus?.let { " $it" } ?: ""})"
+                p.isOpen -> "⚠(TCP)"
+                else -> "✖"
+            }
+            "${p.port}$flag"
         }
 
         var line = "$tag $target -> $ip -> $portStr"
@@ -247,6 +256,93 @@ class SniSpoofCheckService(
         false
     }
 
+    suspend fun checkTlsHttps(
+        targetDomain: String,
+        ip: String,
+        port: Int,
+    ): SniPortResult = withContext(Dispatchers.IO) {
+        val timeoutMs = (config.timeout.coerceIn(2, 10)) * 1000
+        val retries = config.retries.coerceIn(1, 3)
+        for (attempt in 0 until retries) {
+            if (isCancelled) return@withContext SniPortResult(port = port, isOpen = false)
+            var rawSocket: Socket? = null
+            var sslSocket: SSLSocket? = null
+            val start = System.currentTimeMillis()
+            try {
+                rawSocket = Socket()
+                rawSocket.connect(InetSocketAddress(ip, port), timeoutMs)
+                rawSocket.soTimeout = timeoutMs
+
+                if (port == 80) {
+                    val latency = (System.currentTimeMillis() - start).toInt().coerceAtLeast(1)
+                    try { rawSocket.close() } catch (_: Exception) {}
+                    return@withContext SniPortResult(
+                        port = port,
+                        isOpen = true,
+                        tlsSuccess = false,
+                        httpStatus = 200,
+                        latencyMs = latency,
+                    )
+                }
+
+                val sslContext = SSLContext.getInstance("TLS")
+                val trustAll = arrayOf<TrustManager>(object : X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                })
+                sslContext.init(null, trustAll, SecureRandom())
+
+                sslSocket = sslContext.socketFactory.createSocket(rawSocket, targetDomain, port, true) as SSLSocket
+                val params = sslSocket.sslParameters
+                if (!isIpAddress(targetDomain)) {
+                    params.serverNames = listOf(SNIHostName(targetDomain))
+                }
+                sslSocket.sslParameters = params
+                sslSocket.soTimeout = timeoutMs
+
+                sslSocket.startHandshake()
+
+                val out = sslSocket.outputStream
+                val req = "GET / HTTP/1.1\r\nHost: $targetDomain\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\nConnection: close\r\n\r\n"
+                out.write(req.toByteArray(Charsets.UTF_8))
+                out.flush()
+
+                val reader = BufferedReader(InputStreamReader(sslSocket.inputStream))
+                val firstLine = reader.readLine()
+                val latency = (System.currentTimeMillis() - start).toInt().coerceAtLeast(1)
+
+                val statusCode = firstLine?.let { line ->
+                    Regex("""HTTP/[0-9.]+\s+([0-9]{3})""").find(line)?.groupValues?.get(1)?.toIntOrNull()
+                }
+
+                return@withContext SniPortResult(
+                    port = port,
+                    isOpen = true,
+                    tlsSuccess = true,
+                    httpStatus = statusCode ?: 200,
+                    latencyMs = latency,
+                )
+            } catch (e: Exception) {
+                val latency = (System.currentTimeMillis() - start).toInt()
+                val tcpConnected = rawSocket?.isConnected == true
+                if (attempt == retries - 1) {
+                    return@withContext SniPortResult(
+                        port = port,
+                        isOpen = tcpConnected,
+                        tlsSuccess = false,
+                        httpStatus = null,
+                        latencyMs = latency,
+                    )
+                }
+            } finally {
+                try { sslSocket?.close() } catch (_: Exception) {}
+                try { rawSocket?.close() } catch (_: Exception) {}
+            }
+        }
+        SniPortResult(port = port, isOpen = false)
+    }
+
     suspend fun checkIp(domain: String, ip: String, userPublicIp: String): SniIpCheckResult =
         withContext(Dispatchers.IO) {
             var rawSocket: Socket? = null
@@ -367,19 +463,19 @@ class SniSpoofCheckService(
                 continue
             }
 
-            // Check all ports for this IP concurrently
+            // Check all ports for this IP concurrently with TLS + HTTPS validation
             val portDeferreds = config.ports.map { port ->
                 async(Dispatchers.IO) {
-                    val isOpen = checkPort(ip, port)
-                    SniPortResult(port = port, isOpen = isOpen)
+                    checkTlsHttps(target, ip, port)
                 }
             }
             val portResults = portDeferreds.awaitAll()
+            val tlsOkCount = portResults.count { it.tlsSuccess || (it.isOpen && it.port == 80) }
             val openCount = portResults.count { it.isOpen }
 
-            if (openCount > 0) {
+            if (tlsOkCount > 0) {
                 var ipCheckResult: SniIpCheckResult? = null
-                if (config.enableIpCheck && userPublicIp != null && !isIpAddress(target) && portResults.any { it.port == 443 && it.isOpen }) {
+                if (config.enableIpCheck && userPublicIp != null && !isIpAddress(target) && portResults.any { it.port == 443 && it.tlsSuccess }) {
                     ipCheckResult = checkIp(target, ip, userPublicIp)
                 }
 
@@ -392,6 +488,16 @@ class SniSpoofCheckService(
                         ipCheckResult = ipCheckResult,
                     ),
                 )
+            } else if (openCount > 0) {
+                results.add(
+                    SniIpResult(
+                        target = target,
+                        ip = ip,
+                        status = SniResultStatus.FAIL,
+                        portResults = portResults,
+                        errorMessage = "پورت باز است اما هندشیک TLS یا پاسخ HTTPS ناموفق بود (احتمال فیلتر SNI)",
+                    ),
+                )
             } else {
                 results.add(
                     SniIpResult(
@@ -399,6 +505,7 @@ class SniSpoofCheckService(
                         ip = ip,
                         status = SniResultStatus.FAIL,
                         portResults = portResults,
+                        errorMessage = "عدم اتصال / همه پورت‌ها بسته",
                     ),
                 )
             }

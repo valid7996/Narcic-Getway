@@ -78,6 +78,28 @@
                 <data android:scheme="nrg" />
                 <data android:scheme="zsx" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\\.nrg" />
+                <data android:pathPattern=".*\\.zsx" />
+                <data android:pathPattern=".*\\.json" />
+                <data android:pathPattern=".*\\.ovpn" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/x-nrg" />
+                <data android:mimeType="application/nrg" />
+            </intent-filter>
         </activity>
 
         <provider

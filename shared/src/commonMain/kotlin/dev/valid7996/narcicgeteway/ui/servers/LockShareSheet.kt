@@ -71,9 +71,11 @@ import dev.valid7996.narcicgeteway.shared.resources.action_share
 import dev.valid7996.narcicgeteway.shared.resources.copied
 import dev.valid7996.narcicgeteway.shared.resources.ic_check
 import dev.valid7996.narcicgeteway.shared.resources.ic_content_paste
+import dev.valid7996.narcicgeteway.shared.resources.ic_description
 import dev.valid7996.narcicgeteway.shared.resources.ic_ios_share
 import dev.valid7996.narcicgeteway.shared.resources.ic_key
 import dev.valid7996.narcicgeteway.shared.resources.ic_lock
+import dev.valid7996.narcicgeteway.shared.resources.ic_public
 import dev.valid7996.narcicgeteway.shared.resources.ic_qr_code_2
 import dev.valid7996.narcicgeteway.shared.resources.ic_schedule
 import dev.valid7996.narcicgeteway.shared.resources.ic_sync
@@ -120,6 +122,7 @@ fun LockShareSheet(
 
     var configTitle by remember { mutableStateOf(profile.name) }
     var userNote by remember { mutableStateOf("") }
+    var lockMode by remember { mutableIntStateOf(0) } // 0: By Device Code, 1: Public Lock (no device code)
     var buyerDeviceCode by remember { mutableStateOf("") }
     var selectedExpiryOption by remember { mutableIntStateOf(5) } // 0: None, 1: 5m, 2: 1h, 3: 6h, 4: 24h, 5: 3d, 6: 7d, 7: 30d, 8: custom
     var customDays by remember { mutableIntStateOf(0) }
@@ -132,6 +135,7 @@ fun LockShareSheet(
     var generating by remember { mutableStateOf(false) }
 
     var generatedNrgLink by remember { mutableStateOf<String?>(null) }
+    var generatedSealedBytes by remember { mutableStateOf<ByteArray?>(null) }
     var generatedExpiresAt by remember { mutableStateOf<Long?>(null) }
     var generatedDeviceCode by remember { mutableStateOf<String?>(null) }
 
@@ -196,62 +200,121 @@ fun LockShareSheet(
 
                         HorizontalDivider(color = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
 
-                        // Device Lock Section
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Lock Mode Selection
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("نوع قفل‌گذاری کانفیگ:", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_lock),
-                                    contentDescription = null,
-                                    tint = Color(0xFFFF9500),
-                                    modifier = Modifier.size(16.dp),
+                                FilterChip(
+                                    selected = lockMode == 0,
+                                    onClick = { lockMode = 0 },
+                                    label = { Text("🔒 با کد دستگاه (اختصاصی)", fontSize = 12.sp) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFFF9500).copy(alpha = 0.2f),
+                                        selectedLabelColor = Color(0xFFFF9500),
+                                    ),
                                 )
-                                Text(
-                                    "کد دستگاه خریدار (قفل اختصاصی):",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
+                                FilterChip(
+                                    selected = lockMode == 1,
+                                    onClick = { lockMode = 1 },
+                                    label = { Text("🌐 بدون کد دستگاه (عمومی)", fontSize = 12.sp) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFF007AFF).copy(alpha = 0.2f),
+                                        selectedLabelColor = Color(0xFF007AFF),
+                                    ),
                                 )
                             }
 
-                            OutlinedTextField(
-                                value = buyerDeviceCode,
-                                onValueChange = { buyerDeviceCode = it },
-                                label = { Text("کد دستگاه خریدار") },
-                                placeholder = { Text("مثلاً: NG-XXXX-XXXX") },
-                                supportingText = {
-                                    Text(
-                                        "خریدار کد دستگاه خود را از بخش «تنظیمات ← درباره ← کد دستگاه من» کپی کرده و ارسال می‌کند. کانفیگ رمزنگاری شده و منحصراً بر روی همان دستگاه باز می‌شود.",
-                                        fontSize = 11.sp,
-                                        color = Color.Gray,
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFF9500),
-                                ),
-                                trailingIcon = {
-                                    IconButton(onClick = {
-                                        val clip = platform.readClipboard()
-                                        if (!clip.isNullOrBlank()) {
-                                            buyerDeviceCode = clip.trim()
-                                        }
-                                    }) {
+                            if (lockMode == 0) {
+                                // Device Lock Section
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
                                         Icon(
-                                            painter = painterResource(Res.drawable.ic_content_paste),
-                                            contentDescription = "جای‌گذاری کد دستگاه",
+                                            painter = painterResource(Res.drawable.ic_lock),
+                                            contentDescription = null,
                                             tint = Color(0xFFFF9500),
-                                            modifier = Modifier.size(18.dp),
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        Text(
+                                            "کد دستگاه خریدار (قفل اختصاصی):",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
                                         )
                                     }
-                                },
-                            )
+
+                                    OutlinedTextField(
+                                        value = buyerDeviceCode,
+                                        onValueChange = { buyerDeviceCode = it },
+                                        label = { Text("کد دستگاه خریدار") },
+                                        placeholder = { Text("مثلاً: NG-XXXX-XXXX") },
+                                        supportingText = {
+                                            Text(
+                                                "خریدار کد دستگاه خود را از بخش «تنظیمات ← درباره ← کد دستگاه من» کپی کرده و ارسال می‌کند. کانفیگ رمزنگاری شده و منحصراً بر روی همان دستگاه باز می‌شود.",
+                                                fontSize = 11.sp,
+                                                color = Color.Gray,
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFFF9500),
+                                        ),
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                val clip = platform.readClipboard()
+                                                if (!clip.isNullOrBlank()) {
+                                                    buyerDeviceCode = clip.trim()
+                                                }
+                                            }) {
+                                                Icon(
+                                                    painter = painterResource(Res.drawable.ic_content_paste),
+                                                    contentDescription = "جای‌گذاری کد دستگاه",
+                                                    tint = Color(0xFFFF9500),
+                                                    modifier = Modifier.size(18.dp),
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            } else {
+                                // Public Lock Explanation
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (isDark) Color(0xFF1E2836) else Color(0xFFE8F2FD),
+                                    border = BorderStroke(1.dp, Color(0xFF007AFF).copy(alpha = 0.3f)),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(Res.drawable.ic_public),
+                                            contentDescription = null,
+                                            tint = Color(0xFF007AFF),
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        Text(
+                                            "این کانفیگ بدون وابستگی به کد دستگاه رمزنگاری می‌شود. سورس، آدرس سرور و مشخصات کانفیگ کاملاً رمزنگاری و پنهان می‌ماند و می‌توانید آن را در کانال عمومی تلگرام قرار دهید. همه کاربران برنامه می‌توانند متصل شوند اما دسترسی به سورس آن نخواهند داشت.",
+                                            fontSize = 11.sp,
+                                            color = if (isDark) Color(0xFFCFE4FD) else Color(0xFF0A3E80),
+                                            lineHeight = 16.sp,
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         HorizontalDivider(color = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA))
@@ -374,7 +437,7 @@ fun LockShareSheet(
                         Button(
                             onClick = {
                                 val device = buyerDeviceCode.trim()
-                                if (device.isEmpty()) {
+                                if (lockMode == 0 && device.isEmpty()) {
                                     platform.toast("لطفاً ابتدا کد دستگاه خریدار را وارد نمایید")
                                     return@Button
                                 }
@@ -402,8 +465,8 @@ fun LockShareSheet(
                                     nameFa = configTitle,
                                     note = userNote,
                                     expiresAt = expiresAt,
-                                    password = device,
-                                    deviceBound = true,
+                                    password = if (lockMode == 0) device else null,
+                                    deviceBound = (lockMode == 0),
                                 )
 
                                 if (generating) return@Button
@@ -412,6 +475,7 @@ fun LockShareSheet(
                                     try {
                                         // Argon2 (64 MiB) + compression: keep it off the UI thread.
                                         val sealedBytes = withContext(Dispatchers.Default) { ZsxCrypto.seal(sealReq) }
+                                        generatedSealedBytes = sealedBytes
                                         var link = NrgLink.encode(sealedBytes)
                                         if (useRelay) {
                                             val hostOk = NrgRelay.hostOf(relayUrlInput) != null
@@ -431,10 +495,10 @@ fun LockShareSheet(
                                         }
                                         generatedNrgLink = link
                                         generatedExpiresAt = expiresAt
-                                        generatedDeviceCode = device
+                                        generatedDeviceCode = if (lockMode == 0) device else null
                                         linkCopied = false
                                         packageCopied = false
-                                        platform.toast("کانفیگ اختصاصی با موفقیت قفل و تولید شد")
+                                        platform.toast(if (lockMode == 0) "کانفیگ اختصاصی با موفقیت قفل و تولید شد" else "کانفیگ قفل‌شده عمومی با موفقیت تولید شد")
                                     } catch (e: Throwable) {
                                         platform.toast("خطا در ساخت کانفیگ قفل‌شده: ${e.message}")
                                     } finally {
@@ -466,6 +530,9 @@ fun LockShareSheet(
                         if (lockedDevice.isNotEmpty()) {
                             appendLine("📱 قفل اختصاصی برای کد دستگاه: $lockedDevice")
                             appendLine("⚠️ توجه: این کانفیگ اختصاصی بوده و منحصراً بر روی دستگاه ثبت‌شده شما فعال می‌شود و روی سایر دستگاه‌ها کار نخواهد کرد.")
+                        } else {
+                            appendLine("🌐 نوع قفل: عمومی (محافظت‌شده - مناسب برای کانال)")
+                            appendLine("ℹ️ اطلاعات سرور و کانفیگ کاملاً پنهان بوده و برای تمامی کاربران برنامه قابل اتصال است.")
                         }
                         if (userNote.isNotBlank()) {
                             appendLine("📝 یادداشت: $userNote")
@@ -474,7 +541,7 @@ fun LockShareSheet(
                         appendLine("🔗 لینک کانفیگ:")
                         appendLine(nrgLink)
                         appendLine()
-                        appendLine("جهت فعال‌سازی، لینک بالا را کپی کرده و در برنامه Narcic Gateway وارد نمایید (کانفیگ به صورت خودکار شناسایی و اضافه خواهد شد).")
+                        appendLine("جهت فعال‌سازی، لینک بالا یا فایل کانفیگ را در برنامه Narcic Gateway وارد نمایید (کانفیگ به صورت خودکار شناسایی و اضافه خواهد شد).")
                     }
 
                     Surface(
@@ -571,40 +638,71 @@ fun LockShareSheet(
                                 }
                             }
 
-                            // Share and QR Actions
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Button(
-                                    onClick = {
-                                        platform.copyToClipboard(fullPackageText)
-                                        packageCopied = true
-                                        platform.toast("پیام کامل اشتراک در کلیپ‌بورد کپی شد")
-                                    },
-                                    modifier = Modifier.weight(1f).height(44.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)),
+                            // Share, File and QR Actions
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Icon(painter = painterResource(if (packageCopied) Res.drawable.ic_check else Res.drawable.ic_content_paste), contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(if (packageCopied) "کپی شد" else "کپی پیام برای کاربر", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Button(
+                                        onClick = {
+                                            platform.copyToClipboard(fullPackageText)
+                                            packageCopied = true
+                                            platform.toast("پیام کامل اشتراک در کلیپ‌بورد کپی شد")
+                                        },
+                                        modifier = Modifier.weight(1f).height(44.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)),
+                                    ) {
+                                        Icon(painter = painterResource(if (packageCopied) Res.drawable.ic_check else Res.drawable.ic_content_paste), contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(if (packageCopied) "کپی شد" else "کپی پیام برای کاربر", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            val safeName = (configTitle.trim().ifEmpty { "narcic_config" })
+                                                .replace(Regex("""[^A-Za-z0-9_.\-\u0600-\u06FF]"""), "_")
+                                            val rawBytes = generatedSealedBytes ?: runCatching { NrgLink.decode(nrgLink) }.getOrNull()
+                                            if (rawBytes != null) {
+                                                platform.shareFiles(listOf("$safeName.nrg" to rawBytes))
+                                                platform.toast("فایل $safeName.nrg آماده ارسال شد")
+                                            } else {
+                                                platform.toast("خطا در ایجاد فایل")
+                                            }
+                                        },
+                                        modifier = Modifier.height(44.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                    ) {
+                                        Icon(painter = painterResource(Res.drawable.ic_description), contentDescription = "Share .nrg file", modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("فایل .nrg", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
 
-                                OutlinedButton(
-                                    onClick = { platform.shareText(fullPackageText) },
-                                    modifier = Modifier.height(44.dp),
-                                    shape = RoundedCornerShape(12.dp),
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Icon(painter = painterResource(Res.drawable.ic_ios_share), contentDescription = null, modifier = Modifier.size(16.dp))
-                                }
+                                    OutlinedButton(
+                                        onClick = { platform.shareText(fullPackageText) },
+                                        modifier = Modifier.weight(1f).height(42.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                    ) {
+                                        Icon(painter = painterResource(Res.drawable.ic_ios_share), contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("اشتراک متنی", fontSize = 12.sp)
+                                    }
 
-                                OutlinedButton(
-                                    onClick = { showQrDialog = true },
-                                    modifier = Modifier.height(44.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                ) {
-                                    Icon(painter = painterResource(Res.drawable.ic_qr_code_2), contentDescription = null, modifier = Modifier.size(16.dp))
+                                    OutlinedButton(
+                                        onClick = { showQrDialog = true },
+                                        modifier = Modifier.weight(1f).height(42.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                    ) {
+                                        Icon(painter = painterResource(Res.drawable.ic_qr_code_2), contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("کد QR", fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }

@@ -173,6 +173,7 @@ fun SettingsScreen(
             }
             SettingsPage.IpScanner -> IpScannerScreen(
                 settings = settings,
+                onUpdateSettings = onUpdate,
                 contentPadding = contentPadding,
                 modifier = modifier,
             )
@@ -183,6 +184,8 @@ fun SettingsScreen(
             )
             SettingsPage.Patt -> dev.valid7996.narcicgeteway.ui.settings.patt.PattScreen(
                 contentPadding = contentPadding,
+                settings = settings,
+                onUpdateSettings = onUpdate,
                 modifier = modifier,
             )
             SettingsPage.Backup -> configRepository?.let { repo ->
