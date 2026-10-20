@@ -1185,7 +1185,9 @@ class ConfigRepository(private val store: KeyValueStore) {
         if (persist) persistProfiles()
     }
 
-    suspend fun importPasted(rawText: String): Result<PastedImport> {
+    fun isSubscriptionUrl(text: String): Boolean = subscriptionUrlIn(text) != null
+
+    suspend fun importPasted(rawText: String, subscriptionId: String = ""): Result<PastedImport> {
         val text = if (dev.valid7996.narcicgeteway.crypto.NrgLink.findRelay(rawText) != null) {
             resolveNrgRelay(rawText).getOrElse { return Result.failure(it) }
         } else {
@@ -1194,8 +1196,8 @@ class ConfigRepository(private val store: KeyValueStore) {
         subscriptionUrlIn(text)?.let { return importSubscriptionUrl(it, name = null) }
         val parsed = runCatching {
             lastImportDuplicates = 0
-            val added = importText(text).getOrThrow()
-            PastedImport(count = added, subscription = false, duplicates = lastImportDuplicates)
+            val added = importText(text, subscriptionId).getOrThrow()
+            PastedImport(count = added, subscription = subscriptionId.isNotBlank(), duplicates = lastImportDuplicates)
         }
         if (parsed.getOrNull()?.let { it.count > 0 || it.duplicates > 0 } == true) return parsed
         val url = soleUrlIn(text) ?: return parsed

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -151,7 +152,17 @@ fun MainScaffold(
     }
 
     Box(Modifier.fillMaxSize()) {
-    Scaffold(
+    val effectiveReduceMotion = settings.reduceMotion || settings.animationMode == dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off
+    val motionBudget = when (settings.animationMode) {
+        dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off -> dev.valid7996.narcicgeteway.ui.theme.MotionBudget.Paused
+        dev.valid7996.narcicgeteway.domain.model.AnimationMode.Slow -> dev.valid7996.narcicgeteway.ui.theme.MotionBudget.Throttled
+        dev.valid7996.narcicgeteway.domain.model.AnimationMode.Normal -> if (settings.reduceMotion) dev.valid7996.narcicgeteway.ui.theme.MotionBudget.Paused else dev.valid7996.narcicgeteway.ui.theme.MotionBudget.Full
+    }
+
+    CompositionLocalProvider(
+        dev.valid7996.narcicgeteway.ui.theme.LocalMotionBudget provides motionBudget,
+    ) {
+        Scaffold(
         bottomBar = {
             dev.valid7996.narcicgeteway.ui.navigation.NrgNavBar(
                 style = settings.navBarStyle,
@@ -169,7 +180,7 @@ fun MainScaffold(
                     style = settings.screenTransition,
                     forward = targetState.ordinal >= initialState.ordinal,
                     direction = sign,
-                    reduceMotion = settings.reduceMotion,
+                    reduceMotion = effectiveReduceMotion,
                 ).using(SizeTransform(clip = false))
             },
             label = "top-destination",
@@ -180,7 +191,7 @@ fun MainScaffold(
                 style = settings.screenTransition,
                 forward = dest.ordinal >= current.ordinal,
                 direction = sign,
-                reduceMotion = settings.reduceMotion,
+                reduceMotion = effectiveReduceMotion,
             )
             Box(decoration) {
             when (dest) {
@@ -206,7 +217,7 @@ fun MainScaffold(
                     activeLocked = activeProfile?.isLocked == true,
                     activeExpiresAt = activeProfile?.takeIf { it.isLocked }?.expiresAt,
                     activeCountryCode = activeCountryCode,
-                    reduceMotion = settings.reduceMotion,
+                    reduceMotion = effectiveReduceMotion,
 
                     showConnectionInfo = activeProfile?.isDnsTunnel != true,
                     ipApiUrl = settings.ipApiUrl,
@@ -281,6 +292,7 @@ fun MainScaffold(
             }
         }
       }
+    }
     }
     }
 }

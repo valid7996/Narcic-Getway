@@ -10,7 +10,7 @@ object NavConfig {
     const val SHOW_ACTIVE_CONFIG: Boolean = false
 
     /** The servers tab of the bottom bar; the list itself lives on the home screen. */
-    const val SHOW_SERVERS_TAB: Boolean = false
+    const val SHOW_SERVERS_TAB: Boolean = true
 
     /** Every settings page; false leaves only the individually-enabled pages below. */
     const val SHOW_ALL_SETTINGS: Boolean = false

@@ -138,6 +138,18 @@ enum class TrafficCardStyle {
     Graph,
 }
 
+enum class AnimationMode {
+    Normal,
+    Slow,
+    Off,
+}
+
+enum class ImportTargetMode {
+    Ask,
+    Subscription,
+    Manual,
+}
+
 enum class OutboundDomainResolve(val value: String) {
     DoNotResolve("0"),
     ResolveAndAddToHosts("1"),
@@ -265,6 +277,9 @@ data class AppSettings(
     val uiFontScale: UiFontScale = UiFontScale.Normal,
     val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Minimal,
     val doubleColumnDisplay: Boolean = true,
+    val serverGridColumns: Int = 1,
+    val animationMode: AnimationMode = AnimationMode.Normal,
+    val importTargetMode: ImportTargetMode = ImportTargetMode.Ask,
     val groupAllDisplay: Boolean = true,
     val reduceMotion: Boolean = false,
     val renderingMode: RenderingMode = RenderingMode.Auto,

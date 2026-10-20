@@ -118,6 +118,7 @@ internal fun ServerCard(
     onPingReal: () -> Unit = {},
     onDelete: () -> Unit,
     personalization: Personalization = Personalization.Default,
+    columns: Int = 1,
     modifier: Modifier = Modifier,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -182,7 +183,7 @@ internal fun ServerCard(
         ) {
             Box(
                 Modifier
-                    .width(4.dp)
+                    .width(if (columns >= 3) 3.dp else 4.dp)
                     .fillMaxHeight()
                     .background(
                         when {
@@ -195,7 +196,12 @@ internal fun ServerCard(
             Row(
                 Modifier
                     .weight(1f)
-                    .padding(start = 14.dp, end = 4.dp, top = vPad, bottom = vPad),
+                    .padding(
+                        start = if (columns >= 3) 8.dp else 14.dp,
+                        end = if (columns >= 3) 2.dp else 4.dp,
+                        top = if (columns >= 3) (vPad * 0.75f).coerceAtLeast(4.dp) else vPad,
+                        bottom = if (columns >= 3) (vPad * 0.75f).coerceAtLeast(4.dp) else vPad,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -211,12 +217,12 @@ internal fun ServerCard(
                         }
                         val flagCountry = extractCountryCode(profile.name) ?: profile.countryCode
                         if (!flagCountry.isNullOrBlank()) {
-                            FlagBadge(countryCode = flagCountry, size = 16.dp)
-                            Spacer(Modifier.width(6.dp))
+                            FlagBadge(countryCode = flagCountry, size = if (columns >= 3) 13.dp else 16.dp)
+                            Spacer(Modifier.width(if (columns >= 3) 4.dp else 6.dp))
                         }
                         Text(
                             text = cleanProfileName(profile.name),
-                            style = MaterialTheme.typography.titleMedium.copy(
+                            style = (if (columns >= 3) MaterialTheme.typography.bodySmall else MaterialTheme.typography.titleMedium).copy(
                                 textDirection = TextDirection.ContentOrRtl,
                             ),
                             fontWeight = FontWeight.SemiBold,
@@ -301,11 +307,15 @@ internal fun ServerCard(
                     )
                 }
                 if (ServersUiConfig.SHOW_CARD_MENU) Box {
-                    IconButton(onClick = { menuOpen = true }) {
+                    IconButton(
+                        onClick = { menuOpen = true },
+                        modifier = if (columns >= 3) Modifier.size(28.dp) else Modifier,
+                    ) {
                         Icon(
                             painterResource(Res.drawable.ic_more_vert),
                             contentDescription = stringResource(Res.string.servers_actions),
                             tint = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                            modifier = if (columns >= 3) Modifier.size(16.dp) else Modifier,
                         )
                     }
                     DropdownMenu(

@@ -78,6 +78,23 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
         configCard = 0xFF210E1A,
         configCardText = 0xFFFFF1F5,
     ),
+    ThemeProfile(
+        id = "android8",
+        name = "Android 8 Classic (کلاسیک اندروید ۸ - کم‌مصرف)",
+        accentIndex = 0,
+        amoled = false,
+        download = 0xFF4CAF50,
+        upload = 0xFF2196F3,
+        downloadTile = 0xFF1E2822,
+        uploadTile = 0xFF1A232E,
+        connect = 0xFF009688,
+        connected = 0xFF4CAF50,
+        tapHint = 0xFF80CBC4,
+        serverCard = 0xFF21252B,
+        serverActive = 0xFF009688,
+        configCard = 0xFF21252B,
+        configCardText = 0xFFEEEEEE,
+    ),
 )
 
 private val HiddenThemeProfiles: List<ThemeProfile> = listOf(

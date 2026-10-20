@@ -79,6 +79,9 @@ class SettingsRepository(context: Context) {
             trafficTileSize = prefs.enum("traffic_tile_size", d.trafficTileSize),
             trafficCardStyle = prefs.enum("traffic_card_style", d.trafficCardStyle),
             doubleColumnDisplay = prefs.getBoolean("double_column", d.doubleColumnDisplay),
+            serverGridColumns = prefs.getInt("server_grid_columns", d.serverGridColumns),
+            animationMode = prefs.enum("animation_mode", d.animationMode),
+            importTargetMode = prefs.enum("import_target_mode", d.importTargetMode),
             groupAllDisplay = prefs.getBoolean("group_all", d.groupAllDisplay),
             reduceMotion = prefs.getBoolean("reduce_motion", d.reduceMotion),
             runMode = prefs.enum("run_mode", d.runMode),
@@ -289,6 +292,9 @@ class SettingsRepository(context: Context) {
             putString("traffic_tile_size", s.trafficTileSize.name)
             putString("traffic_card_style", s.trafficCardStyle.name)
             putBoolean("double_column", s.doubleColumnDisplay)
+            putInt("server_grid_columns", s.serverGridColumns)
+            putString("animation_mode", s.animationMode.name)
+            putString("import_target_mode", s.importTargetMode.name)
             putBoolean("group_all", s.groupAllDisplay)
             putBoolean("reduce_motion", s.reduceMotion)
             remove("real_origin_code")

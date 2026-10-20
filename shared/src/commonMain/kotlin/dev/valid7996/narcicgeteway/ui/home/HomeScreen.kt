@@ -30,6 +30,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -111,7 +112,9 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -213,6 +216,8 @@ fun HomeScreen(
     var statusTaps by remember { mutableIntStateOf(0) }
     var statusLastTap by remember { mutableLongStateOf(0L) }
     val haptics = LocalHapticFeedback.current
+    val platform = LocalPlatform.current
+    val scope = rememberCoroutineScope()
 
     val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
@@ -399,6 +404,52 @@ fun HomeScreen(
                           )
                       }
 
+                      val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
+                      if (deviceId.isNotBlank()) {
+                          Spacer(Modifier.height(10.dp))
+                          Surface(
+                              onClick = {
+                                  platform.copyToClipboard(deviceId)
+                                  scope.launch { platform.toast("کد دستگاه کپی شد") }
+                              },
+                              shape = RoundedCornerShape(12.dp),
+                              color = if (personalization.amoledBlack) Color(0xFF141416) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f),
+                              border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                          ) {
+                              Row(
+                                  modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                                  verticalAlignment = Alignment.CenterVertically,
+                                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                              ) {
+                                  Icon(
+                                      painter = painterResource(Res.drawable.ic_key),
+                                      contentDescription = null,
+                                      modifier = Modifier.size(15.dp),
+                                      tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
+                                  )
+                                  Text(
+                                      text = "کد دستگاه من:",
+                                      style = MaterialTheme.typography.labelMedium,
+                                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                  )
+                                  Text(
+                                      text = deviceId,
+                                      fontFamily = FontFamily.Monospace,
+                                      fontWeight = FontWeight.Bold,
+                                      style = MaterialTheme.typography.labelLarge,
+                                      color = MaterialTheme.colorScheme.onSurface,
+                                  )
+                                  Spacer(Modifier.width(2.dp))
+                                  Icon(
+                                      painter = painterResource(Res.drawable.ic_check_circle),
+                                      contentDescription = "کپی",
+                                      modifier = Modifier.size(14.dp),
+                                      tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                  )
+                              }
+                          }
+                      }
+
                       if (lockedNote != null) {
                           val noteScroll = rememberScrollState()
                           Spacer(Modifier.height(16.dp))
@@ -521,24 +572,12 @@ fun HomeScreen(
                 }
 
 
-                if (repository != null) {
-                    HomeServerSection(
-                        repository = repository,
-                        personalization = personalization,
-                        realPingConcurrency = realPingConcurrency,
-                        delayTestUrl = delayTestUrl,
-                        autoSortAfterTest = autoSortAfterTest,
-                        autoTestAfterUpdate = autoTestAfterUpdate,
-                        autoRemoveInvalidAfterTest = autoRemoveInvalidAfterTest,
-                        settings = settings,
-                        onUpdateSettings = onUpdateSettings,
-                    )
-                }
+                Spacer(Modifier.height(32.dp))
                 Spacer(Modifier.height(96.dp))
             }
         }
 
-        ParticleBurst(trigger = burst)
+        ParticleBurst(trigger = if (reduceMotion) 0 else burst)
 
         dev.valid7996.narcicgeteway.ui.easteregg.LaserBounce(
             trigger = laser,

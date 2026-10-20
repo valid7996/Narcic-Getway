@@ -947,6 +947,28 @@ private fun UiPage(
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
             SettingsDivider(hasIcon = false)
+            SettingsListRow(
+                title = "حالت انیمیشن",
+                options = listOf(
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Normal to "حالت معمولی",
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Slow to "حالت آهسته",
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off to "حالت خاموش (صرفه‌جویی باتری)",
+                ),
+                selected = s.animationMode,
+                onSelected = { v -> onUpdate { it.copy(animationMode = v, reduceMotion = (v == dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off)) } },
+            )
+            SettingsDivider(hasIcon = false)
+            SettingsListRow(
+                title = "حالت ایمپورت",
+                options = listOf(
+                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Ask to "پرسش هنگام افزودن کانفیگ",
+                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription to "افزودن به سابسکرپشن شخصی",
+                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual to "ذخیره در بخش دستی",
+                ),
+                selected = s.importTargetMode,
+                onSelected = { v -> onUpdate { it.copy(importTargetMode = v) } },
+            )
+            SettingsDivider(hasIcon = false)
             SettingsActionRow(
                 title = "ویزارد خوش‌آمدگویی و راه‌اندازی اولیه",
                 summary = "تنظیم مجدد زبان، قالب و حالت نمایش",

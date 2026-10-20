@@ -42,6 +42,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -73,6 +74,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -145,6 +147,7 @@ fun ServersScreen(
     val scope = rememberCoroutineScope()
     val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val columnsCount = (settings?.serverGridColumns ?: if (twoColumns) 2 else 1).coerceIn(1, 3)
 
     fun toastImportFailure(e: Throwable) {
         if (e.message?.contains("قفل شده است") == true) {
@@ -295,39 +298,6 @@ fun ServersScreen(
         return true
     }
 
-    fun importScanned(text: String) {
-        if (tryHandleLocked(text)) return
-
-        scope.launch(kotlinx.coroutines.Dispatchers.Default) {
-            var outcome: Result<dev.valid7996.narcicgeteway.data.config.ConfigRepository.PastedImport>? = null
-            offerObfuscationAfter { outcome = repository.importPasted(text) }
-            outcome!!
-                .onSuccess { r ->
-                    platform.toast(
-                        when {
-                            r.subscription -> getString(Res.string.subs_imported, r.subscriptionName, r.count)
-                            r.count > 0 -> getString(Res.string.servers_imported, r.count)
-
-                            r.duplicates > 0 -> getString(Res.string.servers_already_added, r.duplicates)
-                            else -> getString(Res.string.config_invalid)
-                        },
-                    )
-                }
-                .onFailure { err ->
-                    if (err is dev.valid7996.narcicgeteway.crypto.ZsxPasswordRequiredException) {
-                        val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
-                        val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull()
-                        val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
-                        if (bytes != null && meta != null) {
-                            pendingUnlock = bytes to meta
-                            return@onFailure
-                        }
-                    }
-                    toastImportFailure(err)
-                }
-        }
-    }
-
     fun importFromFile() {
         scope.launch {
             val picked = platform.pickFileBytes() ?: return@launch
@@ -413,44 +383,6 @@ fun ServersScreen(
         }
     }
 
-    fun importFromClipboard() {
-        val text = platform.readClipboard()
-        if (text.isNullOrBlank()) {
-            toastRes(Res.string.paste_empty)
-            return
-        }
-
-        if (tryHandleLocked(text)) return
-
-        scope.launch(kotlinx.coroutines.Dispatchers.Default) {
-            var outcome: Result<dev.valid7996.narcicgeteway.data.config.ConfigRepository.PastedImport>? = null
-            offerObfuscationAfter { outcome = repository.importPasted(text) }
-            outcome!!
-                .onSuccess { r ->
-                    platform.toast(
-                        when {
-                            r.subscription -> getString(Res.string.subs_imported, r.subscriptionName, r.count)
-                            r.count > 0 -> getString(Res.string.servers_imported, r.count)
-
-                            r.duplicates > 0 -> getString(Res.string.servers_already_added, r.duplicates)
-                            else -> getString(Res.string.config_invalid)
-                        },
-                    )
-                }
-                .onFailure { err ->
-                    if (err is dev.valid7996.narcicgeteway.crypto.ZsxPasswordRequiredException) {
-                        val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
-                        val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull()
-                        val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
-                        if (bytes != null && meta != null) {
-                            pendingUnlock = bytes to meta
-                            return@onFailure
-                        }
-                    }
-                    toastImportFailure(err)
-                }
-        }
-    }
     val profiles by repository.profiles.collectAsStateWithLifecycle()
     val subscriptions by repository.subscriptions.collectAsStateWithLifecycle()
     val activeId by repository.activeId.collectAsStateWithLifecycle()
@@ -533,6 +465,78 @@ fun ServersScreen(
     }
 
     var groupIndex by rememberSaveable { mutableIntStateOf(activeGroupIndex()) }
+
+    var pendingImportPayload by remember { mutableStateOf<String?>(null) }
+    var rememberImportChoice by remember { mutableStateOf(false) }
+
+    fun doExecuteImport(text: String, subId: String) {
+        scope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            var outcome: Result<dev.valid7996.narcicgeteway.data.config.ConfigRepository.PastedImport>? = null
+            offerObfuscationAfter { outcome = repository.importPasted(text, subId) }
+            outcome?.onSuccess { r ->
+                platform.toast(
+                    when {
+                        r.subscription -> getString(Res.string.subs_imported, r.subscriptionName, r.count)
+                        r.count > 0 -> getString(Res.string.servers_imported, r.count)
+                        r.duplicates > 0 -> getString(Res.string.servers_already_added, r.duplicates)
+                        else -> getString(Res.string.config_invalid)
+                    },
+                )
+            }?.onFailure { err ->
+                if (err is dev.valid7996.narcicgeteway.crypto.ZsxPasswordRequiredException) {
+                    val link = LockedConfigExtractor.extractLink(text) ?: text.trim()
+                    val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull()
+                    val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
+                    if (bytes != null && meta != null) {
+                        pendingUnlock = bytes to meta
+                        return@onFailure
+                    }
+                }
+                toastImportFailure(err)
+            }
+        }
+    }
+
+    fun requestImport(text: String) {
+        if (text.isBlank()) {
+            toastRes(Res.string.paste_empty)
+            return
+        }
+        if (tryHandleLocked(text)) return
+        if (repository.isSubscriptionUrl(text)) {
+            doExecuteImport(text, "")
+            return
+        }
+
+        val mode = settings?.importTargetMode ?: dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Ask
+        when (mode) {
+            dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription -> {
+                val subId = (if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null)?.id
+                    ?: subscriptions.firstOrNull()?.id
+                    ?: repository.addSubscription("سابسکرپشن شخصی", "").id
+                doExecuteImport(text, subId)
+            }
+            dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual -> {
+                doExecuteImport(text, "")
+            }
+            dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Ask -> {
+                pendingImportPayload = text
+            }
+        }
+    }
+
+    fun importScanned(text: String) {
+        requestImport(text)
+    }
+
+    fun importFromClipboard() {
+        val text = platform.readClipboard()
+        if (text.isNullOrBlank()) {
+            toastRes(Res.string.paste_empty)
+            return
+        }
+        requestImport(text)
+    }
 
     androidx.compose.runtime.LaunchedEffect(activeId, subscriptions.size, showAllGroup) {
         groupIndex = activeGroupIndex()
@@ -632,6 +636,13 @@ fun ServersScreen(
                         singleLine = true,
                     )
                 }
+                IosColumnSegmentedControl(
+                    selectedColumns = columnsCount,
+                    onColumnsSelected = { cols ->
+                        onUpdateSettings?.invoke { it.copy(serverGridColumns = cols, doubleColumnDisplay = (cols == 2)) }
+                    },
+                )
+                Spacer(Modifier.width(4.dp))
                 Box {
                     IconButton(
                         enabled = !testing,
@@ -1062,10 +1073,11 @@ fun ServersScreen(
 
                 val card: @Composable (VpnProfile) -> Unit = { profile ->
                     ServerCard(
-                        modifier = if (twoColumns) Modifier.fillMaxHeight() else Modifier,
+                        modifier = if (columnsCount > 1) Modifier.fillMaxHeight() else Modifier,
                         profile = profile,
                         active = profile.id == activeId,
                         personalization = personalization,
+                        columns = columnsCount,
                         subscriptionName = subscriptions
                             .firstOrNull { it.id == profile.subscriptionId }?.name,
                         selecting = selecting,
@@ -1145,7 +1157,7 @@ fun ServersScreen(
                 }
                 LazyVerticalGrid(
                     state = gridState,
-                    columns = GridCells.Fixed(if (twoColumns) 2 else 1),
+                    columns = GridCells.Fixed(columnsCount),
                     modifier = Modifier.fillMaxSize().then(groupSwipe),
                     contentPadding = gridPadding,
                     horizontalArrangement = Arrangement.spacedBy(personalization.density.gapDp.dp),
@@ -1173,7 +1185,7 @@ fun ServersScreen(
                             Box(
 
                                 Modifier
-                                    .then(if (twoColumns) Modifier.fillMaxHeight() else Modifier)
+                                    .then(if (columnsCount > 1) Modifier.fillMaxHeight() else Modifier)
 
                                     
                                     .then(
@@ -1545,9 +1557,87 @@ fun ServersScreen(
             onDismiss = { showManual = false },
             onSave = { link ->
                 showManual = false
-                repository.importText(link)
-                    .onSuccess { toastRes(Res.string.servers_imported, it) }
-                    .onFailure { toastImportFailure(it) }
+                requestImport(link)
+            },
+        )
+    }
+
+    pendingImportPayload?.let { payload ->
+        AlertDialog(
+            onDismissRequest = { pendingImportPayload = null },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            icon = { Icon(painterResource(Res.drawable.ic_subscription), null, tint = Color(0xFF007AFF)) },
+            title = {
+                Text(
+                    "افزودن به سابسکرپشن شخصی",
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDark) Color.White else Color.Black,
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        "آیا واقعاً می‌خواهید این کانفیگ به سابسکرپشن شخصی اضافه شود؟",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isDark) Color(0xFFEBEBF5).copy(alpha = 0.85f) else Color(0xFF3C3C43).copy(alpha = 0.85f),
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { rememberImportChoice = !rememberImportChoice }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Checkbox(
+                            checked = rememberImportChoice,
+                            onCheckedChange = { rememberImportChoice = it },
+                        )
+                        Text(
+                            "عدم نمایش مجدد این پیام و ذخیره انتخاب",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isDark) Color.White else Color.Black,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val p = payload
+                        val remember = rememberImportChoice
+                        pendingImportPayload = null
+                        if (remember) {
+                            onUpdateSettings?.invoke { it.copy(importTargetMode = dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription) }
+                        }
+                        val subId = (if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null)?.id
+                            ?: subscriptions.firstOrNull()?.id
+                            ?: repository.addSubscription("سابسکرپشن شخصی", "").id
+                        doExecuteImport(p, subId)
+                    },
+                ) {
+                    Text("بله مطمئنم", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val p = payload
+                        val remember = rememberImportChoice
+                        pendingImportPayload = null
+                        if (remember) {
+                            onUpdateSettings?.invoke { it.copy(importTargetMode = dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual) }
+                        }
+                        doExecuteImport(p, "")
+                    },
+                ) {
+                    Text("خیر، در قسمت دستی بماند")
+                }
             },
         )
     }
@@ -2804,3 +2894,54 @@ private object JsonEditor {
 }
 
 private data class OvpnPrompt(val text: String, val name: String)
+
+@Composable
+private fun IosColumnSegmentedControl(
+    selectedColumns: Int,
+    onColumnsSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val containerBg = if (isDark) Color(0x33767680) else Color(0x1F767680)
+    val selectedBg = if (isDark) Color(0xFF636366) else Color.White
+    val selectedContent = if (isDark) Color.White else Color.Black
+    val unselectedContent = if (isDark) Color(0xFFEBEBF5).copy(alpha = 0.65f) else Color(0xFF3C3C43).copy(alpha = 0.65f)
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(9.dp))
+            .background(containerBg)
+            .padding(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf(1, 2, 3).forEach { cols ->
+            val isSelected = selectedColumns == cols
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(7.dp))
+                    .then(
+                        if (isSelected) {
+                            Modifier
+                                .background(selectedBg)
+                                .shadow(elevation = 1.5.dp, shape = RoundedCornerShape(7.dp))
+                        } else Modifier
+                    )
+                    .clickable { onColumnsSelected(cols) }
+                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = when (cols) {
+                        1 -> "۱"
+                        2 -> "۲"
+                        3 -> "۳"
+                        else -> "$cols"
+                    },
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSelected) selectedContent else unselectedContent,
+                )
+            }
+        }
+    }
+}
