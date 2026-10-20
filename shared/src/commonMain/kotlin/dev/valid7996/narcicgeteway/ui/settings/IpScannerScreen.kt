@@ -62,7 +62,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun IpScannerSheet(
     settings: AppSettings? = null,
-    onUpdateSettings: ((AppSettings) -> Unit)? = null,
+    onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -94,7 +94,7 @@ fun IpScannerSheet(
 @Composable
 fun IpScannerScreen(
     settings: AppSettings? = null,
-    onUpdateSettings: ((AppSettings) -> Unit)? = null,
+    onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(),
     modifier: Modifier = Modifier,
 ) {
@@ -696,12 +696,13 @@ fun IpScannerScreen(
                                     .clickable {
                                         val portInt = portText.toIntOrNull() ?: 443
                                         val sniHost = item.domain ?: ScannerEngine.getDefaultDomainForCdn(selectedCdn)
-                                        val updated = settings.copy(
-                                            rstaSpoofConnectIp = item.ip,
-                                            rstaSpoofConnectPort = portInt,
-                                            rstaSpoofFakeSni = sniHost,
-                                        )
-                                        onUpdateSettings(updated)
+                                        onUpdateSettings.invoke { s ->
+                                            s.copy(
+                                                rstaSpoofConnectIp = item.ip,
+                                                rstaSpoofConnectPort = portInt,
+                                                rstaSpoofFakeSni = sniHost,
+                                            )
+                                        }
                                         platform.toast("آی‌پی ${item.ip} و SNI در تنظیمات Spoof ذخیره شد")
                                     },
                             ) {
