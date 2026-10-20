@@ -56,7 +56,9 @@ import dev.valid7996.narcicgeteway.data.tools.Status
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.ui.components.PageHeader
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -175,29 +177,44 @@ fun IpScannerScreen(
         platform.toast("اسکن آغاز شد: $selectedCdn | ${rangesToScan.size} رنج")
 
         scanJob = scope.launch {
-            ScannerEngine.scan(
-                ranges = rangesToScan,
-                domain = domain.trim(),
-                port = port,
-                ipPerRange = 150,
-                threadCount = 6,
-                checkCert = checkCert,
-                cdnType = selectedCdn,
-            ) { result ->
-                if (!isScanning) return@scan
-                val existingIndex = results.indexOfFirst { it.ip == result.ip }
-                if (existingIndex >= 0) {
-                    results[existingIndex] = result
-                } else {
-                    if (result.status == Status.GREEN) {
-                        results.add(0, result)
+            val resultChannel = Channel<ScanResult>(capacity = 128)
+
+            val consumer = launch(Dispatchers.Main.immediate) {
+                for (result in resultChannel) {
+                    if (!isScanning) break
+                    val existingIndex = results.indexOfFirst { it.ip == result.ip }
+                    if (existingIndex >= 0) {
+                        results[existingIndex] = result
                     } else {
-                        results.add(result)
+                        if (result.status == Status.GREEN) {
+                            results.add(0, result)
+                        } else {
+                            results.add(result)
+                        }
+                    }
+                    scannedCount++
+                }
+            }
+
+            try {
+                ScannerEngine.scan(
+                    ranges = rangesToScan,
+                    domain = domain.trim(),
+                    port = port,
+                    ipPerRange = 150,
+                    threadCount = 6,
+                    checkCert = checkCert,
+                    cdnType = selectedCdn,
+                ) { result ->
+                    if (isScanning) {
+                        resultChannel.trySend(result)
                     }
                 }
-                scannedCount++
+            } finally {
+                resultChannel.close()
+                consumer.join()
+                isScanning = false
             }
-            isScanning = false
         }
     }
 

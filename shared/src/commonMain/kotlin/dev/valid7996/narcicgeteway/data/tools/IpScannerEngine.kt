@@ -2,10 +2,15 @@ package dev.valid7996.narcicgeteway.data.tools
 
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
@@ -372,7 +377,8 @@ object ScannerEngine {
         onResult: (ScanResult) -> Unit,
     ) = coroutineScope {
         stopRequested = false
-        val jobs = mutableListOf<Deferred<Unit>>()
+        val semaphore = Semaphore(threadCount.coerceIn(2, 16))
+        val jobs = mutableListOf<Job>()
 
         val effectiveHost = if (domain.isNotBlank()) {
             domain.trim()
@@ -389,12 +395,12 @@ object ScannerEngine {
                 listOf(range.trim())
             }
 
-            ips.chunked(threadCount).forEach { chunk ->
-                if (stopRequested) return@forEach
+            for (ip in ips) {
+                if (stopRequested) break
 
-                jobs += async(Dispatchers.IO) {
-                    chunk.forEach { ip ->
-                        if (stopRequested) return@async
+                val job = launch(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        if (stopRequested) return@withPermit
 
                         // Accurate TLS+TCP direct verification
                         val tlsRes = TlsEngine.testDirect(
@@ -403,7 +409,7 @@ object ScannerEngine {
                             port = port,
                             timeout = 2500,
                         )
-                        if (stopRequested) return@async
+                        if (stopRequested) return@withPermit
 
                         val (status, latency) = if (tlsRes.success) {
                             val l = tlsRes.latencyMs
@@ -429,12 +435,13 @@ object ScannerEngine {
                             ),
                         )
 
-                        delay(30)
+                        delay(20)
                     }
                 }
+                jobs += job
             }
         }
 
-        jobs.awaitAll()
+        jobs.joinAll()
     }
 }
