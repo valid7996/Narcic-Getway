@@ -636,13 +636,6 @@ fun ServersScreen(
                         singleLine = true,
                     )
                 }
-                IosColumnSegmentedControl(
-                    selectedColumns = columnsCount,
-                    onColumnsSelected = { cols ->
-                        onUpdateSettings?.invoke { it.copy(serverGridColumns = cols, doubleColumnDisplay = (cols == 2)) }
-                    },
-                )
-                Spacer(Modifier.width(4.dp))
                 Box {
                     IconButton(
                         enabled = !testing,
@@ -930,46 +923,70 @@ fun ServersScreen(
                 }
             }
 
-            if (subscriptions.isNotEmpty()) {
-                val counts = remember(servers) { servers.groupingBy { it.subscriptionId }.eachCount() }
-
-                LaunchedEffect(showAllGroup) { if (!showAllGroup && groupIndex == 0) groupIndex = 1 }
-
-                val groupRow = androidx.compose.foundation.lazy.rememberLazyListState()
-                androidx.compose.foundation.lazy.LazyRow(
-                    state = groupRow,
-                    contentPadding = PaddingValues(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                        .mouseDragScroll(groupRow),
+            if (servers.isNotEmpty() || subscriptions.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (showAllGroup) {
-                        item(key = "group-all") {
-                            GroupTab(
-                                label = stringResource(Res.string.group_all),
-                                count = servers.size,
-                                selected = groupIndex == 0,
-                                personalization = personalization,
-                                onClick = { groupIndex = 0 },
-                            )
+                    if (subscriptions.isNotEmpty()) {
+                        val counts = remember(servers) { servers.groupingBy { it.subscriptionId }.eachCount() }
+
+                        LaunchedEffect(showAllGroup) { if (!showAllGroup && groupIndex == 0) groupIndex = 1 }
+
+                        val groupRow = androidx.compose.foundation.lazy.rememberLazyListState()
+                        androidx.compose.foundation.lazy.LazyRow(
+                            state = groupRow,
+                            contentPadding = PaddingValues(end = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .mouseDragScroll(groupRow),
+                        ) {
+                            if (showAllGroup) {
+                                item(key = "group-all") {
+                                    GroupTab(
+                                        label = stringResource(Res.string.group_all),
+                                        count = servers.size,
+                                        selected = groupIndex == 0,
+                                        personalization = personalization,
+                                        onClick = { groupIndex = 0 },
+                                    )
+                                }
+                            }
+                            item(key = "group-manual") {
+                                GroupTab(
+                                    label = stringResource(Res.string.group_manual),
+                                    count = counts[""] ?: 0,
+                                    selected = groupIndex == 1,
+                                    personalization = personalization,
+                                    onClick = { groupIndex = 1 },
+                                )
+                            }
+                            itemsIndexed(subscriptions, key = { _, sub -> sub.id }) { index, sub ->
+                                GroupTab(
+                                    label = sub.name,
+                                    count = counts[sub.id] ?: 0,
+                                    selected = groupIndex == index + 2,
+                                    personalization = personalization,
+                                    onClick = { groupIndex = index + 2 },
+                                )
+                            }
                         }
+                        if (servers.isNotEmpty()) {
+                            Spacer(Modifier.width(8.dp))
+                        }
+                    } else {
+                        Spacer(Modifier.weight(1f))
                     }
-                    item(key = "group-manual") {
-                        GroupTab(
-                            label = stringResource(Res.string.group_manual),
-                            count = counts[""] ?: 0,
-                            selected = groupIndex == 1,
-                            personalization = personalization,
-                            onClick = { groupIndex = 1 },
-                        )
-                    }
-                    itemsIndexed(subscriptions, key = { _, sub -> sub.id }) { index, sub ->
-                        GroupTab(
-                            label = sub.name,
-                            count = counts[sub.id] ?: 0,
-                            selected = groupIndex == index + 2,
-                            personalization = personalization,
-                            onClick = { groupIndex = index + 2 },
+
+                    if (servers.isNotEmpty()) {
+                        IosColumnSegmentedControl(
+                            selectedColumns = columnsCount,
+                            onColumnsSelected = { cols ->
+                                onUpdateSettings?.invoke { it.copy(serverGridColumns = cols, doubleColumnDisplay = (cols == 2)) }
+                            },
                         )
                     }
                 }
