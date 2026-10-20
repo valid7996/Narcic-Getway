@@ -110,7 +110,13 @@ fun MainScaffold(
 
     dev.valid7996.narcicgeteway.ui.servers.DeepLinkImportHost(
         repository = configRepository,
-        onImported = { current = TopDestination.Servers },
+        onImported = {
+            current = if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_SERVERS_TAB) {
+                TopDestination.Servers
+            } else {
+                TopDestination.Home
+            }
+        },
     )
 
     NudgeHost(settings = settings, onUpdateSettings = onUpdateSettings)
@@ -198,6 +204,7 @@ fun MainScaffold(
                     },
                     lockedNote = lockedNote,
                     activeLocked = activeProfile?.isLocked == true,
+                    activeExpiresAt = activeProfile?.takeIf { it.isLocked }?.expiresAt,
                     activeCountryCode = activeCountryCode,
                     reduceMotion = settings.reduceMotion,
 
@@ -217,7 +224,11 @@ fun MainScaffold(
                     contentPadding = innerPadding,
                     onToggleConnection = onToggleConnection,
 
-                    onBrowseConfigs = { current = TopDestination.Servers },
+                    onBrowseConfigs = {
+                        if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_SERVERS_TAB) {
+                            current = TopDestination.Servers
+                        }
+                    },
                     onSecretUnlocked = { spaceUnlocked = true },
                 )
                 TopDestination.Servers -> ServersScreen(

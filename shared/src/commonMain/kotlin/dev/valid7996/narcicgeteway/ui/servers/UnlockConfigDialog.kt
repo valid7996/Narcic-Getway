@@ -98,19 +98,22 @@ fun UnlockConfigDialog(
                             Text(metadata.note, fontSize = 11.sp, color = Color.Gray)
                         }
                         if (metadata.expiresAt != null) {
-                            val diffMs = metadata.expiresAt - currentTimeMillis()
-                            val expiryText = if (diffMs <= 0) "منقضی شده" else {
-                                val totalMinutes = diffMs / 60_000
-                                val d = totalMinutes / (24 * 60)
-                                val h = (totalMinutes % (24 * 60)) / 60
-                                val m = totalMinutes % 60
-                                when {
-                                    d > 0 -> if (h > 0) "$d روز و $h ساعت باقی‌مانده" else "$d روز باقی‌مانده"
-                                    h > 0 -> if (m > 0) "$h ساعت و $m دقیقه باقی‌مانده" else "$h ساعت باقی‌مانده"
-                                    else -> "$m دقیقه باقی‌مانده"
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    "اعتبار:",
+                                    fontSize = 11.sp,
+                                    color = if (isDark) Color(0xFFAAAAAA) else Color(0xFF666666),
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                ExpiryCountdownBadge(
+                                    expiresAt = metadata.expiresAt,
+                                    isDark = isDark,
+                                    fontSize = 11.sp,
+                                )
                             }
-                            Text("اعتبار: $expiryText", fontSize = 11.sp, color = Color(0xFF007AFF), fontWeight = FontWeight.Medium)
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),

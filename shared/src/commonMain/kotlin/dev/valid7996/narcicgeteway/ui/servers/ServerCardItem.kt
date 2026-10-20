@@ -28,6 +28,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
+import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -280,28 +284,10 @@ internal fun ServerCard(
                         }
                     }
                     profile.expiresAt?.let { exp ->
-                        val remainingMs = exp - currentTimeMillis()
-                        val (expText, expColor) = if (remainingMs <= 0) {
-                            "منقضی" to Color(0xFFFF3B30)
-                        } else {
-                            val totalMinutes = remainingMs / 60_000
-                            val days = totalMinutes / (24 * 60)
-                            val hours = (totalMinutes % (24 * 60)) / 60
-                            val minutes = totalMinutes % 60
-                            val formatted = when {
-                                days > 0 -> if (hours > 0) "$days روز $hours س" else "$days روز"
-                                hours > 0 -> if (minutes > 0) "$hours س $minutes د" else "$hours ساعت"
-                                else -> "${minutes.coerceAtLeast(1)} دقیقه"
-                            }
-                            formatted to if (remainingMs < 30 * 60_000) Color(0xFFFF9500) else (if (isDark) Color(0xFFAAAAAA) else Color(0xFF666666))
-                        }
                         Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = expText,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = expColor,
-                            maxLines = 1,
+                        ExpiryCountdownBadge(
+                            expiresAt = exp,
+                            isDark = isDark,
                         )
                     }
                 }
@@ -408,4 +394,66 @@ internal fun ServerCard(
         }
     }
 }
+
+@Composable
+fun ExpiryCountdownBadge(
+    expiresAt: Long,
+    isDark: Boolean,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = 9.sp,
+    fontWeight: FontWeight = FontWeight.Bold,
+) {
+    var now by remember(expiresAt) { mutableLongStateOf(currentTimeMillis()) }
+
+    LaunchedEffect(expiresAt) {
+        while (true) {
+            now = currentTimeMillis()
+            val remainingMs = expiresAt - now
+            if (remainingMs <= 0) break
+            delay(1000L)
+        }
+    }
+
+    val remainingMs = expiresAt - now
+    val (expText, expColor) = if (remainingMs <= 0) {
+        "منقضی شده" to Color(0xFFFF3B30)
+    } else {
+        val totalSeconds = (remainingMs / 1000L).coerceAtLeast(0)
+        val days = totalSeconds / (24 * 3600L)
+        val hours = (totalSeconds % (24 * 3600L)) / 3600L
+        val minutes = (totalSeconds % 3600L) / 60L
+        val seconds = totalSeconds % 60L
+
+        val formatted = when {
+            days > 0 -> {
+                if (hours > 0) "$days روز $hours س $minutes د" else "$days روز $minutes د"
+            }
+            hours > 0 -> {
+                "$hours س $minutes د $seconds ث"
+            }
+            minutes > 0 -> {
+                "$minutes د $seconds ث"
+            }
+            else -> {
+                "$seconds ثانیه"
+            }
+        }
+        val color = when {
+            remainingMs < 10 * 60_000L -> Color(0xFFFF3B30)
+            remainingMs < 60 * 60_000L -> Color(0xFFFF9500)
+            else -> if (isDark) Color(0xFFAAAAAA) else Color(0xFF666666)
+        }
+        formatted to color
+    }
+
+    Text(
+        text = expText,
+        fontSize = fontSize,
+        fontWeight = fontWeight,
+        color = expColor,
+        maxLines = 1,
+        modifier = modifier,
+    )
+}
+
 

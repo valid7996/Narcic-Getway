@@ -78,6 +78,9 @@ import dev.valid7996.narcicgeteway.ui.servers.SshSheet
 import dev.valid7996.narcicgeteway.ui.theme.Personalization
 import dev.valid7996.narcicgeteway.ui.theme.NrgGreen
 import dev.valid7996.narcicgeteway.ui.theme.readableOn
+import dev.valid7996.narcicgeteway.crypto.ZsxMetadata
+import dev.valid7996.narcicgeteway.ui.servers.UnlockConfigDialog
+import dev.valid7996.narcicgeteway.ui.servers.RelayKeyDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -146,13 +149,109 @@ internal fun HomeServerSection(
     var showTelegramProxy by remember { mutableStateOf(false) }
     var showPatt by remember { mutableStateOf(false) }
     var ovpnPrompt by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var pendingUnlock by remember { mutableStateOf<Pair<ByteArray, ZsxMetadata>?>(null) }
+    var relayPrompt by remember { mutableStateOf<String?>(null) }
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val torAddedToast = stringResource(Res.string.tor_added)
+
+    fun tryHandleLocked(text: String): Boolean {
+        if (dev.valid7996.narcicgeteway.crypto.NrgLink.findRelay(text) != null) {
+            scope.launch {
+                val resolved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    repository.resolveNrgRelay(text)
+                }
+                resolved.fold(
+                    onSuccess = { resolvedText ->
+                        if (!tryHandleLocked(resolvedText)) platform.toast(importFailed)
+                    },
+                    onFailure = { err ->
+                        if (err is dev.valid7996.narcicgeteway.data.config.RelayKeyRequiredException) {
+                            relayPrompt = text
+                        } else if (err is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException) {
+                            platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده است.")
+                        } else {
+                            platform.toast(importFailed)
+                        }
+                    },
+                )
+            }
+            return true
+        }
+        val link = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractLink(text) ?: return false
+        val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull() ?: return false
+        val meta = runCatching { repository.peekLocked(bytes) }.getOrNull() ?: return false
+        if (meta.isExpired) {
+            platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+            return true
+        }
+        if (meta.deviceBound) {
+            val autoImp = repository.importLocked(bytes, null)
+            autoImp.fold(
+                onSuccess = { platform.toast(importedTemplate.format(1)) },
+                onFailure = {
+                    val key = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(text)
+                    if (key != null) {
+                        val keyImp = repository.importLocked(bytes, key)
+                        keyImp.fold(
+                            onSuccess = { platform.toast(importedTemplate.format(1)) },
+                            onFailure = {
+                                platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                            },
+                        )
+                    } else {
+                        platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                    }
+                },
+            )
+            return true
+        }
+        val key = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(text)
+        if (meta.passwordProtected) {
+            if (key != null) {
+                val imported = repository.importLocked(bytes, key)
+                imported.fold(
+                    onSuccess = { platform.toast(importedTemplate.format(1)) },
+                    onFailure = {
+                        pendingUnlock = bytes to meta
+                    },
+                )
+            } else {
+                pendingUnlock = bytes to meta
+            }
+            return true
+        }
+        val imported = repository.importLocked(bytes, null)
+        imported.fold(
+            onSuccess = { platform.toast(importedTemplate.format(1)) },
+            onFailure = { platform.toast(it.message ?: importFailed) },
+        )
+        return true
+    }
 
     fun importFromFile() {
         scope.launch {
             val picked = platform.pickFileBytes() ?: return@launch
-            val text = picked.bytes.decodeToString()
+            val bytes = picked.bytes
+            if (bytes.isEmpty()) {
+                platform.toast(importFailed)
+                return@launch
+            }
+
+            // Check if it is a binary .nrg / .zsx sealed file
+            val isNrgBinary = bytes.size >= 4 && (
+                (bytes[0] == 'N'.code.toByte() && bytes[1] == 'R'.code.toByte() && bytes[2] == 'G'.code.toByte() && bytes[3] == '1'.code.toByte()) ||
+                (bytes[0] == 'Z'.code.toByte() && bytes[1] == 'S'.code.toByte() && bytes[2] == 'X'.code.toByte() && bytes[3] == '1'.code.toByte())
+            )
+            if (isNrgBinary || picked.name.endsWith(".nrg", ignoreCase = true) || picked.name.endsWith(".zsx", ignoreCase = true)) {
+                val link = if (isNrgBinary) {
+                    dev.valid7996.narcicgeteway.crypto.NrgLink.encode(bytes)
+                } else {
+                    bytes.decodeToString().trim()
+                }
+                if (tryHandleLocked(link)) return@launch
+            }
+
+            val text = bytes.decodeToString()
             if (text.isBlank()) {
                 platform.toast(importFailed)
                 return@launch
@@ -174,6 +273,7 @@ internal fun HomeServerSection(
                     .onFailure { platform.toast(it.message ?: importFailed) }
                 return@launch
             }
+            if (tryHandleLocked(text)) return@launch
             repository.importText(text)
                 .onSuccess { count -> platform.toast(importedTemplate.format(count)) }
                 .onFailure { platform.toast(it.message ?: importFailed) }
@@ -610,10 +710,12 @@ internal fun HomeServerSection(
                 showAdd = false
                 val text = platform.readClipboard()
                 if (!text.isNullOrBlank()) {
-                    scope.launch {
-                        repository.importText(text)
-                            .onSuccess { platform.toast(importedTemplate.format(it)) }
-                            .onFailure { platform.toast(importFailed) }
+                    if (!tryHandleLocked(text)) {
+                        scope.launch {
+                            repository.importText(text)
+                                .onSuccess { platform.toast(importedTemplate.format(it)) }
+                                .onFailure { platform.toast(importFailed) }
+                        }
                     }
                 }
             },
@@ -625,10 +727,12 @@ internal fun HomeServerSection(
                 showAdd = false
                 platform.scanQrCode { text ->
                     if (text.isNullOrBlank()) return@scanQrCode
-                    scope.launch {
-                        repository.importText(text)
-                            .onSuccess { platform.toast(importedTemplate.format(it)) }
-                            .onFailure { platform.toast(importFailed) }
+                    if (!tryHandleLocked(text)) {
+                        scope.launch {
+                            repository.importText(text)
+                                .onSuccess { platform.toast(importedTemplate.format(it)) }
+                                .onFailure { platform.toast(importFailed) }
+                        }
                     }
                 }
             },
@@ -636,10 +740,12 @@ internal fun HomeServerSection(
                 showAdd = false
                 platform.scanQrFromImage { text ->
                     if (text.isNullOrBlank()) return@scanQrFromImage
-                    scope.launch {
-                        repository.importText(text)
-                            .onSuccess { platform.toast(importedTemplate.format(it)) }
-                            .onFailure { platform.toast(importFailed) }
+                    if (!tryHandleLocked(text)) {
+                        scope.launch {
+                            repository.importText(text)
+                                .onSuccess { platform.toast(importedTemplate.format(it)) }
+                                .onFailure { platform.toast(importFailed) }
+                        }
                     }
                 }
             },
@@ -950,6 +1056,44 @@ internal fun HomeServerSection(
         onDismissRename = { renameTarget = null },
         onDismissMove = { moveTarget = null },
     )
+
+    pendingUnlock?.let { (bytes, meta) ->
+        UnlockConfigDialog(
+            zsxBytes = bytes,
+            metadata = meta,
+            repository = repository,
+            onDismiss = { pendingUnlock = null },
+            onSuccess = {
+                pendingUnlock = null
+                platform.toast(importedTemplate.format(1))
+            },
+        )
+    }
+
+    relayPrompt?.let { pendingText ->
+        RelayKeyDialog(
+            onDismiss = { relayPrompt = null },
+            onSubmit = { key ->
+                relayPrompt = null
+                scope.launch(Dispatchers.Default) {
+                    repository.resolveNrgRelay(pendingText, key)
+                        .mapCatching { resolved -> repository.importPasted(resolved).getOrThrow() }
+                        .onSuccess { r ->
+                            platform.toast(importedTemplate.format(r.count))
+                        }
+                        .onFailure { err ->
+                            when (err) {
+                                is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException ->
+                                    platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده است.")
+                                is dev.valid7996.narcicgeteway.crypto.ZsxWrongPasswordException ->
+                                    platform.toast("کلید اختصاصی وارد شده اشتباه است.")
+                                else -> platform.toast(importFailed)
+                            }
+                        }
+                }
+            },
+        )
+    }
 
     if (confirmDeleteSubscriptions) {
         val currentSub = subscriptions.firstOrNull { it.id == group }

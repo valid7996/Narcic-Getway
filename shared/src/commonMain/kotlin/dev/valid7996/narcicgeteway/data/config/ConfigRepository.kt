@@ -1575,7 +1575,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         runCatching { profile.toXrayConfigJson() }
         _profiles.value = _profiles.value + profile
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        setActive(profile.id)
         profile
     }
 

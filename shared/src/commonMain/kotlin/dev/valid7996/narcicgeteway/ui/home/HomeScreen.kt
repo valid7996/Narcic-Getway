@@ -172,6 +172,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     lockedNote: String? = null,
     activeLocked: Boolean = false,
+    activeExpiresAt: Long? = null,
     activeCountryCode: String? = null,
     reduceMotion: Boolean = false,
 
@@ -426,6 +427,7 @@ fun HomeScreen(
                         name = activeConfigName,
                         detail = activeConfigDetail,
                         locked = activeLocked,
+                        expiresAt = activeExpiresAt,
                         countryCode = activeCountryCode,
                         onClick = onBrowseConfigs,
                         personalization = personalization,
@@ -1090,6 +1092,7 @@ private fun ActiveConfigCard(
     name: String?,
     detail: String? = null,
     locked: Boolean,
+    expiresAt: Long? = null,
     countryCode: String? = null,
     onClick: () -> Unit,
     personalization: Personalization = Personalization.Default,
@@ -1197,7 +1200,16 @@ private fun ActiveConfigCard(
                         color = titleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
+                    if (locked && expiresAt != null) {
+                        Spacer(Modifier.width(8.dp))
+                        dev.valid7996.narcicgeteway.ui.servers.ExpiryCountdownBadge(
+                            expiresAt = expiresAt,
+                            isDark = isDark,
+                            fontSize = 11.sp,
+                        )
+                    }
                 }
                 Text(
                     text = detail ?: stringResource(
