@@ -57,6 +57,9 @@ class StartPlanner(context: Context) {
             return Plan.Failure(appContext.getString(R.string.zsx_expired))
         }
         profile.ikev2Settings()?.let { return Plan.Ikev2(profile.name, it) }
+        profile.mhrvRelaySettings()?.let {
+            if (!it.isValid) return Plan.Failure(appContext.getString(R.string.mhrv_missing_creds))
+        }
         val kind = engineKindOf(profile)
         val configJson = try {
             if (kind == VpnManager.KIND_CROSS_CHAIN) buildCrossChainWrapper(profile)
@@ -122,6 +125,7 @@ class StartPlanner(context: Context) {
         profile.psiphonSettings() != null -> VpnManager.KIND_PSIPHON
         profile.dnsTunnelSettings() != null -> VpnManager.KIND_DNS_TUNNEL
         profile.masterDnsSettings() != null -> VpnManager.KIND_MASTERDNS
+        profile.mhrvRelaySettings() != null -> VpnManager.KIND_MHRV
         profile.openConnectSettings() != null -> VpnManager.KIND_OPENCONNECT
         profile.aetherSettings() != null -> VpnManager.KIND_AETHER
         profile.ikev2Settings() != null -> VpnManager.KIND_IKEV2
@@ -180,6 +184,11 @@ class StartPlanner(context: Context) {
         profile.masterDnsSettings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
                 dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.serializer(), it,
+            )
+        }
+        profile.mhrvRelaySettings()?.let {
+            return kotlinx.serialization.json.Json.encodeToString(
+                dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.serializer(), it,
             )
         }
         profile.openConnectSettings()?.let {

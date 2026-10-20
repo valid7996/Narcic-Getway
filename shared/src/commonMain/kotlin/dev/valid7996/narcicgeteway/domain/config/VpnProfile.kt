@@ -46,6 +46,10 @@ sealed interface ProfileSource {
     data class MasterDns(val settings: MasterDnsProfile) : ProfileSource
 
     @Serializable
+    @SerialName("mhrv_relay")
+    data class MhrvRelay(val settings: MhrvRelayProfile) : ProfileSource
+
+    @Serializable
     @SerialName("openconnect")
     data class OpenConnect(val settings: OpenConnectProfile) : ProfileSource
 
@@ -109,6 +113,8 @@ data class VpnProfile(
     val isDnsTunnel: Boolean get() = source is ProfileSource.DnsTunnel
 
     val isMasterDns: Boolean get() = source is ProfileSource.MasterDns
+
+    val isMhrvRelay: Boolean get() = source is ProfileSource.MhrvRelay
 
     val isTor: Boolean get() = source is ProfileSource.Tor
 
@@ -181,7 +187,7 @@ data class VpnProfile(
     }
 
     val isManagedTunnel: Boolean
-        get() = isPsiphon || isDnsTunnel || isMasterDns || isTor || isSsh || isSniSpoof ||
+        get() = isPsiphon || isDnsTunnel || isMasterDns || isMhrvRelay || isTor || isSsh || isSniSpoof ||
             isOpenConnect || isIkev2 || isAether || isCrossChain || isSingBoxConfig
 
     val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns
@@ -191,6 +197,8 @@ data class VpnProfile(
     fun dnsTunnelSettings(): DnsTunnelProfile? = (source as? ProfileSource.DnsTunnel)?.settings
 
     fun masterDnsSettings(): MasterDnsProfile? = (source as? ProfileSource.MasterDns)?.settings
+
+    fun mhrvRelaySettings(): MhrvRelayProfile? = (source as? ProfileSource.MhrvRelay)?.settings
 
     fun openConnectSettings(): OpenConnectProfile? = (source as? ProfileSource.OpenConnect)?.settings
 
@@ -243,6 +251,7 @@ data class VpnProfile(
 
         is ProfileSource.SniSpoof -> SniSpoofLink.build(src.settings, name)
         is ProfileSource.MasterDns -> NrgLink.build(name, src)
+        is ProfileSource.MhrvRelay -> NrgLink.build(name, src)
         is ProfileSource.OpenConnect -> NrgLink.build(name, src)
         is ProfileSource.Ikev2 -> NrgLink.build(name, src)
         is ProfileSource.Aether -> AetherLink.build(src.settings, name)
@@ -302,6 +311,7 @@ data class VpnProfile(
         is ProfileSource.Psiphon -> throw IllegalStateException("Psiphon profiles do not build Xray config")
         is ProfileSource.DnsTunnel -> throw IllegalStateException("DNS-tunnel profiles do not build Xray config")
         is ProfileSource.MasterDns -> throw IllegalStateException("MasterDNS profiles do not build Xray config")
+        is ProfileSource.MhrvRelay -> throw IllegalStateException("MHRV relay profiles do not build Xray config")
         is ProfileSource.OpenConnect -> throw IllegalStateException("OpenConnect profiles do not build Xray config")
         is ProfileSource.Aether -> throw IllegalStateException("Aether profiles do not build Xray config")
         is ProfileSource.Ikev2 -> throw IllegalStateException("IKEv2 profiles do not build Xray config")
@@ -416,6 +426,27 @@ data class VpnProfile(
             port = 0,
             transportLabel = "MasterDNS",
             source = ProfileSource.MasterDns(settings),
+            addedAt = addedAt,
+        )
+
+        fun fromMhrvRelay(
+            settings: MhrvRelayProfile,
+            id: String,
+            addedAt: Long,
+            name: String,
+        ): VpnProfile = VpnProfile(
+            id = id,
+            name = name.ifBlank { "MHRV Relay" },
+            protocol = "MHRV",
+            address = settings.scriptIdList().firstOrNull()?.let { it.take(10) + "…" }
+                ?: settings.googleIp,
+            port = 0,
+            transportLabel = when (settings.mode) {
+                MhrvRelayProfile.MODE_FULL -> "Apps Script · Full"
+                MhrvRelayProfile.MODE_DIRECT -> "Google fronting"
+                else -> "Apps Script"
+            },
+            source = ProfileSource.MhrvRelay(settings),
             addedAt = addedAt,
         )
 

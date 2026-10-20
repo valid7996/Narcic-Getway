@@ -197,6 +197,23 @@ class AndroidPlatform(
         mainHandler.post { Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
     }
 
+    override val supportsMhrvCa: Boolean get() = true
+
+    override fun installMhrvCa(): String {
+        val der = dev.valid7996.narcicgeteway.core.MhrvRelayController.exportCaDer(context.filesDir)
+            ?: return context.getString(dev.valid7996.narcicgeteway.R.string.mhrv_ca_install_failed)
+        return runCatching {
+            val intent = android.security.KeyChain.createInstallIntent()
+                .putExtra(android.security.KeyChain.EXTRA_CERTIFICATE, der)
+                .putExtra(android.security.KeyChain.EXTRA_NAME, "Narcic MHRV Relay CA")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            context.getString(dev.valid7996.narcicgeteway.R.string.mhrv_ca_install_started)
+        }.getOrElse {
+            context.getString(dev.valid7996.narcicgeteway.R.string.mhrv_ca_install_failed)
+        }
+    }
+
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     private val INLINE_SHARE_LIMIT = 64 * 1024

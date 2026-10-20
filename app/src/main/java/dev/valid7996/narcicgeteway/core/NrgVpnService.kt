@@ -53,6 +53,7 @@ class NrgVpnService : VpnService() {
     private var aether: AetherController? = null
     private var dnsTunnel: DnsTunnelController? = null
     private var masterDns: MasterDnsController? = null
+    private var mhrv: MhrvRelayController? = null
     private var tor: dev.valid7996.narcicgeteway.core.tor.TorController? = null
     private var ssh: SshController? = null
 
@@ -291,6 +292,7 @@ class NrgVpnService : VpnService() {
             VpnManager.KIND_AETHER -> startAether(configJson, descriptor, tunMtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, descriptor, tunMtu, settings)
+            VpnManager.KIND_MHRV -> startMhrv(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, descriptor, tunMtu)
             VpnManager.KIND_SSH -> startSsh(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_SNISPOOF -> startSniSpoof(configJson, socksPort, descriptor, tunMtu)
@@ -649,6 +651,61 @@ class NrgVpnService : VpnService() {
         } else {
             stopEverything()
         }
+    }
+
+    private fun startMhrv(
+        configJson: String,
+        descriptor: ParcelFileDescriptor,
+        tunMtu: Int,
+        appSettings: AppSettings,
+    ) {
+        val profile = try {
+            kotlinx.serialization.json.Json.decodeFromString(
+                dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.serializer(), configJson,
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "bad MHRV relay config", e)
+            VpnManager.onError(getString(R.string.mhrv_invalid_config))
+            stopEverything(); return
+        }
+        val controller = MhrvRelayController(
+            profile, filesDir,
+            httpPort = LocalPorts.MHRV_HTTP,
+            socksPort = LocalPorts.MHRV_SOCKS,
+        )
+        mhrv = controller
+        if (!controller.start()) {
+            VpnManager.onError(
+                if (controller.missingCredentials) getString(R.string.mhrv_missing_creds)
+                else getString(R.string.mhrv_failed_reason, controller.failure.orEmpty().take(200)),
+            )
+            stopEverything(); return
+        }
+        if (!controller.awaitReady(MHRV_READY_TIMEOUT_MS)) {
+            VpnManager.onError(getString(R.string.mhrv_no_socks))
+            stopEverything(); return
+        }
+        if (profile.needsCa && MhrvRelayController.exportCaDer(filesDir) == null) {
+            Log.w(TAG, "MHRV relay CA could not be exported; HTTPS pages will not validate")
+        }
+
+        val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
+        val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", controller.socksPort, dnsHost = dns)
+        socksShim = shim
+        if (!shim.start() || !bridge(descriptor, SHIM_PORT, tunMtu, udpOverTcp = true)) {
+            stopEverything(); return
+        }
+
+        // Do not report Connected until a request has really crossed the relay: a wrong deployment ID, auth key
+        // or Google IP otherwise leaves a tunnel that looks up and carries nothing. Direct mode sends other
+        // hosts out raw, so it has no relay path to probe.
+        if (profile.mode != dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.MODE_DIRECT &&
+            !TunnelReadiness.verify(SHIM_PORT, timeoutMs = MHRV_PROBE_TIMEOUT_MS, attempts = 2)
+        ) {
+            VpnManager.onError(getString(R.string.mhrv_unreachable))
+            stopEverything(); return
+        }
+        finishConnected()
     }
 
     private fun masterDnsError(c: MasterDnsController): String = when (val f = c.failure) {
@@ -1015,6 +1072,7 @@ class NrgVpnService : VpnService() {
         VpnManager.KIND_AETHER -> "Aether"
         VpnManager.KIND_DNS_TUNNEL -> "DNS"
         VpnManager.KIND_MASTERDNS -> "MasterDNS"
+        VpnManager.KIND_MHRV -> "MHRV Relay"
         VpnManager.KIND_TOR -> "Tor"
         VpnManager.KIND_SSH -> "SSH"
         VpnManager.KIND_OPENCONNECT -> "OpenConnect"
@@ -1031,6 +1089,7 @@ class NrgVpnService : VpnService() {
         VpnManager.KIND_PSIPHON -> "Psiphon"
         VpnManager.KIND_DNS_TUNNEL -> "DNS"
         VpnManager.KIND_MASTERDNS -> "MasterDNS"
+        VpnManager.KIND_MHRV -> "MHRV Relay"
         VpnManager.KIND_TOR -> "Tor"
         VpnManager.KIND_SSH -> "SSH"
         else -> "Xray"
@@ -1160,6 +1219,7 @@ class NrgVpnService : VpnService() {
                     VpnManager.KIND_PSIPHON -> psiphon?.isRunning == true
                     VpnManager.KIND_DNS_TUNNEL -> dnsTunnel?.isRunning == true
                     VpnManager.KIND_MASTERDNS -> masterDns?.isRunning == true
+                    VpnManager.KIND_MHRV -> mhrv?.isRunning == true
                     VpnManager.KIND_TOR -> tor?.isRunning == true
                     VpnManager.KIND_SSH -> ssh?.isRunning == true
                     VpnManager.KIND_OPENCONNECT -> openConnect?.isRunning == true
@@ -1200,6 +1260,7 @@ class NrgVpnService : VpnService() {
                     // The core and its carriers are processes of this app, so their sockets are the tunnel's own traffic.
                     VpnManager.KIND_PSIPHON, VpnManager.KIND_AETHER -> uidTrafficDelta()
                     VpnManager.KIND_OPENCONNECT -> { openConnect?.pokeStats(); openConnect?.trafficDelta() ?: (0L to 0L) }
+                    VpnManager.KIND_MHRV -> socksShim?.readDelta() ?: (0L to 0L)
 
                     VpnManager.KIND_SINGBOX -> singBox?.let { engine ->
                         val down = (engine.downlinkTotal - singBoxLastDown).coerceAtLeast(0)
@@ -1412,6 +1473,8 @@ class NrgVpnService : VpnService() {
         outerDnsTunnel?.stop(); outerDnsTunnel = null
         ZepTunCore.stop()
         HevTunCore.stop()
+        // After the TUN bridges: the native core must have no live connections when it is stopped.
+        mhrv?.stop(); mhrv = null
         XrayController.stop()
     }
 
@@ -1811,6 +1874,8 @@ class NrgVpnService : VpnService() {
 
         private const val SHIM_PORT = LocalPorts.SHIM
 
+        private const val MHRV_READY_TIMEOUT_MS = 20_000L
+        private const val MHRV_PROBE_TIMEOUT_MS = 30_000
         private const val MASTERDNS_IDLE_TIMEOUT_MS = 90_000L
 
         private const val MASTERDNS_MAX_WAIT_MS = 300_000L

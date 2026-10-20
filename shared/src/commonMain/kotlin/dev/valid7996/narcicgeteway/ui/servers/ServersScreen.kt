@@ -422,6 +422,7 @@ fun ServersScreen(
     var showPsiphon by remember { mutableStateOf(false) }
     var showDnsTunnel by remember { mutableStateOf(false) }
     var showMasterDns by remember { mutableStateOf(false) }
+    var showMhrv by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
@@ -1423,6 +1424,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showMasterDns = true
             },
+            onMhrv = {
+                showAddSheet = false
+                showMhrv = true
+            },
             onOpenConnect = {
                 showAddSheet = false
                 showOpenConnect = true
@@ -1676,6 +1681,17 @@ fun ServersScreen(
             onSave = { name, settings ->
                 showMasterDns = false
                 repository.addMasterDns(settings, name)
+                onServerActivated()
+            },
+        )
+    }
+
+    if (showMhrv) {
+        MhrvRelaySheet(
+            onDismiss = { showMhrv = false },
+            onSave = { name, settings ->
+                showMhrv = false
+                repository.addMhrvRelay(settings, name)
                 onServerActivated()
             },
         )
@@ -2223,6 +2239,7 @@ internal fun AddServerSheet(
     onPsiphon: () -> Unit,
     onDnsTunnel: () -> Unit,
     onMasterDns: () -> Unit,
+    onMhrv: () -> Unit,
     onOpenConnect: () -> Unit,
     onIkev2: () -> Unit,
     onTor: () -> Unit,
@@ -2397,6 +2414,16 @@ internal fun AddServerSheet(
                     gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
                     gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
                     onClick = onMasterDns,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.mhrv_add_title),
+                    subtitle = stringResource(Res.string.mhrv_add_title_sub),
+                    icon = Res.drawable.ic_public,
+                    accentColor = Color(0xFF34C759),
+                    iconTint = Color(0xFF7BE495),
+                    gradientStart = Color(0xFF10301E).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF0B2016).copy(alpha = 0.75f),
+                    onClick = onMhrv,
                 )
 
                 OptionGroup(Res.string.add_group_vpn)

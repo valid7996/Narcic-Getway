@@ -126,6 +126,16 @@ class ConfigRepository(private val store: KeyValueStore) {
 
         if (NrgLink.isNrgLink(trimmed)) return@runCatching importNrgLink(trimmed)
 
+        val mhrvLooksLike = trimmed.startsWith(
+            dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.SHARE_PREFIX, ignoreCase = true,
+        ) || (trimmed.startsWith("{") && "\"script_id" in trimmed && "\"auth_key\"" in trimmed)
+        if (mhrvLooksLike) {
+            val prof = dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.fromText(trimmed)
+                ?: throw IllegalArgumentException("invalid MHRV relay config")
+            addMhrvRelay(prof, "MHRV Relay")
+            return@runCatching 1
+        }
+
         if (SniSpoofLink.isSniSpoofLink(trimmed)) {
             val (nm, prof) = SniSpoofLink.parse(trimmed)
                 ?: throw IllegalArgumentException("invalid snispoof:// link")
@@ -513,6 +523,28 @@ class ConfigRepository(private val store: KeyValueStore) {
         return profile
     }
 
+    fun addMhrvRelay(
+        settings: dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile,
+        name: String,
+        id: String? = null,
+    ): VpnProfile {
+        val existing = id?.let { profile(it) }
+        val profile = VpnProfile.fromMhrvRelay(
+            settings = settings,
+            id = existing?.id ?: newId(),
+            addedAt = existing?.addedAt ?: currentTimeMillis(),
+            name = name,
+        ).let { carryOver(existing, it) }
+        _profiles.value = if (existing != null) {
+            _profiles.value.map { if (it.id == profile.id) profile else it }
+        } else {
+            listOf(profile) + _profiles.value
+        }
+        persistProfiles()
+        if (_activeId.value == null) setActive(profile.id)
+        return profile
+    }
+
     fun addOpenConnect(
         settings: dev.valid7996.narcicgeteway.domain.config.OpenConnectProfile,
         name: String,
@@ -828,6 +860,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             is ProfileSource.Tor -> { addTor(name); 1 }
             is ProfileSource.Ssh -> { addSsh(src.settings, name); 1 }
             is ProfileSource.MasterDns -> { addMasterDns(src.settings, name); 1 }
+            is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name); 1 }
             is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
             is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }
             is ProfileSource.Aether -> { addAether(src.settings, name); 1 }
