@@ -404,53 +404,6 @@ fun HomeScreen(
                           )
                       }
 
-                      val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
-                      if (deviceId.isNotBlank()) {
-                          Spacer(Modifier.height(10.dp))
-                          val copiedMsg = stringResource(Res.string.device_code_copied)
-                          Surface(
-                              onClick = {
-                                  platform.copyToClipboard(deviceId)
-                                  scope.launch { platform.toast(copiedMsg) }
-                              },
-                              shape = RoundedCornerShape(12.dp),
-                              color = if (personalization.amoledBlack) Color(0xFF141416) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f),
-                              border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-                          ) {
-                              Row(
-                                  modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                                  verticalAlignment = Alignment.CenterVertically,
-                                  horizontalArrangement = Arrangement.spacedBy(8.dp),
-                              ) {
-                                  Icon(
-                                      painter = painterResource(Res.drawable.ic_key),
-                                      contentDescription = null,
-                                      modifier = Modifier.size(15.dp),
-                                      tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
-                                  )
-                                  Text(
-                                      text = stringResource(Res.string.device_code_label),
-                                      style = MaterialTheme.typography.labelMedium,
-                                      color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                  )
-                                  Text(
-                                      text = deviceId,
-                                      fontFamily = FontFamily.Monospace,
-                                      fontWeight = FontWeight.Bold,
-                                      style = MaterialTheme.typography.labelLarge,
-                                      color = MaterialTheme.colorScheme.onSurface,
-                                  )
-                                  Spacer(Modifier.width(2.dp))
-                                  Icon(
-                                      painter = painterResource(Res.drawable.ic_check_circle),
-                                      contentDescription = "کپی",
-                                      modifier = Modifier.size(14.dp),
-                                      tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                                  )
-                              }
-                          }
-                      }
-
                       if (lockedNote != null) {
                           val noteScroll = rememberScrollState()
                           Spacer(Modifier.height(16.dp))
@@ -575,6 +528,88 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(32.dp))
                 Spacer(Modifier.height(96.dp))
+            }
+
+            val deviceId = remember(repository) {
+                val store = dev.valid7996.narcicgeteway.platform.KeyValueStore("nrg_configs")
+                repository?.nrgDeviceId()
+                    ?: store.getString("nrg_device_id")?.takeIf { it.isNotBlank() }
+                    ?: run {
+                        val id = dev.valid7996.narcicgeteway.crypto.NrgLink.toUrlSafe(dev.valid7996.narcicgeteway.crypto.ZsxCrypto.secureRandomBytes(12))
+                        store.putString("nrg_device_id", id)
+                        id
+                    }
+            }
+            if (deviceId.isNotBlank()) {
+                var isRevealed by remember { mutableStateOf(false) }
+                val copiedMsg = stringResource(Res.string.device_code_copied)
+
+                Surface(
+                    onClick = {
+                        platform.copyToClipboard(deviceId)
+                        scope.launch { platform.toast(copiedMsg) }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    color = when {
+                        personalization.amoledBlack -> Color(0xFF141416)
+                        isBlossom -> Color(0xFF220D1B).copy(alpha = 0.94f)
+                        isNoir -> Color(0xFF161618).copy(alpha = 0.94f)
+                        isAzkaban -> Color(0xFF0C182A).copy(alpha = 0.94f)
+                        else -> MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
+                    },
+                    border = BorderStroke(
+                        1.dp,
+                        when {
+                            personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                            isBlossom -> Color(0xFFF472B6).copy(alpha = 0.35f)
+                            isNoir -> Color.White.copy(alpha = 0.22f)
+                            isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
+                            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.40f)
+                        }
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_key),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary
+                                else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
+                        )
+                        Text(
+                            text = stringResource(Res.string.device_code_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = if (isRevealed) deviceId else "••••••••••••",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        IconButton(
+                            onClick = { isRevealed = !isRevealed },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(if (isRevealed) Res.drawable.ic_visibility_off else Res.drawable.ic_visibility),
+                                contentDescription = if (isRevealed) "Hide" else "Show",
+                                modifier = Modifier.size(16.dp),
+                                tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary
+                                    else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
+                            )
+                        }
+                    }
+                }
             }
         }
 
