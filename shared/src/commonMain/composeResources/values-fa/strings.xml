@@ -481,7 +481,12 @@
     <string name="title_pref_vpn_interface_address">آدرس اینترفیس VPN</string>
     <string name="title_pref_vpn_mtu">MTU مربوط به VPN</string>
     <string name="title_pref_use_hev_tunnel">استفاده از Hev TUN</string>
-    <string name="summary_pref_use_hev_tunnel">پل زدن TUN با hev-socks5-tunnel به‌جای هسته</string>
+    <string name="summary_pref_use_hev_tunnel">در صورت فعال بودن، تونل از hev-socks5-tunnel استفاده می‌کند؛ در غیر این صورت از هسته Xray استفاده می‌شود.</string>
+    <string name="server_lab_ech_outbound">قالب JSON خام echOutbound: { OutboundObject }</string>
+    <string name="toast_ech_outbound_needs_ech_config_list">echOutbound نیازمند تعیین echConfigList است</string>
+    <string name="toast_ech_outbound_invalid_tag">echOutbound نیازمند یک tag غیر خالی است که direct یا block نبوده و با proxy شروع نشود</string>
+    <string name="toast_ech_outbound_tag_conflict">تگ «%1$s» برای echOutbound قبلاً توسط خروجی دیگری استفاده شده است</string>
+    <string name="toast_ech_outbound_invalid_json">قالب JSON نامعتبر برای echOutbound: فرمت باید { OutboundObject } باشد</string>
     <string name="title_pref_hev_tunnel_loglevel">سطح لاگ Hev TUN</string>
     <string name="tun_engine_title">موتور تونل</string>
     <string name="tun_engine_zeptun">zeptun (پیشنهادی)</string>

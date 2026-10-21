@@ -489,7 +489,12 @@
     <string name="title_pref_vpn_interface_address">VPN interface address</string>
     <string name="title_pref_vpn_mtu">VPN MTU</string>
     <string name="title_pref_use_hev_tunnel">Use Hev TUN</string>
-    <string name="summary_pref_use_hev_tunnel">Bridge the TUN with hev-socks5-tunnel instead of the core</string>
+    <string name="summary_pref_use_hev_tunnel">When enabled, TUN will use hev-socks5-tunnel; otherwise, it will use xray-core.</string>
+    <string name="server_lab_ech_outbound">echOutbound raw JSON, format: { OutboundObject }</string>
+    <string name="toast_ech_outbound_needs_ech_config_list">echOutbound requires echConfigList</string>
+    <string name="toast_ech_outbound_invalid_tag">echOutbound needs a \"tag\" that is not empty, not direct or block, and does not start with proxy</string>
+    <string name="toast_ech_outbound_tag_conflict">The tag \"%1$s\" of echOutbound is already used by another outbound</string>
+    <string name="toast_ech_outbound_invalid_json">Invalid JSON for echOutbound: format must be { OutboundObject }</string>
     <string name="title_pref_hev_tunnel_loglevel">Hev TUN log level</string>
     <string name="tun_engine_title">Tunnel engine</string>
     <string name="tun_engine_zeptun">zeptun (recommended)</string>

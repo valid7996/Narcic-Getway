@@ -94,6 +94,7 @@ class NrgVpnService : VpnService() {
     private var hevLogLevel: String = HevTunCore.DEFAULT_LOG_LEVEL
     private var hevRwTimeout: String = HevTunCore.DEFAULT_RW_TIMEOUT
 
+    private var useHevTun: Boolean = false
     private var useZepTun: Boolean = true
 
     override fun attachBaseContext(base: Context) {
@@ -212,6 +213,7 @@ class NrgVpnService : VpnService() {
         val iface = settings.vpnInterfaceAddress
         hevIpv4 = iface.ipv4Client
         hevIpv6 = if (settings.enableIpv6) iface.ipv6Client else null
+        useHevTun = settings.useHevTun
         useZepTun = settings.useZepTun
         hevLogLevel = settings.hevTunLogLevel.value
         hevRwTimeout = settings.hevTunRwTimeout
@@ -839,14 +841,17 @@ class NrgVpnService : VpnService() {
                 xrayObj.toString()
             }.getOrDefault(configJson)
         }
-        if (!XrayController.start(effectiveConfig)) {
+        val tunFd = if (useHevTun) 0 else descriptor.fd
+        if (!XrayController.start(effectiveConfig, tunFd)) {
             VpnManager.onError(coreStartError())
             stopEverything()
             return
         }
         onXrayStarted()
 
-        if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) return
+        if (useHevTun) {
+            if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) return
+        }
         VpnManager.activeSocksPort = socksPort
         finishConnected()
     }

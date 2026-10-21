@@ -46,6 +46,9 @@ fun AppSettings.toBuildOptions(
     muxXudpQuic = muxXudpQuic.value,
     localDns = localDnsEnabled,
     fakeDns = localDnsEnabled && fakeDnsEnabled,
+    useXrayTun = !useHevTun && runMode == dev.valid7996.narcicgeteway.domain.model.RunMode.Vpn && !carrier,
+    vpnMtu = vpnMtu,
+    enableLocalProxy = effectiveLocalProxy,
     outboundDomainResolve = outboundDomainResolve.value,
     resolvedServerHosts = resolvedServerHosts,
 )
