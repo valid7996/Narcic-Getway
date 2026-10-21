@@ -299,6 +299,7 @@ fun MainScaffold(
 
 private fun languageEnglishName(language: AppLanguage): String = when (language) {
     AppLanguage.Persian -> "Persian"
+    AppLanguage.Arabic -> "Arabic"
     AppLanguage.Chinese -> "Chinese"
     AppLanguage.Russian -> "Russian"
     AppLanguage.English -> "English"
@@ -308,6 +309,7 @@ private fun languageEnglishName(language: AppLanguage): String = when (language)
 
 private fun languageNativeName(language: AppLanguage): String = when (language) {
     AppLanguage.Persian -> "فارسی"
+    AppLanguage.Arabic -> "العربية"
     AppLanguage.Chinese -> "中文"
     AppLanguage.Russian -> "Русский"
     AppLanguage.English -> "English"

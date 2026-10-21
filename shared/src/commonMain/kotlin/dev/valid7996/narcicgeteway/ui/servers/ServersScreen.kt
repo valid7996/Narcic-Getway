@@ -2581,11 +2581,11 @@ internal fun AddServerSheet(
             )
 
             if (onTelegramProxy != null || onIpScanner != null) {
-                OptionGroup("ابزارهای شبکه و اسکنر (Network Tools)")
+                OptionGroup(stringResource(Res.string.tools_group_network))
                 if (onTelegramProxy != null) {
                     GlassOptionCard(
-                        title = "پروکسی‌های تلگرام (Telegram Proxies)",
-                        subtitle = "دریافت، تست پینگ زنده و اتصال مستقیم به پروکسی‌های MTProto",
+                        title = stringResource(Res.string.tools_telegram_proxies_title),
+                        subtitle = stringResource(Res.string.tools_telegram_proxies_sub),
                         icon = Res.drawable.ic_public,
                         accentColor = Color(0xFF34C759),
                         iconTint = Color(0xFF4ADE80),
@@ -2596,8 +2596,8 @@ internal fun AddServerSheet(
                 }
                 if (onIpScanner != null) {
                     GlassOptionCard(
-                        title = "اسکنر Narcic Scanner",
-                        subtitle = "اسکنر پیشرفته CDN و دامنه (Narcic Scanner)",
+                        title = stringResource(Res.string.tools_narcic_scanner_title),
+                        subtitle = stringResource(Res.string.tools_narcic_scanner_sub),
                         icon = Res.drawable.ic_speedometer,
                         accentColor = Color(0xFF007AFF),
                         iconTint = Color(0xFF60A5FA),
@@ -2608,8 +2608,8 @@ internal fun AddServerSheet(
                 }
                 if (onPatt != null) {
                     GlassOptionCard(
-                        title = "ابزارهای Patt (Patt's Tools)",
-                        subtitle = "تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH به کانفیگ‌ها",
+                        title = stringResource(Res.string.tools_patts_title),
+                        subtitle = stringResource(Res.string.tools_patts_sub),
                         icon = Res.drawable.ic_tune,
                         accentColor = Color(0xFFFF9500),
                         iconTint = Color(0xFFFBBF24),
@@ -2620,8 +2620,8 @@ internal fun AddServerSheet(
                 }
                 if (onDeviceCode != null) {
                     GlassOptionCard(
-                        title = "کد دستگاه من (برای کانفیگ قفل‌شده)",
-                        subtitle = "کد را برای فروشنده بفرستید تا کانفیگ فقط روی همین دستگاه باز شود",
+                        title = stringResource(Res.string.device_code_menu_title),
+                        subtitle = stringResource(Res.string.device_code_servers_sub),
                         icon = Res.drawable.ic_lock,
                         accentColor = Color(0xFFFF9500),
                         iconTint = Color(0xFFFFB340),
@@ -2632,8 +2632,8 @@ internal fun AddServerSheet(
                 }
                 if (onBackupRestore != null) {
                     GlassOptionCard(
-                        title = "پشتیبان‌گیری و بازیابی (Backup & Restore)",
-                        subtitle = "خروجی گرفتن و بازیابی کامل سرورها، اشتراک‌ها و تنظیمات",
+                        title = stringResource(Res.string.tools_backup_title),
+                        subtitle = stringResource(Res.string.tools_backup_sub),
                         icon = Res.drawable.ic_sync,
                         accentColor = Color(0xFF34C759),
                         iconTint = Color(0xFF4ADE80),

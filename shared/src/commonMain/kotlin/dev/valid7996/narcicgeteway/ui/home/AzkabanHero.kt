@@ -54,9 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.valid7996.narcicgeteway.domain.model.ConnectionState
 import dev.valid7996.narcicgeteway.shared.resources.Res
-import dev.valid7996.narcicgeteway.shared.resources.circle_waves_sheet
-import dev.valid7996.narcicgeteway.shared.resources.ic_bolt
-import dev.valid7996.narcicgeteway.shared.resources.ic_close
+import dev.valid7996.narcicgeteway.shared.resources.*
+import org.jetbrains.compose.resources.stringResource
 import dev.valid7996.narcicgeteway.ui.components.CyberRadarIndicator
 import org.jetbrains.compose.resources.painterResource
 
@@ -357,7 +356,7 @@ fun AzkabanConnectButton(
                 CyberRadarIndicator(Modifier.size(24.dp))
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = if (isNoir || isBlossom) "در حال برقراری اتصال امن..." else "در حال ایجاد پیوند امن...",
+                    text = if (isNoir || isBlossom) stringResource(Res.string.connecting_secure) else stringResource(Res.string.azkaban_binding),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -379,15 +378,15 @@ fun AzkabanConnectButton(
                 Text(
                     text = if (isNoir || isBlossom) {
                         when {
-                            state == ConnectionState.Error -> "تلاش مجدد"
-                            isConnected -> "قطع اتصال امن"
-                            else -> "برقراری اتصال امن"
+                            state == ConnectionState.Error -> stringResource(Res.string.action_retry)
+                            isConnected -> stringResource(Res.string.action_disconnect_secure)
+                            else -> stringResource(Res.string.action_connect_secure)
                         }
                     } else {
                         when {
-                            state == ConnectionState.Error -> "تلاش مجدد"
-                            isConnected -> "گسستن طلسم (قطع اتصال)"
-                            else -> "احضار محافظ (اتصال امن)"
+                            state == ConnectionState.Error -> stringResource(Res.string.action_retry)
+                            isConnected -> stringResource(Res.string.azkaban_break_spell)
+                            else -> stringResource(Res.string.azkaban_summon_guardian)
                         }
                     },
                     fontSize = 15.sp,

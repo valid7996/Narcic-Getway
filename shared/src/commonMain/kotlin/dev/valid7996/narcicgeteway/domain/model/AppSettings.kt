@@ -24,6 +24,7 @@ enum class AppLanguage(val tag: String?) {
     System(null),
     English("en"),
     Persian("fa"),
+    Arabic("ar"),
     Chinese("zh"),
     Russian("ru"),
 }

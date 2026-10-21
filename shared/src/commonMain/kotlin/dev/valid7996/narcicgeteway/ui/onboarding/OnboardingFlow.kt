@@ -352,6 +352,7 @@ private fun LanguageStep(
         val languages = listOf(
             Triple(AppLanguage.Persian, "فارسی" to "Persian", "🇮🇷"),
             Triple(AppLanguage.English, "English" to "انگلیسی", "🇬🇧"),
+            Triple(AppLanguage.Arabic, "العربية" to "Arabic", "🇸🇦"),
             Triple(AppLanguage.System, stringResource(Res.string.settings_language_system) to "System Default", "🌐"),
             Triple(AppLanguage.Chinese, "中文" to "Chinese", "🇨🇳"),
             Triple(AppLanguage.Russian, "Русский" to "Russian", "🇷🇺"),

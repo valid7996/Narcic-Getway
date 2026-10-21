@@ -407,10 +407,11 @@ fun HomeScreen(
                       val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
                       if (deviceId.isNotBlank()) {
                           Spacer(Modifier.height(10.dp))
+                          val copiedMsg = stringResource(Res.string.device_code_copied)
                           Surface(
                               onClick = {
                                   platform.copyToClipboard(deviceId)
-                                  scope.launch { platform.toast("کد دستگاه کپی شد") }
+                                  scope.launch { platform.toast(copiedMsg) }
                               },
                               shape = RoundedCornerShape(12.dp),
                               color = if (personalization.amoledBlack) Color(0xFF141416) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f),
@@ -428,7 +429,7 @@ fun HomeScreen(
                                       tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
                                   )
                                   Text(
-                                      text = "کد دستگاه من:",
+                                      text = stringResource(Res.string.device_code_label),
                                       style = MaterialTheme.typography.labelMedium,
                                       color = MaterialTheme.colorScheme.onSurfaceVariant,
                                   )

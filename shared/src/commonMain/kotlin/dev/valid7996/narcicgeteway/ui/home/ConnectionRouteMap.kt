@@ -55,10 +55,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.valid7996.narcicgeteway.data.net.NetworkInfo
 import dev.valid7996.narcicgeteway.shared.resources.Res
-import dev.valid7996.narcicgeteway.shared.resources.ic_close
-import dev.valid7996.narcicgeteway.shared.resources.ic_map
+import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.ui.components.FlagBadge
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -234,13 +234,13 @@ fun ConnectionMapTriggerButton(
                 }
                 Column {
                     Text(
-                        text = if (expanded) "بستن نقشه مسیر اتصال" else "نمایش نقشه مسیر اتصال زنده",
+                        text = if (expanded) stringResource(Res.string.route_map_close) else stringResource(Res.string.route_map_open),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
                     Text(
-                        text = "مسیر کشور مبدأ به مقصد + IPv4 و نام کانفیگ",
+                        text = stringResource(Res.string.route_map_subtitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = accentSub,
                     )
@@ -344,9 +344,27 @@ fun ConnectionRouteMapCard(
         label = "pin-pulse",
     )
 
-    val destCountryLabel = PERSIAN_COUNTRY_NAMES[destCode]
-        ?: info.country?.takeIf { it.isNotBlank() }
-        ?: destCode
+    val currentLocale = remember { java.util.Locale.getDefault() }
+    val isFa = currentLocale.language.equals("fa", ignoreCase = true)
+    val localizedDest = remember(destCode, currentLocale) {
+        java.util.Locale("", destCode).getDisplayCountry(currentLocale)
+            .takeIf { it.isNotBlank() && !it.equals(destCode, ignoreCase = true) }
+    }
+    val destCountryLabel = if (isFa) {
+        PERSIAN_COUNTRY_NAMES[destCode] ?: localizedDest ?: info.country?.takeIf { it.isNotBlank() } ?: destCode
+    } else {
+        localizedDest ?: info.country?.takeIf { it.isNotBlank() } ?: destCode
+    }
+
+    val localizedOrigin = remember(originCode, currentLocale) {
+        java.util.Locale("", originCode).getDisplayCountry(currentLocale)
+            .takeIf { it.isNotBlank() && !it.equals(originCode, ignoreCase = true) }
+    }
+    val originCountryLabel = if (isFa) {
+        PERSIAN_COUNTRY_NAMES[originCode] ?: localizedOrigin ?: "ایران"
+    } else {
+        localizedOrigin ?: "Iran"
+    }
 
     val shape = RoundedCornerShape(24.dp)
     val cardBg = when {
@@ -411,7 +429,7 @@ fun ConnectionRouteMapCard(
                     FlagBadge(countryCode = originCode, size = 22.dp)
                     Column {
                         Text(
-                            text = "مبدأ: ایران (IR)",
+                            text = stringResource(Res.string.route_origin_label, originCountryLabel, originCode),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = primaryAccent,
@@ -457,7 +475,7 @@ fun ConnectionRouteMapCard(
                 ) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "مقصد: $destCountryLabel ($destCode)",
+                            text = stringResource(Res.string.route_dest_label, destCountryLabel, destCode),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = secondaryAccent,
@@ -722,7 +740,7 @@ fun ConnectionRouteMapCard(
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                     ) {
                         Text(
-                            text = if (smartZoom) "🔍 زوم هوشمند" else "🌍 نمای کل جهان",
+                            text = if (smartZoom) stringResource(Res.string.route_map_smart_zoom) else stringResource(Res.string.route_map_world_view),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = secondaryAccent,
@@ -765,13 +783,13 @@ fun ConnectionRouteMapCard(
                 // IPv4 Column
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "آدرس IPv4 متصل:",
+                        text = stringResource(Res.string.route_map_connected_ipv4),
                         style = MaterialTheme.typography.labelSmall,
                         color = secondaryAccent.copy(alpha = 0.85f),
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = info.ipv4?.takeIf { it.isNotBlank() } ?: "در حال دریافت...",
+                        text = info.ipv4?.takeIf { it.isNotBlank() } ?: stringResource(Res.string.route_map_fetching),
                         style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -792,7 +810,7 @@ fun ConnectionRouteMapCard(
                 // Active Config Name Column
                 Column(modifier = Modifier.weight(1.15f)) {
                     Text(
-                        text = "نام کانفیگ فعال:",
+                        text = stringResource(Res.string.route_map_active_config),
                         style = MaterialTheme.typography.labelSmall,
                         color = primaryAccent.copy(alpha = 0.88f),
                     )
@@ -803,7 +821,7 @@ fun ConnectionRouteMapCard(
                     ) {
                         FlagBadge(countryCode = destCode, size = 15.dp)
                         Text(
-                            text = activeConfigName?.takeIf { it.isNotBlank() } ?: "سرور متصل",
+                            text = activeConfigName?.takeIf { it.isNotBlank() } ?: stringResource(Res.string.route_map_connected_server),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = primaryAccent,

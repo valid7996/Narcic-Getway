@@ -1467,4 +1467,63 @@
     <string name="aether_lab_target_strategy">Target Strategy</string>
     <string name="aether_action_use_settings">Revert to Settings</string>
     <string name="aether_command_custom">Using custom command</string>
+
+    <!-- NRG Secure Share and Device Code -->
+    <string name="server_card_lock_and_share">Блокировка и безопасная передача (NRG)</string>
+    <string name="device_code_title">Код моего устройства</string>
+    <string name="device_code_menu_title">Код моего устройства (для заблокированного конфига)</string>
+    <string name="device_code_menu_sub">Просмотр и копирование уникального кода устройства для получения заблокированного конфига</string>
+    <string name="device_code_servers_sub">Отправьте этот код продавцу, чтобы конфиг открывался только на этом устройстве</string>
+    <string name="device_code_desc">Отправьте этот код поставщику, чтобы конфиг был создан только для этого устройства.</string>
+    <string name="device_code_copy">Скопировать код</string>
+    <string name="device_code_copied">Код устройства скопирован</string>
+    <string name="device_code_label">Код устройства:</string>
+
+    <!-- Network Tools and Scanners -->
+    <string name="tools_group_network">Сетевые инструменты и сканеры</string>
+    <string name="tools_cdn_scanner_title">Сканер чистых IP (CDN Scanner)</string>
+    <string name="tools_cdn_scanner_sub">Поиск неблокируемых IP-адресов Cloudflare и CDN по операторам</string>
+    <string name="tools_narcic_scanner_title">Сканер Narcic Scanner</string>
+    <string name="tools_narcic_scanner_sub">Продвинутый сканер CDN и доменов (Narcic Scanner)</string>
+    <string name="tools_telegram_proxies_title">Прокси Telegram (Telegram Proxies)</string>
+    <string name="tools_telegram_proxies_sub">Получение, пинг-тест и прямое подключение к MTProto прокси</string>
+    <string name="tools_patts_title">Инструменты Patt (Patt\'s Tools)</string>
+    <string name="tools_patts_sub">Тест SNI Spoof, оптимизация Cloudflare Fix и внедрение ECH в конфиги</string>
+    <string name="tools_group_backup">Резервное копирование и перенос данных</string>
+    <string name="tools_backup_title">Резервное копирование и восстановление</string>
+    <string name="tools_backup_sub">Полное сохранение настроек и серверов с быстрым восстановлением данных</string>
+
+    <!-- Settings Preferences -->
+    <string name="settings_animation_mode">Режим анимации</string>
+    <string name="settings_anim_normal">Обычный</string>
+    <string name="settings_anim_slow">Замедленный</string>
+    <string name="settings_anim_off">Отключено (экономия батареи)</string>
+    <string name="settings_import_target_mode">Режим импорта</string>
+    <string name="settings_import_mode_ask">Спрашивать при добавлении</string>
+    <string name="settings_import_mode_sub">Добавлять в личную подписку</string>
+    <string name="settings_import_mode_manual">Сохранять в ручной раздел</string>
+    <string name="settings_onboarding_wizard_title">Мастер приветствия и начальной настройки</string>
+    <string name="settings_onboarding_wizard_sub">Сброс языка, темы и режима отображения</string>
+
+    <!-- Connection Route Map & Action Labels -->
+    <string name="route_map_open">Показать интерактивную карту маршрута</string>
+    <string name="route_map_close">Закрыть карту маршрута</string>
+    <string name="route_map_subtitle">Маршрут от источника до получателя + IPv4 и имя конфига</string>
+    <string name="route_origin_label">Откуда: %1$s (%2$s)</string>
+    <string name="route_dest_label">Куда: %1$s (%2$s)</string>
+    <string name="route_map_smart_zoom">🔍 Умный зум</string>
+    <string name="route_map_world_view">🌍 Вид всей карты</string>
+    <string name="route_map_connected_ipv4">Подключенный IPv4:</string>
+    <string name="route_map_fetching">Получение...</string>
+    <string name="route_map_active_config">Активный конфиг:</string>
+    <string name="route_map_connected_server">Подключенный сервер</string>
+    <string name="action_connect_secure">Безопасное подключение</string>
+    <string name="action_disconnect_secure">Отключить защиту</string>
+    <string name="connecting_secure">Установка безопасного соединения...</string>
+    <string name="azkaban_summon_guardian">Призыв стража (защита)</string>
+    <string name="azkaban_break_spell">Разрушить чары (отключение)</string>
+    <string name="azkaban_binding">Связывание защищенного канала...</string>
+    <string name="settings_language_ar">العربية</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_language_ru">Русский</string>
 </resources>

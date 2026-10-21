@@ -1570,4 +1570,63 @@
     <string name="mhrv_deployment_id_placeholder">Paste one or more deployment IDs or URLs...</string>
     <string name="mhrv_deployment_ids_title">Deployment IDs (Token rotation)</string>
     <string name="mhrv_deployment_ids_desc">If token 1 quota is exhausted, the core automatically rotates to the next.</string>
+
+    <!-- NRG Secure Share and Device Code -->
+    <string name="server_card_lock_and_share">Lock &amp; Secure Share (NRG)</string>
+    <string name="device_code_title">My Device Code</string>
+    <string name="device_code_menu_title">My Device Code (For Locked Config)</string>
+    <string name="device_code_menu_sub">View and copy this device\'s unique code to receive locked configurations</string>
+    <string name="device_code_servers_sub">Send this code to the provider so the config opens only on this device</string>
+    <string name="device_code_desc">Send this code to the provider so the configuration is generated only for this device.</string>
+    <string name="device_code_copy">Copy Code</string>
+    <string name="device_code_copied">Device code copied to clipboard</string>
+    <string name="device_code_label">My Device Code:</string>
+
+    <!-- Network Tools and Scanners -->
+    <string name="tools_group_network">Network Tools &amp; Scanners</string>
+    <string name="tools_cdn_scanner_title">Clean IP Scanner (CDN Scanner)</string>
+    <string name="tools_cdn_scanner_sub">Find unfiltered Cloudflare and CDN IPs based on carrier</string>
+    <string name="tools_narcic_scanner_title">Narcic Scanner</string>
+    <string name="tools_narcic_scanner_sub">Advanced CDN and Domain Scanner (Narcic Scanner)</string>
+    <string name="tools_telegram_proxies_title">Telegram Proxies</string>
+    <string name="tools_telegram_proxies_sub">Fetch, live ping test and connect directly to MTProto proxies</string>
+    <string name="tools_patts_title">Patt\'s Tools</string>
+    <string name="tools_patts_sub">SNI Spoof test, Cloudflare Fix optimization and ECH injection</string>
+    <string name="tools_group_backup">Backup &amp; Data Transfer</string>
+    <string name="tools_backup_title">Backup &amp; Restore</string>
+    <string name="tools_backup_sub">Complete backup of settings, servers and fast data restore</string>
+
+    <!-- Settings Preferences -->
+    <string name="settings_animation_mode">Animation Mode</string>
+    <string name="settings_anim_normal">Normal</string>
+    <string name="settings_anim_slow">Slow Motion</string>
+    <string name="settings_anim_off">Off (Battery Saver)</string>
+    <string name="settings_import_target_mode">Import Mode</string>
+    <string name="settings_import_mode_ask">Ask when adding config</string>
+    <string name="settings_import_mode_sub">Add to personal subscription</string>
+    <string name="settings_import_mode_manual">Save in manual section</string>
+    <string name="settings_onboarding_wizard_title">Welcome &amp; Initial Setup Wizard</string>
+    <string name="settings_onboarding_wizard_sub">Reconfigure language, theme and display mode</string>
+
+    <!-- Connection Route Map & Action Labels -->
+    <string name="route_map_open">Show Live Route Map</string>
+    <string name="route_map_close">Close Route Map</string>
+    <string name="route_map_subtitle">Origin to destination route + IPv4 and active config</string>
+    <string name="route_origin_label">Origin: %1$s (%2$s)</string>
+    <string name="route_dest_label">Destination: %1$s (%2$s)</string>
+    <string name="route_map_smart_zoom">🔍 Smart Zoom</string>
+    <string name="route_map_world_view">🌍 World View</string>
+    <string name="route_map_connected_ipv4">Connected IPv4 Address:</string>
+    <string name="route_map_fetching">Fetching...</string>
+    <string name="route_map_active_config">Active Config Name:</string>
+    <string name="route_map_connected_server">Connected Server</string>
+    <string name="action_connect_secure">Secure Connect</string>
+    <string name="action_disconnect_secure">Disconnect Secure</string>
+    <string name="connecting_secure">Establishing secure connection...</string>
+    <string name="azkaban_summon_guardian">Summon Guardian (Secure Connect)</string>
+    <string name="azkaban_break_spell">Break Spell (Disconnect)</string>
+    <string name="azkaban_binding">Binding secure link...</string>
+    <string name="settings_language_ar">العربية</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_language_ru">Русский</string>
 </resources>

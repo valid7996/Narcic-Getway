@@ -339,7 +339,7 @@ internal fun ServerCard(
                             )
                             onShareLocked?.let { shareLocked ->
                                 DropdownMenuItem(
-                                    text = { Text("قفل و اشتراک امن (NRG)") },
+                                    text = { Text(stringResource(Res.string.server_card_lock_and_share)) },
                                     leadingIcon = { Icon(painterResource(Res.drawable.ic_lock), null, tint = Color(0xFFFF9500)) },
                                     enabled = shareLink != null,
                                     onClick = { menuOpen = false; shareLocked() },

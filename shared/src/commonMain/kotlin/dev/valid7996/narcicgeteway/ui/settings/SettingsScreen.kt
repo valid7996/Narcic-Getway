@@ -280,33 +280,33 @@ private fun RootPage(
             }
         }
 
-        SettingsGroup("ابزارهای شبکه (Network Tools)") {
+        SettingsGroup(stringResource(Res.string.tools_group_network)) {
             SettingsMenuRow(
-                "اسکنر آی‌پی تمیز (CDN Scanner)",
-                "یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور",
+                stringResource(Res.string.tools_cdn_scanner_title),
+                stringResource(Res.string.tools_cdn_scanner_sub),
                 leadingIcon = Res.drawable.ic_speedometer,
                 iconTint = Color(0xFF007AFF),
             ) { onOpen(SettingsPage.IpScanner) }
             SettingsDivider()
             SettingsMenuRow(
-                "پروکسی‌های تلگرام (Telegram Proxies)",
-                "دریافت، تست پینگ زنده و اتصال مستقیم به پروکسی‌های MTProto",
+                stringResource(Res.string.tools_telegram_proxies_title),
+                stringResource(Res.string.tools_telegram_proxies_sub),
                 leadingIcon = Res.drawable.ic_public,
                 iconTint = Color(0xFF34C759),
             ) { onOpen(SettingsPage.TelegramProxy) }
             SettingsDivider()
             SettingsMenuRow(
-                "ابزارهای Patt (Patt's Tools)",
-                "تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH به کانفیگ‌ها",
+                stringResource(Res.string.tools_patts_title),
+                stringResource(Res.string.tools_patts_sub),
                 leadingIcon = Res.drawable.ic_tune,
                 iconTint = Color(0xFFFF9500),
             ) { onOpen(SettingsPage.Patt) }
         }
 
-        SettingsGroup("پشتیبان‌گیری و انتقال داده (Backup & Data)") {
+        SettingsGroup(stringResource(Res.string.tools_group_backup)) {
             SettingsMenuRow(
-                "پشتیبان‌گیری و بازیابی (Backup & Restore)",
-                "پشتیبان‌گیری کامل از تنظیمات و سرورها و بازیابی سریع اطلاعات",
+                stringResource(Res.string.tools_backup_title),
+                stringResource(Res.string.tools_backup_sub),
                 leadingIcon = Res.drawable.ic_sync,
                 iconTint = Color(0xFF34C759),
             ) { onOpen(SettingsPage.Backup) }
@@ -491,8 +491,8 @@ private fun RootPage(
             if (onDeviceCode != null) {
                 SettingsDivider()
                 SettingsMenuRow(
-                    "کد دستگاه من (برای کانفیگ قفل‌شده)",
-                    "مشاهده و کپی کد یکتای این دستگاه جهت دریافت کانفیگ قفل‌شده",
+                    stringResource(Res.string.device_code_menu_title),
+                    stringResource(Res.string.device_code_menu_sub),
                     leadingIcon = Res.drawable.ic_lock,
                     iconTint = Color(0xFFFF9500),
                 ) {
@@ -927,6 +927,7 @@ private fun UiPage(
                     AppLanguage.System to stringResource(Res.string.settings_language_system),
                     AppLanguage.English to "English",
                     AppLanguage.Persian to "فارسی",
+                    AppLanguage.Arabic to "العربية",
                     AppLanguage.Chinese to "中文",
                     AppLanguage.Russian to "Русский",
                 ),
@@ -948,30 +949,30 @@ private fun UiPage(
             )
             SettingsDivider(hasIcon = false)
             SettingsListRow(
-                title = "حالت انیمیشن",
+                title = stringResource(Res.string.settings_animation_mode),
                 options = listOf(
-                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Normal to "حالت معمولی",
-                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Slow to "حالت آهسته",
-                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off to "حالت خاموش (صرفه‌جویی باتری)",
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Normal to stringResource(Res.string.settings_anim_normal),
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Slow to stringResource(Res.string.settings_anim_slow),
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off to stringResource(Res.string.settings_anim_off),
                 ),
                 selected = s.animationMode,
                 onSelected = { v -> onUpdate { it.copy(animationMode = v, reduceMotion = (v == dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off)) } },
             )
             SettingsDivider(hasIcon = false)
             SettingsListRow(
-                title = "حالت ایمپورت",
+                title = stringResource(Res.string.settings_import_target_mode),
                 options = listOf(
-                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Ask to "پرسش هنگام افزودن کانفیگ",
-                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription to "افزودن به سابسکرپشن شخصی",
-                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual to "ذخیره در بخش دستی",
+                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Ask to stringResource(Res.string.settings_import_mode_ask),
+                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription to stringResource(Res.string.settings_import_mode_sub),
+                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual to stringResource(Res.string.settings_import_mode_manual),
                 ),
                 selected = s.importTargetMode,
                 onSelected = { v -> onUpdate { it.copy(importTargetMode = v) } },
             )
             SettingsDivider(hasIcon = false)
             SettingsActionRow(
-                title = "ویزارد خوش‌آمدگویی و راه‌اندازی اولیه",
-                summary = "تنظیم مجدد زبان، قالب و حالت نمایش",
+                title = stringResource(Res.string.settings_onboarding_wizard_title),
+                summary = stringResource(Res.string.settings_onboarding_wizard_sub),
                 onClick = { onUpdate { it.copy(onboardingVersion = 0) } },
             )
         }

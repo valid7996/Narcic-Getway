@@ -1467,4 +1467,63 @@
     <string name="aether_lab_target_strategy">Target Strategy</string>
     <string name="aether_action_use_settings">Revert to Settings</string>
     <string name="aether_command_custom">Using custom command</string>
+
+    <!-- NRG Secure Share and Device Code -->
+    <string name="server_card_lock_and_share">锁定并安全分享 (NRG)</string>
+    <string name="device_code_title">我的设备代码</string>
+    <string name="device_code_menu_title">我的设备代码（用于锁定配置）</string>
+    <string name="device_code_menu_sub">查看并复制此设备的唯一代码以接收锁定的配置</string>
+    <string name="device_code_servers_sub">将此代码发送给服务商，以便配置仅在此设备上打开</string>
+    <string name="device_code_desc">将此代码发送给提供商，以便仅为此设备生成配置。</string>
+    <string name="device_code_copy">复制代码</string>
+    <string name="device_code_copied">设备代码已复制</string>
+    <string name="device_code_label">我的设备代码：</string>
+
+    <!-- Network Tools and Scanners -->
+    <string name="tools_group_network">网络工具与扫描器</string>
+    <string name="tools_cdn_scanner_title">优选 IP 扫描器 (CDN Scanner)</string>
+    <string name="tools_cdn_scanner_sub">根据运营商查找未被拦截的 Cloudflare 和 CDN IP</string>
+    <string name="tools_narcic_scanner_title">Narcic 扫描器</string>
+    <string name="tools_narcic_scanner_sub">高级 CDN 和域名扫描器 (Narcic Scanner)</string>
+    <string name="tools_telegram_proxies_title">Telegram 代理 (Telegram Proxies)</string>
+    <string name="tools_telegram_proxies_sub">获取、实时延迟测试并直接连接到 MTProto 代理</string>
+    <string name="tools_patts_title">Patt 工具箱 (Patt\'s Tools)</string>
+    <string name="tools_patts_sub">SNI 伪装测试、Cloudflare 修复优化及 ECH 注入配置</string>
+    <string name="tools_group_backup">备份与数据迁移</string>
+    <string name="tools_backup_title">备份与恢复</string>
+    <string name="tools_backup_sub">完整备份设置与服务器列表并快速恢复数据</string>
+
+    <!-- Settings Preferences -->
+    <string name="settings_animation_mode">动画模式</string>
+    <string name="settings_anim_normal">正常</string>
+    <string name="settings_anim_slow">慢速</string>
+    <string name="settings_anim_off">关闭（省电模式）</string>
+    <string name="settings_import_target_mode">导入模式</string>
+    <string name="settings_import_mode_ask">添加配置时提示询问</string>
+    <string name="settings_import_mode_sub">添加到个人订阅</string>
+    <string name="settings_import_mode_manual">保存到手动列表</string>
+    <string name="settings_onboarding_wizard_title">欢迎与初始设置向导</string>
+    <string name="settings_onboarding_wizard_sub">重新配置语言、主题和显示模式</string>
+
+    <!-- Connection Route Map & Action Labels -->
+    <string name="route_map_open">显示实时连接路线图</string>
+    <string name="route_map_close">关闭路线图</string>
+    <string name="route_map_subtitle">起点至终点路线 + IPv4 及激活配置名称</string>
+    <string name="route_origin_label">起点: %1$s (%2$s)</string>
+    <string name="route_dest_label">终点: %1$s (%2$s)</string>
+    <string name="route_map_smart_zoom">🔍 智能缩放</string>
+    <string name="route_map_world_view">🌍 全球视角</string>
+    <string name="route_map_connected_ipv4">已连接的 IPv4 地址：</string>
+    <string name="route_map_fetching">正在获取...</string>
+    <string name="route_map_active_config">激活配置名称：</string>
+    <string name="route_map_connected_server">已连接服务器</string>
+    <string name="action_connect_secure">安全连接</string>
+    <string name="action_disconnect_secure">断开安全连接</string>
+    <string name="connecting_secure">正在建立安全连接...</string>
+    <string name="azkaban_summon_guardian">召唤守护者（安全连接）</string>
+    <string name="azkaban_break_spell">解除法术（断开连接）</string>
+    <string name="azkaban_binding">正在绑定安全链接...</string>
+    <string name="settings_language_ar">العربية</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_language_ru">Русский</string>
 </resources>
