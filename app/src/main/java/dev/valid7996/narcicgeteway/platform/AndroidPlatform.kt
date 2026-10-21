@@ -20,6 +20,7 @@ import dev.valid7996.narcicgeteway.data.update.PlayStore
 import dev.valid7996.narcicgeteway.data.assets.GeoAssetsRepository
 import dev.valid7996.narcicgeteway.ui.platform.FilePick
 import dev.valid7996.narcicgeteway.ui.platform.InstalledApp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import dev.valid7996.narcicgeteway.ui.platform.Platform
