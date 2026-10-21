@@ -35,7 +35,7 @@ private val permissiveSslSocketFactory: SSLSocketFactory by lazy {
 
 private val permissiveHostnameVerifier = HostnameVerifier { _, _ -> true }
 
-private fun applySocksSslIfNeeded(connection: HttpURLConnection, socksPort: Int?) {
+internal fun applySocksSslIfNeeded(connection: HttpURLConnection, socksPort: Int?) {
     if (connection is HttpsURLConnection && socksPort != null) {
         connection.sslSocketFactory = permissiveSslSocketFactory
         connection.hostnameVerifier = permissiveHostnameVerifier

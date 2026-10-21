@@ -695,7 +695,7 @@ class NrgVpnService : VpnService() {
         }
 
         val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
-        val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", controller.socksPort, dnsHost = dns)
+        val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", controller.socksPort, dnsHost = dns, useDoh = true)
         socksShim = shim
         if (!shim.start() || !bridge(descriptor, SHIM_PORT, tunMtu, udpOverTcp = true)) {
             stopEverything(); return

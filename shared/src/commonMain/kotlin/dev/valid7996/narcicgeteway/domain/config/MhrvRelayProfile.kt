@@ -35,8 +35,8 @@ data class MhrvRelayProfile(
     val verifySsl: Boolean = true,
     val parallelRelay: Int = 1,
     val blockQuic: Boolean = true,
-    val blockDoh: Boolean = true,
-    val youtubeViaRelay: Boolean = false,
+    val blockDoh: Boolean = false,
+    val youtubeViaRelay: Boolean = true,
     /** Optional `host:port` SOCKS5 the core sends raw TCP through. */
     val upstreamSocks5: String = "",
     val logLevel: String = "info",
@@ -72,7 +72,8 @@ data class MhrvRelayProfile(
             put("parallel_relay", parallelRelay.coerceIn(1, 8))
             put("block_quic", blockQuic)
             put("block_doh", blockDoh)
-            if (youtubeViaRelay) put("youtube_via_relay", true)
+            put("tunnel_doh", !blockDoh)
+            put("youtube_via_relay", youtubeViaRelay)
             upstreamSocks5.trim().takeIf { it.isNotEmpty() }?.let { put("upstream_socks5", it) }
             put("fetch_ips_from_api", false)
             put("max_ips_to_scan", 20)

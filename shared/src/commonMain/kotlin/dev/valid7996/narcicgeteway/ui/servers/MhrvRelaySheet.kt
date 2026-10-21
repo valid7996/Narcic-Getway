@@ -69,8 +69,8 @@ fun MhrvRelaySheet(
     var verifySsl by remember { mutableStateOf(initial?.verifySsl ?: true) }
     var parallel by remember { mutableStateOf(initial?.parallelRelay ?: 1) }
     var blockQuic by remember { mutableStateOf(initial?.blockQuic ?: true) }
-    var blockDoh by remember { mutableStateOf(initial?.blockDoh ?: true) }
-    var youtubeRelay by remember { mutableStateOf(initial?.youtubeViaRelay ?: false) }
+    var blockDoh by remember { mutableStateOf(initial?.blockDoh ?: false) }
+    var youtubeRelay by remember { mutableStateOf(initial?.youtubeViaRelay ?: true) }
     var upstream by remember { mutableStateOf(initial?.upstreamSocks5 ?: "") }
     var advancedOpen by remember { mutableStateOf(false) }
 
