@@ -291,6 +291,7 @@ class StartPlanner(context: Context) {
             carrier = carrier,
             ruleOutbounds = ruleOutbounds,
             resolvedServerHosts = hosts,
+            useXrayTun = !useHevTun && !carrier && runMode == dev.valid7996.narcicgeteway.domain.model.RunMode.Vpn,
         )
     }
 

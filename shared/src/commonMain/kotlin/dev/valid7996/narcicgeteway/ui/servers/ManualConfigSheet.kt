@@ -417,9 +417,9 @@ fun ManualConfigSheet(
                     )
                     Field(echConfigList, { echConfigList = it; echError = null }, Res.string.manual_ech)
                     Field(
-                        echOutbound,
-                        { echOutbound = it; echError = null },
-                        Res.string.server_lab_ech_outbound,
+                        value = echOutbound,
+                        onValueChange = { echOutbound = it; echError = null },
+                        labelRes = Res.string.server_lab_ech_outbound,
                         singleLine = false,
                     )
                     echError?.let { err ->
@@ -618,13 +618,14 @@ private fun Field(
     onValueChange: (String) -> Unit,
     labelRes: StringResource,
     number: Boolean = false,
+    singleLine: Boolean = true,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(stringResource(labelRes)) },
-        singleLine = true,
+        singleLine = singleLine,
         shape = RoundedCornerShape(12.dp),
         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color(0xFF007AFF),

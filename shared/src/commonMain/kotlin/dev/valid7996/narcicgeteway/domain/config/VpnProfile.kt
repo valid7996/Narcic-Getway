@@ -275,7 +275,7 @@ data class VpnProfile(
         }
 
         // 4. Sing-box JSON
-        if (SingBoxJson.isSingBoxJson(payload)) {
+        if (SingBoxJson.isSingBox(payload)) {
             return copy(source = ProfileSource.SingBoxConfig(payload), protocol = "SingBox")
         }
 

@@ -410,10 +410,8 @@ object XrayJsonBuilder {
                             }
                         }
                     }
-                    if (options.enableLocalProxy || !options.useXrayTun) {
-                        add(socksInbound(socksPort, options))
-                        if (options.appendHttpProxy) add(httpInbound(socksPort + 1, options))
-                    }
+                    add(socksInbound(socksPort, options))
+                    if (options.appendHttpProxy) add(httpInbound(socksPort + 1, options))
 
                     usableLanShare(options)?.let { lan ->
                         add(lanSocksInbound(lan, options))
