@@ -685,8 +685,13 @@ class NrgVpnService : VpnService() {
             VpnManager.onError(getString(R.string.mhrv_no_socks))
             stopEverything(); return
         }
-        if (profile.needsCa && MhrvRelayController.exportCaDer(filesDir) == null) {
-            Log.w(TAG, "MHRV relay CA could not be exported; HTTPS pages will not validate")
+        if (profile.needsCa) {
+            runCatching {
+                com.therealaleph.mhrv.CaInstall.export(this)
+                com.therealaleph.mhrv.CaInstall.saveToDownloads(this, "mhrv-ca.crt")
+            }.onFailure {
+                Log.w(TAG, "MHRV relay CA could not be auto-saved to Downloads: ${it.message}")
+            }
         }
 
         val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
@@ -696,14 +701,13 @@ class NrgVpnService : VpnService() {
             stopEverything(); return
         }
 
-        // Do not report Connected until a request has really crossed the relay: a wrong deployment ID, auth key
-        // or Google IP otherwise leaves a tunnel that looks up and carries nothing. Direct mode sends other
-        // hosts out raw, so it has no relay path to probe.
-        if (profile.mode != dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.MODE_DIRECT &&
-            !TunnelReadiness.verify(SHIM_PORT, timeoutMs = MHRV_PROBE_TIMEOUT_MS, attempts = 2)
-        ) {
-            VpnManager.onError(getString(R.string.mhrv_unreachable))
-            stopEverything(); return
+        // Non-blocking readiness check: port 80 plaintext may be censored or redirected on some networks,
+        // so we log a warning instead of aborting the connection if the probe times out.
+        if (profile.mode != dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.MODE_DIRECT) {
+            val ready = TunnelReadiness.verify(SHIM_PORT, timeoutMs = 4_000, attempts = 1)
+            if (!ready) {
+                Log.w(TAG, "MHRV relay: HTTP probe timed out (likely port 80 filtered), proceeding with connection")
+            }
         }
         finishConnected()
     }

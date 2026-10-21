@@ -689,4 +689,8 @@
     <string name="mhrv_ca_missing">حالت Apps Script به نصب گواهی ریلی نیاز دارد</string>
     <string name="mhrv_ca_install_started">گواهی را در پنجره‌ی سیستم تأیید کنید</string>
     <string name="mhrv_ca_install_failed">گواهی ریلی هنوز آماده نیست: یک‌بار وصل شوید، بعد نصبش کنید</string>
+    <string name="mhrv_ca_already_installed">گواهی CA قبلاً روی دستگاه نصب شده و معتبر است (%1$s)</string>
+    <string name="mhrv_ca_install_started_legacy">گواهی در %1$s ذخیره شد. پنجره نصب گواهی باز شد.</string>
+    <string name="mhrv_ca_downloaded_settings">گواهی در %1$s ذخیره شد. در صفحه تنظیمات به بخش Install certificate → CA certificate رفته و mhrv-ca.crt را انتخاب کنید.</string>
+    <string name="mhrv_ca_downloaded_manual">گواهی در %1$s ذخیره شد. لطفاً از بخش امنیت تنظیمات دستگاه آن را نصب کنید.</string>
 </resources>

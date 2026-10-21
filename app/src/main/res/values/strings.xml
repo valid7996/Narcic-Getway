@@ -701,4 +701,8 @@
     <string name="mhrv_ca_missing">Apps Script mode needs the relay certificate to be installed</string>
     <string name="mhrv_ca_install_started">Confirm the certificate in the system dialog</string>
     <string name="mhrv_ca_install_failed">The relay certificate is not ready yet: connect once, then install it</string>
+    <string name="mhrv_ca_already_installed">MHRV CA is already installed and trusted in system (%1$s)</string>
+    <string name="mhrv_ca_install_started_legacy">CA certificate saved to %1$s. System certificate installer opened.</string>
+    <string name="mhrv_ca_downloaded_settings">CA certificate saved to %1$s. In Settings, search \"CA certificate\" or go to Install certificate and select mhrv-ca.crt.</string>
+    <string name="mhrv_ca_downloaded_manual">CA certificate saved to %1$s. Please install it from device Settings.</string>
 </resources>
