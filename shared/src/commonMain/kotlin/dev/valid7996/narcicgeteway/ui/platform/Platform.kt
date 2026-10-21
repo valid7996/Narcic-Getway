@@ -43,6 +43,9 @@ interface Platform {
     /** Starts the system install dialog for the MHRV relay CA; returns a one-line status for a toast. */
     fun installMhrvCa(): String = ""
 
+    /** Tests TLS handshake latency to [googleIp]:443 using [sni] via native mhrv-rs core. Returns JSON string. */
+    suspend fun testSni(googleIp: String, sni: String): String = ""
+
     fun shareFiles(files: List<Pair<String, ByteArray>>) {}
 
     fun liveStats(): LiveStats = LiveStats()

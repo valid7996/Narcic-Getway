@@ -27,4 +27,12 @@ object Native {
 
     /** JSON stats of a running handle, or an empty string. */
     external fun statsJson(handle: Long): String
+
+    /**
+     * Attempts a TLS handshake to [googleIp]:443 using [sni] as Server Name Indication.
+     * Returns a JSON blob of the form `{"ok":true,"latencyMs":123}` on success or
+     * `{"ok":false,"error":"..."}` on failure.
+     * Blocks (does network I/O); call on a background dispatcher.
+     */
+    external fun testSni(googleIp: String, sni: String): String
 }

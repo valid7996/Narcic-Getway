@@ -1545,5 +1545,17 @@
     <string name="mhrv_verify_ssl">بررسی TLS لبه‌ی گوگل</string>
     <string name="mhrv_block_quic">مسدودکردن QUIC (UDP 443)</string>
     <string name="mhrv_block_doh">مسدودکردن DoH</string>
+    <string name="mhrv_block_stun">مسدودسازی STUN و TURN (پورت‌های 3478، 5349، 19302)</string>
+    <string name="mhrv_tunnel_doh">عبور DoH از داخل تونل (Bypass DoH)</string>
+    <string name="mhrv_coalesce_step">گام تجمیع پکت‌ها (میلی‌ثانیه)</string>
+    <string name="mhrv_coalesce_max">حداکثر زمان تجمیع (میلی‌ثانیه)</string>
     <string name="mhrv_youtube_relay">عبور یوتیوب از ریلی</string>
+    <string name="mhrv_sni_pool">لیست چرخش SNI (ضد فیلتر)</string>
+    <string name="mhrv_sni_add_custom">افزودن SNI دلخواه</string>
+    <string name="mhrv_test_all">تست همه</string>
+    <string name="mhrv_test">تست</string>
+    <string name="mhrv_add_deployment_id">+ افزودن</string>
+    <string name="mhrv_deployment_id_placeholder">شناسه دیپلوی یا آدرس اسکریپت را وارد نمایید...</string>
+    <string name="mhrv_deployment_ids_title">شناسه‌های دیپلوی Apps Script (چرخش توکن)</string>
+    <string name="mhrv_deployment_ids_desc">با اتمام محدودیت توکن اول، به طور خودکار به توکن بعدی منتقل می‌شود.</string>
 </resources>

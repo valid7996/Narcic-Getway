@@ -35,8 +35,12 @@ data class MhrvRelayProfile(
     val verifySsl: Boolean = true,
     val parallelRelay: Int = 1,
     val blockQuic: Boolean = true,
-    val blockDoh: Boolean = false,
-    val youtubeViaRelay: Boolean = true,
+    val blockStun: Boolean = true,
+    val blockDoh: Boolean = true,
+    val tunnelDoh: Boolean = true,
+    val coalesceStepMs: Int = 10,
+    val coalesceMaxMs: Int = 1000,
+    val youtubeViaRelay: Boolean = false,
     /** Optional `host:port` SOCKS5 the core sends raw TCP through. */
     val upstreamSocks5: String = "",
     val logLevel: String = "info",
@@ -71,9 +75,12 @@ data class MhrvRelayProfile(
             put("log_level", logLevel.ifBlank { "info" })
             put("parallel_relay", parallelRelay.coerceIn(1, 8))
             put("block_quic", blockQuic)
+            put("block_stun", blockStun)
             put("block_doh", blockDoh)
-            put("tunnel_doh", !blockDoh)
-            put("youtube_via_relay", youtubeViaRelay)
+            put("tunnel_doh", tunnelDoh)
+            if (coalesceStepMs != 10) put("coalesce_step_ms", coalesceStepMs)
+            if (coalesceMaxMs != 1000) put("coalesce_max_ms", coalesceMaxMs)
+            if (youtubeViaRelay) put("youtube_via_relay", true)
             upstreamSocks5.trim().takeIf { it.isNotEmpty() }?.let { put("upstream_socks5", it) }
             put("fetch_ips_from_api", false)
             put("max_ips_to_scan", 20)
@@ -90,6 +97,22 @@ data class MhrvRelayProfile(
         const val DEFAULT_GOOGLE_IP = "216.239.38.120"
         const val DEFAULT_FRONT_DOMAIN = "www.google.com"
         const val SHARE_PREFIX = "mhrv-rs://"
+
+        val DEFAULT_SNI_POOL: List<String> = listOf(
+            "www.google.com",
+            "mail.google.com",
+            "drive.google.com",
+            "docs.google.com",
+            "calendar.google.com",
+            "accounts.google.com",
+            "scholar.google.com",
+            "maps.google.com",
+            "chat.google.com",
+            "translate.google.com",
+            "play.google.com",
+            "lens.google.com",
+            "chromewebstore.google.com",
+        )
 
         private val json = Json { ignoreUnknownKeys = true }
 
@@ -158,7 +181,11 @@ data class MhrvRelayProfile(
                 verifySsl = (obj["verify_ssl"] as? JsonPrimitive)?.booleanOrNull ?: d.verifySsl,
                 parallelRelay = (obj["parallel_relay"] as? JsonPrimitive)?.intOrNull ?: d.parallelRelay,
                 blockQuic = (obj["block_quic"] as? JsonPrimitive)?.booleanOrNull ?: d.blockQuic,
+                blockStun = (obj["block_stun"] as? JsonPrimitive)?.booleanOrNull ?: d.blockStun,
                 blockDoh = (obj["block_doh"] as? JsonPrimitive)?.booleanOrNull ?: d.blockDoh,
+                tunnelDoh = (obj["tunnel_doh"] as? JsonPrimitive)?.booleanOrNull ?: d.tunnelDoh,
+                coalesceStepMs = (obj["coalesce_step_ms"] as? JsonPrimitive)?.intOrNull ?: d.coalesceStepMs,
+                coalesceMaxMs = (obj["coalesce_max_ms"] as? JsonPrimitive)?.intOrNull ?: d.coalesceMaxMs,
                 youtubeViaRelay = (obj["youtube_via_relay"] as? JsonPrimitive)?.booleanOrNull ?: d.youtubeViaRelay,
                 upstreamSocks5 = str("upstream_socks5") ?: "",
                 logLevel = str("log_level") ?: d.logLevel,

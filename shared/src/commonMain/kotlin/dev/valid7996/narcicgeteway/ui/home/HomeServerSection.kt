@@ -1293,7 +1293,8 @@ private suspend fun pingOne(
     repository.clearPings(listOf(profile.id), persist = false)
     val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
     val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
-    val ms = if (real || isSpoof || isSealed) {
+    val isMhrv = profile.isMhrvRelay
+    val ms = if (real || isSpoof || isSealed || isMhrv) {
         PingService.realDelay(
             profile,
             url = delayTestUrl.ifBlank { dev.valid7996.narcicgeteway.data.net.NetworkInfoRepository.DELAY_TEST_URL },

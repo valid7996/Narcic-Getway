@@ -243,6 +243,15 @@ class AndroidPlatform(
         }
     }
 
+    override suspend fun testSni(googleIp: String, sni: String): String =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                com.therealaleph.mhrv.Native.testSni(googleIp, sni)
+            }.getOrElse {
+                """{"ok":false,"error":"${it.message ?: "Failed"}"}"""
+            }
+        }
+
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     private val INLINE_SHARE_LIMIT = 64 * 1024

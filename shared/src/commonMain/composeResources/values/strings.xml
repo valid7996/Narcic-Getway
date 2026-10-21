@@ -1552,5 +1552,17 @@
     <string name="mhrv_verify_ssl">Verify TLS of the Google edge</string>
     <string name="mhrv_block_quic">Block QUIC (UDP 443)</string>
     <string name="mhrv_block_doh">Block DoH endpoints</string>
+    <string name="mhrv_block_stun">Block STUN &amp; TURN (UDP 3478, 5349, 19302)</string>
+    <string name="mhrv_tunnel_doh">Tunnel DoH through relay</string>
+    <string name="mhrv_coalesce_step">Packet coalesce step (ms)</string>
+    <string name="mhrv_coalesce_max">Packet coalesce max (ms)</string>
     <string name="mhrv_youtube_relay">Send YouTube through the relay</string>
+    <string name="mhrv_sni_pool">SNI Rotation Pool</string>
+    <string name="mhrv_sni_add_custom">Add custom SNI (domain)</string>
+    <string name="mhrv_test_all">Test all</string>
+    <string name="mhrv_test">Test</string>
+    <string name="mhrv_add_deployment_id">+ Add</string>
+    <string name="mhrv_deployment_id_placeholder">Paste one or more deployment IDs or URLs...</string>
+    <string name="mhrv_deployment_ids_title">Deployment IDs (Token rotation)</string>
+    <string name="mhrv_deployment_ids_desc">If token 1 quota is exhausted, the core automatically rotates to the next.</string>
 </resources>

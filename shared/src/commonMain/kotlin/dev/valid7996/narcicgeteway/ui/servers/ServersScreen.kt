@@ -459,9 +459,9 @@ fun ServersScreen(
             else -> profiles.firstOrNull { it.id == activeId }?.subscriptionId.orEmpty()
         }
         when {
-            active.isEmpty() -> if (showAllGroup) 0 else 1
-            else -> subscriptions.indexOfFirst { it.id == active }.takeIf { it >= 0 }?.plus(2)
-                ?: if (showAllGroup) 0 else 1
+            active.isEmpty() -> if (showAllGroup) 1 else 0
+            else -> subscriptions.indexOfFirst { it.id == active }.takeIf { it >= 0 }?.plus(if (showAllGroup) 2 else 1)
+                ?: if (showAllGroup) 0 else 0
         }
     }
 
@@ -472,6 +472,7 @@ fun ServersScreen(
 
     fun doExecuteImport(text: String, subId: String) {
         scope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            if (tryHandleLocked(text)) return@launch
             var outcome: Result<dev.valid7996.narcicgeteway.data.config.ConfigRepository.PastedImport>? = null
             offerObfuscationAfter { outcome = repository.importPasted(text, subId) }
             outcome?.onSuccess { r ->
@@ -539,8 +540,11 @@ fun ServersScreen(
         requestImport(text)
     }
 
-    androidx.compose.runtime.LaunchedEffect(activeId, subscriptions.size, showAllGroup) {
-        groupIndex = activeGroupIndex()
+    androidx.compose.runtime.LaunchedEffect(subscriptions.size, showAllGroup) {
+        val maxIndex = if (subscriptions.isEmpty()) 0 else (if (showAllGroup) 1 else 0) + subscriptions.size
+        if (groupIndex > maxIndex) {
+            groupIndex = 0
+        }
     }
 
     val shown = when {
@@ -1131,7 +1135,8 @@ fun ServersScreen(
                                 repository.clearPings(listOf(profile.id), persist = false)
                                 val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
-                                val ms = if (isSpoof || isSealed) {
+                                val isMhrv = profile.isMhrvRelay
+                                val ms = if (isSpoof || isSealed || isMhrv) {
                                     PingService.realDelay(
                                         profile,
                                         url = delayTestUrl.ifBlank { dev.valid7996.narcicgeteway.data.net.NetworkInfoRepository.DELAY_TEST_URL },

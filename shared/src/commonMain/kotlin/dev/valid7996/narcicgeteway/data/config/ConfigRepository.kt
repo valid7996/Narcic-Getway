@@ -1594,7 +1594,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             ),
         )
         val name = meta.nameEn.ifBlank { meta.nameFa }.ifBlank { "Locked config" }
-        val profile = VpnProfile(
+        val baseProfile = VpnProfile(
             id = newId(),
             name = name,
             protocol = "LOCKED",
@@ -1607,7 +1607,17 @@ class ConfigRepository(private val store: KeyValueStore) {
             expiresAt = meta.expiresAt,
             note = meta.note.takeIf { it.isNotBlank() },
         )
-        runCatching { profile.toXrayConfigJson() }
+        val unsealed = baseProfile.resolveUnsealed()
+        val profile = if (unsealed != null) {
+            baseProfile.copy(
+                protocol = unsealed.protocol,
+                address = unsealed.address,
+                port = unsealed.port,
+                transportLabel = "Locked · ${unsealed.protocol}",
+            )
+        } else {
+            baseProfile
+        }
         _profiles.value = _profiles.value + profile
         persistProfiles()
         setActive(profile.id)

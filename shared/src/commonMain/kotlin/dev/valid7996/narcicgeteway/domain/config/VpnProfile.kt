@@ -238,6 +238,66 @@ data class VpnProfile(
 
     val isEditable: Boolean get() = !isLocked
 
+    fun resolveUnsealed(): VpnProfile? {
+        val sealed = source as? ProfileSource.Sealed ?: return null
+        val payload = runCatching {
+            dev.valid7996.narcicgeteway.crypto.ZsxCrypto.open(Base64.decode(sealed.zsxBase64), password = null)
+        }.getOrNull()?.trim() ?: return null
+        if (payload.isEmpty()) return null
+
+        // 1. narcicgeteway:// link
+        if (NrgLink.isNrgLink(payload)) {
+            val parsed = NrgLink.parse(payload)
+            if (parsed != null) {
+                return copy(source = parsed.source)
+            }
+        }
+
+        // 2. MHRV
+        if (payload.startsWith(MhrvRelayProfile.SHARE_PREFIX, ignoreCase = true) ||
+            (payload.startsWith("{") && "\"script_id" in payload && "\"auth_key\"" in payload)
+        ) {
+            val mhrv = MhrvRelayProfile.fromText(payload)
+            if (mhrv != null) {
+                return copy(
+                    source = ProfileSource.MhrvRelay(mhrv),
+                    protocol = "MHRV",
+                    address = mhrv.googleIp.ifBlank { MhrvRelayProfile.DEFAULT_GOOGLE_IP },
+                    port = 443,
+                )
+            }
+        }
+
+        // 3. SingBox links (vless with reality, hysteria2, tuic, wireguard, etc.)
+        if (SingBoxLinks.handles(payload)) {
+            val parsed = SingBoxLinks.parse(payload)
+            return copy(source = ProfileSource.SingBox(parsed.fragment, parsed.name), protocol = parsed.name)
+        }
+
+        // 4. Sing-box JSON
+        if (SingBoxJson.isSingBoxJson(payload)) {
+            return copy(source = ProfileSource.SingBoxConfig(payload), protocol = "SingBox")
+        }
+
+        // 5. Standard Xray link
+        if (ConfigParser.isSupportedLink(payload)) {
+            val parsed = runCatching { ConfigParser.parse(payload) }.getOrNull()
+            return copy(
+                source = ProfileSource.Link(payload),
+                protocol = parsed?.protocol?.name ?: protocol,
+                address = parsed?.address ?: address,
+                port = parsed?.port ?: port,
+            )
+        }
+
+        // 6. Custom Xray JSON
+        if (CustomConfig.looksLikeCustomJson(payload)) {
+            return copy(source = ProfileSource.RawJson(payload), protocol = "Xray")
+        }
+
+        return null
+    }
+
     fun rawPayload(): String? = when (val src = source) {
         is ProfileSource.Link -> src.link
         is ProfileSource.RawJson -> src.json
@@ -301,12 +361,18 @@ data class VpnProfile(
             forSpeedtest = forSpeedtest,
             geoAssetsAvailable = options.geoAssetsAvailable,
         )
-        is ProfileSource.Sealed ->
-            configJsonFromPayload(
-                ZsxCrypto.open(Base64.decode(src.zsxBase64), password = null),
-                options,
-                forSpeedtest,
-            )
+        is ProfileSource.Sealed -> {
+            val unsealed = resolveUnsealed()
+            if (unsealed != null && unsealed.source !is ProfileSource.Sealed) {
+                unsealed.toXrayConfigJson(options, forSpeedtest)
+            } else {
+                configJsonFromPayload(
+                    dev.valid7996.narcicgeteway.crypto.ZsxCrypto.open(Base64.decode(src.zsxBase64), password = null),
+                    options,
+                    forSpeedtest,
+                )
+            }
+        }
 
         is ProfileSource.Psiphon -> throw IllegalStateException("Psiphon profiles do not build Xray config")
         is ProfileSource.DnsTunnel -> throw IllegalStateException("DNS-tunnel profiles do not build Xray config")
@@ -438,9 +504,8 @@ data class VpnProfile(
             id = id,
             name = name.ifBlank { "MHRV Relay" },
             protocol = "MHRV",
-            address = settings.scriptIdList().firstOrNull()?.let { it.take(10) + "…" }
-                ?: settings.googleIp,
-            port = 0,
+            address = settings.googleIp.trim().ifEmpty { MhrvRelayProfile.DEFAULT_GOOGLE_IP },
+            port = 443,
             transportLabel = when (settings.mode) {
                 MhrvRelayProfile.MODE_FULL -> "Apps Script · Full"
                 MhrvRelayProfile.MODE_DIRECT -> "Google fronting"
@@ -641,18 +706,25 @@ data class VpnProfile(
             forSpeedtest: Boolean = false,
         ): String {
             val trimmed = payload.trim()
-            return if (CustomConfig.looksLikeCustomJson(trimmed)) {
-                XrayJsonBuilder.normalizeRawJson(
-                    trimmed,
-                    forSpeedtest = forSpeedtest,
-                    geoAssetsAvailable = options.geoAssetsAvailable,
-                )
-            } else {
-                XrayJsonBuilder.build(
-                    ConfigParser.parse(trimmed),
-                    options = options,
-                    forSpeedtest = forSpeedtest,
-                )
+            return when {
+                CustomConfig.looksLikeCustomJson(trimmed) -> {
+                    XrayJsonBuilder.normalizeRawJson(
+                        trimmed,
+                        forSpeedtest = forSpeedtest,
+                        geoAssetsAvailable = options.geoAssetsAvailable,
+                    )
+                }
+                SingBoxLinks.handles(trimmed) -> {
+                    val parsed = SingBoxLinks.parse(trimmed)
+                    XrayJsonBuilder.buildSingBox(parsed.fragment, parsed.name, options = options, forSpeedtest = forSpeedtest)
+                }
+                else -> {
+                    XrayJsonBuilder.build(
+                        ConfigParser.parse(trimmed),
+                        options = options,
+                        forSpeedtest = forSpeedtest,
+                    )
+                }
             }
         }
 

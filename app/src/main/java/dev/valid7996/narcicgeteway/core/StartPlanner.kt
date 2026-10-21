@@ -56,14 +56,15 @@ class StartPlanner(context: Context) {
         if (profile.isLocked && exp != null && System.currentTimeMillis() >= exp) {
             return Plan.Failure(appContext.getString(R.string.zsx_expired))
         }
-        profile.ikev2Settings()?.let { return Plan.Ikev2(profile.name, it) }
-        profile.mhrvRelaySettings()?.let {
+        val effective = profile.resolveUnsealed() ?: profile
+        effective.ikev2Settings()?.let { return Plan.Ikev2(profile.name, it) }
+        effective.mhrvRelaySettings()?.let {
             if (!it.isValid) return Plan.Failure(appContext.getString(R.string.mhrv_missing_creds))
         }
-        val kind = engineKindOf(profile)
+        val kind = engineKindOf(effective)
         val configJson = try {
-            if (kind == VpnManager.KIND_CROSS_CHAIN) buildCrossChainWrapper(profile)
-            else engineConfigOf(profile, resolveServers = kind == VpnManager.KIND_XRAY)
+            if (kind == VpnManager.KIND_CROSS_CHAIN) buildCrossChainWrapper(effective)
+            else engineConfigOf(effective, resolveServers = kind == VpnManager.KIND_XRAY)
         } catch (e: Exception) {
             return Plan.Failure(messageFor(e))
         }
