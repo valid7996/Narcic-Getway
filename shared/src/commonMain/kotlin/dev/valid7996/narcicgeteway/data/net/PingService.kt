@@ -104,14 +104,12 @@ object PingService {
     suspend fun realDelayOfActiveConnection(
         url: String = NetworkInfoRepository.DELAY_TEST_URL,
     ): Long = withContext(Dispatchers.IO) {
-        val viaCore = runCatching { CoreProbe.measureDelay(url) }.getOrDefault(-1L)
-        if (viaCore > 0) return@withContext viaCore
+        val first = probeActiveConnection(url)
+        if (first.ok) return@withContext first.ms
 
         if (url != NetworkInfoRepository.DELAY_TEST_URL2) {
-            val viaSecond =
-                runCatching { CoreProbe.measureDelay(NetworkInfoRepository.DELAY_TEST_URL2) }
-                    .getOrDefault(-1L)
-            if (viaSecond > 0) return@withContext viaSecond
+            val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
+            if (second.ok) return@withContext second.ms
         }
 
         if (VpnManager.activeSocksPort != null) return@withContext -1L
