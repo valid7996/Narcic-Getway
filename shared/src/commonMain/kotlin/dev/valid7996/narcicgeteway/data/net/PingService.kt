@@ -50,13 +50,17 @@ object PingService {
 
     const val FAILED_PING = -1
 
-    private const val PRECHECK_TIMEOUT_MS = 2_500
+    private const val PRECHECK_TIMEOUT_MS = 2_200
 
-    private const val PROBE_TIMEOUT_MS = 12_000L
+    private const val PROBE_TIMEOUT_MS = 5_500L
 
-    private const val REQUEST_PROBE_TIMEOUT_MS = 8_000
+    private const val FIRST_PROBE_TIMEOUT_MS = 3_800L
 
-    private const val CUSTOM_PROBE_CONCURRENCY = 8
+    private const val FALLBACK_PROBE_TIMEOUT_MS = 2_200L
+
+    private const val REQUEST_PROBE_TIMEOUT_MS = 5_000
+
+    private const val CUSTOM_PROBE_CONCURRENCY = 16
 
     private val geoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -225,19 +229,29 @@ object PingService {
                 return if (tcp > 0) tcp else -1L
             }
         }
-        val config = if (effective.isProxyChain) {
-            chainConfig(effective) ?: return -1L
-        } else {
-            runCatching { effective.toXrayConfigJson(forSpeedtest = true) }
-                .onFailure { LogBus.append("W/PingService build config failed for ${effective.name}: ${it.message}") }
-                .getOrElse { return -1L }
+        if (effective.isProxyChain) {
+            val config = chainConfig(effective) ?: return -1L
+            return probeWithTimeout(effective, config, url)
         }
+
+        // Fast-fail: if the TCP endpoint is completely unreachable, skip expensive core initialization and timeouts
+        if (shouldPrecheck(effective)) {
+            val alive = tcpPing(effective.address, effective.port, PRECHECK_TIMEOUT_MS) > 0
+            if (!alive) return -1L
+        }
+
+        val config = runCatching { effective.toXrayConfigJson(forSpeedtest = true) }
+            .onFailure { LogBus.append("W/PingService build config failed for ${effective.name}: ${it.message}") }
+            .getOrElse { return -1L }
+
         return probeWithTimeout(effective, config, url)
     }
 
     fun shouldPrecheck(profile: VpnProfile): Boolean {
         val effective = profile.resolveUnsealed() ?: profile
-        if (effective.isMhrvRelay) return true
+        if (effective.isMhrvRelay) return false
+        if (effective.isAether) return false
+        if (effective.isProxyChain) return false
         if (effective.isSniSpoof || effective.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(effective.address, effective.port)) return false
         if (effective.address.isBlank() || effective.address == "-") return false
         if (effective.port !in 1..65535) return false
@@ -274,26 +288,38 @@ object PingService {
 
     private suspend fun probeCore(profile: VpnProfile, config: String, url: String): Long =
         withContext(Dispatchers.IO) {
-            val job = async(Dispatchers.IO) {
-                val ms = runCatching { CoreProbe.measureOutboundDelay(config, url) }
-                    .getOrElse {
-                        LogBus.append("W/PingService real delay failed for ${profile.name}: ${it.message}")
-                        -1L
-                    }
-                if (ms > 0) return@async ms
+            withTimeoutOrNull(PROBE_TIMEOUT_MS) {
+                val start = System.currentTimeMillis()
+                val firstMs = withTimeoutOrNull(FIRST_PROBE_TIMEOUT_MS) {
+                    runCatching { CoreProbe.measureOutboundDelay(config, url) }
+                        .onFailure {
+                            LogBus.append("W/PingService real delay failed for ${profile.name}: ${it.message}")
+                        }
+                        .getOrDefault(-1L)
+                } ?: -1L
+
+                if (firstMs > 0) return@withTimeoutOrNull firstMs
+
+                val elapsed = System.currentTimeMillis() - start
+                val remainingTime = PROBE_TIMEOUT_MS - elapsed
+                // If first attempt timed out or almost exhausted time, don't waste time on fallback
+                if (remainingTime < 1_500L) return@withTimeoutOrNull -1L
+
                 val fallbackUrl = if (url != NetworkInfoRepository.DELAY_TEST_URL2) {
                     NetworkInfoRepository.DELAY_TEST_URL2
                 } else {
                     "http://cp.cloudflare.com/generate_204"
                 }
-                runCatching { CoreProbe.measureOutboundDelay(config, fallbackUrl) }
-                    .onFailure {
-                        LogBus.append("W/PingService fallback delay failed for ${profile.name}: ${it.message}")
-                    }
-                    .getOrDefault(-1L)
-            }
-            withTimeoutOrNull(PROBE_TIMEOUT_MS) { job.await() } ?: run {
-                job.cancel()
+
+                val fallbackTimeout = minOf(remainingTime, FALLBACK_PROBE_TIMEOUT_MS)
+                withTimeoutOrNull(fallbackTimeout) {
+                    runCatching { CoreProbe.measureOutboundDelay(config, fallbackUrl) }
+                        .onFailure {
+                            LogBus.append("W/PingService fallback delay failed for ${profile.name}: ${it.message}")
+                        }
+                        .getOrDefault(-1L)
+                } ?: -1L
+            } ?: run {
                 LogBus.append("W/PingService real delay timed out for ${profile.name}")
                 -1L
             }

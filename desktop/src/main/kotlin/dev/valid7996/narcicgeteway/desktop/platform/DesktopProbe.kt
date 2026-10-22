@@ -196,9 +196,9 @@ object DesktopProbe {
         return true
     }
 
-    private const val ATTEMPTS = 2
-    private const val CONNECT_TIMEOUT_MS = 3_000
-    private const val READ_TIMEOUT_MS = 6_000
+    private const val ATTEMPTS = 1
+    private const val CONNECT_TIMEOUT_MS = 2_500
+    private const val READ_TIMEOUT_MS = 3_800
 
     private fun withProbeInbound(configJson: String, port: Int): String? {
         val root = runCatching { json.parseToJsonElement(configJson).jsonObject }.getOrNull() ?: return null

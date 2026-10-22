@@ -180,7 +180,7 @@ fun HomeScreen(
     reduceMotion: Boolean = false,
 
     repository: dev.valid7996.narcicgeteway.data.config.ConfigRepository? = null,
-    realPingConcurrency: Int = 4,
+    realPingConcurrency: Int = 16,
     autoSortAfterTest: Boolean = false,
     autoTestAfterUpdate: Boolean = false,
     autoRemoveInvalidAfterTest: Boolean = false,
