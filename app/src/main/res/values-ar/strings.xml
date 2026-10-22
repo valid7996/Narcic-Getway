@@ -163,20 +163,20 @@
     <string name="del_duplicates">Delete duplicates</string>
     <string name="del_invalid">Delete invalid</string>
     <string name="del_subscriptions">Delete subscription configs</string>
-    <string name="del_subscriptions_confirm">Removes all servers from subscriptions (%1$d servers). Manual and locked configs are kept.</string>
-    <string name="del_this_subscription">Delete this subscription\\'s configs</string>
-    <string name="del_this_subscription_confirm">Removes all servers from \"%1$s\" (%2$d servers).</string>
+    <string name="del_subscriptions_confirm">إزالة كافة الخوادم من الاشتراكات (%1$d خوادم). يتم الاحتفاظ بالتكوينات اليدوية والمقفلة.</string>
+    <string name="del_this_subscription">حذف تكوينات هذا الاشتراك</string>
+    <string name="del_this_subscription_confirm">إزالة جميع الخوادم من \"%1$s\" (%2$d خوادم).</string>
     <string name="del_all">حذف كافة الخوادم</string>
     <string name="del_all_confirm">This removes every saved server. Locked vault configs are kept.</string>
     <string name="export_all">Export all</string>
     <string name="removed_count">Removed %1$d</string>
     <string name="nothing_to_export">Nothing to export</string>
-    <string name="edit_unsupported">This config can\\'t be edited in the form</string>
+    <string name="edit_unsupported">لا يمكن تعديل هذا التكوين في النموذج</string>
     <string name="servers_custom_config">Custom config</string>
     <string name="custom_json_title">Custom config</string>
     <string name="custom_json_hint">Paste an Xray JSON config</string>
     <string name="custom_json_invalid">Not a valid Xray JSON config</string>
-    <string name="servers_usage">↓\u00A0%1$s · ↑\u00A0%2$s</string>
+    <string name="servers_usage">↓ %1$s · ↑ %2$s</string>
     <string name="saved">Saved</string>
     <string name="ping_test">Test latency</string>
     <string name="ping_tcp">TCP ping</string>
@@ -192,7 +192,7 @@
     <string name="settings_version">Version</string>
     <string name="hold_to_connect">Hold to connect</string>
     <string name="hold_to_disconnect">Hold to disconnect</string>
-    <string name="transport_unsupported">This transport (%1$s) was removed from the Xray core and can\\'t be used</string>
+    <string name="transport_unsupported">تمت إزالة وسيلة النقل هذه (%1$s) من نواة Xray ولا يمكن استخدامها</string>
     <string name="notif_channel_name">Connection status</string>
     <string name="notif_channel_desc">Shows the live tunnel, speeds and duration while connected</string>
     <string name="notif_down">Download</string>
@@ -205,7 +205,7 @@
     <string name="vpn_permission_denied">VPN permission denied</string>
     <string name="paste_empty">Clipboard is empty</string>
     <string name="config_added">Config added</string>
-    <string name="config_invalid">Couldn\\'t read that config</string>
+    <string name="config_invalid">تعذر قراءة هذا التكوين</string>
     <string name="coming_soon">Coming soon</string>
     <string name="vault_create_title">إنشاء تكوين مقفل</string>
     <string name="vault_form_source">Server config</string>
@@ -307,7 +307,7 @@
     <string name="summary_pref_confirm_remove">اسأل قبل حذف التكوين</string>
     <string name="title_pref_double_column_display">استخدم تخطيطًا مكونًا من عمودين</string>
     <string name="summary_pref_double_column_display">احتواء المزيد من الخوادم على الشاشة</string>
-    <string name="title_pref_group_all_display">إظهار علامة تبويب المجموعة \"الكل\".</string>
+    <string name="title_pref_group_all_display">إظهار علامة تبويب المجموعة \"الكل\"</string>
     <string name="summary_pref_group_all_display">اجمع كل مجموعة اشتراك في علامة تبويب واحدة</string>
     <string name="title_pref_dynamic_color">تمكين اللون الديناميكي</string>
     <string name="summary_pref_dynamic_color">يأخذ الألوان من ورق الحائط. أندرويد 12+ فقط</string>
@@ -664,6 +664,6 @@
     <string name="mhrv_ca_install_failed">شهادة الترحيل ليست جاهزة بعد: قم بالاتصال مرة واحدة، ثم قم بتثبيتها</string>
     <string name="mhrv_ca_already_installed">تم بالفعل تثبيت MHRV CA وموثوق به في النظام (%1$s)</string>
     <string name="mhrv_ca_install_started_legacy">تم حفظ شهادة CA في %1$s. تم فتح مثبت شهادة النظام.</string>
-    <string name="mhrv_ca_downloaded_settings">تم حفظ شهادة CA في %1$s. في الإعدادات، ابحث عن \\"شهادة CA\\" أو انتقل إلى تثبيت الشهادة وحدد mhrv-ca.crt.</string>
+    <string name="mhrv_ca_downloaded_settings">تم حفظ شهادة CA في %1$s. في الإعدادات، ابحث عن \"شهادة CA\" أو انتقل إلى تثبيت الشهادة وحدد mhrv-ca.crt.</string>
     <string name="mhrv_ca_downloaded_manual">تم حفظ شهادة CA في %1$s. يرجى تثبيته من إعدادات الجهاز.</string>
 </resources>

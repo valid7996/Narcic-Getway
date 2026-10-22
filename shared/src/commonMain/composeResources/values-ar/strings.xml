@@ -189,15 +189,15 @@
     <string name="del_invalid">حذف غير صالح</string>
     <string name="del_invalid_confirm">يزيل خوادم %1$d: تلك التي لم يتمكن الاختبار الأخير من الوصول إليها، وأي تكوين لا يمكن تشغيله. يتم الاحتفاظ بالخوادم غير المختبرة.</string>
     <string name="del_subscriptions">حذف تكوينات الاشتراك</string>
-    <string name="del_subscriptions_confirm">إزالة جميع الخوادم من الاشتراكات (خوادم %1$d). يتم الاحتفاظ بالتكوينات اليدوية والمقفلة.</string>
-    <string name="del_this_subscription">احذف تكوينات هذا الاشتراك</string>
-    <string name="del_this_subscription_confirm">يزيل كافة الخوادم من \"%1$s\" (خوادم %2$d).</string>
+    <string name="del_subscriptions_confirm">إزالة كافة الخوادم من الاشتراكات (%1$d خوادم). يتم الاحتفاظ بالتكوينات اليدوية والمقفلة.</string>
+    <string name="del_this_subscription">حذف تكوينات هذا الاشتراك</string>
+    <string name="del_this_subscription_confirm">إزالة جميع الخوادم من \"%1$s\" (%2$d خوادم).</string>
     <string name="del_all">حذف كافة الخوادم</string>
     <string name="del_all_confirm">يؤدي هذا إلى إزالة كل خادم محفوظ. يتم الاحتفاظ بتكوينات المخزن المقفل.</string>
     <string name="export_all">تصدير الكل</string>
     <string name="removed_count">تمت إزالة %1$d</string>
     <string name="nothing_to_export">لا شيء للتصدير</string>
-    <string name="edit_unsupported">لا يمكن تحرير هذا التكوين في النموذج</string>
+    <string name="edit_unsupported">لا يمكن تعديل هذا التكوين في النموذج</string>
     <string name="servers_custom_config">التكوين المخصص</string>
     <string name="custom_json_title">التكوين المخصص</string>
     <string name="custom_json_hint">الصق تكوين Xray JSON</string>
@@ -209,7 +209,7 @@
     <string name="json_broken">خطأ JSON: %1$s</string>
     <string name="singbox_json_title">صندوق الغناء JSON</string>
     <string name="singbox_json_invalid">مربع الغناء JSON غير صالح</string>
-    <string name="servers_usage">↓\u00A0%1$s · ↑\u00A0%2$s</string>
+    <string name="servers_usage">↓ %1$s · ↑ %2$s</string>
     <string name="saved">أنقذ</string>
     <string name="ping_test">اختبار الكمون</string>
     <string name="ping_tcp">بينغ TCP</string>
@@ -228,7 +228,7 @@
     <string name="settings_version">إصدار</string>
     <string name="hold_to_connect">عقد للاتصال</string>
     <string name="hold_to_disconnect">اضغط لقطع الاتصال</string>
-    <string name="transport_unsupported">تمت إزالة هذا النقل (%1$s) من مركز الأشعة السينية ولا يمكن استخدامه</string>
+    <string name="transport_unsupported">تمت إزالة وسيلة النقل هذه (%1$s) من نواة Xray ولا يمكن استخدامها</string>
     <string name="notif_channel_name">حالة الاتصال</string>
     <string name="notif_channel_desc">يظهر النفق المباشر والسرعات والمدة أثناء الاتصال</string>
     <string name="notif_down">تحميل</string>
@@ -241,7 +241,7 @@
     <string name="vpn_permission_denied">تم رفض إذن VPN</string>
     <string name="paste_empty">الحافظة فارغة</string>
     <string name="config_added">تمت إضافة التكوين</string>
-    <string name="config_invalid">لا يمكن قراءة هذا التكوين</string>
+    <string name="config_invalid">تعذر قراءة هذا التكوين</string>
     <string name="coming_soon">قريباً</string>
     <string name="vault_create_title">إنشاء تكوين مقفل</string>
     <string name="vault_form_source">تكوين الخادم</string>
@@ -362,7 +362,7 @@
     <string name="rule_error_port">منفذ غير صالح. استخدم رقمًا أو نطاقًا مثل 8000-9000 أو قائمة مفصولة بفواصل.</string>
     <string name="rule_error_geoip_in_domain">Geoip: و ext-ip: ينتميان إلى حقل عناوين IP. تتم مطابقتها هنا كنص عادي ولا تتطابق أبدًا.</string>
     <string name="rule_error_geosite_in_ip">الموقع الجغرافي: ينتمي إلى حقل المجالات. هنا يجعل النواة ترفض التكوين بأكمله.</string>
-    <string name="rule_error_negation_domain">لا يمكن إلغاء المجالات باستخدام \"!\". تدعمه إدخالات IP فقط.</string>
+    <string name="rule_error_negation_domain">لا يمكن نفي النطاقات باستخدام \"!\". يدعم ذلك إدخالات IP فقط.</string>
     <string name="rule_error_dotless">بدون نقاط: لا يمكن أن تحتوي على نقطة.</string>
     <string name="rule_error_not_address">ليس عنوان IP أو CIDR صالحًا. تنتمي أنماط المجال إلى حقل المجالات.</string>
     <string name="rule_error_regex">تعبير عادي غير صالح.</string>
@@ -441,7 +441,7 @@
     <string name="tile_size_small">صغير</string>
     <string name="tile_size_normal">طبيعي</string>
     <string name="tile_size_large">كبير</string>
-    <string name="title_pref_group_all_display">إظهار علامة تبويب المجموعة \"الكل\".</string>
+    <string name="title_pref_group_all_display">إظهار علامة تبويب المجموعة \"الكل\"</string>
     <string name="summary_pref_group_all_display">اجمع كل مجموعة اشتراك في علامة تبويب واحدة</string>
     <string name="title_pref_dynamic_color">تمكين اللون الديناميكي</string>
     <string name="summary_pref_dynamic_color">يأخذ الألوان من ورق الحائط. أندرويد 12+ فقط</string>
@@ -464,8 +464,8 @@
     <string name="summary_pref_use_hev_tunnel">عند التمكين، سيستخدم TUN hev-socks5-tunnel؛ وإلا فإنه سيتم استخدام الأشعة السينية الأساسية.</string>
     <string name="server_lab_ech_outbound">echOutbound خام JSON، التنسيق: { OutboundObject }</string>
     <string name="toast_ech_outbound_needs_ech_config_list">يتطلب echOutbound وجود echConfigList</string>
-    <string name="toast_ech_outbound_invalid_tag">يحتاج echOutbound إلى \\"tag\\" غير فارغ، وليس مباشرًا أو محظورًا، ولا يبدأ بالوكيل</string>
-    <string name="toast_ech_outbound_tag_conflict">العلامة \\"%1$s\\" الخاصة بـ echOutbound مستخدمة بالفعل بواسطة صادر آخر</string>
+    <string name="toast_ech_outbound_invalid_tag">يحتاج echOutbound إلى علامة غير فارغة، وليست مباشرة أو محظورة، ولا تبدأ بالوكيل</string>
+    <string name="toast_ech_outbound_tag_conflict">العلامة \"%1$s\" الخاصة بـ echOutbound مستخدمة بالفعل بواسطة صادر آخر</string>
     <string name="toast_ech_outbound_invalid_json">JSON غير صالح لـ echOutbound: يجب أن يكون التنسيق { OutboundObject }</string>
     <string name="title_pref_hev_tunnel_loglevel">مستوى سجل Hev TUN</string>
     <string name="tun_engine_title">محرك النفق</string>
@@ -913,7 +913,7 @@
     <string name="import_err_ss_cipher">هذا التشفير غير مدعوم من قبل التطبيق الأساسي. اطلب من مزود الخدمة الخاص بك تكوين AES-GCM أو ChaCha20.</string>
     <string name="import_err_ss_no_cipher">لا يحمل رابط Shadowsocks أي تشفير، لذا لا يمكن استخدامه.</string>
     <string name="import_err_ss_plugin">لا يمكن استخدام البرنامج المساعد Shadowsocks مع هذا النواة.</string>
-    <string name="import_err_ovpn_no_remote">لا يذكر ملف تعريف OpenVPN هذا أي خادم (لا يوجد خط \\"بعيد\\").</string>
+    <string name="import_err_ovpn_no_remote">لا يذكر ملف تعريف OpenVPN هذا أي خادم (لا يوجد خط \"بعيد\").</string>
     <string name="import_err_ovpn_tap">لا يمكن تشغيل ملفات تعريف OpenVPN في وضع TAP على نظام Android.</string>
     <string name="import_err_amnezia_backup">هذا هو نسخة احتياطية من فقدان الذاكرة. قم باستعادته في Amnezia، ثم قم بمشاركة الخادم من هناك.</string>
     <string name="import_err_amnezia_subscription">هذا هو مفتاح Amnezia Free/Premium. لا يمكن الوصول إلى هذه الخوادم إلا من خلال تطبيق Amnezia الخاص.</string>
