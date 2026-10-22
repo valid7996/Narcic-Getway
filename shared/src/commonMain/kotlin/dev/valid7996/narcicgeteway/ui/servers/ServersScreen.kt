@@ -660,92 +660,89 @@ fun ServersScreen(
                     Spacer(Modifier.width(4.dp))
                 }
 
-                CompositionLocalProvider(
-                    androidx.compose.material3.LocalMinimumInteractiveComponentSize provides androidx.compose.ui.unit.Dp.Unspecified,
-                ) {
-                    if (testing) {
+                if (testing) {
+                    IconButton(
+                        onClick = { PingCoordinator.cancel() },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            painterResource(Res.drawable.ic_close),
+                            contentDescription = stringResource(Res.string.ping_stop),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                } else {
+                    Box {
                         IconButton(
-                            onClick = { PingCoordinator.cancel() },
+                            onClick = { pingMenu = true },
                             modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
-                                painterResource(Res.drawable.ic_close),
-                                contentDescription = stringResource(Res.string.ping_stop),
-                                tint = MaterialTheme.colorScheme.error,
+                                painterResource(Res.drawable.ic_speed),
+                                contentDescription = stringResource(Res.string.ping_test),
                                 modifier = Modifier.size(20.dp),
                             )
                         }
+                        DropdownMenu(
+                            expanded = pingMenu,
+                            onDismissRequest = { pingMenu = false },
+                    shape = MaterialTheme.shapes.largeIncreased,
+                ) {
+                    val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
+                    val currentScopeName = when {
+                        subscriptions.isEmpty() || (showAllGroup && groupIndex == 0) -> null
+                        groupIndex == 1 || (!showAllGroup && groupIndex == 0) -> stringResource(Res.string.group_manual)
+                        else -> currentSub?.name
+                    }
+                    val tcpPingLabel = if (currentScopeName != null) {
+                        stringResource(Res.string.toast_ping_tcp_scope, currentScopeName)
                     } else {
-                        Box {
-                            IconButton(
-                                onClick = { pingMenu = true },
-                                modifier = Modifier.size(36.dp),
-                            ) {
-                                Icon(
-                                    painterResource(Res.drawable.ic_speed),
-                                    contentDescription = stringResource(Res.string.ping_test),
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = pingMenu,
-                                onDismissRequest = { pingMenu = false },
-                        shape = MaterialTheme.shapes.largeIncreased,
-                    ) {
-                        val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
-                        val currentScopeName = when {
-                            subscriptions.isEmpty() || (showAllGroup && groupIndex == 0) -> null
-                            groupIndex == 1 || (!showAllGroup && groupIndex == 0) -> stringResource(Res.string.group_manual)
-                            else -> currentSub?.name
-                        }
-                        val tcpPingLabel = if (currentScopeName != null) {
-                            stringResource(Res.string.toast_ping_tcp_scope, currentScopeName)
-                        } else {
-                            stringResource(Res.string.ping_tcp_all)
-                        }
-                        val realPingLabel = if (currentScopeName != null) {
-                            stringResource(Res.string.toast_real_delay_scope, currentScopeName)
-                        } else {
-                            stringResource(Res.string.ping_real_all)
-                        }
-                        if (ServersUiConfig.SHOW_TCP_PING) DropdownMenuItem(
-                            text = { Text(tcpPingLabel) },
-                            onClick = {
-                                pingMenu = false
+                        stringResource(Res.string.ping_tcp_all)
+                    }
+                    val realPingLabel = if (currentScopeName != null) {
+                        stringResource(Res.string.toast_real_delay_scope, currentScopeName)
+                    } else {
+                        stringResource(Res.string.ping_real_all)
+                    }
+                    if (ServersUiConfig.SHOW_TCP_PING) DropdownMenuItem(
+                        text = { Text(tcpPingLabel) },
+                        onClick = {
+                            pingMenu = false
 
-                                PingCoordinator.start(
-                                    profiles = shown,
-                                    useRealDelay = false,
-                                    concurrency = realPingConcurrency,
-                                    delayUrl = delayTestUrl,
-                                    chainConfig = repository::chainProbeConfig,
+                            PingCoordinator.start(
+                                profiles = shown,
+                                useRealDelay = false,
+                                concurrency = realPingConcurrency,
+                                delayUrl = delayTestUrl,
+                                chainConfig = repository::chainProbeConfig,
 
-                                    clearPings = { repository.clearPings(it, persist = false) },
-                                    onResult = { id, ms, cc -> repository.setPing(id, ms, cc, persist = false) },
-                                    flush = { repository.flushProfiles() },
+                                clearPings = { repository.clearPings(it, persist = false) },
+                                onResult = { id, ms, cc -> repository.setPing(id, ms, cc, persist = false) },
+                                flush = { repository.flushProfiles() },
 
-                                    onFinished = { if (autoSortAfterTest) repository.sortByTestResults() },
-                                )
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(realPingLabel) },
-                            onClick = {
-                                pingMenu = false
-                                PingCoordinator.start(
-                                    profiles = shown,
-                                    useRealDelay = true,
-                                    concurrency = realPingConcurrency,
-                                    delayUrl = delayTestUrl,
-                                    chainConfig = repository::chainProbeConfig,
+                                onFinished = { if (autoSortAfterTest) repository.sortByTestResults() },
+                            )
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(realPingLabel) },
+                        onClick = {
+                            pingMenu = false
+                            PingCoordinator.start(
+                                profiles = shown,
+                                useRealDelay = true,
+                                concurrency = realPingConcurrency,
+                                delayUrl = delayTestUrl,
+                                chainConfig = repository::chainProbeConfig,
 
-                                    clearPings = { repository.clearPings(it, persist = false) },
-                                    onResult = { id, ms, cc -> repository.setPing(id, ms, cc, persist = false) },
-                                    flush = { repository.flushProfiles() },
+                                clearPings = { repository.clearPings(it, persist = false) },
+                                onResult = { id, ms, cc -> repository.setPing(id, ms, cc, persist = false) },
+                                flush = { repository.flushProfiles() },
 
-                                    onFinished = { if (autoSortAfterTest) repository.sortByTestResults() },
-                                )
-                            },
+                                onFinished = { if (autoSortAfterTest) repository.sortByTestResults() },
+                            )
+                        },
                         )
                     }
                 }
@@ -940,7 +937,6 @@ fun ServersScreen(
                     }
                 }
             }
-        }
 
             pingProgress?.let { p ->
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp)) {
