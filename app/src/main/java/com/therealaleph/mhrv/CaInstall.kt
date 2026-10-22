@@ -1,5 +1,6 @@
 package com.therealaleph.mhrv
 
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -98,6 +99,11 @@ object CaInstall {
         try {
             val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (publicDir != null && (publicDir.exists() || publicDir.mkdirs())) {
+                // Clean up duplicate numbered files from older versions
+                publicDir.listFiles { _, name ->
+                    name.startsWith("mhrv-ca (") && name.endsWith(").crt")
+                }?.forEach { runCatching { it.delete() } }
+
                 val pubFile = File(publicDir, displayName)
                 pubFile.writeBytes(pem)
                 if (pubFile.exists() && pubFile.length() > 0L) {
@@ -132,6 +138,36 @@ object CaInstall {
 
     private fun saveViaMediaStore(ctx: Context, displayName: String, bytes: ByteArray): Boolean? {
         val resolver = ctx.contentResolver
+
+        // Clean up any duplicate numbered files previously created (e.g. mhrv-ca (1).crt, etc.)
+        try {
+            val dupSel = "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?"
+            resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, dupSel, arrayOf("mhrv-ca (%).crt"))
+        } catch (_: Throwable) { /* best-effort */ }
+
+        // Overwrite existing file if already present in MediaStore to avoid creating duplicate (1), (2) files
+        val projection = arrayOf(MediaStore.MediaColumns._ID)
+        val sel = "${MediaStore.MediaColumns.DISPLAY_NAME}=?"
+        val selArgs = arrayOf(displayName)
+
+        try {
+            resolver.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, sel, selArgs, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID))
+                    val existingUri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+                    resolver.openOutputStream(existingUri, "wt")?.use { out ->
+                        out.write(bytes)
+                        out.flush()
+                        return true
+                    }
+                }
+            }
+        } catch (_: Throwable) { /* fallback to delete and insert */ }
+
+        try {
+            resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, sel, selArgs)
+        } catch (_: Throwable) { /* best-effort */ }
+
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
             put(MediaStore.MediaColumns.MIME_TYPE, "application/x-x509-ca-cert")
@@ -139,14 +175,12 @@ object CaInstall {
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
         }
-        try {
-            val sel = "${MediaStore.MediaColumns.DISPLAY_NAME}=?"
-            resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, sel, arrayOf(displayName))
-        } catch (_: Throwable) { /* best-effort */ }
-
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: return null
         return try {
-            resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: return null
+            resolver.openOutputStream(uri)?.use { out ->
+                out.write(bytes)
+                out.flush()
+            } ?: return null
             true
         } catch (_: Throwable) { null }
     }

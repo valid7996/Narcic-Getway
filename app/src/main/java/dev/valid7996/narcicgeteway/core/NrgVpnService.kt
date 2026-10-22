@@ -687,14 +687,6 @@ class NrgVpnService : VpnService() {
             VpnManager.onError(getString(R.string.mhrv_no_socks))
             stopEverything(); return
         }
-        if (profile.needsCa) {
-            runCatching {
-                com.therealaleph.mhrv.CaInstall.export(this)
-                com.therealaleph.mhrv.CaInstall.saveToDownloads(this, "mhrv-ca.crt")
-            }.onFailure {
-                Log.w(TAG, "MHRV relay CA could not be auto-saved to Downloads: ${it.message}")
-            }
-        }
 
         val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
         val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", controller.socksPort, dnsHost = dns, useDoh = true)
