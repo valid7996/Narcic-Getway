@@ -530,16 +530,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(96.dp))
             }
 
-            val deviceId = remember(repository) {
-                val store = dev.valid7996.narcicgeteway.platform.KeyValueStore("nrg_configs")
-                repository?.nrgDeviceId()
-                    ?: store.getString("nrg_device_id")?.takeIf { it.isNotBlank() }
-                    ?: run {
-                        val id = dev.valid7996.narcicgeteway.crypto.NrgLink.toUrlSafe(dev.valid7996.narcicgeteway.crypto.ZsxCrypto.secureRandomBytes(12))
-                        store.putString("nrg_device_id", id)
-                        id
-                    }
-            }
+            val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
             if (deviceId.isNotBlank()) {
                 var isRevealed by remember { mutableStateOf(false) }
                 val copiedMsg = stringResource(Res.string.device_code_copied)
