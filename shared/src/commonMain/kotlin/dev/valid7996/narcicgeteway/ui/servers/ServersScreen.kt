@@ -637,7 +637,7 @@ fun ServersScreen(
         Column(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding())) {
             Spacer(Modifier.height(8.dp))
             Row(
-                Modifier.fillMaxWidth().padding(end = 14.dp),
+                Modifier.fillMaxWidth().padding(end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(Modifier.weight(1f)) {
@@ -645,24 +645,51 @@ fun ServersScreen(
                         title = stringResource(Res.string.nav_servers),
                         subtitle = if (servers.isEmpty()) null
                         else stringResource(Res.string.servers_count, headerCount),
-
                         singleLine = true,
+                        contentPadding = PaddingValues(start = 20.dp, end = 4.dp),
                     )
                 }
-                Box {
-                    IconButton(
-                        enabled = !testing,
-                        onClick = { pingMenu = true },
-                        modifier = Modifier,
-                    ) {
-                        Icon(
-                            painterResource(Res.drawable.ic_speed),
-                            contentDescription = stringResource(Res.string.ping_test),
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = pingMenu,
-                        onDismissRequest = { pingMenu = false },
+
+                if (servers.isNotEmpty()) {
+                    IosColumnSegmentedControl(
+                        selectedColumns = columnsCount,
+                        onColumnsSelected = { cols ->
+                            onUpdateSettings?.invoke { it.copy(serverGridColumns = cols, doubleColumnDisplay = (cols == 2)) }
+                        },
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
+
+                CompositionLocalProvider(
+                    androidx.compose.material3.LocalMinimumInteractiveComponentSize provides androidx.compose.ui.unit.Dp.Unspecified,
+                ) {
+                    if (testing) {
+                        IconButton(
+                            onClick = { PingCoordinator.cancel() },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                painterResource(Res.drawable.ic_close),
+                                contentDescription = stringResource(Res.string.ping_stop),
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    } else {
+                        Box {
+                            IconButton(
+                                onClick = { pingMenu = true },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    painterResource(Res.drawable.ic_speed),
+                                    contentDescription = stringResource(Res.string.ping_test),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = pingMenu,
+                                onDismissRequest = { pingMenu = false },
                         shape = MaterialTheme.shapes.largeIncreased,
                     ) {
                         val currentSub = if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null
@@ -723,40 +750,37 @@ fun ServersScreen(
                     }
                 }
 
-                if (testing) {
-                    IconButton(onClick = { PingCoordinator.cancel() }) {
-                        Icon(
-                            painterResource(Res.drawable.ic_close),
-                            contentDescription = stringResource(Res.string.ping_stop),
-                        )
-                    }
-                }
-
-                IconButton(onClick = { showRealDelayNote = true }) {
-                    Icon(
-                        painterResource(Res.drawable.ic_info),
-                        contentDescription = stringResource(Res.string.real_delay_note_title),
-                    )
-                }
-                IconButton(
-                    onClick = { showSubs = true },
-                    modifier = Modifier,
-                ) {
-                    Icon(
-                        painterResource(Res.drawable.ic_add_link),
-                        contentDescription = stringResource(Res.string.subs_title),
-                    )
-                }
-                Box {
                     IconButton(
-                        onClick = { overflowOpen = true },
-                        modifier = Modifier,
+                        onClick = { showRealDelayNote = true },
+                        modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
-                            painterResource(Res.drawable.ic_more_vert),
-                            contentDescription = stringResource(Res.string.servers_actions),
+                            painterResource(Res.drawable.ic_info),
+                            contentDescription = stringResource(Res.string.real_delay_note_title),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
+                    IconButton(
+                        onClick = { showSubs = true },
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            painterResource(Res.drawable.ic_add_link),
+                            contentDescription = stringResource(Res.string.subs_title),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Box {
+                        IconButton(
+                            onClick = { overflowOpen = true },
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Icon(
+                                painterResource(Res.drawable.ic_more_vert),
+                                contentDescription = stringResource(Res.string.servers_actions),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     DropdownMenu(
                         expanded = overflowOpen,
                         onDismissRequest = { overflowOpen = false },
@@ -915,6 +939,7 @@ fun ServersScreen(
                     }
                 }
             }
+        }
 
             pingProgress?.let { p ->
                 Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp)) {
@@ -936,70 +961,48 @@ fun ServersScreen(
                 }
             }
 
-            if (servers.isNotEmpty() || subscriptions.isNotEmpty()) {
-                Row(
+            if (subscriptions.isNotEmpty()) {
+                val counts = remember(servers) { servers.groupingBy { it.subscriptionId }.eachCount() }
+
+                LaunchedEffect(showAllGroup) { if (!showAllGroup && groupIndex == 0) groupIndex = 1 }
+
+                val groupRow = androidx.compose.foundation.lazy.rememberLazyListState()
+                androidx.compose.foundation.lazy.LazyRow(
+                    state = groupRow,
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(vertical = 4.dp)
+                        .mouseDragScroll(groupRow),
                 ) {
-                    if (subscriptions.isNotEmpty()) {
-                        val counts = remember(servers) { servers.groupingBy { it.subscriptionId }.eachCount() }
-
-                        LaunchedEffect(showAllGroup) { if (!showAllGroup && groupIndex == 0) groupIndex = 1 }
-
-                        val groupRow = androidx.compose.foundation.lazy.rememberLazyListState()
-                        androidx.compose.foundation.lazy.LazyRow(
-                            state = groupRow,
-                            contentPadding = PaddingValues(end = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .mouseDragScroll(groupRow),
-                        ) {
-                            if (showAllGroup) {
-                                item(key = "group-all") {
-                                    GroupTab(
-                                        label = stringResource(Res.string.group_all),
-                                        count = servers.size,
-                                        selected = groupIndex == 0,
-                                        personalization = personalization,
-                                        onClick = { groupIndex = 0 },
-                                    )
-                                }
-                            }
-                            item(key = "group-manual") {
-                                GroupTab(
-                                    label = stringResource(Res.string.group_manual),
-                                    count = counts[""] ?: 0,
-                                    selected = groupIndex == 1,
-                                    personalization = personalization,
-                                    onClick = { groupIndex = 1 },
-                                )
-                            }
-                            itemsIndexed(subscriptions, key = { _, sub -> sub.id }) { index, sub ->
-                                GroupTab(
-                                    label = sub.name,
-                                    count = counts[sub.id] ?: 0,
-                                    selected = groupIndex == index + 2,
-                                    personalization = personalization,
-                                    onClick = { groupIndex = index + 2 },
-                                )
-                            }
+                    if (showAllGroup) {
+                        item(key = "group-all") {
+                            GroupTab(
+                                label = stringResource(Res.string.group_all),
+                                count = servers.size,
+                                selected = groupIndex == 0,
+                                personalization = personalization,
+                                onClick = { groupIndex = 0 },
+                            )
                         }
-                        if (servers.isNotEmpty()) {
-                            Spacer(Modifier.width(8.dp))
-                        }
-                    } else {
-                        Spacer(Modifier.weight(1f))
                     }
-
-                    if (servers.isNotEmpty()) {
-                        IosColumnSegmentedControl(
-                            selectedColumns = columnsCount,
-                            onColumnsSelected = { cols ->
-                                onUpdateSettings?.invoke { it.copy(serverGridColumns = cols, doubleColumnDisplay = (cols == 2)) }
-                            },
+                    item(key = "group-manual") {
+                        GroupTab(
+                            label = stringResource(Res.string.group_manual),
+                            count = counts[""] ?: 0,
+                            selected = groupIndex == 1,
+                            personalization = personalization,
+                            onClick = { groupIndex = 1 },
+                        )
+                    }
+                    itemsIndexed(subscriptions, key = { _, sub -> sub.id }) { index, sub ->
+                        GroupTab(
+                            label = sub.name,
+                            count = counts[sub.id] ?: 0,
+                            selected = groupIndex == index + 2,
+                            personalization = personalization,
+                            onClick = { groupIndex = index + 2 },
                         )
                     }
                 }
@@ -2959,32 +2962,27 @@ private fun IosColumnSegmentedControl(
     modifier: Modifier = Modifier,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val containerBg = if (isDark) Color(0x33767680) else Color(0x1F767680)
-    val selectedBg = if (isDark) Color(0xFF636366) else Color.White
-    val selectedContent = if (isDark) Color.White else Color.Black
-    val unselectedContent = if (isDark) Color(0xFFEBEBF5).copy(alpha = 0.65f) else Color(0xFF3C3C43).copy(alpha = 0.65f)
+    val selectedBg = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.22f else 0.15f)
+    val selectedContent = MaterialTheme.colorScheme.primary
+    val unselectedContent = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
 
     Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(9.dp))
-            .background(containerBg)
-            .padding(2.dp),
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         listOf(1, 2, 3).forEach { cols ->
             val isSelected = selectedColumns == cols
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(7.dp))
+                    .clip(RoundedCornerShape(6.dp))
                     .then(
                         if (isSelected) {
-                            Modifier
-                                .background(selectedBg)
-                                .shadow(elevation = 1.5.dp, shape = RoundedCornerShape(7.dp))
+                            Modifier.background(selectedBg)
                         } else Modifier
                     )
                     .clickable { onColumnsSelected(cols) }
-                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                    .padding(horizontal = 7.dp, vertical = 3.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

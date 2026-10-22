@@ -50,10 +50,11 @@ fun PageHeader(
 
     singleLine: Boolean = false,
     accentLine: Boolean = false,
+    contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(horizontal = 22.dp),
 ) {
     val back = LocalPageBack.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    Column(modifier.fillMaxWidth().padding(horizontal = 22.dp)) {
+    Column(modifier.fillMaxWidth().padding(contentPadding)) {
         if (accentLine) {
             Box(
                 Modifier
@@ -82,7 +83,8 @@ fun PageHeader(
                 text = title,
                 style = when {
                     !singleLine -> MaterialTheme.typography.displaySmall
-                    room < 210.dp -> MaterialTheme.typography.headlineSmall
+                    room < 160.dp -> MaterialTheme.typography.titleLarge
+                    room < 220.dp -> MaterialTheme.typography.headlineSmall
                     room < 280.dp -> MaterialTheme.typography.headlineMedium
                     else -> MaterialTheme.typography.displaySmall
                 },
