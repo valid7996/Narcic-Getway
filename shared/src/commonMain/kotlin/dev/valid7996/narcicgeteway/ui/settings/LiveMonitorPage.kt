@@ -372,25 +372,17 @@ private fun DevicePressureCard(stats: LiveStats, computer: Boolean, modifier: Mo
     val isHot = (temp != null && temp >= 43f) || (headroom != null && headroom >= 0.85f) || (stats.thermalStatus != null && stats.thermalStatus >= 2)
     val isWarm = (temp != null && temp >= 39f) || (headroom != null && headroom >= 0.60f) || (cpu > 25f)
 
+    val heavyTitle = stringResource(Res.string.monitor_thermal_heavy)
+    val heavyDesc = if (computer) stringResource(Res.string.monitor_thermal_heavy_desc_pc) else stringResource(Res.string.monitor_thermal_heavy_desc_phone)
+    val modTitle = stringResource(Res.string.monitor_thermal_mod)
+    val modDesc = if (computer) stringResource(Res.string.monitor_thermal_mod_desc_pc) else stringResource(Res.string.monitor_thermal_mod_desc_phone)
+    val coolTitle = stringResource(Res.string.monitor_thermal_cool)
+    val coolDesc = if (computer) stringResource(Res.string.monitor_thermal_cool_desc_pc) else stringResource(Res.string.monitor_thermal_cool_desc_phone)
+
     val (badgeText, badgeDesc, badgeColor) = when {
-        isHot -> Triple(
-            "فشار بالا و دمای زیاد",
-            if (computer) "دمای پردازنده یا سیستم بالاست؛ سیستم تحت فشار پردازشی است."
-            else "دمای باتری یا گوشی بالاست؛ توصیه می‌شود برای محافظت از سلامت باتری بار ترافیک سبک‌تر شود.",
-            MaterialTheme.colorScheme.error,
-        )
-        isWarm -> Triple(
-            "فشار کاری متوسط",
-            if (computer) "سیستم در حال پردازش معمول است و دما در محدوده پایدار است."
-            else "گوشی در حال پردازش معمولی است و دمای باتری در محدوده ایمن و استاندارد قرار دارد.",
-            MaterialTheme.colorScheme.tertiary,
-        )
-        else -> Triple(
-            "عالی و بدون فشار به گوشی",
-            if (computer) "پردازنده و حافظه در خنک‌ترین وضعیت کاری قرار دارند و فشاری به سیستم نیست."
-            else "پردازنده، باتری و حافظه در خنک‌ترین وضعیت قرار دارند و هیچ فشاری به گوشی وارد نمی‌شود.",
-            MaterialTheme.colorScheme.primary,
-        )
+        isHot -> Triple(heavyTitle, heavyDesc, MaterialTheme.colorScheme.error)
+        isWarm -> Triple(modTitle, modDesc, MaterialTheme.colorScheme.tertiary)
+        else -> Triple(coolTitle, coolDesc, MaterialTheme.colorScheme.primary)
     }
 
     MonitorCard(modifier) {
@@ -402,7 +394,7 @@ private fun DevicePressureCard(stats: LiveStats, computer: Boolean, modifier: Mo
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                if (computer) "وضعیت فشار به سیستم: $badgeText" else "وضعیت فشار به گوشی: $badgeText",
+                stringResource(Res.string.monitor_load_status, badgeText),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = badgeColor,
@@ -450,23 +442,23 @@ private fun CoreCard(
         )
         Spacer(Modifier.height(8.dp))
         LabelledValue(
-            "هسته در حال اجرا",
+            stringResource(Res.string.monitor_running_core),
             engineName,
             valueColour = if (vpnStatus.state.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(6.dp))
         if (vpnStatus.state.isActive) {
             vpnStatus.serverName?.takeIf { it.isNotBlank() }?.let {
-                LabelledValue("پروفایل / سرور متصل", it)
+                LabelledValue(stringResource(Res.string.monitor_connected_server), it)
                 Spacer(Modifier.height(6.dp))
             }
             VpnManager.activeSocksPort?.let { port ->
-                LabelledValue("پورت پراکسی محلی", "127.0.0.1:$port")
+                LabelledValue(stringResource(Res.string.monitor_local_proxy_port), "127.0.0.1:$port")
                 Spacer(Modifier.height(6.dp))
             }
         }
         stats.threads?.let {
-            LabelledValue("تردهای پردازشی فعال", "$it ترد")
+            LabelledValue(stringResource(Res.string.monitor_active_threads), "$it")
             Spacer(Modifier.height(6.dp))
         }
         stats.processUptimeMs?.let {

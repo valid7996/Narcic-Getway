@@ -42,12 +42,11 @@ import dev.valid7996.narcicgeteway.crypto.ZsxMetadata
 import dev.valid7996.narcicgeteway.data.config.ConfigRepository
 import dev.valid7996.narcicgeteway.platform.currentTimeMillis
 import dev.valid7996.narcicgeteway.shared.resources.Res
-import dev.valid7996.narcicgeteway.shared.resources.ic_content_paste
-import dev.valid7996.narcicgeteway.shared.resources.ic_key
-import dev.valid7996.narcicgeteway.shared.resources.ic_lock
+import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import kotlin.io.encoding.Base64
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun UnlockConfigDialog(
@@ -63,7 +62,7 @@ fun UnlockConfigDialog(
     var userKeyInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val configName = metadata.nameEn.ifBlank { metadata.nameFa }.ifBlank { "کانفیگ قفل‌شده" }
+    val configName = metadata.nameEn.ifBlank { metadata.nameFa }.ifBlank { stringResource(Res.string.unlock_title) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -79,7 +78,7 @@ fun UnlockConfigDialog(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "بازگشایی کانفیگ قفل‌شده",
+                    stringResource(Res.string.unlock_title),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = if (isDark) Color.White else Color.Black,
@@ -103,7 +102,7 @@ fun UnlockConfigDialog(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Text(
-                                    "اعتبار:",
+                                    stringResource(Res.string.unlock_validity),
                                     fontSize = 11.sp,
                                     color = if (isDark) Color(0xFFAAAAAA) else Color(0xFF666666),
                                     fontWeight = FontWeight.Medium,
@@ -121,7 +120,7 @@ fun UnlockConfigDialog(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                "کد این دستگاه: ${repository.nrgDeviceId()}",
+                                stringResource(Res.string.unlock_this_device_code, repository.nrgDeviceId()),
                                 fontSize = 11.sp,
                                 color = Color(0xFFFF9500),
                                 fontFamily = FontFamily.Monospace,
@@ -130,17 +129,17 @@ fun UnlockConfigDialog(
                             TextButton(
                                 onClick = {
                                     platform.copyToClipboard(repository.nrgDeviceId())
-                                    platform.toast("کد دستگاه کپی شد")
+                                    platform.toast(platform.readClipboard()?.let { repository.nrgDeviceId() } ?: "")
                                 },
                             ) {
-                                Text("کپی", fontSize = 11.sp, color = Color(0xFFFF9500))
+                                Text(stringResource(Res.string.unlock_copy), fontSize = 11.sp, color = Color(0xFFFF9500))
                             }
                         }
                     }
                 }
 
                 Text(
-                    "این کانفیگ با کلید اختصاصی قفل شده است. لطفاً کلید دریافتی را جهت فعال‌سازی روی این دستگاه وارد نمایید:",
+                    stringResource(Res.string.unlock_enter_key_desc),
                     fontSize = 12.sp,
                     color = if (isDark) Color.LightGray else Color.DarkGray,
                 )
@@ -152,8 +151,8 @@ fun UnlockConfigDialog(
                         errorMessage = null
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("کلید اختصاصی کاربر") },
-                    placeholder = { Text("مثلاً: NG-XXXX-XXXX-XXXX") },
+                    label = { Text(stringResource(Res.string.unlock_key_label)) },
+                    placeholder = { Text(stringResource(Res.string.unlock_key_placeholder)) },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -173,7 +172,7 @@ fun UnlockConfigDialog(
                                 errorMessage = null
                             }
                         }) {
-                            Icon(painter = painterResource(Res.drawable.ic_content_paste), contentDescription = "جای‌گذاری کلید از کلیپ‌بورد", tint = Color(0xFFFF9500))
+                            Icon(painter = painterResource(Res.drawable.ic_content_paste), contentDescription = stringResource(Res.string.unlock_paste_key), tint = Color(0xFFFF9500))
                         }
                     },
                 )
@@ -189,27 +188,33 @@ fun UnlockConfigDialog(
             }
         },
         confirmButton = {
+            val warnEnterKey = stringResource(Res.string.unlock_warn_enter_key)
+            val successToast = stringResource(Res.string.unlock_success_toast)
+            val errOtherDevice = stringResource(Res.string.unlock_err_other_device)
+            val errWrongKey = stringResource(Res.string.unlock_err_wrong_key)
+            val errExpired = stringResource(Res.string.unlock_err_expired)
+            val errConsumed = stringResource(Res.string.unlock_err_key_consumed)
             Button(
                 onClick = {
                     val key = userKeyInput.trim()
                     if (key.isBlank()) {
-                        errorMessage = "لطفاً کلید اختصاصی را وارد کنید."
+                        errorMessage = warnEnterKey
                         return@Button
                     }
                     val result = repository.importLocked(zsxBytes, key)
                     result.fold(
                         onSuccess = {
-                            platform.toast("کانفیگ قفل‌شده با موفقیت باز و اضافه شد.")
+                            platform.toast(successToast)
                             onSuccess()
                         },
                         onFailure = { err ->
                             errorMessage = when {
                                 err is dev.valid7996.narcicgeteway.crypto.ZsxWrongPasswordException ->
-                                    if (metadata.deviceBound) "این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است. کد دستگاه خود را (از «تنظیمات ← درباره ← کد دستگاه من») برای فروشنده بفرستید."
-                                    else "کلید اختصاصی وارد شده اشتباه است."
-                                err is dev.valid7996.narcicgeteway.crypto.ZsxExpiredException -> "این کانفیگ منقضی شده است و اعتبار آن پایان یافته است."
-                                err is dev.valid7996.narcicgeteway.crypto.ZsxKeyConsumedException -> "این کلید اختصاصی قبلاً یک بار استفاده شده و باطل گردیده است (کلید یک‌بار مصرف)."
-                                else -> "خطا در بازگشایی کانفیگ: ${err.message}"
+                                    if (metadata.deviceBound) errOtherDevice
+                                    else errWrongKey
+                                err is dev.valid7996.narcicgeteway.crypto.ZsxExpiredException -> errExpired
+                                err is dev.valid7996.narcicgeteway.crypto.ZsxKeyConsumedException -> errConsumed
+                                else -> err.message ?: errWrongKey
                             }
                         },
                     )
@@ -217,12 +222,12 @@ fun UnlockConfigDialog(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9500)),
             ) {
-                Text("بازگشایی و ذخیره", fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.unlock_btn_submit), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(10.dp)) {
-                Text("انصراف")
+                Text(stringResource(Res.string.cancel))
             }
         },
     )

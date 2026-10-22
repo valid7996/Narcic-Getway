@@ -41,6 +41,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 @Composable
 fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
     val platform = LocalPlatform.current
+    val toastLinkUsedOther = stringResource(Res.string.toast_link_used_other_device)
+    val toastWrongExclusiveKey = stringResource(Res.string.toast_wrong_exclusive_key)
+    val toastLockedOtherDevice = stringResource(Res.string.toast_config_locked_other_device)
+    val toastConfigExpired = stringResource(Res.string.toast_config_expired)
+    val toastKeyAlreadyUsed = stringResource(Res.string.toast_key_already_used)
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val pending by DeepLinkBus.pending.collectAsStateWithLifecycle()
@@ -76,9 +81,9 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
                         .onFailure { err ->
                             when (err) {
                                 is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException ->
-                                    platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده است.")
+                                    platform.toast(toastLinkUsedOther)
                                 is dev.valid7996.narcicgeteway.crypto.ZsxWrongPasswordException ->
-                                    platform.toast("کلید اختصاصی وارد شده اشتباه است.")
+                                    platform.toast(toastWrongExclusiveKey)
                                 else -> platform.toast(getString(Res.string.config_invalid))
                             }
                         }
@@ -171,7 +176,7 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
                                 return@onFailure
                             }
                             if (e is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException) {
-                                platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده و دیگر قابل استفاده نیست.")
+                                platform.toast(toastLinkUsedOther)
                                 return@onFailure
                             }
                             if (e is ZsxPasswordRequiredException && request is DeepLinkRequest.ConfigText) {
@@ -182,16 +187,16 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
                                     return@onFailure
                                 }
                             }
-                            if (e.message?.contains("قفل شده است") == true) {
-                                platform.toast(e.message ?: "این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است.")
+                            if (e.message?.contains("قفل شده است") == true || e.message?.contains("locked", ignoreCase = true) == true) {
+                                platform.toast(e.message ?: toastLockedOtherDevice)
                                 return@onFailure
                             }
                             if (e is dev.valid7996.narcicgeteway.crypto.ZsxExpiredException) {
-                                platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+                                platform.toast(toastConfigExpired)
                                 return@onFailure
                             }
                             if (e is dev.valid7996.narcicgeteway.crypto.ZsxKeyConsumedException) {
-                                platform.toast("این کلید اختصاصی قبلاً استفاده شده و باطل گردیده است.")
+                                platform.toast(toastKeyAlreadyUsed)
                                 return@onFailure
                             }
                             if (e is ConfigRepository.SubscriptionNotFetchedException && e.savedForLater) {

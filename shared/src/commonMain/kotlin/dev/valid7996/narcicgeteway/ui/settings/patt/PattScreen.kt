@@ -78,7 +78,8 @@ import dev.valid7996.narcicgeteway.data.tools.patt.kAllSniPorts
 import dev.valid7996.narcicgeteway.data.tools.patt.kAvailableFingerprints
 import dev.valid7996.narcicgeteway.data.tools.patt.kDefaultSniPorts
 import dev.valid7996.narcicgeteway.data.tools.patt.kDefaultSniTargets
-import dev.valid7996.narcicgeteway.shared.resources.Res
+import dev.valid7996.narcicgeteway.shared.resources.*
+import org.jetbrains.compose.resources.stringResource
 import dev.valid7996.narcicgeteway.shared.resources.ic_bolt
 import dev.valid7996.narcicgeteway.shared.resources.ic_check
 import dev.valid7996.narcicgeteway.shared.resources.ic_close
@@ -150,7 +151,7 @@ fun PattScreen(
             .padding(contentPadding)
     ) {
         PageHeader(
-            title = "ابزارهای Patt",
+            title = stringResource(Res.string.patt_tools_title),
             subtitle = "SNI Check • Cloudflare Fix • Add ECH",
         )
 
@@ -200,6 +201,8 @@ private fun SniCheckTab(
     onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
+    val toastIpCopied = stringResource(Res.string.patt_ip_copied)
+    val toastRowCopied = stringResource(Res.string.patt_row_copied)
     val scope = rememberCoroutineScope()
 
     var targetsText by remember { mutableStateOf(kDefaultSniTargets) }
@@ -216,6 +219,11 @@ private fun SniCheckTab(
     var progress by remember { mutableStateOf(0f) }
     var currentStatus by remember { mutableStateOf("") }
     var userPublicIp by remember { mutableStateOf<String?>(null) }
+    val statusStopped = stringResource(Res.string.patt_status_stopped)
+    val statusScanning = stringResource(Res.string.patt_status_scanning)
+    val toastCleanIpsCopied = stringResource(Res.string.patt_copied_clean_ips)
+    val toastReportCopied = stringResource(Res.string.patt_copied_report)
+    val toastSetSpoof = stringResource(Res.string.patt_set_spoof_toast)
     var scanJob by remember { mutableStateOf<Job?>(null) }
     var scanReportCopied by remember { mutableStateOf(false) }
 
@@ -243,14 +251,14 @@ private fun SniCheckTab(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "دامنه‌های هدف (SNI Targets)",
+                        stringResource(Res.string.patt_sni_targets_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = if (isDark) Color.White else Color.Black,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         TextButton(onClick = { targetsText = kDefaultSniTargets }) {
-                            Text("نمونه", fontSize = 12.sp, color = Color(0xFFFF9500))
+                            Text(stringResource(Res.string.patt_sample), fontSize = 12.sp, color = Color(0xFFFF9500))
                         }
                         IconButton(onClick = { showSettings = !showSettings }, modifier = Modifier.size(32.dp)) {
                             Icon(
@@ -267,7 +275,7 @@ private fun SniCheckTab(
                     value = targetsText,
                     onValueChange = { targetsText = it },
                     modifier = Modifier.fillMaxWidth().height(110.dp),
-                    placeholder = { Text("دامنه دامنه‌ها به صورت خط به خط...") },
+                    placeholder = { Text(stringResource(Res.string.patt_sni_targets_placeholder)) },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFFF9500),
@@ -277,7 +285,7 @@ private fun SniCheckTab(
                 )
 
                 // Ports row
-                Text("پورت‌های مورد بررسی:", fontSize = 12.sp, color = Color.Gray)
+                Text(stringResource(Res.string.patt_ports_to_check), fontSize = 12.sp, color = Color.Gray)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     kAllSniPorts.forEach { p ->
                         val isSelected = selectedPorts.contains(p)
@@ -309,7 +317,7 @@ private fun SniCheckTab(
                 border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = 0.4f)),
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("تنظیمات اسکن SNI", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF9500))
+                    Text(stringResource(Res.string.patt_sni_scan_settings), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF9500))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -317,16 +325,16 @@ private fun SniCheckTab(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column {
-                            Text("تأیید دست‌دست آی‌پی کلادفلر", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                            Text("ارسال مستقیم درخواست TLS به آی‌پی و بررسی /cdn-cgi/trace", fontSize = 11.sp, color = Color.Gray)
+                            Text(stringResource(Res.string.patt_verify_cf_ip), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(stringResource(Res.string.patt_verify_cf_ip_desc), fontSize = 11.sp, color = Color.Gray)
                         }
                         Switch(checked = enableIpCheck, onCheckedChange = { enableIpCheck = it })
                     }
 
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("همزمانی تست (Concurrency)", fontSize = 12.sp)
-                            Text("$concurrency تِرد", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9500))
+                            Text(stringResource(Res.string.patt_concurrency), fontSize = 12.sp)
+                            Text(stringResource(Res.string.patt_threads, concurrency), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9500))
                         }
                         Slider(
                             value = concurrency.toFloat(),
@@ -340,8 +348,8 @@ private fun SniCheckTab(
                         value = manualIp,
                         onValueChange = { manualIp = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("آی‌پی دستی عمومی (اختیاری)") },
-                        placeholder = { Text("خالی بگذارید تا خودکار تشخیص دهد") },
+                        label = { Text(stringResource(Res.string.patt_public_ip_label)) },
+                        placeholder = { Text(stringResource(Res.string.patt_public_ip_placeholder)) },
                         shape = RoundedCornerShape(10.dp),
                         singleLine = true,
                     )
@@ -361,14 +369,14 @@ private fun SniCheckTab(
                             scanJob?.cancel()
                             scanJob = null
                             isScanning = false
-                            currentStatus = "متوقف شد"
+                            currentStatus = statusStopped
                         } else {
                             scanJob?.cancel()
                             isScanning = true
                             results.clear()
                             scanReportCopied = false
                             cleanIpsCopied = false
-                            currentStatus = "در حال شروع اسکن..."
+                            currentStatus = statusScanning
                             scanJob = scope.launch {
                                 try {
                                     val config = SniSpoofCheckConfig(
@@ -391,11 +399,11 @@ private fun SniCheckTab(
                                             results.add(res)
                                         },
                                     )
-                                    currentStatus = "اسکن کامل شد (${results.size} نتیجه)"
+                                    currentStatus = "$statusStopped (${results.size})"
                                 } catch (_: kotlinx.coroutines.CancellationException) {
-                                    currentStatus = "متوقف شد"
+                                    currentStatus = statusStopped
                                 } catch (e: Exception) {
-                                    currentStatus = "خطا: ${e.message}"
+                                    currentStatus = "${e.message}"
                                 } finally {
                                     isScanning = false
                                 }
@@ -414,7 +422,7 @@ private fun SniCheckTab(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(if (isScanning) "توقف اسکن" else "شروع تست SNI Spoof", fontWeight = FontWeight.Bold)
+                    Text(if (isScanning) stringResource(Res.string.patt_btn_stop) else stringResource(Res.string.patt_btn_start_sni_test), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -430,7 +438,7 @@ private fun SniCheckTab(
                             onClick = {
                                 platform.copyToClipboard(okIps.joinToString("\n"))
                                 cleanIpsCopied = true
-                                platform.toast("تعداد ${okIps.size} آی‌پی سالم کپی شد")
+                                platform.toast(toastCleanIpsCopied.replace("%1$d", okIps.size.toString()))
                             },
                             modifier = Modifier.weight(1f).height(42.dp),
                             shape = RoundedCornerShape(12.dp),
@@ -443,7 +451,7 @@ private fun SniCheckTab(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                if (cleanIpsCopied) "کپی شد" else "کپی آی‌پی‌های سالم (${okIps.size})",
+                                if (cleanIpsCopied) stringResource(Res.string.patt_copied) else stringResource(Res.string.patt_copy_clean_ips, okIps.size),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF34C759),
@@ -456,7 +464,7 @@ private fun SniCheckTab(
                             val report = SniSpoofCheckEngine.generateReport(results, userPublicIp)
                             platform.copyToClipboard(report)
                             scanReportCopied = true
-                            platform.toast("گزارش تست کپی شد")
+                            platform.toast(toastReportCopied)
                         },
                         modifier = Modifier.weight(1f).height(42.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -467,7 +475,7 @@ private fun SniCheckTab(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text(if (scanReportCopied) "کپی شد" else "کپی کل گزارش", fontSize = 12.sp)
+                        Text(if (scanReportCopied) stringResource(Res.string.patt_copied) else stringResource(Res.string.patt_copy_full_report), fontSize = 12.sp)
                     }
                 }
             }
@@ -502,7 +510,7 @@ private fun SniCheckTab(
         // Results List
         if (results.isNotEmpty()) {
             Text(
-                "نتایج بررسی (${results.size}):",
+                stringResource(Res.string.patt_results_title, results.size),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = if (isDark) Color.White else Color.Black,
@@ -520,7 +528,7 @@ private fun SniCheckTab(
                                 rstaSpoofFakeSni = sni,
                             )
                         }
-                        platform.toast("در تنظیمات جعل SNI ست شد:\nIP: $ip\nPort: $port\nSNI: $sni")
+                        platform.toast(toastSetSpoof.replace("%1$s", ip).replace("%2$s", port.toString()).replace("%3$s", sni))
                     },
                 )
             }
@@ -536,6 +544,8 @@ private fun SniResultCard(
     onApplySniSpoof: ((ip: String, port: Int, sni: String) -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
+    val toastIpCopied = stringResource(Res.string.patt_ip_copied)
+    val toastRowCopied = stringResource(Res.string.patt_row_copied)
     val statusColor = when (res.status) {
         SniResultStatus.OK -> Color(0xFF34C759)
         SniResultStatus.FAIL -> Color(0xFFFF3B30)
@@ -563,7 +573,7 @@ private fun SniResultCard(
                             IconButton(
                                 onClick = {
                                     platform.copyToClipboard(res.ip)
-                                    platform.toast("آی‌پی ${res.ip} کپی شد")
+                                    platform.toast(toastIpCopied.replace("%1$s", res.ip))
                                 },
                                 modifier = Modifier.size(24.dp),
                             ) {
@@ -582,7 +592,7 @@ private fun SniResultCard(
                     IconButton(
                         onClick = {
                             platform.copyToClipboard(res.toDisplayString())
-                            platform.toast("نتیجه سطر کپی شد")
+                            platform.toast(toastRowCopied)
                         },
                         modifier = Modifier.size(28.dp),
                     ) {
@@ -665,7 +675,7 @@ private fun SniResultCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "ست کردن در تنظیمات جعل SNI (Spoof)",
+                        stringResource(Res.string.patt_set_in_spoof),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                     )
@@ -679,12 +689,12 @@ private fun SniResultCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         when {
-                            ipMatch -> "✔ تأیید هویت IP کلادفلر (IP Verified)"
+                            ipMatch -> stringResource(Res.string.patt_ip_verified)
                             res.ipCheckResult.tlsSuccess && res.ipCheckResult.detectedIp != null ->
-                                "✔ هندشیک TLS موفق (IP شناسایی‌شده: ${res.ipCheckResult.detectedIp})"
+                                stringResource(Res.string.patt_tls_success, res.ipCheckResult.detectedIp ?: "")
                             res.ipCheckResult.tlsSuccess ->
-                                "✔ هندشیک TLS با SNI موفق (SNI Spoof OK)"
-                            else -> "✖ هویت IP تأیید نشد (${res.ipCheckResult.detectedIp ?: "بدون پاسخ"})"
+                                stringResource(Res.string.patt_sni_spoof_ok)
+                            else -> stringResource(Res.string.patt_ip_not_verified, res.ipCheckResult.detectedIp ?: stringResource(Res.string.patt_no_response))
                         },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
@@ -716,6 +726,8 @@ private fun CloudflareFixTab(
     onImportConfig: ((String) -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
+    val toastIpCopied = stringResource(Res.string.patt_ip_copied)
+    val toastRowCopied = stringResource(Res.string.patt_row_copied)
 
     val sampleVless = "vless://00000000-0000-0000-0000-000000000000@example.com:443?path=%2Fpath&security=tls&alpn=http%2F1.1&encryption=none&host=example.com&fp=unsafe&type=ws&sni=example.com#CloudflareFixExample"
 
@@ -734,6 +746,7 @@ private fun CloudflareFixTab(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var jsonCopied by remember { mutableStateOf(false) }
     var importedSuccess by remember { mutableStateOf(false) }
+    val defaultProcessErr = stringResource(Res.string.patt_err_process_config)
 
     Column(
         modifier = Modifier
@@ -757,7 +770,7 @@ private fun CloudflareFixTab(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "پشتیبانی انحصاری از لینک‌های VLESS+TLS+WS و VLESS+TLS+xHTTP. کانفیگ نهایی با تکه‌تکه‌سازی TCP Finalmask و uTLS ساخته می‌شود.",
+                    stringResource(Res.string.patt_cf_fix_desc),
                     fontSize = 12.sp,
                     color = if (isDark) Color.White else Color.Black,
                 )
@@ -777,14 +790,14 @@ private fun CloudflareFixTab(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "لینک کانفیگ VLESS",
+                        stringResource(Res.string.patt_cf_fix_input_label),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = if (isDark) Color.White else Color.Black,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         TextButton(onClick = { inputLink = sampleVless }) {
-                            Text("نمونه", fontSize = 12.sp, color = Color(0xFFFF9500))
+                            Text(stringResource(Res.string.patt_sample), fontSize = 12.sp, color = Color(0xFFFF9500))
                         }
                         IconButton(onClick = { showSettings = !showSettings }, modifier = Modifier.size(32.dp)) {
                             Icon(
@@ -801,7 +814,7 @@ private fun CloudflareFixTab(
                     value = inputLink,
                     onValueChange = { inputLink = it },
                     modifier = Modifier.fillMaxWidth().height(100.dp),
-                    placeholder = { Text("vless://... با شبکه ws یا xhttp") },
+                    placeholder = { Text(stringResource(Res.string.patt_cf_fix_placeholder)) },
                     shape = RoundedCornerShape(12.dp),
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 )
@@ -816,7 +829,7 @@ private fun CloudflareFixTab(
                 border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = 0.4f)),
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("تنظیمات Cloudflare Fix", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF9500))
+                    Text(stringResource(Res.string.patt_cf_fix_settings), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF9500))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -824,8 +837,8 @@ private fun CloudflareFixTab(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column {
-                            Text("تکه‌تکه‌سازی TCP Finalmask", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                            Text("تزریق بسته‌های چندتکه جهت دور زدن سانسور", fontSize = 11.sp, color = Color.Gray)
+                            Text(stringResource(Res.string.patt_tcp_finalmask), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(stringResource(Res.string.patt_tcp_finalmask_desc), fontSize = 11.sp, color = Color.Gray)
                         }
                         Switch(checked = enableFinalmask, onCheckedChange = { enableFinalmask = it })
                     }
@@ -834,7 +847,7 @@ private fun CloudflareFixTab(
                         OutlinedTextField(
                             value = socksPort.toString(),
                             onValueChange = { socksPort = it.toIntOrNull() ?: 10808 },
-                            label = { Text("پورت SOCKS") },
+                            label = { Text(stringResource(Res.string.patt_socks_port)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -842,7 +855,7 @@ private fun CloudflareFixTab(
                         OutlinedTextField(
                             value = httpPort.toString(),
                             onValueChange = { httpPort = it.toIntOrNull() ?: 10809 },
-                            label = { Text("پورت HTTP") },
+                            label = { Text(stringResource(Res.string.patt_http_port)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -852,13 +865,13 @@ private fun CloudflareFixTab(
                     OutlinedTextField(
                         value = dnsServer,
                         onValueChange = { dnsServer = it },
-                        label = { Text("سرور DoH") },
+                        label = { Text(stringResource(Res.string.patt_doh_server)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         singleLine = true,
                     )
 
-                    Text("اثرانگشت uTLS Fingerprint:", fontSize = 12.sp, color = Color.Gray)
+                    Text(stringResource(Res.string.patt_utls_fingerprint), fontSize = 12.sp, color = Color.Gray)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         kAvailableFingerprints.take(6).forEach { fp ->
                             FilterChip(
@@ -892,7 +905,7 @@ private fun CloudflareFixTab(
                     )
                     result = res
                 } catch (e: Exception) {
-                    errorMessage = e.message ?: "خطا در پردازش کانفیگ"
+                    errorMessage = e.message ?: defaultProcessErr
                 }
             },
             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -901,7 +914,7 @@ private fun CloudflareFixTab(
         ) {
             Icon(painter = painterResource(Res.drawable.ic_bolt), contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("تبدیل به کانفیگ بهینه‌شده Cloudflare Fix", fontWeight = FontWeight.Bold)
+            Text(stringResource(Res.string.patt_cf_fix_btn), fontWeight = FontWeight.Bold)
         }
 
         if (errorMessage != null) {
@@ -927,12 +940,12 @@ private fun CloudflareFixTab(
                 border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = 0.4f)),
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("خلاصه کانفیگ بهینه‌شده:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(stringResource(Res.string.patt_cf_fix_summary), fontWeight = FontWeight.Bold, fontSize = 14.sp)
 
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        BadgeChip("نام", res.remarks)
-                        BadgeChip("سرور", "${res.address}:${res.port}")
-                        BadgeChip("شبکه", res.network)
+                        BadgeChip(stringResource(Res.string.patt_name), res.remarks)
+                        BadgeChip(stringResource(Res.string.patt_server), "${res.address}:${res.port}")
+                        BadgeChip(stringResource(Res.string.patt_network), res.network)
                         BadgeChip("SNI", res.sni)
                         BadgeChip("Fingerprint", res.fingerprint)
                         BadgeChip("ALPN", res.alpn.joinToString(","))
@@ -945,7 +958,7 @@ private fun CloudflareFixTab(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("کانفیگ نهایی Xray JSON:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.patt_final_json), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             if (onImportConfig != null) {
                                 Button(
@@ -957,7 +970,7 @@ private fun CloudflareFixTab(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                 ) {
-                                    Text(if (importedSuccess) "اضافه شد ✔" else "افزودن به سرورها", fontSize = 11.sp)
+                                    Text(if (importedSuccess) stringResource(Res.string.patt_added) else stringResource(Res.string.patt_add_to_servers), fontSize = 11.sp)
                                 }
                             }
                             OutlinedButton(
@@ -968,7 +981,7 @@ private fun CloudflareFixTab(
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                             ) {
-                                Text(if (jsonCopied) "کپی شد ✔" else "کپی JSON", fontSize = 11.sp)
+                                Text(if (jsonCopied) stringResource(Res.string.patt_copied) else stringResource(Res.string.patt_copy_json), fontSize = 11.sp)
                             }
                         }
                     }
@@ -1003,6 +1016,8 @@ private fun AddEchTab(
     onImportConfig: ((String) -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
+    val toastIpCopied = stringResource(Res.string.patt_ip_copied)
+    val toastRowCopied = stringResource(Res.string.patt_row_copied)
 
     val sampleVless = "vless://00000000-0000-0000-0000-000000000000@example.com:443?path=%2Fws&security=tls&alpn=http%2F1.1&encryption=none&host=example.com&fp=chrome&type=ws&sni=example.com#EchSample"
 
@@ -1023,6 +1038,7 @@ private fun AddEchTab(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var jsonCopied by remember { mutableStateOf(false) }
     var importedSuccess by remember { mutableStateOf(false) }
+    val defaultEchErr = stringResource(Res.string.patt_err_apply_ech)
 
     Column(
         modifier = Modifier
@@ -1048,7 +1064,7 @@ private fun AddEchTab(
                 Column {
                     Text("Encrypted Client Hello (ECH)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Text(
-                        "تزریق رمزنگاری ECH به لینک‌های پراکسی (VLESS, VMess, Trojan, SS) و کانفیگ‌های کامل لودبالانسر و چِین همراه FakeDNS و روتینگ داخلی.",
+                        stringResource(Res.string.patt_ech_desc),
                         fontSize = 11.5.sp,
                         color = if (isDark) Color.LightGray else Color.DarkGray,
                     )
@@ -1069,14 +1085,14 @@ private fun AddEchTab(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "لینک یا کانفیگ JSON ورودی",
+                        stringResource(Res.string.patt_ech_input_label),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = if (isDark) Color.White else Color.Black,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         TextButton(onClick = { inputConfig = sampleVless }) {
-                            Text("نمونه", fontSize = 12.sp, color = Color(0xFFFF9500))
+                            Text(stringResource(Res.string.patt_sample), fontSize = 12.sp, color = Color(0xFFFF9500))
                         }
                         IconButton(onClick = { showSettings = !showSettings }, modifier = Modifier.size(32.dp)) {
                             Icon(
@@ -1093,7 +1109,7 @@ private fun AddEchTab(
                     value = inputConfig,
                     onValueChange = { inputConfig = it },
                     modifier = Modifier.fillMaxWidth().height(110.dp),
-                    placeholder = { Text("vless://, vmess://, trojan://, ss:// یا کانفیگ کامل Xray JSON...") },
+                    placeholder = { Text(stringResource(Res.string.patt_ech_placeholder)) },
                     shape = RoundedCornerShape(12.dp),
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 )
@@ -1108,7 +1124,7 @@ private fun AddEchTab(
                 border = BorderStroke(1.dp, Color(0xFFFF9500).copy(alpha = 0.4f)),
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("تنظیمات ECH & TLS", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF9500))
+                    Text(stringResource(Res.string.patt_ech_settings), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFFF9500))
 
                     OutlinedTextField(
                         value = echConfigList,
@@ -1137,7 +1153,7 @@ private fun AddEchTab(
                         OutlinedTextField(
                             value = socksPort.toString(),
                             onValueChange = { socksPort = it.toIntOrNull() ?: 10808 },
-                            label = { Text("پورت SOCKS") },
+                            label = { Text(stringResource(Res.string.patt_socks_port)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -1145,7 +1161,7 @@ private fun AddEchTab(
                         OutlinedTextField(
                             value = httpPort,
                             onValueChange = { httpPort = it },
-                            label = { Text("پورت HTTP (اختیاری)") },
+                            label = { Text(stringResource(Res.string.patt_http_port_optional)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -1156,7 +1172,7 @@ private fun AddEchTab(
                         OutlinedTextField(
                             value = dnsServer,
                             onValueChange = { dnsServer = it },
-                            label = { Text("سرور DoH") },
+                            label = { Text(stringResource(Res.string.patt_doh_server)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -1164,14 +1180,14 @@ private fun AddEchTab(
                         OutlinedTextField(
                             value = domesticDns,
                             onValueChange = { domesticDns = it },
-                            label = { Text("دی‌ان‌اس داخلی") },
+                            label = { Text(stringResource(Res.string.patt_internal_dns)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
                         )
                     }
 
-                    Text("اثرانگشت uTLS Fingerprint:", fontSize = 12.sp, color = Color.Gray)
+                    Text(stringResource(Res.string.patt_utls_fingerprint), fontSize = 12.sp, color = Color.Gray)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         kAvailableFingerprints.take(6).forEach { fp ->
                             FilterChip(
@@ -1207,7 +1223,7 @@ private fun AddEchTab(
                     )
                     result = res
                 } catch (e: Exception) {
-                    errorMessage = e.message ?: "خطا در اعمال ECH"
+                    errorMessage = e.message ?: defaultEchErr
                 }
             },
             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -1216,7 +1232,7 @@ private fun AddEchTab(
         ) {
             Icon(painter = painterResource(Res.drawable.ic_encrypted), contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("اعمال رمزنگاری ECH به کانفیگ", fontWeight = FontWeight.Bold)
+            Text(stringResource(Res.string.patt_ech_btn), fontWeight = FontWeight.Bold)
         }
 
         if (errorMessage != null) {
@@ -1242,15 +1258,15 @@ private fun AddEchTab(
                 border = BorderStroke(1.dp, Color(0xFFAF52DE).copy(alpha = 0.4f)),
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("خلاصه کانفیگ مجهز به ECH:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(stringResource(Res.string.patt_ech_summary), fontWeight = FontWeight.Bold, fontSize = 14.sp)
 
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        BadgeChip("نام", res.remarks)
-                        BadgeChip("پروتکل", res.protocol)
-                        BadgeChip("سرور/SNI", res.sni.ifEmpty { res.address })
-                        BadgeChip("شبکه", res.network)
-                        BadgeChip("تعداد نود", "${res.proxyCount}")
-                        BadgeChip("ECH Config", res.echConfigList.substringBefore('+'))
+                        BadgeChip(stringResource(Res.string.patt_name), res.remarks)
+                        BadgeChip(stringResource(Res.string.patt_protocol), res.protocol)
+                        BadgeChip(stringResource(Res.string.patt_server) + "/SNI", res.sni.ifEmpty { res.address })
+                        BadgeChip(stringResource(Res.string.patt_network), res.network)
+                        BadgeChip(stringResource(Res.string.patt_proxy_count), "${res.proxyCount}")
+                        BadgeChip(stringResource(Res.string.patt_ech_config), res.echConfigList.substringBefore('+'))
                     }
 
                     HorizontalDivider(color = if (isDark) Color(0xFF333336) else Color(0xFFE5E5EA))
@@ -1260,7 +1276,7 @@ private fun AddEchTab(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("کانفیگ نهایی Xray ECH JSON:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.patt_final_json), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             if (onImportConfig != null) {
                                 Button(
@@ -1272,7 +1288,7 @@ private fun AddEchTab(
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34C759)),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                 ) {
-                                    Text(if (importedSuccess) "اضافه شد ✔" else "افزودن به سرورها", fontSize = 11.sp)
+                                    Text(if (importedSuccess) stringResource(Res.string.patt_added) else stringResource(Res.string.patt_add_to_servers), fontSize = 11.sp)
                                 }
                             }
                             OutlinedButton(
@@ -1283,7 +1299,7 @@ private fun AddEchTab(
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                             ) {
-                                Text(if (jsonCopied) "کپی شد ✔" else "کپی JSON", fontSize = 11.sp)
+                                Text(if (jsonCopied) stringResource(Res.string.patt_copied) else stringResource(Res.string.patt_copy_json), fontSize = 11.sp)
                             }
                         }
                     }

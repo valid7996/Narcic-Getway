@@ -344,8 +344,9 @@ fun ConnectionRouteMapCard(
         label = "pin-pulse",
     )
 
-    val currentLocale = remember { java.util.Locale.getDefault() }
+    val currentLocale = java.util.Locale.getDefault()
     val isFa = currentLocale.language.equals("fa", ignoreCase = true)
+    val isAr = currentLocale.language.equals("ar", ignoreCase = true)
     val localizedDest = remember(destCode, currentLocale) {
         java.util.Locale("", destCode).getDisplayCountry(currentLocale)
             .takeIf { it.isNotBlank() && !it.equals(destCode, ignoreCase = true) }
@@ -363,7 +364,7 @@ fun ConnectionRouteMapCard(
     val originCountryLabel = if (isFa) {
         PERSIAN_COUNTRY_NAMES[originCode] ?: localizedOrigin ?: "ایران"
     } else {
-        localizedOrigin ?: "Iran"
+        localizedOrigin ?: if (isAr) "إيران" else "Iran"
     }
 
     val shape = RoundedCornerShape(24.dp)

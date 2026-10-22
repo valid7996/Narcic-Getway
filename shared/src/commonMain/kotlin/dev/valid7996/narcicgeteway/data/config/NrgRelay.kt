@@ -38,7 +38,7 @@ object NrgRelay {
     }
 
     suspend fun upload(endpoint: String, token: String?, blob: ByteArray, expiresAt: Long?, userKey: String? = null): NrgLink.Relay {
-        val host = hostOf(endpoint) ?: throw IllegalArgumentException("آدرس سرور رله نامعتبر است")
+        val host = hostOf(endpoint) ?: throw IllegalArgumentException("Invalid relay server address")
         val ttl = expiresAt?.let { ((it - currentTimeMillis()) / 1000L).coerceAtLeast(60L) + 3600L }
         val url = "https://$host/put" + (if (ttl != null) "?ttl=$ttl" else "")
         val headers = HashMap<String, String>()
@@ -49,12 +49,12 @@ object NrgRelay {
         if (!userKey.isNullOrBlank()) headers["X-NRG-Proof"] = ZsxCrypto.claimProof(userKey)
         val res = httpJson("POST", url, headers, NrgLink.toUrlSafe(blob), 15_000, 30_000, null)
         check(res.code in 200..299) { "HTTP ${res.code}" }
-        val id = ID_REGEX.find(res.body)?.groupValues?.get(1) ?: error("پاسخ نامعتبر از سرور رله")
+        val id = ID_REGEX.find(res.body)?.groupValues?.get(1) ?: error("Invalid response from relay server")
         return NrgLink.Relay(id, host)
     }
 
     suspend fun download(relay: NrgLink.Relay, userKey: String?, deviceId: String): ByteArray {
-        require(validHost(relay.host)) { "آدرس سرور رله در لینک نامعتبر است" }
+        require(validHost(relay.host)) { "Invalid relay host in link" }
         val res = if (userKey.isNullOrBlank()) {
             httpJson(
                 "GET", "https://${relay.host}/get/${relay.id}",
@@ -72,7 +72,7 @@ object NrgRelay {
             in 200..299 -> Unit
             401 -> throw RelayKeyRequiredException()
             403 -> throw ZsxWrongPasswordException()
-            404 -> error("این لینک پیدا نشد یا منقضی شده است")
+            404 -> error("Link not found or expired")
             409 -> throw RelayAlreadyClaimedException()
             else -> error("HTTP ${res.code}")
         }

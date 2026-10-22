@@ -3,6 +3,7 @@ package dev.valid7996.narcicgeteway.core.platform
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.os.Build
 import android.os.LocaleList
 import java.util.Locale
 
@@ -17,12 +18,28 @@ object LocaleManager {
         val config = Configuration(context.resources.configuration)
         config.setLocale(locale)
         config.setLocales(LocaleList(locale))
+        @Suppress("DEPRECATION")
+        runCatching { context.resources.updateConfiguration(config, context.resources.displayMetrics) }
         return context.createConfigurationContext(config)
     }
 
     fun reassert(languageTag: String?) {
         if (languageTag.isNullOrEmpty()) restoreSystemDefault()
         else pinProcessDefault(Locale.forLanguageTag(languageTag))
+    }
+
+    fun applySystemLocale(context: Context, languageTag: String?) {
+        reassert(languageTag)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            runCatching {
+                val lm = context.getSystemService(android.app.LocaleManager::class.java)
+                lm?.applicationLocales = if (languageTag.isNullOrEmpty()) {
+                    LocaleList.getEmptyLocaleList()
+                } else {
+                    LocaleList.forLanguageTags(languageTag)
+                }
+            }
+        }
     }
 
     private fun pinProcessDefault(locale: Locale) {

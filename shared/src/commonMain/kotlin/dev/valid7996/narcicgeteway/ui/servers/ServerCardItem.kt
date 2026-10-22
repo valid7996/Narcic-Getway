@@ -426,7 +426,7 @@ fun ExpiryCountdownBadge(
 
     val remainingMs = expiresAt - now
     val (expText, expColor) = if (remainingMs <= 0) {
-        "منقضی شده" to Color(0xFFFF3B30)
+        stringResource(Res.string.lock_expired) to Color(0xFFFF3B30)
     } else {
         val totalSeconds = (remainingMs / 1000L).coerceAtLeast(0)
         val days = totalSeconds / (24 * 3600L)
@@ -436,16 +436,16 @@ fun ExpiryCountdownBadge(
 
         val formatted = when {
             days > 0 -> {
-                if (hours > 0) "$days روز $hours س $minutes د" else "$days روز $minutes د"
+                if (hours > 0) stringResource(Res.string.card_countdown_days_hours_mins, days, hours, minutes) else stringResource(Res.string.card_countdown_days_mins, days, minutes)
             }
             hours > 0 -> {
-                "$hours س $minutes د $seconds ث"
+                stringResource(Res.string.card_countdown_hours_mins_secs, hours, minutes, seconds)
             }
             minutes > 0 -> {
-                "$minutes د $seconds ث"
+                stringResource(Res.string.card_countdown_mins_secs, minutes, seconds)
             }
             else -> {
-                "$seconds ثانیه"
+                stringResource(Res.string.card_countdown_secs, seconds)
             }
         }
         val color = when {

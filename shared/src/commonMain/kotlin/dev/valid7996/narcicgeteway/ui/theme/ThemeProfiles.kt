@@ -29,7 +29,7 @@ data class ThemeProfile(
 val ThemeProfiles: List<ThemeProfile> = listOf(
     ThemeProfile(
         id = "azkaban",
-        name = "Azkaban (آزکابان)",
+        name = "Azkaban",
         accentIndex = 2,
         amoled = false,
         download = 0xFFBAE6FD,
@@ -46,7 +46,7 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
     ),
     ThemeProfile(
         id = "noir",
-        name = "Noir (سیاه و سفید)",
+        name = "Noir",
         accentIndex = 9,
         amoled = true,
         download = 0xFFFFFFFF,
@@ -63,7 +63,7 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
     ),
     ThemeProfile(
         id = "blossom",
-        name = "Blossom (دخترونه صورتی)",
+        name = "Blossom",
         accentIndex = 5,
         amoled = true,
         download = 0xFFFF85A1,
@@ -80,7 +80,7 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
     ),
     ThemeProfile(
         id = "android8",
-        name = "Android 8 Classic (کلاسیک اندروید ۸ - کم‌مصرف)",
+        name = "Android 8 Classic",
         accentIndex = 0,
         amoled = false,
         download = 0xFF4CAF50,

@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.sp
 import dev.valid7996.narcicgeteway.data.tools.TelegramProxyItem
 import dev.valid7996.narcicgeteway.data.tools.TelegramProxyRepository
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
+import dev.valid7996.narcicgeteway.shared.resources.Res
+import dev.valid7996.narcicgeteway.shared.resources.*
+import org.jetbrains.compose.resources.stringResource
 import dev.valid7996.narcicgeteway.ui.components.PageHeader
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import kotlinx.coroutines.Job
@@ -90,6 +93,8 @@ fun TelegramProxyScreen(
     modifier: Modifier = Modifier,
 ) {
     val platform = LocalPlatform.current
+    val toastProxiesFetched = stringResource(Res.string.tg_proxies_fetched)
+    val lblTestPing = stringResource(Res.string.tg_test_ping_btn)
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val scope = rememberCoroutineScope()
 
@@ -117,7 +122,7 @@ fun TelegramProxyScreen(
             proxies.addAll(updated)
             isFetchingOnline = false
             val cleanChannelName = channelToFetch.trim().removePrefix("@").removePrefix("https://t.me/")
-            platform.toast("${updated.size} پروکسی زنده از @$cleanChannelName دریافت شد")
+            platform.toast(toastProxiesFetched.replace("%1$d", updated.size.toString()).replace("%2$s", cleanChannelName))
         }
     }
 
@@ -165,7 +170,7 @@ fun TelegramProxyScreen(
         ) {
             item {
                 PageHeader(
-                    title = "پروکسی‌های تلگرام (Telegram Proxies)",
+                    title = stringResource(Res.string.tg_proxies_title),
                     subtitle = "MTProto Direct & Fast Channel Fetcher",
                 )
             }
@@ -185,7 +190,7 @@ fun TelegramProxyScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "کانال تلگرام مبدأ پروکسی‌ها",
+                                text = stringResource(Res.string.tg_channel_source),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF1C1C1E),
@@ -195,7 +200,7 @@ fun TelegramProxyScreen(
                                 color = accentColor.copy(alpha = 0.15f),
                             ) {
                                 Text(
-                                    text = "کانال عمومی (Public)",
+                                    text = stringResource(Res.string.tg_public_channel),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = accentColor,
@@ -214,8 +219,8 @@ fun TelegramProxyScreen(
                             OutlinedTextField(
                                 value = channelInput,
                                 onValueChange = { channelInput = it },
-                                label = { Text("آیدی کانال تلگرام") },
-                                placeholder = { Text("مثال: ProxyMTProto یا @ProxyMTProto") },
+                                label = { Text(stringResource(Res.string.tg_channel_id_label)) },
+                                placeholder = { Text(stringResource(Res.string.tg_channel_id_placeholder)) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -242,7 +247,7 @@ fun TelegramProxyScreen(
                                         strokeWidth = 2.dp,
                                     )
                                 } else {
-                                    Text("دریافت 📥", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(stringResource(Res.string.tg_fetch_btn), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 }
                             }
                         }
@@ -251,7 +256,7 @@ fun TelegramProxyScreen(
 
                         // Quick channel chips
                         Text(
-                            text = "کانال‌های پیشنهادی:",
+                            text = stringResource(Res.string.tg_suggested_channels),
                             fontSize = 12.sp,
                             color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                         )
@@ -309,7 +314,7 @@ fun TelegramProxyScreen(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "${proxies.size} پروکسی آماده اتصال",
+                                    text = stringResource(Res.string.tg_proxies_ready, proxies.size),
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp,
                                     color = if (isDark) Color(0xFFE5E5EA) else Color(0xFF1C1C1E),
@@ -323,7 +328,7 @@ fun TelegramProxyScreen(
                                     color = Color(0xFF34C759).copy(alpha = 0.15f),
                                 ) {
                                     Text(
-                                        text = "بهترین: $bestPing ms",
+                                        text = stringResource(Res.string.tg_best_ping, bestPing),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF34C759),
@@ -335,7 +340,7 @@ fun TelegramProxyScreen(
 
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = "پروکسی‌ها مستقیماً با پروتکل MTProto و استتار TLS باز می‌شوند. با زدن «اتصال در تلگرام»، اپلیکیشن تلگرام باز شده و پروکسی بلافاصله اضافه می‌شود.",
+                            text = stringResource(Res.string.tg_info_desc),
                             fontSize = 12.sp,
                             color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                             lineHeight = 18.sp,
@@ -368,9 +373,9 @@ fun TelegramProxyScreen(
                                     strokeWidth = 2.dp,
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("در حال تست...", fontSize = 12.sp)
+                                Text(stringResource(Res.string.tg_testing), fontSize = 12.sp)
                             } else {
-                                Text("تست همه پینگ‌ها ⚡", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text(stringResource(Res.string.tg_test_all_pings), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             }
                         }
 
@@ -387,14 +392,15 @@ fun TelegramProxyScreen(
                             ),
                             modifier = Modifier.weight(1f).height(46.dp),
                         ) {
-                            Text("مرتب‌سازی پینگ", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            Text(stringResource(Res.string.tg_sort_ping), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
 
+                        val toastCopiedAll = stringResource(Res.string.tg_copy_all)
                         Button(
                             onClick = {
                                 val allLinks = proxies.joinToString("\n\n") { "${it.title}: ${it.webUri}" }
                                 platform.copyToClipboard(allLinks)
-                                platform.toast("همه پروکسی‌ها کپی شدند")
+                                platform.toast(toastCopiedAll)
                             },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -403,7 +409,7 @@ fun TelegramProxyScreen(
                             ),
                             modifier = Modifier.weight(0.9f).height(46.dp),
                         ) {
-                            Text("کپی همه", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            Text(stringResource(Res.string.tg_copy_all), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -459,7 +465,7 @@ fun TelegramProxyScreen(
                                     proxy.pingMs in 1..299 -> Triple(Color(0xFF34C759).copy(alpha = 0.15f), Color(0xFF34C759), "${proxy.pingMs} ms")
                                     proxy.pingMs in 300..799 -> Triple(Color(0xFFFF9500).copy(alpha = 0.15f), Color(0xFFFF9500), "${proxy.pingMs} ms")
                                     proxy.pingMs >= 800 -> Triple(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30), "${proxy.pingMs} ms")
-                                    else -> Triple(if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA), if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73), "تست پینگ")
+                                    else -> Triple(if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA), if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73), lblTestPing)
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
@@ -493,13 +499,14 @@ fun TelegramProxyScreen(
                                 ),
                                 modifier = Modifier.weight(1.5f).height(38.dp),
                             ) {
-                                Text("اتصال در تلگرام 🚀", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(Res.string.tg_connect_in_tg), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
 
+                            val toastCopiedLink = stringResource(Res.string.tg_copy_link)
                             Button(
                                 onClick = {
                                     platform.copyToClipboard(proxy.webUri)
-                                    platform.toast("لینک پروکسی کپی شد")
+                                    platform.toast(toastCopiedLink)
                                 },
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -508,7 +515,7 @@ fun TelegramProxyScreen(
                                 ),
                                 modifier = Modifier.weight(1f).height(38.dp),
                             ) {
-                                Text("کپی لینک", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                Text(stringResource(Res.string.tg_copy_link), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                     }

@@ -443,7 +443,7 @@ class SniSpoofCheckService(
                     target = target,
                     ip = "",
                     status = SniResultStatus.ERROR,
-                    errorMessage = "عدم پاسخ DNS / عدم ترجمه دامنه",
+                    errorMessage = "DNS resolution failed / Domain not resolved",
                 ),
             )
         }
@@ -495,7 +495,7 @@ class SniSpoofCheckService(
                         ip = ip,
                         status = SniResultStatus.FAIL,
                         portResults = portResults,
-                        errorMessage = "پورت باز است اما هندشیک TLS یا پاسخ HTTPS ناموفق بود (احتمال فیلتر SNI)",
+                        errorMessage = "Port open but TLS handshake / HTTPS response failed (likely SNI filtered)",
                     ),
                 )
             } else {
@@ -505,7 +505,7 @@ class SniSpoofCheckService(
                         ip = ip,
                         status = SniResultStatus.FAIL,
                         portResults = portResults,
-                        errorMessage = "عدم اتصال / همه پورت‌ها بسته",
+                        errorMessage = "Connection failed / All ports closed",
                     ),
                 )
             }
@@ -542,13 +542,13 @@ object SniSpoofCheckEngine {
             if (publicIp != null) onPublicIpDetected(publicIp)
         }
 
-        onProgress(0, targets.size, "در حال بررسی دامنه‌ها...")
+        onProgress(0, targets.size, "Checking domains...")
 
         service.scanTargets(targets, publicIp) { targetResults, completed, total ->
             for (res in targetResults) {
                 onResult(res)
             }
-            onProgress(completed, total, "بررسی $completed از $total دامنه...")
+            onProgress(completed, total, "Checking $completed of $total domains...")
         }
     }
 }

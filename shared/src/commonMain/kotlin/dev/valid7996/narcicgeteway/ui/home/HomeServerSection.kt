@@ -155,6 +155,10 @@ internal fun HomeServerSection(
     var relayPrompt by remember { mutableStateOf<String?>(null) }
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val torAddedToast = stringResource(Res.string.tor_added)
+    val toastLinkUsedOther = stringResource(Res.string.toast_link_used_other_device)
+    val toastConfigExpired = stringResource(Res.string.toast_config_expired)
+    val toastLockedOtherDevice = stringResource(Res.string.toast_config_locked_other_device)
+    val toastWrongExclusiveKey = stringResource(Res.string.toast_wrong_exclusive_key)
 
     fun tryHandleLocked(text: String): Boolean {
         if (dev.valid7996.narcicgeteway.crypto.NrgLink.findRelay(text) != null) {
@@ -170,7 +174,7 @@ internal fun HomeServerSection(
                         if (err is dev.valid7996.narcicgeteway.data.config.RelayKeyRequiredException) {
                             relayPrompt = text
                         } else if (err is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException) {
-                            platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده است.")
+                            platform.toast(toastLinkUsedOther)
                         } else {
                             platform.toast(importFailed)
                         }
@@ -183,7 +187,7 @@ internal fun HomeServerSection(
         val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull() ?: return false
         val meta = runCatching { repository.peekLocked(bytes) }.getOrNull() ?: return false
         if (meta.isExpired) {
-            platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+            platform.toast(toastConfigExpired)
             return true
         }
         if (meta.deviceBound) {
@@ -197,11 +201,11 @@ internal fun HomeServerSection(
                         keyImp.fold(
                             onSuccess = { platform.toast(importedTemplate.format(1)) },
                             onFailure = {
-                                platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                                platform.toast(toastLockedOtherDevice)
                             },
                         )
                     } else {
-                        platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                        platform.toast(toastLockedOtherDevice)
                     }
                 },
             )
@@ -400,12 +404,12 @@ internal fun HomeServerSection(
                             else -> currentSub?.name
                         }
                         val tcpPingLabel = if (currentScopeName != null) {
-                            "پینگ TCP سرورهای $currentScopeName"
+                            stringResource(Res.string.toast_ping_tcp_scope, currentScopeName)
                         } else {
                             stringResource(Res.string.ping_tcp_all)
                         }
                         val realPingLabel = if (currentScopeName != null) {
-                            "تأخیر واقعی سرورهای $currentScopeName"
+                            stringResource(Res.string.toast_real_delay_scope, currentScopeName)
                         } else {
                             stringResource(Res.string.ping_real_all)
                         }
@@ -1100,9 +1104,9 @@ internal fun HomeServerSection(
                         .onFailure { err ->
                             when (err) {
                                 is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException ->
-                                    platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده است.")
+                                    platform.toast(toastLinkUsedOther)
                                 is dev.valid7996.narcicgeteway.crypto.ZsxWrongPasswordException ->
-                                    platform.toast("کلید اختصاصی وارد شده اشتباه است.")
+                                    platform.toast(toastWrongExclusiveKey)
                                 else -> platform.toast(importFailed)
                             }
                         }

@@ -281,18 +281,18 @@ private fun WelcomeStep() {
             ) {
                 WelcomeFeatureRow(
                     icon = "🌐",
-                    title = "زبان برنامه (Language)",
-                    subtitle = "پشتیبانی کامل از فارسی، انگلیسی و سایر زبان‌ها",
+                    title = stringResource(Res.string.onboarding_lang_title),
+                    subtitle = stringResource(Res.string.onboarding_lang_sub),
                 )
                 WelcomeFeatureRow(
                     icon = "🎨",
-                    title = "انتخاب طرح ظاهری (Themes)",
-                    subtitle = "چهار تم اختصاصی: پیش‌فرض، آزکابان، سیاه و سفید، و دخترونه صورتی",
+                    title = stringResource(Res.string.onboarding_theme_title),
+                    subtitle = stringResource(Res.string.onboarding_theme_sub),
                 )
                 WelcomeFeatureRow(
                     icon = "🌓",
-                    title = "حالت تیره و روشن (Dark Mode)",
-                    subtitle = "امکان هماهنگی خودکار با سیستم یا انتخاب حالت شب/روز",
+                    title = stringResource(Res.string.onboarding_dark_title),
+                    subtitle = stringResource(Res.string.onboarding_dark_sub),
                 )
             }
         }
@@ -351,7 +351,7 @@ private fun LanguageStep(
 
         val languages = listOf(
             Triple(AppLanguage.Persian, "فارسی" to "Persian", "🇮🇷"),
-            Triple(AppLanguage.English, "English" to "انگلیسی", "🇬🇧"),
+            Triple(AppLanguage.English, "English" to "English", "🇬🇧"),
             Triple(AppLanguage.Arabic, "العربية" to "Arabic", "🇸🇦"),
             Triple(AppLanguage.System, stringResource(Res.string.settings_language_system) to "System Default", "🌐"),
             Triple(AppLanguage.Chinese, "中文" to "Chinese", "🇨🇳"),
@@ -398,11 +398,15 @@ private fun ThemeProfileStep(
 
         // Live Interactive Theme Preview Card
         val activeProfileId = settings.themeProfileId
+        val strAzkabanDesc = stringResource(Res.string.onboarding_theme_azkaban_desc)
+        val strNoirDesc = stringResource(Res.string.onboarding_theme_noir_desc)
+        val strBlossomDesc = stringResource(Res.string.onboarding_theme_blossom_desc)
+        val strDefaultDesc = stringResource(Res.string.onboarding_theme_default_desc)
         val preview = when (activeProfileId) {
-            "azkaban" -> ThemePreviewInfo("Azkaban (آزکابان)", Color(0xFF38BDF8), "🪐", "آبی سایبرنتیک نئونی و های‌تک")
-            "noir" -> ThemePreviewInfo("Noir (سیاه و سفید)", Color(0xFFFFFFFF), "🌑", "مشکی مونوکروم دارک و مینیمال")
-            "blossom" -> ThemePreviewInfo("Blossom (دخترونه صورتی)", Color(0xFFF472B6), "🌸", "صورتی و رز پاستلی دخترونه")
-            else -> ThemePreviewInfo("Narcis (پیش‌فرض)", Color(0xFF0F9D6C), "🛡️", "سبز زمردی کلاسیک نارسیس")
+            "azkaban" -> ThemePreviewInfo(stringResource(Res.string.theme_azkaban_name), Color(0xFF38BDF8), "🪐", strAzkabanDesc)
+            "noir" -> ThemePreviewInfo(stringResource(Res.string.theme_noir_name), Color(0xFFFFFFFF), "🌑", strNoirDesc)
+            "blossom" -> ThemePreviewInfo(stringResource(Res.string.theme_blossom_name), Color(0xFFF472B6), "🌸", strBlossomDesc)
+            else -> ThemePreviewInfo(stringResource(Res.string.onb_preset_stock), Color(0xFF0F9D6C), "🛡️", strDefaultDesc)
         }
 
         Surface(
@@ -457,7 +461,7 @@ private fun ThemeProfileStep(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "فعال",
+                        text = stringResource(Res.string.onboarding_active),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (preview.accent == Color.White) Color.Black else Color.White,
@@ -473,7 +477,7 @@ private fun ThemeProfileStep(
             val isStockSelected = settings.themeProfileId == null || settings.themeProfileId == "narcis"
             ChoiceCard(
                 title = stringResource(Res.string.onb_preset_stock),
-                subtitle = "سبز زمردی کلاسیک نارسیس",
+                subtitle = strDefaultDesc,
                 selected = isStockSelected,
                 accentColor = Color(0xFF0F9D6C),
                 onClick = { onUpdate { it.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false) } },
@@ -486,9 +490,9 @@ private fun ThemeProfileStep(
             ThemeProfiles.forEach { profile ->
                 val isSelected = settings.themeProfileId == profile.id
                 val (description, cardAccent) = when (profile.id) {
-                    "azkaban" -> "آبی سایبرنتیک نئونی و های‌تک" to Color(0xFF38BDF8)
-                    "noir" -> "مشکی مونوکروم دارک و مینیمال" to Color(0xFFFFFFFF)
-                    "blossom" -> "صورتی و رز پاستلی دخترونه" to Color(0xFFF472B6)
+                    "azkaban" -> strAzkabanDesc to Color(0xFF38BDF8)
+                    "noir" -> strNoirDesc to Color(0xFFFFFFFF)
+                    "blossom" -> strBlossomDesc to Color(0xFFF472B6)
                     else -> null to MaterialTheme.colorScheme.primary
                 }
                 ChoiceCard(
@@ -530,17 +534,17 @@ private fun ThemeModeStep(
             Triple(
                 ThemeMode.System,
                 stringResource(Res.string.settings_theme_system),
-                "هماهنگ با حالت تیره یا روشن تنظیمات گوشی شما",
+                stringResource(Res.string.onboarding_dark_system_desc),
             ) to ("📱" to MaterialTheme.colorScheme.primary),
             Triple(
                 ThemeMode.Dark,
                 stringResource(Res.string.settings_theme_dark),
-                "رنگ‌های تیره برای راحتی چشم و مصرف باتری کمتر",
+                stringResource(Res.string.onboarding_dark_dark_desc),
             ) to ("🌙" to Color(0xFF818CF8)),
             Triple(
                 ThemeMode.Light,
                 stringResource(Res.string.settings_theme_light),
-                "رنگ‌های روشن برای دید واضح در نور روز",
+                stringResource(Res.string.onboarding_dark_light_desc),
             ) to ("☀️" to Color(0xFFF59E0B)),
         )
 
@@ -563,7 +567,7 @@ private fun ThemeModeStep(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            text = "گزینه‌های تکمیلی نمایش (Display Options)",
+            text = stringResource(Res.string.onboarding_display_options),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -573,8 +577,8 @@ private fun ThemeModeStep(
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // AMOLED Black
             ChoiceCard(
-                title = "مشکی عمیق امولد (AMOLED Black)",
-                subtitle = "پس‌زمینه کاملاً سیاه خالص (#000000) سازگار با تمام ۴ قالب",
+                title = stringResource(Res.string.onboarding_amoled_title),
+                subtitle = stringResource(Res.string.onboarding_amoled_sub),
                 selected = settings.amoledBlack,
                 accentColor = Color.White,
                 leading = { Text("🖤", fontSize = 20.sp) },
@@ -583,8 +587,8 @@ private fun ThemeModeStep(
 
             // Dynamic Color
             ChoiceCard(
-                title = "رنگ پویا سیستم (Dynamic Color)",
-                subtitle = "استفاده از پالت رنگی پس‌زمینه گوشی (اندروید ۱۲ به بالا)",
+                title = stringResource(Res.string.onboarding_dynamic_color_title),
+                subtitle = stringResource(Res.string.onboarding_dynamic_color_sub),
                 selected = settings.dynamicColor,
                 accentColor = MaterialTheme.colorScheme.primary,
                 leading = { Text("✨", fontSize = 20.sp) },

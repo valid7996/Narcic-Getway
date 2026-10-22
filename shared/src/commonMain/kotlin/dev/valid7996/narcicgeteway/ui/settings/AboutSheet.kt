@@ -186,7 +186,7 @@ fun AboutSheet(onDismiss: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        "تشکر خاص از:",
+                        stringResource(Res.string.about_special_thanks),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = if (isDark) Color(0xFFFF9500) else Color(0xFFD97706),

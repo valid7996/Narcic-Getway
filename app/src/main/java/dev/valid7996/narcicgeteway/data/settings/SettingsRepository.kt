@@ -453,7 +453,7 @@ class SettingsRepository(context: Context) {
             putString("rsta_method", s.rstaSpoofMethod)
 
             putString("ai_settings", aiJson.encodeToString(AiSettings.serializer(), s.ai))
-        }.apply()
+        }.commit()
         dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectIp = s.rstaSpoofConnectIp.trim().ifEmpty { dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
         dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectPort = s.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT
         dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultFakeSni = s.rstaSpoofFakeSni.trim().ifEmpty { dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_FAKE_SNI }

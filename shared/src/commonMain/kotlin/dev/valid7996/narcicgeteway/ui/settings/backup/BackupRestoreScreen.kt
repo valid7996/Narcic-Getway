@@ -56,18 +56,12 @@ import dev.valid7996.narcicgeteway.data.backup.BackupManager
 import dev.valid7996.narcicgeteway.data.config.ConfigRepository
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.shared.resources.Res
-import dev.valid7996.narcicgeteway.shared.resources.ic_check
-import dev.valid7996.narcicgeteway.shared.resources.ic_content_paste
-import dev.valid7996.narcicgeteway.shared.resources.ic_description
-import dev.valid7996.narcicgeteway.shared.resources.ic_download
-import dev.valid7996.narcicgeteway.shared.resources.ic_ios_share
-import dev.valid7996.narcicgeteway.shared.resources.ic_settings
-import dev.valid7996.narcicgeteway.shared.resources.ic_sync
-import dev.valid7996.narcicgeteway.shared.resources.ic_upload
+import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.ui.components.PageHeader
 import dev.valid7996.narcicgeteway.ui.components.ProvidePageBack
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,8 +131,8 @@ fun BackupRestoreScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         PageHeader(
-            title = "پشتیبان‌گیری و بازیابی",
-            subtitle = "انتقال و ذخیره کامل تنظیمات، سرورها و اشتراک‌ها",
+            title = stringResource(Res.string.backup_screen_title),
+            subtitle = stringResource(Res.string.backup_screen_subtitle),
         )
 
         // ─── 1. Export Card ────────────────────────────────────────────────────────
@@ -157,14 +151,14 @@ fun BackupRestoreScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "ایجاد نسخه پشتیبان (Export Backup)",
+                        stringResource(Res.string.backup_export_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                     )
                 }
 
                 Text(
-                    "یک خروجی استاندارد شامل تمام تنظیمات نرم‌افزار، ${profiles.size} سرور و ${subscriptions.size} لینک اشتراک جهت انتقال یا نگهداری ایجاد می‌شود.",
+                    stringResource(Res.string.backup_export_desc, profiles.size, subscriptions.size),
                     fontSize = 12.sp,
                     color = Color.Gray,
                     lineHeight = 18.sp,
@@ -174,6 +168,7 @@ fun BackupRestoreScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    val toastCopied = stringResource(Res.string.backup_copy_btn)
                     Button(
                         onClick = {
                             val backupText = BackupManager.exportBackup(
@@ -183,7 +178,7 @@ fun BackupRestoreScreen(
                             )
                             platform.copyToClipboard(backupText)
                             backupCopied = true
-                            platform.toast("متن پشتیبان در کلیپ‌بورد کپی شد")
+                            platform.toast(toastCopied)
                         },
                         modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -195,7 +190,7 @@ fun BackupRestoreScreen(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text(if (backupCopied) "کپی شد" else "کپی بکاپ", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(if (backupCopied) stringResource(Res.string.copied) else stringResource(Res.string.backup_copy_btn), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     Button(
@@ -217,7 +212,7 @@ fun BackupRestoreScreen(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("ذخیره فایل JSON", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(Res.string.backup_save_json), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     OutlinedButton(
@@ -264,7 +259,7 @@ fun BackupRestoreScreen(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "بازیابی نسخه پشتیبان (Restore)",
+                            stringResource(Res.string.backup_restore_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                         )
@@ -279,7 +274,7 @@ fun BackupRestoreScreen(
                                     if (text.isNotBlank()) {
                                         restoreInput = text
                                         restoreMessage = null
-                                        platform.toast("فایل ${picked.name} انتخاب شد")
+                                        platform.toast(picked.name)
                                     }
                                 }
                             },
@@ -293,7 +288,7 @@ fun BackupRestoreScreen(
                                 modifier = Modifier.size(14.dp),
                             )
                             Spacer(Modifier.width(4.dp))
-                            Text("انتخاب فایل JSON", fontSize = 11.sp)
+                            Text(stringResource(Res.string.backup_pick_file), fontSize = 11.sp)
                         }
 
                         OutlinedButton(
@@ -301,9 +296,7 @@ fun BackupRestoreScreen(
                                 val clip = platform.readClipboard()
                                 if (!clip.isNullOrBlank()) {
                                     restoreInput = clip.trim()
-                                    platform.toast("متن از کلیپ‌بورد جای‌گذاری شد")
-                                } else {
-                                    platform.toast("کلیپ‌بورد خالی است")
+                                    platform.toast(clip)
                                 }
                             },
                             shape = RoundedCornerShape(10.dp),
@@ -316,7 +309,7 @@ fun BackupRestoreScreen(
                                 modifier = Modifier.size(14.dp),
                             )
                             Spacer(Modifier.width(4.dp))
-                            Text("جای‌گذاری", fontSize = 11.sp)
+                            Text(stringResource(Res.string.backup_paste_btn), fontSize = 11.sp)
                         }
                     }
                 }
@@ -328,7 +321,7 @@ fun BackupRestoreScreen(
                         restoreMessage = null
                     },
                     modifier = Modifier.fillMaxWidth().height(110.dp),
-                    placeholder = { Text("متن پشتیبان JSON را در اینجا وارد یا جای‌گذاری کنید...") },
+                    placeholder = { Text(stringResource(Res.string.backup_placeholder)) },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF34C759),
@@ -339,7 +332,7 @@ fun BackupRestoreScreen(
 
                 // Selectable elements to restore
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("بخش‌های مورد نظر جهت بازیابی:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray)
+                    Text(stringResource(Res.string.backup_sections_title), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.Gray)
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
@@ -347,7 +340,7 @@ fun BackupRestoreScreen(
                             onCheckedChange = { restoreProfilesChecked = it },
                             colors = CheckboxDefaults.colors(checkedColor = Color(0xFF34C759)),
                         )
-                        Text("سرورها و کانفیگ‌ها (Servers)", fontSize = 13.sp)
+                        Text(stringResource(Res.string.backup_sec_servers), fontSize = 13.sp)
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -356,7 +349,7 @@ fun BackupRestoreScreen(
                             onCheckedChange = { restoreSubsChecked = it },
                             colors = CheckboxDefaults.colors(checkedColor = Color(0xFF34C759)),
                         )
-                        Text("اشتراک‌ها (Subscriptions)", fontSize = 13.sp)
+                        Text(stringResource(Res.string.backup_sec_subs), fontSize = 13.sp)
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -365,7 +358,7 @@ fun BackupRestoreScreen(
                             onCheckedChange = { restoreSettingsChecked = it },
                             colors = CheckboxDefaults.colors(checkedColor = Color(0xFF34C759)),
                         )
-                        Text("تنظیمات ظاهری و هسته برنامه (Settings)", fontSize = 13.sp)
+                        Text(stringResource(Res.string.backup_sec_settings), fontSize = 13.sp)
                     }
                 }
 
@@ -377,8 +370,8 @@ fun BackupRestoreScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column {
-                        Text("جایگزینی کامل (Replace All)", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Text("حذف کانفیگ‌های قبلی و جایگزینی با فایل بکاپ", fontSize = 11.sp, color = Color.Gray)
+                        Text(stringResource(Res.string.backup_replace_all), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(Res.string.backup_replace_all_desc), fontSize = 11.sp, color = Color.Gray)
                     }
                     Switch(checked = replaceExisting, onCheckedChange = { replaceExisting = it })
                 }
@@ -392,7 +385,7 @@ fun BackupRestoreScreen(
 
                                 if (restoreSettingsChecked && backup.settings != null) {
                                     onUpdateSettings { backup.settings }
-                                    details.add("تنظیمات برنامه")
+                                    details.add("Settings")
                                 }
 
                                 val profilesToRestore = if (restoreProfilesChecked) backup.profiles else null
@@ -403,18 +396,19 @@ fun BackupRestoreScreen(
                                     newSubscriptions = subsToRestore,
                                     replaceProfiles = replaceExisting,
                                     replaceSubscriptions = replaceExisting,
+                                Untracked = false,
                                 )
 
-                                if (restoredProfiles > 0) details.add("$restoredProfiles سرور")
-                                if (restoredSubs > 0) details.add("$restoredSubs اشتراک")
+                                if (restoredProfiles > 0) details.add("$restoredProfiles servers")
+                                if (restoredSubs > 0) details.add("$restoredSubs subscriptions")
 
                                 restoreSuccess = true
-                                restoreMessage = "با موفقیت بازیابی شد: ${details.joinToString("، ")}"
+                                restoreMessage = details.joinToString(", ")
                                 platform.toast(restoreMessage!!)
                             },
                             onFailure = { err ->
                                 restoreSuccess = false
-                                restoreMessage = "خطا در خواندن فایل بکاپ: فرمت JSON نامعتبر است."
+                                restoreMessage = err.message ?: "Invalid JSON"
                                 platform.toast(restoreMessage!!)
                             },
                         )
@@ -426,7 +420,7 @@ fun BackupRestoreScreen(
                 ) {
                     Icon(painter = painterResource(Res.drawable.ic_sync), contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("شروع بازیابی اطلاعات", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(stringResource(Res.string.backup_start_restore), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
                 // Status message

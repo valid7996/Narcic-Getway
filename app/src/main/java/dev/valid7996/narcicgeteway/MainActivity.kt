@@ -180,7 +180,9 @@ class MainActivity : ComponentActivity() {
 
     override fun attachBaseContext(newBase: Context) {
         val tag = SettingsRepository.readLanguageTag(newBase)
-        super.attachBaseContext(LocaleManager.wrap(newBase, tag))
+        val wrapped = LocaleManager.wrap(newBase, tag)
+        super.attachBaseContext(wrapped)
+        applyOverrideConfiguration(wrapped.resources.configuration)
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
@@ -315,6 +317,7 @@ class MainActivity : ComponentActivity() {
                         onUpdateSettings = repo::update,
                         onLanguage = { lang ->
                             repo.update { it.copy(language = lang) }
+                            dev.valid7996.narcicgeteway.core.platform.LocaleManager.applySystemLocale(this@MainActivity, lang.tag)
                             recreate()
                         },
                         aiBridge = aiBridge,

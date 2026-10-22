@@ -10,24 +10,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
+import org.jetbrains.compose.resources.stringResource
+import dev.valid7996.narcicgeteway.shared.resources.Res
+import dev.valid7996.narcicgeteway.shared.resources.*
+
 /** Asks for the private key of a short (relay) link that was pasted without its key. */
 @Composable
 fun RelayKeyDialog(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
     var key by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("کلید اختصاصی") },
+        title = { Text(stringResource(Res.string.relay_key_dialog_title)) },
         text = {
             OutlinedTextField(
                 value = key,
                 onValueChange = { key = it },
-                label = { Text("کلید (مثلاً NG-XXXX-XXXX-XXXX)") },
+                label = { Text(stringResource(Res.string.relay_key_dialog_label)) },
                 singleLine = true,
             )
         },
         confirmButton = {
-            TextButton(onClick = { if (key.isNotBlank()) onSubmit(key.trim()) }) { Text("فعال‌سازی") }
+            TextButton(onClick = { if (key.isNotBlank()) onSubmit(key.trim()) }) { Text(stringResource(Res.string.relay_key_dialog_activate)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("انصراف") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
     )
 }

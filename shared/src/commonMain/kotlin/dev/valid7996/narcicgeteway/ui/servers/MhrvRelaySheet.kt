@@ -272,7 +272,7 @@ private fun DeploymentIdsEditor(
             )
             if (ids.isNotEmpty()) {
                 Text(
-                    "${ids.size} شناسه",
+                    stringResource(Res.string.mhrv_ids_count, ids.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                 )
@@ -394,7 +394,7 @@ private fun SniPoolEditor(
             } else {
                 val err = runCatching {
                     val m = Regex(""""error"\s*:\s*"([^"]+)"""").find(raw)
-                    m?.groupValues?.get(1) ?: "خطا در اتصال"
+                    m?.groupValues?.get(1) ?: stringResource(Res.string.mhrv_connection_error)
                 }.getOrDefault("Failed")
                 probeMap[sni] = SniProbeStatus.Err(err)
             }

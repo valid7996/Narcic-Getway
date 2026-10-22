@@ -146,20 +146,28 @@ fun ServersScreen(
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
     val lockedCannotShare = stringResource(Res.string.locked_cannot_share)
+    val toastLockedOtherDevice = stringResource(Res.string.toast_config_locked_other_device)
+    val toastKeyAlreadyUsed = stringResource(Res.string.toast_key_already_used)
+    val toastConfigExpired = stringResource(Res.string.toast_config_expired)
+    val toastLinkUsedOtherDevice = stringResource(Res.string.toast_link_used_other_device)
+    val toastWrongExclusiveKey = stringResource(Res.string.toast_wrong_exclusive_key)
+    val toastShortlinkFailed = stringResource(Res.string.toast_shortlink_fetch_failed)
+    val toastBackupRestoredTmpl = stringResource(Res.string.toast_backup_restored)
+    val personalSubTitle = stringResource(Res.string.sub_personal_title)
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val columnsCount = (settings?.serverGridColumns ?: if (twoColumns) 2 else 1).coerceIn(1, 3)
 
     fun toastImportFailure(e: Throwable) {
-        if (e.message?.contains("قفل شده است") == true) {
-            scope.launch { platform.toast(e.message ?: "این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است.") }
+        if (e.message?.contains("قفل شده است") == true || e.message?.contains("locked", ignoreCase = true) == true) {
+            scope.launch { platform.toast(e.message ?: toastLockedOtherDevice) }
             return
         }
         if (e is dev.valid7996.narcicgeteway.crypto.ZsxKeyConsumedException) {
-            scope.launch { platform.toast("این کلید اختصاصی قبلاً یک بار استفاده شده و باطل گردیده است (کلید یک‌بار مصرف).") }
+            scope.launch { platform.toast(toastKeyAlreadyUsed) }
             return
         }
         if (e is dev.valid7996.narcicgeteway.crypto.ZsxExpiredException) {
-            scope.launch { platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.") }
+            scope.launch { platform.toast(toastConfigExpired) }
             return
         }
         if (e is ConfigRepository.SubscriptionNotFetchedException) {
@@ -225,10 +233,10 @@ fun ServersScreen(
         when (err) {
             is dev.valid7996.narcicgeteway.data.config.RelayKeyRequiredException -> relayKeyPrompt = text
             is dev.valid7996.narcicgeteway.data.config.RelayAlreadyClaimedException ->
-                platform.toast("این لینک قبلاً روی یک دستگاه دیگر فعال شده و دیگر قابل استفاده نیست.")
+                platform.toast(toastLinkUsedOtherDevice)
             is dev.valid7996.narcicgeteway.crypto.ZsxWrongPasswordException ->
-                platform.toast("کلید اختصاصی وارد شده اشتباه است.")
-            else -> platform.toast("دریافت کانفیگ از سرور لینک کوتاه ناموفق بود: ${err.message}")
+                platform.toast(toastWrongExclusiveKey)
+            else -> platform.toast(toastShortlinkFailed.replace("%1$s", err.message ?: ""))
         }
     }
 
@@ -251,7 +259,7 @@ fun ServersScreen(
         val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull() ?: return false
         val meta = runCatching { repository.peekLocked(bytes) }.getOrNull() ?: return false
         if (meta.isExpired) {
-            platform.toast("این کانفیگ منقضی شده است و اعتبار آن پایان یافته است.")
+            platform.toast(toastConfigExpired)
             return true
         }
         if (meta.deviceBound) {
@@ -265,11 +273,11 @@ fun ServersScreen(
                         keyImp.fold(
                             onSuccess = { toastRes(Res.string.servers_imported, 1) },
                             onFailure = {
-                                platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                                platform.toast(toastLockedOtherDevice)
                             },
                         )
                     } else {
-                        platform.toast("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                        platform.toast(toastLockedOtherDevice)
                     }
                 },
             )
@@ -338,7 +346,7 @@ fun ServersScreen(
                         replaceProfiles = false,
                         replaceSubscriptions = false,
                     )
-                    platform.toast("نسخه پشتیبان بازیابی شد: $restoredProfiles سرور، $restoredSubs اشتراک")
+                    platform.toast(toastBackupRestoredTmpl.replace("%1$d", restoredProfiles.toString()).replace("%2$d", restoredSubs.toString()))
                     return@launch
                 }
             }
@@ -515,7 +523,7 @@ fun ServersScreen(
             dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription -> {
                 val subId = (if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null)?.id
                     ?: subscriptions.firstOrNull()?.id
-                    ?: repository.addSubscription("سابسکرپشن شخصی", "").id
+                    ?: repository.addSubscription(personalSubTitle, "").id
                 doExecuteImport(text, subId)
             }
             dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual -> {
@@ -664,12 +672,12 @@ fun ServersScreen(
                             else -> currentSub?.name
                         }
                         val tcpPingLabel = if (currentScopeName != null) {
-                            "پینگ TCP سرورهای $currentScopeName"
+                            stringResource(Res.string.toast_ping_tcp_scope, currentScopeName)
                         } else {
                             stringResource(Res.string.ping_tcp_all)
                         }
                         val realPingLabel = if (currentScopeName != null) {
-                            "تأخیر واقعی سرورهای $currentScopeName"
+                            stringResource(Res.string.toast_real_delay_scope, currentScopeName)
                         } else {
                             stringResource(Res.string.ping_real_all)
                         }
@@ -1597,7 +1605,7 @@ fun ServersScreen(
             icon = { Icon(painterResource(Res.drawable.ic_subscription), null, tint = Color(0xFF007AFF)) },
             title = {
                 Text(
-                    "افزودن به سابسکرپشن شخصی",
+                    stringResource(Res.string.dialog_add_to_personal_sub_title),
                     fontWeight = FontWeight.Bold,
                     color = if (isDark) Color.White else Color.Black,
                 )
@@ -1608,7 +1616,7 @@ fun ServersScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        "آیا واقعاً می‌خواهید این کانفیگ به سابسکرپشن شخصی اضافه شود؟",
+                        stringResource(Res.string.dialog_add_to_personal_sub_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isDark) Color(0xFFEBEBF5).copy(alpha = 0.85f) else Color(0xFF3C3C43).copy(alpha = 0.85f),
                     )
@@ -1626,7 +1634,7 @@ fun ServersScreen(
                             onCheckedChange = { rememberImportChoice = it },
                         )
                         Text(
-                            "عدم نمایش مجدد این پیام و ذخیره انتخاب",
+                            stringResource(Res.string.dialog_dont_show_again),
                             style = MaterialTheme.typography.labelMedium,
                             color = if (isDark) Color.White else Color.Black,
                         )
@@ -1644,11 +1652,11 @@ fun ServersScreen(
                         }
                         val subId = (if (groupIndex >= 2) subscriptions.getOrNull(groupIndex - 2) else null)?.id
                             ?: subscriptions.firstOrNull()?.id
-                            ?: repository.addSubscription("سابسکرپشن شخصی", "").id
+                            ?: repository.addSubscription(personalSubTitle, "").id
                         doExecuteImport(p, subId)
                     },
                 ) {
-                    Text("بله مطمئنم", fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.dialog_btn_confirm_sure), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1663,7 +1671,7 @@ fun ServersScreen(
                         doExecuteImport(p, "")
                     },
                 ) {
-                    Text("خیر، در قسمت دستی بماند")
+                    Text(stringResource(Res.string.dialog_btn_stay_manual))
                 }
             },
         )
@@ -2980,11 +2988,15 @@ private fun IosColumnSegmentedControl(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = when (cols) {
-                        1 -> "۱"
-                        2 -> "۲"
-                        3 -> "۳"
-                        else -> "$cols"
+                    text = if (isFa) {
+                        when (cols) {
+                            1 -> "۱"
+                            2 -> "۲"
+                            3 -> "۳"
+                            else -> "$cols"
+                        }
+                    } else {
+                        "$cols"
                     },
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     style = MaterialTheme.typography.labelSmall,

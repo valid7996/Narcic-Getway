@@ -54,6 +54,9 @@ import dev.valid7996.narcicgeteway.data.tools.ScanResult
 import dev.valid7996.narcicgeteway.data.tools.ScannerEngine
 import dev.valid7996.narcicgeteway.data.tools.Status
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
+import dev.valid7996.narcicgeteway.shared.resources.Res
+import dev.valid7996.narcicgeteway.shared.resources.*
+import org.jetbrains.compose.resources.stringResource
 import dev.valid7996.narcicgeteway.ui.components.PageHeader
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import kotlinx.coroutines.Dispatchers
@@ -102,6 +105,17 @@ fun IpScannerScreen(
     modifier: Modifier = Modifier,
 ) {
     val platform = LocalPlatform.current
+    val toastNoSort = stringResource(Res.string.scanner_toast_no_sort_results)
+    val toastSortGreen = stringResource(Res.string.scanner_toast_sort_green_top)
+    val toastNoRanges = stringResource(Res.string.scanner_toast_no_ranges)
+    val toastScanStart = stringResource(Res.string.scanner_toast_scan_started)
+    val toastCopiedClean = stringResource(Res.string.scanner_toast_copied_clean)
+    val toastNoClean = stringResource(Res.string.scanner_toast_no_clean_ips)
+    val toastCopiedTop16 = stringResource(Res.string.scanner_toast_copied_top_16)
+    val toastNoResults = stringResource(Res.string.scanner_toast_no_results)
+    val toastCopiedAll = stringResource(Res.string.scanner_toast_copied_all)
+    val toastIpCopied = stringResource(Res.string.scanner_toast_ip_copied)
+    val lblScanErr = stringResource(Res.string.scanner_error_label)
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val scope = rememberCoroutineScope()
 
@@ -119,7 +133,7 @@ fun IpScannerScreen(
 
     fun sortByGreenFirst() {
         if (results.isEmpty()) {
-            platform.toast("نتیجه‌ای برای مرتب‌سازی وجود ندارد")
+            platform.toast(toastNoSort)
             return
         }
         val sorted = results.distinctBy { it.ip }.sortedWith(
@@ -135,7 +149,7 @@ fun IpScannerScreen(
         )
         results.clear()
         results.addAll(sorted)
-        platform.toast("مرتب‌سازی: سبزها با کمترین پینگ در بالا")
+        platform.toast(toastSortGreen)
     }
 
     fun stopScan() {
@@ -169,12 +183,12 @@ fun IpScannerScreen(
         }
 
         if (rangesToScan.isEmpty()) {
-            platform.toast("رنجی برای اسکن یافت نشد")
+            platform.toast(toastNoRanges)
             return
         }
 
         isScanning = true
-        platform.toast("اسکن آغاز شد: $selectedCdn | ${rangesToScan.size} رنج")
+        platform.toast(toastScanStart.replace("%1$s", selectedCdn).replace("%2$d", rangesToScan.size.toString()))
 
         scanJob = scope.launch {
             val resultChannel = Channel<ScanResult>(capacity = 128)
@@ -235,7 +249,7 @@ fun IpScannerScreen(
         ) {
             item {
                 PageHeader(
-                    title = "اسکنر Narcic Scanner",
+                    title = stringResource(Res.string.scanner_title),
                     subtitle = "Narcic Scanner Pro Engine & TLS Certificate Checker",
                 )
             }
@@ -243,7 +257,7 @@ fun IpScannerScreen(
             // CDN Type Selector (Horizontal scrollable chips)
             item {
                 Text(
-                    text = "ارائه‌دهنده CDN (CDN Type)",
+                    text = stringResource(Res.string.scanner_cdn_type),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
@@ -301,8 +315,8 @@ fun IpScannerScreen(
                             OutlinedTextField(
                                 value = customRange,
                                 onValueChange = { customRange = it },
-                                label = { Text("Custom IP Range (اختیاری)") },
-                                placeholder = { Text("مثال: 104.16.0.0/16") },
+                                label = { Text(stringResource(Res.string.scanner_custom_ip_range)) },
+                                placeholder = { Text(stringResource(Res.string.scanner_custom_ip_placeholder)) },
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -330,8 +344,8 @@ fun IpScannerScreen(
                         OutlinedTextField(
                             value = domain,
                             onValueChange = { domain = it },
-                            label = { Text("Domain / CDN (اختیاری)") },
-                            placeholder = { Text("مثال: www.hcaptcha.com") },
+                            label = { Text(stringResource(Res.string.scanner_domain_label)) },
+                            placeholder = { Text(stringResource(Res.string.scanner_domain_placeholder)) },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -351,13 +365,13 @@ fun IpScannerScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "بررسی گواهی امنیتی (Check Certificate)",
+                                    text = stringResource(Res.string.scanner_check_cert),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (isDark) Color(0xFFE5E5EA) else Color(0xFF1C1C1E),
                                 )
                                 Text(
-                                    text = "تست هماهنگی TLS با هاست وارد شده",
+                                    text = stringResource(Res.string.scanner_check_cert_desc),
                                     fontSize = 11.sp,
                                     color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
                                 )
@@ -443,9 +457,9 @@ fun IpScannerScreen(
                                 val text = results.filter { it.status == Status.GREEN }.joinToString("\n") { it.ip }
                                 if (text.isNotBlank()) {
                                     platform.copyToClipboard(text)
-                                    platform.toast("آی‌پی‌های سبز کپی شدند")
+                                    platform.toast(toastCopiedClean)
                                 } else {
-                                    platform.toast("آی‌پی سبز برای کپی وجود ندارد")
+                                    platform.toast(toastNoClean)
                                 }
                             },
                             shape = RoundedCornerShape(12.dp),
@@ -467,9 +481,9 @@ fun IpScannerScreen(
                                     .joinToString("\n") { it.ip }
                                 if (text.isNotBlank()) {
                                     platform.copyToClipboard(text)
-                                    platform.toast("۱۶ آی‌پی برتر کپی شد")
+                                    platform.toast(toastCopiedTop16)
                                 } else {
-                                    platform.toast("نتیجه‌ای برای کپی وجود ندارد")
+                                    platform.toast(toastNoResults)
                                 }
                             },
                             shape = RoundedCornerShape(12.dp),
@@ -487,9 +501,9 @@ fun IpScannerScreen(
                                 val text = results.joinToString("\n") { it.ip }
                                 if (text.isNotBlank()) {
                                     platform.copyToClipboard(text)
-                                    platform.toast("همه آی‌پی‌ها کپی شدند")
+                                    platform.toast(toastCopiedAll)
                                 } else {
-                                    platform.toast("نتیجه‌ای موجود نیست")
+                                    platform.toast(toastNoResults)
                                 }
                             },
                             shape = RoundedCornerShape(12.dp),
@@ -513,7 +527,7 @@ fun IpScannerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "نتایج اسکن (${results.size})",
+                        text = stringResource(Res.string.scanner_results_title, results.size),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = if (isDark) Color.White else Color.Black,
@@ -533,7 +547,7 @@ fun IpScannerScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "⚡ SORT (سبزها بالا)",
+                                    text = stringResource(Res.string.scanner_sort_btn),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = accentColor,
@@ -547,7 +561,7 @@ fun IpScannerScreen(
                             color = Color(0xFF34C759).copy(alpha = 0.15f),
                         ) {
                             Text(
-                                text = "سالم: $greenCount",
+                                text = stringResource(Res.string.scanner_green_count, greenCount),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF34C759),
@@ -571,7 +585,7 @@ fun IpScannerScreen(
                             .fillMaxWidth()
                             .clickable {
                                 platform.copyToClipboard(item.ip)
-                                platform.toast("${item.ip} کپی شد")
+                                platform.toast(toastIpCopied.replace("%1$s", item.ip))
                             }
                             .padding(14.dp),
                     ) {
@@ -605,7 +619,7 @@ fun IpScannerScreen(
                             val (badgeBg, badgeFg, label) = when (item.status) {
                                 Status.GREEN -> Triple(Color(0xFF34C759).copy(alpha = 0.15f), Color(0xFF34C759), "⚡ ${item.latency} ms")
                                 Status.YELLOW -> Triple(Color(0xFFFF9500).copy(alpha = 0.15f), Color(0xFFFF9500), "${item.latency} ms")
-                                Status.RED -> Triple(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30), if (item.latency >= 999) "خطا" else "${item.latency} ms")
+                                Status.RED -> Triple(Color(0xFFFF3B30).copy(alpha = 0.15f), Color(0xFFFF3B30), if (item.latency >= 999) lblScanErr else "${item.latency} ms")
                             }
 
                             Surface(
@@ -636,7 +650,7 @@ fun IpScannerScreen(
                                 // Explicit Ping / Latency row for healthy connection
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "⚡ پینگ اتصال (Ping):",
+                                        text = stringResource(Res.string.scanner_ping_label),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = if (item.status == Status.GREEN) Color(0xFF34C759) else Color(0xFFFF9500),
@@ -653,7 +667,7 @@ fun IpScannerScreen(
                                 if (item.domain != null) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "🌐 دامنه سالم:",
+                                            text = stringResource(Res.string.scanner_domain_result_label),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
@@ -672,7 +686,7 @@ fun IpScannerScreen(
                                 if (item.certDomain != null) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "📜 زیرمجموعه گواهی:",
+                                            text = stringResource(Res.string.scanner_cert_result_label),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
@@ -691,7 +705,7 @@ fun IpScannerScreen(
                                 if (item.cdnType != null) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "☁️ شبکه CDN:",
+                                            text = stringResource(Res.string.scanner_cdn_result_label),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
@@ -711,6 +725,7 @@ fun IpScannerScreen(
                         // Option to set this IP in SNI Spoof Settings if settings and onUpdateSettings are present
                         if (item.status == Status.GREEN && onUpdateSettings != null && settings != null) {
                             Spacer(Modifier.height(8.dp))
+                            val spoofToast = stringResource(Res.string.scanner_set_spoof_toast, item.ip)
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = accentColor.copy(alpha = 0.12f),
@@ -726,7 +741,7 @@ fun IpScannerScreen(
                                                 rstaSpoofFakeSni = sniHost,
                                             )
                                         }
-                                        platform.toast("آی‌پی ${item.ip} و SNI در تنظیمات Spoof ذخیره شد")
+                                        platform.toast(spoofToast)
                                     },
                             ) {
                                 Row(
@@ -735,7 +750,7 @@ fun IpScannerScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        text = "⚡ ست کردن در جعل SNI (Spoof)",
+                                        text = stringResource(Res.string.scanner_set_spoof_btn),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = accentColor,

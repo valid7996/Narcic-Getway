@@ -161,7 +161,7 @@ class ConfigRepository(private val store: KeyValueStore) {
                 }
 
                 // If both failed, this config was locked for a different device
-                throw IllegalArgumentException("این کانفیگ اختصاصی برای دستگاه دیگری قفل شده است و روی این دستگاه فعال نمی‌شود.")
+                throw IllegalArgumentException("This config is locked to another device.")
             }
 
             val extractedKey = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(trimmed)

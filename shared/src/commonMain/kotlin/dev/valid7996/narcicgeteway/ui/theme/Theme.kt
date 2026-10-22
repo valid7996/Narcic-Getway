@@ -41,13 +41,28 @@ fun NrgSecureTheme(
     val scaled = remember(density, fontScale) {
         if (fontScale == 1f) density else Density(density.density, density.fontScale * fontScale)
     }
+    val layoutDirection = if (languageTag.startsWith("fa") || languageTag.startsWith("ar")) {
+        androidx.compose.ui.unit.LayoutDirection.Rtl
+    } else {
+        androidx.compose.ui.unit.LayoutDirection.Ltr
+    }
+    remember(languageTag) {
+        runCatching {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag(languageTag))
+        }
+        languageTag
+    }
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
         motionScheme = MotionScheme.expressive(),
         shapes = NrgShapes,
         typography = typographyFor(languageTag),
     ) {
-        CompositionLocalProvider(LocalDensity provides scaled, content = content)
+        CompositionLocalProvider(
+            LocalDensity provides scaled,
+            androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection,
+            content = content
+        )
     }
 }
 

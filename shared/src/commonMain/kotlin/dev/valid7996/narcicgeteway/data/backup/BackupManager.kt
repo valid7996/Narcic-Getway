@@ -47,7 +47,7 @@ object BackupManager {
 
     fun parseBackup(jsonText: String): Result<BackupPayload> = runCatching {
         val trimmed = jsonText.trim()
-        require(trimmed.isNotEmpty()) { "متن نسخه پشتیبان خالی است" }
+        require(trimmed.isNotEmpty()) { "Backup content is empty" }
         compactJson.decodeFromString(BackupPayload.serializer(), trimmed)
     }
 }

@@ -65,21 +65,8 @@ import dev.valid7996.narcicgeteway.data.config.NrgRelay
 import dev.valid7996.narcicgeteway.domain.config.VpnProfile
 import dev.valid7996.narcicgeteway.platform.currentTimeMillis
 import dev.valid7996.narcicgeteway.shared.resources.Res
-import dev.valid7996.narcicgeteway.shared.resources.action_close
-import dev.valid7996.narcicgeteway.shared.resources.action_copy
-import dev.valid7996.narcicgeteway.shared.resources.action_share
-import dev.valid7996.narcicgeteway.shared.resources.copied
-import dev.valid7996.narcicgeteway.shared.resources.ic_check
-import dev.valid7996.narcicgeteway.shared.resources.ic_content_paste
-import dev.valid7996.narcicgeteway.shared.resources.ic_description
-import dev.valid7996.narcicgeteway.shared.resources.ic_ios_share
-import dev.valid7996.narcicgeteway.shared.resources.ic_key
-import dev.valid7996.narcicgeteway.shared.resources.ic_lock
-import dev.valid7996.narcicgeteway.shared.resources.ic_public
-import dev.valid7996.narcicgeteway.shared.resources.ic_qr_code_2
-import dev.valid7996.narcicgeteway.shared.resources.ic_schedule
-import dev.valid7996.narcicgeteway.shared.resources.ic_sync
-import dev.valid7996.narcicgeteway.shared.resources.qr_too_large
+import dev.valid7996.narcicgeteway.shared.resources.*
+import org.jetbrains.compose.resources.stringResource
 import dev.valid7996.narcicgeteway.ui.components.PageHeader
 import dev.valid7996.narcicgeteway.ui.components.ProvidePageBack
 import dev.valid7996.narcicgeteway.ui.components.QrDialog
@@ -90,20 +77,28 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-private fun formatExpiryTimestamp(epochMs: Long): String {
+private fun formatExpiryTimestamp(
+    epochMs: Long,
+    expiredStr: String,
+    daysHoursTmpl: String,
+    daysTmpl: String,
+    hoursMinsTmpl: String,
+    hoursTmpl: String,
+    minsTmpl: String,
+): String {
     val diffMs = epochMs - currentTimeMillis()
-    if (diffMs <= 0) return "منقضی شده"
+    if (diffMs <= 0) return expiredStr
     val totalMinutes = diffMs / (60 * 1000L)
     val days = totalMinutes / (24 * 60)
     val remMinutesAfterDays = totalMinutes % (24 * 60)
     val hours = remMinutesAfterDays / 60
     val minutes = remMinutesAfterDays % 60
     return when {
-        days > 0 && hours > 0 -> "$days روز و $hours ساعت دیگر"
-        days > 0 -> "$days روز دیگر"
-        hours > 0 && minutes > 0 -> "$hours ساعت و $minutes دقیقه دیگر"
-        hours > 0 -> "$hours ساعت دیگر"
-        else -> "$minutes دقیقه دیگر"
+        days > 0 && hours > 0 -> daysHoursTmpl.replace("%1$d", days.toString()).replace("%2$d", hours.toString())
+        days > 0 -> daysTmpl.replace("%1$d", days.toString())
+        hours > 0 && minutes > 0 -> hoursMinsTmpl.replace("%1$d", hours.toString()).replace("%2$d", minutes.toString())
+        hours > 0 -> hoursTmpl.replace("%1$d", hours.toString())
+        else -> minsTmpl.replace("%1$d", minutes.toString())
     }
 }
 
@@ -117,6 +112,29 @@ fun LockShareSheet(
     onRelayChanged: (endpoint: String, token: String) -> Unit = { _, _ -> },
 ) {
     val platform = LocalPlatform.current
+    val strExpired = stringResource(Res.string.lock_expired)
+    val strDaysHours = stringResource(Res.string.lock_expires_days_hours)
+    val strDays = stringResource(Res.string.lock_expires_days)
+    val strHoursMins = stringResource(Res.string.lock_expires_hours_mins)
+    val strHours = stringResource(Res.string.lock_expires_hours)
+    val strMins = stringResource(Res.string.lock_expires_mins)
+    val toastRelayUrlErr = stringResource(Res.string.lock_err_relay_url)
+    val toastRelayUploadErr = stringResource(Res.string.lock_err_relay_upload)
+    val toastCreatedExclusive = stringResource(Res.string.lock_toast_created_exclusive)
+    val toastCreatedPublic = stringResource(Res.string.lock_toast_created_public)
+    val toastGeneratingErr = stringResource(Res.string.lock_err_generating)
+    val shareHeader = stringResource(Res.string.lock_share_header)
+    val shareName = stringResource(Res.string.lock_share_name)
+    val shareValidity = stringResource(Res.string.lock_share_validity)
+    val sharePermanent = stringResource(Res.string.lock_share_permanent)
+    val shareDeviceExclusive = stringResource(Res.string.lock_share_device_exclusive)
+    val shareWarning = stringResource(Res.string.lock_share_warning)
+    val sharePublicType = stringResource(Res.string.lock_share_public_type)
+    val sharePublicInfo = stringResource(Res.string.lock_share_public_info)
+    val shareNote = stringResource(Res.string.lock_share_note)
+    val shareLink = stringResource(Res.string.lock_share_link)
+    val shareInstructions = stringResource(Res.string.lock_share_instructions)
+    val toastLinkCopied = stringResource(Res.string.copied)
     val scope = rememberCoroutineScope()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
@@ -168,8 +186,8 @@ fun LockShareSheet(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 PageHeader(
-                    title = "اشتراک امن و قفل اختصاصی (NRG)",
-                    subtitle = "قفل کانفیگ بر روی کد دستگاه خریدار با زمان انقضا",
+                    title = stringResource(Res.string.lock_share_title),
+                    subtitle = stringResource(Res.string.lock_share_subtitle),
                 )
 
                 // ─── Settings Card ────────────────────────────────────────────────────────
@@ -182,7 +200,7 @@ fun LockShareSheet(
                         OutlinedTextField(
                             value = configTitle,
                             onValueChange = { configTitle = it },
-                            label = { Text("عنوان کانفیگ") },
+                            label = { Text(stringResource(Res.string.lock_config_title)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -191,8 +209,8 @@ fun LockShareSheet(
                         OutlinedTextField(
                             value = userNote,
                             onValueChange = { userNote = it },
-                            label = { Text("یادداشت / نام خریدار (اختیاری)") },
-                            placeholder = { Text("مثلاً: اختصاصی برای مهندس احمدی") },
+                            label = { Text(stringResource(Res.string.lock_buyer_note)) },
+                            placeholder = { Text(stringResource(Res.string.lock_buyer_note_placeholder)) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
                             singleLine = true,
@@ -202,7 +220,7 @@ fun LockShareSheet(
 
                         // Lock Mode Selection
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("نوع قفل‌گذاری کانفیگ:", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.lock_type_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -210,7 +228,7 @@ fun LockShareSheet(
                                 FilterChip(
                                     selected = lockMode == 0,
                                     onClick = { lockMode = 0 },
-                                    label = { Text("🔒 با کد دستگاه (اختصاصی)", fontSize = 12.sp) },
+                                    label = { Text(stringResource(Res.string.lock_type_device), fontSize = 12.sp) },
                                     modifier = Modifier.weight(1f),
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = Color(0xFFFF9500).copy(alpha = 0.2f),
@@ -220,7 +238,7 @@ fun LockShareSheet(
                                 FilterChip(
                                     selected = lockMode == 1,
                                     onClick = { lockMode = 1 },
-                                    label = { Text("🌐 بدون کد دستگاه (عمومی)", fontSize = 12.sp) },
+                                    label = { Text(stringResource(Res.string.lock_type_public), fontSize = 12.sp) },
                                     modifier = Modifier.weight(1f),
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = Color(0xFF007AFF).copy(alpha = 0.2f),
@@ -244,7 +262,7 @@ fun LockShareSheet(
                                             modifier = Modifier.size(16.dp),
                                         )
                                         Text(
-                                            "کد دستگاه خریدار (قفل اختصاصی):",
+                                            stringResource(Res.string.lock_buyer_device_title),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                         )
@@ -253,11 +271,11 @@ fun LockShareSheet(
                                     OutlinedTextField(
                                         value = buyerDeviceCode,
                                         onValueChange = { buyerDeviceCode = it },
-                                        label = { Text("کد دستگاه خریدار") },
-                                        placeholder = { Text("مثلاً: NG-XXXX-XXXX") },
+                                        label = { Text(stringResource(Res.string.lock_buyer_device_label)) },
+                                        placeholder = { Text(stringResource(Res.string.lock_buyer_device_placeholder)) },
                                         supportingText = {
                                             Text(
-                                                "خریدار کد دستگاه خود را از بخش «تنظیمات ← درباره ← کد دستگاه من» کپی کرده و ارسال می‌کند. کانفیگ رمزنگاری شده و منحصراً بر روی همان دستگاه باز می‌شود.",
+                                                stringResource(Res.string.lock_buyer_device_desc),
                                                 fontSize = 11.sp,
                                                 color = Color.Gray,
                                             )
@@ -279,7 +297,7 @@ fun LockShareSheet(
                                             }) {
                                                 Icon(
                                                     painter = painterResource(Res.drawable.ic_content_paste),
-                                                    contentDescription = "جای‌گذاری کد دستگاه",
+                                                    contentDescription = stringResource(Res.string.lock_paste_device_code),
                                                     tint = Color(0xFFFF9500),
                                                     modifier = Modifier.size(18.dp),
                                                 )
@@ -307,7 +325,7 @@ fun LockShareSheet(
                                             modifier = Modifier.size(20.dp),
                                         )
                                         Text(
-                                            "این کانفیگ بدون وابستگی به کد دستگاه رمزنگاری می‌شود. سورس، آدرس سرور و مشخصات کانفیگ کاملاً رمزنگاری و پنهان می‌ماند و می‌توانید آن را در کانال عمومی تلگرام قرار دهید. همه کاربران برنامه می‌توانند متصل شوند اما دسترسی به سورس آن نخواهند داشت.",
+                                            stringResource(Res.string.lock_public_desc),
                                             fontSize = 11.sp,
                                             color = if (isDark) Color(0xFFCFE4FD) else Color(0xFF0A3E80),
                                             lineHeight = 16.sp,
@@ -324,20 +342,20 @@ fun LockShareSheet(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(painter = painterResource(Res.drawable.ic_schedule), contentDescription = null, tint = Color(0xFF007AFF), modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text("مدت اعتبار و تاریخ انقضا (Expiration):", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(Res.string.lock_expiration_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             }
 
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 val expiryOptions = listOf(
-                                    0 to "دائمی (بدون انقضا)",
-                                    1 to "۵ دقیقه (تست سریع)",
-                                    2 to "۱ ساعت (تست)",
-                                    3 to "۶ ساعت",
-                                    4 to "۲۴ ساعت (۱ روز)",
-                                    5 to "۳ روز",
-                                    6 to "۷ روز (یک هفته)",
-                                    7 to "۳۰ روز (یک ماه)",
-                                    8 to "سفارشی",
+                                    0 to stringResource(Res.string.lock_exp_permanent),
+                                    1 to stringResource(Res.string.lock_exp_5min),
+                                    2 to stringResource(Res.string.lock_exp_1hour),
+                                    3 to stringResource(Res.string.lock_exp_6hours),
+                                    4 to stringResource(Res.string.lock_exp_24hours),
+                                    5 to stringResource(Res.string.lock_exp_3days),
+                                    6 to stringResource(Res.string.lock_exp_7days),
+                                    7 to stringResource(Res.string.lock_exp_30days),
+                                    8 to stringResource(Res.string.lock_exp_custom),
                                 )
                                 expiryOptions.forEach { (code, label) ->
                                     val isSelected = selectedExpiryOption == code
@@ -355,7 +373,7 @@ fun LockShareSheet(
 
                             AnimatedVisibility(visible = selectedExpiryOption == 8) {
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text("تنظیم دقیق روز، ساعت و دقیقه اعتبار:", fontSize = 11.sp, color = Color.Gray)
+                                    Text(stringResource(Res.string.lock_exp_custom_hint), fontSize = 11.sp, color = Color.Gray)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -363,7 +381,7 @@ fun LockShareSheet(
                                         OutlinedTextField(
                                             value = if (customDays > 0) customDays.toString() else "",
                                             onValueChange = { customDays = it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0 },
-                                            label = { Text("روز") },
+                                            label = { Text(stringResource(Res.string.lock_days)) },
                                             placeholder = { Text("0") },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
@@ -372,7 +390,7 @@ fun LockShareSheet(
                                         OutlinedTextField(
                                             value = if (customHours > 0) customHours.toString() else "",
                                             onValueChange = { customHours = it.filter { c -> c.isDigit() }.toIntOrNull()?.coerceIn(0, 23) ?: 0 },
-                                            label = { Text("ساعت") },
+                                            label = { Text(stringResource(Res.string.lock_hours)) },
                                             placeholder = { Text("0") },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
@@ -381,7 +399,7 @@ fun LockShareSheet(
                                         OutlinedTextField(
                                             value = if (customMinutes > 0) customMinutes.toString() else "",
                                             onValueChange = { customMinutes = it.filter { c -> c.isDigit() }.toIntOrNull()?.coerceIn(0, 59) ?: 0 },
-                                            label = { Text("دقیقه") },
+                                            label = { Text(stringResource(Res.string.lock_minutes)) },
                                             placeholder = { Text("5") },
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(10.dp),
@@ -401,9 +419,9 @@ fun LockShareSheet(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                                Text("لینک کوتاه (از طریق سرور رله)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(Res.string.lock_relay_title), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 Text(
-                                    "فقط برای کوتاه‌شدن لینک (اختیاری): کانفیگ رمزشده روی سرور شما می‌ماند و در لینک فقط یک شناسه است.",
+                                    stringResource(Res.string.lock_relay_desc),
                                     fontSize = 11.sp,
                                     color = Color.Gray,
                                 )
@@ -416,7 +434,7 @@ fun LockShareSheet(
                                 OutlinedTextField(
                                     value = relayUrlInput,
                                     onValueChange = { relayUrlInput = it },
-                                    label = { Text("آدرس سرور رله") },
+                                    label = { Text(stringResource(Res.string.lock_relay_addr)) },
                                     placeholder = { Text("https://nrg.example.workers.dev") },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
@@ -425,7 +443,7 @@ fun LockShareSheet(
                                 OutlinedTextField(
                                     value = relayTokenInput,
                                     onValueChange = { relayTokenInput = it },
-                                    label = { Text("توکن آپلود (اختیاری)") },
+                                    label = { Text(stringResource(Res.string.lock_relay_token)) },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
                                     singleLine = true,
@@ -433,12 +451,13 @@ fun LockShareSheet(
                             }
                         }
 
+                        val warnDeviceCode = stringResource(Res.string.lock_warn_enter_device_code)
                         // Generate Button
                         Button(
                             onClick = {
                                 val device = buyerDeviceCode.trim()
                                 if (lockMode == 0 && device.isEmpty()) {
-                                    platform.toast("لطفاً ابتدا کد دستگاه خریدار را وارد نمایید")
+                                    platform.toast(warnDeviceCode)
                                     return@Button
                                 }
 
@@ -480,7 +499,7 @@ fun LockShareSheet(
                                         if (useRelay) {
                                             val hostOk = NrgRelay.hostOf(relayUrlInput) != null
                                             if (!hostOk) {
-                                                platform.toast("آدرس سرور رله نامعتبر است؛ لینک کامل ساخته شد")
+                                                platform.toast(toastRelayUrlErr)
                                             } else {
                                                 val up = runCatching {
                                                     NrgRelay.upload(relayUrlInput, relayTokenInput, sealedBytes, expiresAt, null)
@@ -489,7 +508,7 @@ fun LockShareSheet(
                                                     link = NrgLink.relayLink(it)
                                                     onRelayChanged(relayUrlInput, relayTokenInput)
                                                 }.onFailure {
-                                                    platform.toast("آپلود روی سرور رله ناموفق بود (${it.message}) ؛ لینک کامل ساخته شد")
+                                                    platform.toast(toastRelayUploadErr.replace("%1$s", it.message ?: ""))
                                                 }
                                             }
                                         }
@@ -498,9 +517,9 @@ fun LockShareSheet(
                                         generatedDeviceCode = if (lockMode == 0) device else null
                                         linkCopied = false
                                         packageCopied = false
-                                        platform.toast(if (lockMode == 0) "کانفیگ اختصاصی با موفقیت قفل و تولید شد" else "کانفیگ قفل‌شده عمومی با موفقیت تولید شد")
+                                        platform.toast(if (lockMode == 0) toastCreatedExclusive else toastCreatedPublic)
                                     } catch (e: Throwable) {
-                                        platform.toast("خطا در ساخت کانفیگ قفل‌شده: ${e.message}")
+                                        platform.toast(toastGeneratingErr.replace("%1$s", e.message ?: ""))
                                     } finally {
                                         generating = false
                                     }
@@ -512,7 +531,7 @@ fun LockShareSheet(
                         ) {
                             Icon(painter = painterResource(Res.drawable.ic_lock), contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(if (generating) "در حال ساخت…" else "تولید کانفیگ قفل‌شده (NRG)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(if (generating) stringResource(Res.string.lock_btn_generating) else stringResource(Res.string.lock_btn_generate), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -524,24 +543,24 @@ fun LockShareSheet(
                     val lockedDevice = generatedDeviceCode ?: ""
 
                     val fullPackageText = buildString {
-                        appendLine("🔒 کانفیگ اختصاصی و قفل‌شده Narcic Gateway")
-                        appendLine("🏷️ نام کانفیگ: $configTitle")
-                        appendLine("⏳ مدت اعتبار: ${if (expiresAt != null) formatExpiryTimestamp(expiresAt) else "دائمی (بدون انقضا)"}")
+                        appendLine(shareHeader)
+                        appendLine(shareName.replace("%1$s", configTitle))
+                        appendLine(shareValidity.replace("%1$s", if (expiresAt != null) formatExpiryTimestamp(expiresAt, strExpired, strDaysHours, strDays, strHoursMins, strHours, strMins) else sharePermanent))
                         if (lockedDevice.isNotEmpty()) {
-                            appendLine("📱 قفل اختصاصی برای کد دستگاه: $lockedDevice")
-                            appendLine("⚠️ توجه: این کانفیگ اختصاصی بوده و منحصراً بر روی دستگاه ثبت‌شده شما فعال می‌شود و روی سایر دستگاه‌ها کار نخواهد کرد.")
+                            appendLine(shareDeviceExclusive.replace("%1$s", lockedDevice))
+                            appendLine(shareWarning)
                         } else {
-                            appendLine("🌐 نوع قفل: عمومی (محافظت‌شده - مناسب برای کانال)")
-                            appendLine("ℹ️ اطلاعات سرور و کانفیگ کاملاً پنهان بوده و برای تمامی کاربران برنامه قابل اتصال است.")
+                            appendLine(sharePublicType)
+                            appendLine(sharePublicInfo)
                         }
                         if (userNote.isNotBlank()) {
-                            appendLine("📝 یادداشت: $userNote")
+                            appendLine(shareNote.replace("%1$s", userNote))
                         }
                         appendLine()
-                        appendLine("🔗 لینک کانفیگ:")
+                        appendLine(shareLink)
                         appendLine(nrgLink)
                         appendLine()
-                        appendLine("جهت فعال‌سازی، لینک بالا یا فایل کانفیگ را در برنامه Narcic Gateway وارد نمایید (کانفیگ به صورت خودکار شناسایی و اضافه خواهد شد).")
+                        appendLine(shareInstructions)
                     }
 
                     Surface(
@@ -555,9 +574,9 @@ fun LockShareSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("✔ کانفیگ آماده اشتراک است", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF34C759))
+                                Text(stringResource(Res.string.lock_ready), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF34C759))
                                 Text(
-                                    if (expiresAt != null) "انقضا: ${formatExpiryTimestamp(expiresAt)}" else "دائمی",
+                                    if (expiresAt != null) "Expires: ${formatExpiryTimestamp(expiresAt, strExpired, strDaysHours, strDays, strHoursMins, strHours, strMins)}" else stringResource(Res.string.lock_exp_permanent),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = Color.Gray,
@@ -565,7 +584,7 @@ fun LockShareSheet(
                             }
 
                             Text(
-                                "طول لینک: ${nrgLink.length} کاراکتر" + if (nrgLink.startsWith("nrg://r.")) " (لینک کوتاه)" else "",
+                                "Length: ${nrgLink.length}" + if (nrgLink.startsWith("nrg://r.")) " (Short)" else "",
                                 fontSize = 11.sp,
                                 color = Color.Gray,
                             )
@@ -588,11 +607,12 @@ fun LockShareSheet(
                                         maxLines = 2,
                                         color = if (isDark) Color.LightGray else Color.DarkGray,
                                     )
+                                    val toastCopiedLink = stringResource(Res.string.lock_link_copied)
                                     IconButton(
                                         onClick = {
                                             platform.copyToClipboard(nrgLink)
                                             linkCopied = true
-                                            platform.toast("لینک کانفیگ کپی شد")
+                                            platform.toast(toastCopiedLink)
                                         },
                                         modifier = Modifier.size(32.dp),
                                     ) {
@@ -625,7 +645,7 @@ fun LockShareSheet(
                                         )
                                         Spacer(Modifier.width(8.dp))
                                         Column {
-                                            Text("قفل اختصاصی برای کد دستگاه:", fontSize = 11.sp, color = Color.Gray)
+                                            Text(stringResource(Res.string.lock_locked_for_device), fontSize = 11.sp, color = Color.Gray)
                                             Text(
                                                 lockedDevice,
                                                 fontSize = 13.sp,
@@ -644,11 +664,12 @@ fun LockShareSheet(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
+                                    val toastPackage = stringResource(Res.string.lock_package_copied)
                                     Button(
                                         onClick = {
                                             platform.copyToClipboard(fullPackageText)
                                             packageCopied = true
-                                            platform.toast("پیام کامل اشتراک در کلیپ‌بورد کپی شد")
+                                            platform.toast(toastPackage)
                                         },
                                         modifier = Modifier.weight(1f).height(44.dp),
                                         shape = RoundedCornerShape(12.dp),
@@ -656,7 +677,7 @@ fun LockShareSheet(
                                     ) {
                                         Icon(painter = painterResource(if (packageCopied) Res.drawable.ic_check else Res.drawable.ic_content_paste), contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text(if (packageCopied) "کپی شد" else "کپی پیام برای کاربر", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(if (packageCopied) stringResource(Res.string.copied) else stringResource(Res.string.lock_copy_msg), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
 
                                     OutlinedButton(
@@ -666,9 +687,7 @@ fun LockShareSheet(
                                             val rawBytes = generatedSealedBytes ?: runCatching { NrgLink.decode(nrgLink) }.getOrNull()
                                             if (rawBytes != null) {
                                                 platform.shareFiles(listOf("$safeName.nrg" to rawBytes))
-                                                platform.toast("فایل $safeName.nrg آماده ارسال شد")
-                                            } else {
-                                                platform.toast("خطا در ایجاد فایل")
+                                                platform.toast("$safeName.nrg")
                                             }
                                         },
                                         modifier = Modifier.height(44.dp),
@@ -676,7 +695,7 @@ fun LockShareSheet(
                                     ) {
                                         Icon(painter = painterResource(Res.drawable.ic_description), contentDescription = "Share .nrg file", modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("فایل .nrg", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(stringResource(Res.string.lock_send_file), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
@@ -691,7 +710,7 @@ fun LockShareSheet(
                                     ) {
                                         Icon(painter = painterResource(Res.drawable.ic_ios_share), contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text("اشتراک متنی", fontSize = 12.sp)
+                                        Text(stringResource(Res.string.lock_share_text), fontSize = 12.sp)
                                     }
 
                                     OutlinedButton(
@@ -701,7 +720,7 @@ fun LockShareSheet(
                                     ) {
                                         Icon(painter = painterResource(Res.drawable.ic_qr_code_2), contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text("کد QR", fontSize = 12.sp)
+                                        Text(stringResource(Res.string.lock_qr_code), fontSize = 12.sp)
                                     }
                                 }
                             }
@@ -723,7 +742,7 @@ fun LockShareSheet(
             unsupportedLabel = stringResource(Res.string.qr_too_large),
             onCopy = {
                 platform.copyToClipboard(link)
-                platform.toast("لینک کپی شد")
+                platform.toast(toastLinkCopied)
             },
             onShare = { platform.shareText(link) },
             onDismiss = { showQrDialog = false },
