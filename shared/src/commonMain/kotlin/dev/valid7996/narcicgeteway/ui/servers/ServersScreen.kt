@@ -749,8 +749,9 @@ fun ServersScreen(
                         )
                     }
                 }
+            }
 
-                    IconButton(
+            IconButton(
                         onClick = { showRealDelayNote = true },
                         modifier = Modifier.size(36.dp),
                     ) {
