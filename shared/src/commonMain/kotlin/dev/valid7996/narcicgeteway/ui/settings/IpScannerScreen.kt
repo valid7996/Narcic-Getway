@@ -188,7 +188,7 @@ fun IpScannerScreen(
         }
 
         isScanning = true
-        platform.toast(toastScanStart.replace("%1$s", selectedCdn).replace("%2$d", rangesToScan.size.toString()))
+        platform.toast(toastScanStart.replace("%1\$s", selectedCdn).replace("%2\$d", rangesToScan.size.toString()))
 
         scanJob = scope.launch {
             val resultChannel = Channel<ScanResult>(capacity = 128)
@@ -585,7 +585,7 @@ fun IpScannerScreen(
                             .fillMaxWidth()
                             .clickable {
                                 platform.copyToClipboard(item.ip)
-                                platform.toast(toastIpCopied.replace("%1$s", item.ip))
+                                platform.toast(toastIpCopied.replace("%1\$s", item.ip))
                             }
                             .padding(14.dp),
                     ) {

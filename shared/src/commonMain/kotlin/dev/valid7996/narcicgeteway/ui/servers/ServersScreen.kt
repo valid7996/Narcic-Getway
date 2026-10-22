@@ -236,7 +236,7 @@ fun ServersScreen(
                 platform.toast(toastLinkUsedOtherDevice)
             is dev.valid7996.narcicgeteway.crypto.ZsxWrongPasswordException ->
                 platform.toast(toastWrongExclusiveKey)
-            else -> platform.toast(toastShortlinkFailed.replace("%1$s", err.message ?: ""))
+            else -> platform.toast(toastShortlinkFailed.replace("%1\$s", err.message ?: ""))
         }
     }
 
@@ -346,7 +346,7 @@ fun ServersScreen(
                         replaceProfiles = false,
                         replaceSubscriptions = false,
                     )
-                    platform.toast(toastBackupRestoredTmpl.replace("%1$d", restoredProfiles.toString()).replace("%2$d", restoredSubs.toString()))
+                    platform.toast(toastBackupRestoredTmpl.replace("%1\$d", restoredProfiles.toString()).replace("%2\$d", restoredSubs.toString()))
                     return@launch
                 }
             }
@@ -2988,16 +2988,7 @@ private fun IosColumnSegmentedControl(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = if (isFa) {
-                        when (cols) {
-                            1 -> "۱"
-                            2 -> "۲"
-                            3 -> "۳"
-                            else -> "$cols"
-                        }
-                    } else {
-                        "$cols"
-                    },
+                    text = "$cols",
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isSelected) selectedContent else unselectedContent,

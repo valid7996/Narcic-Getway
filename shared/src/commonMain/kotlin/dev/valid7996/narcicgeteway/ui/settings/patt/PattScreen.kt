@@ -438,7 +438,7 @@ private fun SniCheckTab(
                             onClick = {
                                 platform.copyToClipboard(okIps.joinToString("\n"))
                                 cleanIpsCopied = true
-                                platform.toast(toastCleanIpsCopied.replace("%1$d", okIps.size.toString()))
+                                platform.toast(toastCleanIpsCopied.replace("%1\$d", okIps.size.toString()))
                             },
                             modifier = Modifier.weight(1f).height(42.dp),
                             shape = RoundedCornerShape(12.dp),
@@ -528,7 +528,7 @@ private fun SniCheckTab(
                                 rstaSpoofFakeSni = sni,
                             )
                         }
-                        platform.toast(toastSetSpoof.replace("%1$s", ip).replace("%2$s", port.toString()).replace("%3$s", sni))
+                        platform.toast(toastSetSpoof.replace("%1\$s", ip).replace("%2\$s", port.toString()).replace("%3\$s", sni))
                     },
                 )
             }
@@ -573,7 +573,7 @@ private fun SniResultCard(
                             IconButton(
                                 onClick = {
                                     platform.copyToClipboard(res.ip)
-                                    platform.toast(toastIpCopied.replace("%1$s", res.ip))
+                                    platform.toast(toastIpCopied.replace("%1\$s", res.ip))
                                 },
                                 modifier = Modifier.size(24.dp),
                             ) {

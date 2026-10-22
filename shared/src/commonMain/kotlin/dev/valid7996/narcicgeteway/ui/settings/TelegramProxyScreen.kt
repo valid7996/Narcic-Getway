@@ -122,7 +122,7 @@ fun TelegramProxyScreen(
             proxies.addAll(updated)
             isFetchingOnline = false
             val cleanChannelName = channelToFetch.trim().removePrefix("@").removePrefix("https://t.me/")
-            platform.toast(toastProxiesFetched.replace("%1$d", updated.size.toString()).replace("%2$s", cleanChannelName))
+            platform.toast(toastProxiesFetched.replace("%1\$d", updated.size.toString()).replace("%2\$s", cleanChannelName))
         }
     }
 

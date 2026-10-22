@@ -32,6 +32,6 @@ fun RelayKeyDialog(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
         confirmButton = {
             TextButton(onClick = { if (key.isNotBlank()) onSubmit(key.trim()) }) { Text(stringResource(Res.string.relay_key_dialog_activate)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) } },
     )
 }

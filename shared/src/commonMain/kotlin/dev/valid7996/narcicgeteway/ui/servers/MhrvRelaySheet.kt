@@ -367,6 +367,7 @@ private fun SniPoolEditor(
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
     val defaultPool = MhrvRelayProfile.DEFAULT_SNI_POOL
+    val errConn = stringResource(Res.string.mhrv_connection_error)
 
     val activeList = remember(currentSniHosts) {
         val list = currentSniHosts.split(',', '\n', ' ', ';').map { it.trim() }.filter { it.isNotEmpty() }
@@ -394,7 +395,7 @@ private fun SniPoolEditor(
             } else {
                 val err = runCatching {
                     val m = Regex(""""error"\s*:\s*"([^"]+)"""").find(raw)
-                    m?.groupValues?.get(1) ?: stringResource(Res.string.mhrv_connection_error)
+                    m?.groupValues?.get(1) ?: errConn
                 }.getOrDefault("Failed")
                 probeMap[sni] = SniProbeStatus.Err(err)
             }

@@ -94,11 +94,11 @@ private fun formatExpiryTimestamp(
     val hours = remMinutesAfterDays / 60
     val minutes = remMinutesAfterDays % 60
     return when {
-        days > 0 && hours > 0 -> daysHoursTmpl.replace("%1$d", days.toString()).replace("%2$d", hours.toString())
-        days > 0 -> daysTmpl.replace("%1$d", days.toString())
-        hours > 0 && minutes > 0 -> hoursMinsTmpl.replace("%1$d", hours.toString()).replace("%2$d", minutes.toString())
-        hours > 0 -> hoursTmpl.replace("%1$d", hours.toString())
-        else -> minsTmpl.replace("%1$d", minutes.toString())
+        days > 0 && hours > 0 -> daysHoursTmpl.replace("%1\$d", days.toString()).replace("%2\$d", hours.toString())
+        days > 0 -> daysTmpl.replace("%1\$d", days.toString())
+        hours > 0 && minutes > 0 -> hoursMinsTmpl.replace("%1\$d", hours.toString()).replace("%2\$d", minutes.toString())
+        hours > 0 -> hoursTmpl.replace("%1\$d", hours.toString())
+        else -> minsTmpl.replace("%1\$d", minutes.toString())
     }
 }
 
@@ -508,7 +508,7 @@ fun LockShareSheet(
                                                     link = NrgLink.relayLink(it)
                                                     onRelayChanged(relayUrlInput, relayTokenInput)
                                                 }.onFailure {
-                                                    platform.toast(toastRelayUploadErr.replace("%1$s", it.message ?: ""))
+                                                    platform.toast(toastRelayUploadErr.replace("%1\$s", it.message ?: ""))
                                                 }
                                             }
                                         }
@@ -519,7 +519,7 @@ fun LockShareSheet(
                                         packageCopied = false
                                         platform.toast(if (lockMode == 0) toastCreatedExclusive else toastCreatedPublic)
                                     } catch (e: Throwable) {
-                                        platform.toast(toastGeneratingErr.replace("%1$s", e.message ?: ""))
+                                        platform.toast(toastGeneratingErr.replace("%1\$s", e.message ?: ""))
                                     } finally {
                                         generating = false
                                     }
@@ -544,17 +544,17 @@ fun LockShareSheet(
 
                     val fullPackageText = buildString {
                         appendLine(shareHeader)
-                        appendLine(shareName.replace("%1$s", configTitle))
-                        appendLine(shareValidity.replace("%1$s", if (expiresAt != null) formatExpiryTimestamp(expiresAt, strExpired, strDaysHours, strDays, strHoursMins, strHours, strMins) else sharePermanent))
+                        appendLine(shareName.replace("%1\$s", configTitle))
+                        appendLine(shareValidity.replace("%1\$s", if (expiresAt != null) formatExpiryTimestamp(expiresAt, strExpired, strDaysHours, strDays, strHoursMins, strHours, strMins) else sharePermanent))
                         if (lockedDevice.isNotEmpty()) {
-                            appendLine(shareDeviceExclusive.replace("%1$s", lockedDevice))
+                            appendLine(shareDeviceExclusive.replace("%1\$s", lockedDevice))
                             appendLine(shareWarning)
                         } else {
                             appendLine(sharePublicType)
                             appendLine(sharePublicInfo)
                         }
                         if (userNote.isNotBlank()) {
-                            appendLine(shareNote.replace("%1$s", userNote))
+                            appendLine(shareNote.replace("%1\$s", userNote))
                         }
                         appendLine()
                         appendLine(shareLink)

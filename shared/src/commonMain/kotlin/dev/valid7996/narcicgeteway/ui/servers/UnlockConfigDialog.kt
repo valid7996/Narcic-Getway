@@ -227,7 +227,7 @@ fun UnlockConfigDialog(
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(10.dp)) {
-                Text(stringResource(Res.string.cancel))
+                Text(stringResource(Res.string.action_cancel))
             }
         },
     )

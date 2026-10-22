@@ -396,7 +396,6 @@ fun BackupRestoreScreen(
                                     newSubscriptions = subsToRestore,
                                     replaceProfiles = replaceExisting,
                                     replaceSubscriptions = replaceExisting,
-                                Untracked = false,
                                 )
 
                                 if (restoredProfiles > 0) details.add("$restoredProfiles servers")
