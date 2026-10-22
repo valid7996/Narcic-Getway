@@ -72,10 +72,13 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-val desktopPackageVersion = when (nrgVersion.count { it == '.' }) {
-    0 -> "$nrgVersion.0.0"
-    1 -> "$nrgVersion.0"
-    else -> nrgVersion
+val desktopPackageVersion = run {
+    val clean = nrgVersion.substringBefore('-')
+    when (clean.count { it == '.' }) {
+        0 -> "$clean.0.0"
+        1 -> "$clean.0"
+        else -> clean
+    }
 }
 
 compose.desktop {
