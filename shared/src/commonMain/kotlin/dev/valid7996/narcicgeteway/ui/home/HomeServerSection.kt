@@ -153,7 +153,7 @@ internal fun HomeServerSection(
     var showTelegramProxy by remember { mutableStateOf(false) }
     var showPatt by remember { mutableStateOf(false) }
     var ovpnPrompt by remember { mutableStateOf<Pair<String, String>?>(null) }
-    var pendingUnlock by remember { mutableStateOf<Pair<ByteArray, ZsxMetadata>?>(null) }
+    var pendingUnlock by remember { mutableStateOf<Triple<ByteArray, ZsxMetadata, String>?>(null) }
     var relayPrompt by remember { mutableStateOf<String?>(null) }
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val torAddedToast = stringResource(Res.string.tor_added)
@@ -162,7 +162,7 @@ internal fun HomeServerSection(
     val toastLockedOtherDevice = stringResource(Res.string.toast_config_locked_other_device)
     val toastWrongExclusiveKey = stringResource(Res.string.toast_wrong_exclusive_key)
 
-    fun tryHandleLocked(text: String): Boolean {
+    fun tryHandleLocked(text: String, targetSubId: String = group?.takeIf { it.isNotBlank() } ?: ""): Boolean {
         if (dev.valid7996.narcicgeteway.crypto.NrgLink.findRelay(text) != null) {
             scope.launch {
                 val resolved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -170,7 +170,7 @@ internal fun HomeServerSection(
                 }
                 resolved.fold(
                     onSuccess = { resolvedText ->
-                        if (!tryHandleLocked(resolvedText)) platform.toast(importFailed)
+                        if (!tryHandleLocked(resolvedText, targetSubId)) platform.toast(importFailed)
                     },
                     onFailure = { err ->
                         if (err is dev.valid7996.narcicgeteway.data.config.RelayKeyRequiredException) {
@@ -193,13 +193,13 @@ internal fun HomeServerSection(
             return true
         }
         if (meta.deviceBound) {
-            val autoImp = repository.importLocked(bytes, null)
+            val autoImp = repository.importLocked(bytes, null, subscriptionId = targetSubId)
             autoImp.fold(
                 onSuccess = { platform.toast(importedTemplate.format(1)) },
                 onFailure = {
                     val key = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(text)
                     if (key != null) {
-                        val keyImp = repository.importLocked(bytes, key)
+                        val keyImp = repository.importLocked(bytes, key, subscriptionId = targetSubId)
                         keyImp.fold(
                             onSuccess = { platform.toast(importedTemplate.format(1)) },
                             onFailure = {
@@ -216,19 +216,19 @@ internal fun HomeServerSection(
         val key = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(text)
         if (meta.passwordProtected) {
             if (key != null) {
-                val imported = repository.importLocked(bytes, key)
+                val imported = repository.importLocked(bytes, key, subscriptionId = targetSubId)
                 imported.fold(
                     onSuccess = { platform.toast(importedTemplate.format(1)) },
                     onFailure = {
-                        pendingUnlock = bytes to meta
+                        pendingUnlock = Triple(bytes, meta, targetSubId)
                     },
                 )
             } else {
-                pendingUnlock = bytes to meta
+                pendingUnlock = Triple(bytes, meta, targetSubId)
             }
             return true
         }
-        val imported = repository.importLocked(bytes, null)
+        val imported = repository.importLocked(bytes, null, subscriptionId = targetSubId)
         imported.fold(
             onSuccess = { platform.toast(importedTemplate.format(1)) },
             onFailure = { platform.toast(it.message ?: importFailed) },
@@ -1093,11 +1093,12 @@ internal fun HomeServerSection(
         onDismissMove = { moveTarget = null },
     )
 
-    pendingUnlock?.let { (bytes, meta) ->
+    pendingUnlock?.let { (bytes, meta, subId) ->
         UnlockConfigDialog(
             zsxBytes = bytes,
             metadata = meta,
             repository = repository,
+            subscriptionId = subId,
             onDismiss = { pendingUnlock = null },
             onSuccess = {
                 pendingUnlock = null
@@ -1311,7 +1312,7 @@ private suspend fun pingOne(
     real: Boolean,
 ) {
     repository.clearPings(listOf(profile.id), persist = false)
-    val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
+    val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
     val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
     val isMhrv = profile.isMhrvRelay
     val ms = if (real || isSpoof || isSealed || isMhrv) {

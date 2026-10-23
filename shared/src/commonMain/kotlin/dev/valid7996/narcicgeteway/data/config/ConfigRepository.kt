@@ -115,7 +115,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         }
 
         val aetherLines = trimmed.lines().map { it.trim() }.filter { AetherLink.isAetherLink(it) }
-        if (aetherLines.isNotEmpty() && (aetherLines.size == trimmed.lines().count { it.isNotBlank() } || trimmed.lines().none { Protocol.fromScheme(it.substringBefore("://", "").lowercase()) != null })) {
+        if (aetherLines.isNotEmpty() && aetherLines.size == trimmed.lines().count { it.isNotBlank() }) {
             var added = 0
             aetherLines.forEach { line ->
                 AetherLink.parse(line)?.let { (nm, prof) -> addAether(prof, nm, subscriptionId = subscriptionId); added++ }
@@ -125,7 +125,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         }
 
         val sstpLines = trimmed.lines().map { it.trim() }.filter { it.startsWith("sstp://", ignoreCase = true) }
-        if (sstpLines.isNotEmpty() && (sstpLines.size == trimmed.lines().count { it.isNotBlank() } || trimmed.lines().none { Protocol.fromScheme(it.substringBefore("://", "").lowercase()) != null })) {
+        if (sstpLines.isNotEmpty() && sstpLines.size == trimmed.lines().count { it.isNotBlank() }) {
             var added = 0
             sstpLines.forEach { line ->
                 dev.valid7996.narcicgeteway.domain.config.SstpProfile.fromLink(line)?.let { (nm, prof) -> addSstp(prof, nm, subscriptionId = subscriptionId); added++ }
@@ -313,7 +313,11 @@ class ConfigRepository(private val store: KeyValueStore) {
                 }
             }.onSuccess { profile ->
                 val duplicate = (current + fresh).any {
-                    it.rawPayload() == link && it.subscriptionId == subscriptionId
+                    if (it.isLocked) {
+                        it.name == profile.name && it.subscriptionId == subscriptionId
+                    } else {
+                        it.rawPayload() == link && it.subscriptionId == subscriptionId
+                    }
                 }
                 if (duplicate) duplicates++ else fresh += profile
             }
@@ -1234,8 +1238,15 @@ class ConfigRepository(private val store: KeyValueStore) {
         persistProfiles()
     }
 
+    fun isDefaultSubscription(subscriptionId: String): Boolean =
+        subscriptionId in DEFAULT_SUB_IDS
+
     fun exportAllPayloads(): String =
-        _profiles.value.mapNotNull { it.rawPayload() }.joinToString("\n")
+        _profiles.value
+            .filterNot { it.isLocked || it.source is ProfileSource.Sealed }
+            .filterNot { isDefaultSubscription(it.subscriptionId) }
+            .mapNotNull { it.rawPayload() }
+            .joinToString("\n")
 
     fun setActive(id: String?) {
         _activeId.value = id

@@ -122,9 +122,16 @@ object XrayController {
 
     fun measureDelayDetailed(url: String): dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome {
         val c = ready()
-            ?: return dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome(-1L, null)
+        if (c == null || !c.isRunning) {
+            return dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome(-1L, "core not running")
+        }
         return try {
-            dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome(c.measureDelay(url), null)
+            val ms = c.measureDelay(url)
+            if (ms <= 0) {
+                dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome(-1L, "unreachable")
+            } else {
+                dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome(ms, null)
+            }
         } catch (e: Exception) {
             dev.valid7996.narcicgeteway.core.CoreProbe.DelayOutcome(-1L, e.message)
         }

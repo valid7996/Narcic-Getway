@@ -42,6 +42,11 @@ internal fun applySocksSslIfNeeded(connection: HttpURLConnection, socksPort: Int
     }
 }
 
+object VpnNet {
+    @Volatile
+    var urlOpener: ((URL) -> HttpURLConnection)? = null
+}
+
 internal actual suspend fun httpGetViaSocks(
     url: String,
     socksPort: Int?,
@@ -54,7 +59,12 @@ internal actual suspend fun httpGetViaSocks(
         val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved("127.0.0.1", socksPort))
         URL(url).openConnection(proxy) as HttpURLConnection
     } else {
-        URL(url).openConnection() as HttpURLConnection
+        val opener = VpnNet.urlOpener
+        if (opener != null && dev.valid7996.narcicgeteway.core.VpnManager.deviceVpnActive()) {
+            opener(URL(url))
+        } else {
+            URL(url).openConnection() as HttpURLConnection
+        }
     }
     applySocksSslIfNeeded(connection, socksPort)
     connection.apply {
@@ -88,7 +98,12 @@ internal actual suspend fun httpTimedTransfer(
         val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved("127.0.0.1", socksPort))
         URL(url).openConnection(proxy) as HttpURLConnection
     } else {
-        URL(url).openConnection() as HttpURLConnection
+        val opener = VpnNet.urlOpener
+        if (opener != null && dev.valid7996.narcicgeteway.core.VpnManager.deviceVpnActive()) {
+            opener(URL(url))
+        } else {
+            URL(url).openConnection() as HttpURLConnection
+        }
     }
     applySocksSslIfNeeded(connection, socksPort)
     connection.apply {

@@ -257,7 +257,83 @@ data class VpnProfile(
         if (NrgLink.isNrgLink(payload)) {
             val parsed = NrgLink.parse(payload)
             if (parsed != null) {
-                return copy(source = parsed.source)
+                val src = parsed.source
+                return when (src) {
+                    is ProfileSource.Sstp -> copy(
+                        source = src,
+                        protocol = "MS-SSTP",
+                        address = src.settings.serverHost(),
+                        port = src.settings.effectivePort(),
+                        transportLabel = "SSTP",
+                    )
+                    is ProfileSource.Aether -> copy(
+                        source = src,
+                        protocol = "Aether",
+                        address = src.settings.serverHost,
+                        port = src.settings.effectivePort,
+                        transportLabel = "Aether",
+                    )
+                    is ProfileSource.OpenConnect -> copy(
+                        source = src,
+                        protocol = "OpenConnect",
+                        address = src.settings.serverHost,
+                        port = src.settings.effectivePort,
+                        transportLabel = "OpenConnect",
+                    )
+                    is ProfileSource.Ikev2 -> copy(
+                        source = src,
+                        protocol = "IKEv2",
+                        address = src.settings.serverHost,
+                        port = src.settings.effectivePort,
+                        transportLabel = "IKEv2",
+                    )
+                    else -> copy(source = src)
+                }
+            }
+        }
+
+        // 1.5 SSTP link
+        if (payload.startsWith("sstp://", ignoreCase = true)) {
+            val parsed = SstpProfile.fromLink(payload)
+            if (parsed != null) {
+                val (profName, settings) = parsed
+                return copy(
+                    source = ProfileSource.Sstp(settings),
+                    protocol = "MS-SSTP",
+                    address = settings.serverHost(),
+                    port = settings.effectivePort(),
+                    name = profName.ifBlank { name },
+                    transportLabel = "SSTP",
+                )
+            }
+        }
+
+        // 1.6 Aether link
+        if (AetherLink.isAetherLink(payload)) {
+            val parsed = AetherLink.parse(payload)
+            if (parsed != null) {
+                val (profName, settings) = parsed
+                return copy(
+                    source = ProfileSource.Aether(settings),
+                    protocol = "Aether",
+                    address = settings.serverHost,
+                    port = settings.effectivePort,
+                    name = profName.ifBlank { name },
+                    transportLabel = "Aether",
+                )
+            }
+        }
+
+        // 1.7 SniSpoof link
+        if (SniSpoofLink.isSniSpoofLink(payload)) {
+            val parsed = SniSpoofLink.parse(payload)
+            if (parsed != null) {
+                val (profName, settings) = parsed
+                return copy(
+                    source = ProfileSource.SniSpoof(settings),
+                    protocol = "SniSpoof",
+                    name = profName.ifBlank { name },
+                )
             }
         }
 
@@ -288,14 +364,17 @@ data class VpnProfile(
         }
 
         // 5. Standard Xray link
-        if (ConfigParser.isSupportedLink(payload)) {
+        val xScheme = payload.substringBefore("://", "").lowercase()
+        if (Protocol.fromScheme(xScheme) != null) {
             val parsed = runCatching { ConfigParser.parse(payload) }.getOrNull()
-            return copy(
-                source = ProfileSource.Link(payload),
-                protocol = parsed?.protocol?.name ?: protocol,
-                address = parsed?.address ?: address,
-                port = parsed?.port ?: port,
-            )
+            if (parsed != null) {
+                return copy(
+                    source = ProfileSource.Link(payload),
+                    protocol = parsed.protocol.name,
+                    address = parsed.address,
+                    port = parsed.port,
+                )
+            }
         }
 
         // 6. Custom Xray JSON

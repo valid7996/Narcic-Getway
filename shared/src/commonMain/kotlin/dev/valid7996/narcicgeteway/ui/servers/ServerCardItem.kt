@@ -377,7 +377,7 @@ internal fun ServerCard(
                             )
                         }
 
-                        if ((!profile.isManagedTunnel || profile.isSingBoxConfig || profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof) && !profile.isDnsBasedTunnel) {
+                        if ((!profile.isManagedTunnel || profile.isSingBoxConfig || profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp) && !profile.isDnsBasedTunnel) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.ping_tcp)) },
                                 leadingIcon = { Icon(painterResource(Res.drawable.ic_speed), null) },

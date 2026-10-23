@@ -141,7 +141,7 @@ object PingService {
         val customPermits = Semaphore(minOf(realPermits, CUSTOM_PROBE_CONCURRENCY))
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
-        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay) || it.isDnsBasedTunnel) || it.isAether }
+        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp) || it.isDnsBasedTunnel) || it.isAether }
         val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
@@ -214,6 +214,13 @@ object PingService {
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isAether) return aetherDelay(effective, url)
+        if (effective.isSstp) {
+            val sni = effective.address
+            val probe = sniProbe?.invoke(effective.address, sni)
+            if (probe != null && probe > 0) return probe
+            val tcp = tcpPing(effective.address, effective.port)
+            return if (tcp > 0) tcp else -1L
+        }
         if (effective.isMhrvRelay) {
             val mhrv = effective.mhrvRelaySettings()
             if (mhrv != null) {
@@ -242,6 +249,7 @@ object PingService {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isMhrvRelay) return false
         if (effective.isAether) return false
+        if (effective.isSstp) return false
         if (effective.isProxyChain) return false
         if (effective.isSniSpoof || effective.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(effective.address, effective.port)) return false
         if (effective.address.isBlank() || effective.address == "-") return false

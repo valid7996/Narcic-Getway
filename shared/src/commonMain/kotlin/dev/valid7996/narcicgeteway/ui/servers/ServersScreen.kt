@@ -211,7 +211,7 @@ fun ServersScreen(
         scope.launch { platform.toast(getString(res, *args)) }
     }
 
-    var pendingUnlock by remember { mutableStateOf<Pair<ByteArray, dev.valid7996.narcicgeteway.crypto.ZsxMetadata>?>(null) }
+    var pendingUnlock by remember { mutableStateOf<Triple<ByteArray, dev.valid7996.narcicgeteway.crypto.ZsxMetadata, String>?>(null) }
 
     val customJsonInvalid = stringResource(Res.string.custom_json_invalid)
     val singBoxJsonInvalid = stringResource(Res.string.singbox_json_invalid)
@@ -240,7 +240,7 @@ fun ServersScreen(
         }
     }
 
-    fun tryHandleLocked(text: String): Boolean {
+    fun tryHandleLocked(text: String, targetSubId: String = ""): Boolean {
         if (dev.valid7996.narcicgeteway.crypto.NrgLink.findRelay(text) != null) {
             scope.launch {
                 val resolved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -248,7 +248,7 @@ fun ServersScreen(
                 }
                 resolved.fold(
                     onSuccess = { resolvedText ->
-                        if (!tryHandleLocked(resolvedText)) toastRes(Res.string.config_invalid)
+                        if (!tryHandleLocked(resolvedText, targetSubId)) toastRes(Res.string.config_invalid)
                     },
                     onFailure = { relayFailure(text, it) },
                 )
@@ -263,13 +263,13 @@ fun ServersScreen(
             return true
         }
         if (meta.deviceBound) {
-            val autoImp = repository.importLocked(bytes, null)
+            val autoImp = repository.importLocked(bytes, null, subscriptionId = targetSubId)
             autoImp.fold(
                 onSuccess = { toastRes(Res.string.servers_imported, 1) },
                 onFailure = {
                     val key = LockedConfigExtractor.extractKey(text)
                     if (key != null) {
-                        val keyImp = repository.importLocked(bytes, key)
+                        val keyImp = repository.importLocked(bytes, key, subscriptionId = targetSubId)
                         keyImp.fold(
                             onSuccess = { toastRes(Res.string.servers_imported, 1) },
                             onFailure = {
@@ -286,19 +286,19 @@ fun ServersScreen(
         val key = LockedConfigExtractor.extractKey(text)
         if (meta.passwordProtected) {
             if (key != null) {
-                val imported = repository.importLocked(bytes, key)
+                val imported = repository.importLocked(bytes, key, subscriptionId = targetSubId)
                 imported.fold(
                     onSuccess = { toastRes(Res.string.servers_imported, 1) },
                     onFailure = {
-                        pendingUnlock = bytes to meta
+                        pendingUnlock = Triple(bytes, meta, targetSubId)
                     },
                 )
             } else {
-                pendingUnlock = bytes to meta
+                pendingUnlock = Triple(bytes, meta, targetSubId)
             }
             return true
         }
-        val imported = repository.importLocked(bytes, null)
+        val imported = repository.importLocked(bytes, null, subscriptionId = targetSubId)
         imported.fold(
             onSuccess = { toastRes(Res.string.servers_imported, 1) },
             onFailure = { toastImportFailure(it) },
@@ -481,7 +481,7 @@ fun ServersScreen(
 
     fun doExecuteImport(text: String, subId: String) {
         scope.launch(kotlinx.coroutines.Dispatchers.Default) {
-            if (tryHandleLocked(text)) return@launch
+            if (tryHandleLocked(text, targetSubId = subId)) return@launch
             var outcome: Result<dev.valid7996.narcicgeteway.data.config.ConfigRepository.PastedImport>? = null
             offerObfuscationAfter { outcome = repository.importPasted(text, subId) }
             outcome?.onSuccess { r ->
@@ -499,7 +499,7 @@ fun ServersScreen(
                     val bytes = runCatching { dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link) }.getOrNull()
                     val meta = bytes?.let { b -> runCatching { repository.peekLocked(b) }.getOrNull() }
                     if (bytes != null && meta != null) {
-                        pendingUnlock = bytes to meta
+                        pendingUnlock = Triple(bytes, meta, subId)
                         return@onFailure
                     }
                 }
@@ -513,7 +513,6 @@ fun ServersScreen(
             toastRes(Res.string.paste_empty)
             return
         }
-        if (tryHandleLocked(text)) return
         if (repository.isSubscriptionUrl(text)) {
             doExecuteImport(text, "")
             return
@@ -1142,7 +1141,7 @@ fun ServersScreen(
                         onPingTcp = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
-                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
+                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                                 val isMhrv = profile.isMhrvRelay
                                 val ms = if (isSpoof || isSealed || isMhrv) {
@@ -1160,7 +1159,7 @@ fun ServersScreen(
                         onPingReal = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
-                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof
+                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                                 val ms = PingService.realDelay(
                                     profile,
@@ -1556,11 +1555,12 @@ fun ServersScreen(
         )
     }
 
-    pendingUnlock?.let { (bytes, meta) ->
+    pendingUnlock?.let { (bytes, meta, subId) ->
         UnlockConfigDialog(
             zsxBytes = bytes,
             metadata = meta,
             repository = repository,
+            subscriptionId = subId,
             onDismiss = { pendingUnlock = null },
             onSuccess = { pendingUnlock = null },
         )

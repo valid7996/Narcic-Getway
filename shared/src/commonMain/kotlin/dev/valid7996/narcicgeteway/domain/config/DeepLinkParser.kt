@@ -10,12 +10,12 @@ object DeepLinkParser {
     val SCHEMES: Set<String> = setOf(
         "narcicgeteway", "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
         "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard",
-        "socks", "socks5", "snispoof", "aether", "nrg", "zsx",
+        "socks", "socks5", "snispoof", "aether", "sstp", "nrg", "zsx",
     )
 
     private val CONFIG_SCHEMES = setOf(
         "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "socks", "socks5",
-        "snispoof", "aether", "nrg", "zsx",
+        "snispoof", "aether", "sstp", "nrg", "zsx",
     )
 
     private const val MAX_LENGTH = 2 * 1024 * 1024
@@ -88,6 +88,7 @@ object DeepLinkParser {
         val t = text.trim()
         val readable = ConfigParser.isSupportedLink(t) && !t.startsWith("http", ignoreCase = true) ||
             SniSpoofLink.isSniSpoofLink(t) || NrgLink.isNrgLink(t) || AetherLink.isAetherLink(t) ||
+            t.startsWith("sstp://", ignoreCase = true) ||
             t.startsWith("nrg://", ignoreCase = true) || t.startsWith("zsx://", ignoreCase = true)
         return if (readable) DeepLinkRequest.ConfigText(t) else null
     }

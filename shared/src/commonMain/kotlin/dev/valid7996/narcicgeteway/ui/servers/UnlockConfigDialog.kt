@@ -53,6 +53,7 @@ fun UnlockConfigDialog(
     zsxBytes: ByteArray,
     metadata: ZsxMetadata,
     repository: ConfigRepository,
+    subscriptionId: String = "",
     onDismiss: () -> Unit,
     onSuccess: () -> Unit,
 ) {
@@ -201,7 +202,7 @@ fun UnlockConfigDialog(
                         errorMessage = warnEnterKey
                         return@Button
                     }
-                    val result = repository.importLocked(zsxBytes, key)
+                    val result = repository.importLocked(zsxBytes, key, subscriptionId = subscriptionId)
                     result.fold(
                         onSuccess = {
                             platform.toast(successToast)

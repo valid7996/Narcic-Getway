@@ -46,6 +46,17 @@ class AppContainer(context: Context) {
 
         val connectivity = context.getSystemService(android.net.ConnectivityManager::class.java)
         VpnManager.deviceVpnProbe = { connectivity != null && anyVpnNetwork(connectivity) }
+        dev.valid7996.narcicgeteway.platform.VpnNet.urlOpener = { url ->
+            val vpnNetwork = connectivity?.allNetworks?.firstOrNull { network ->
+                connectivity.getNetworkCapabilities(network)
+                    ?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) == true
+            }
+            if (vpnNetwork != null) {
+                vpnNetwork.openConnection(url) as java.net.HttpURLConnection
+            } else {
+                url.openConnection() as java.net.HttpURLConnection
+            }
+        }
         CoreProbe.measureDelay = { url -> XrayController.measureDelay(url) }
         CoreProbe.measureDelayDetailed = { url -> XrayController.measureDelayDetailed(url) }
         CoreProbe.measureOutboundDelay = { cfg, url ->
