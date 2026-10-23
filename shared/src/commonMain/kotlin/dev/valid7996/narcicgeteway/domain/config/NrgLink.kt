@@ -64,6 +64,7 @@ object NrgLink {
         is ProfileSource.MhrvRelay,
         is ProfileSource.OpenConnect,
         is ProfileSource.Ikev2,
+        is ProfileSource.Sstp,
         is ProfileSource.Aether,
         is ProfileSource.ProxyChain,
         is ProfileSource.CrossChain,

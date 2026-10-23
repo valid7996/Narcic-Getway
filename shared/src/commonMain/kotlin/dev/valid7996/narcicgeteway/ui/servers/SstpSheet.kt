@@ -50,10 +50,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import dev.valid7996.narcicgeteway.domain.config.SstpProfile
 import dev.valid7996.narcicgeteway.shared.resources.Res
-import dev.valid7996.narcicgeteway.shared.resources.cancel
+import dev.valid7996.narcicgeteway.shared.resources.action_cancel
 import dev.valid7996.narcicgeteway.shared.resources.ic_chevron_right
 import dev.valid7996.narcicgeteway.shared.resources.ic_keyboard_arrow_down
-import dev.valid7996.narcicgeteway.shared.resources.save
+import dev.valid7996.narcicgeteway.shared.resources.action_save
 import dev.valid7996.narcicgeteway.ui.components.PickerField
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -250,7 +250,11 @@ fun SstpSheet(
                     PickerField(
                         label = "الگوریتم احراز هویت (Auth Protocol)",
                         selected = authProtocol,
-                        options = listOf(SstpProfile.AUTH_MSCHAPV2, SstpProfile.AUTH_PAP, SstpProfile.AUTH_CHAP),
+                        options = listOf(
+                            SstpProfile.AUTH_MSCHAPV2 to "MS-CHAP v2 (پیش‌فرض)",
+                            SstpProfile.AUTH_PAP to "PAP",
+                            SstpProfile.AUTH_CHAP to "CHAP",
+                        ),
                         onSelect = { authProtocol = it },
                     )
 
@@ -276,7 +280,7 @@ fun SstpSheet(
                     },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text(stringResource(Res.string.cancel))
+                    Text(stringResource(Res.string.action_cancel))
                 }
                 Button(
                     onClick = {
@@ -304,7 +308,7 @@ fun SstpSheet(
                         contentColor = if (MaterialTheme.colorScheme.primary.luminance() > 0.5f) Color.Black else Color.White,
                     ),
                 ) {
-                    Text(stringResource(Res.string.save), fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
                 }
             }
         }

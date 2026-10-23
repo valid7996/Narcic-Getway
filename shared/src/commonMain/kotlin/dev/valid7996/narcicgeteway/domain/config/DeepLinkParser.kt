@@ -211,6 +211,7 @@ data class DeepLinkPreview(
             is ProfileSource.OpenConnect -> "OpenConnect"
             is ProfileSource.Ikev2 -> "IKEv2"
             is ProfileSource.Aether -> "Aether"
+            is ProfileSource.Sstp -> "MS-SSTP"
             is ProfileSource.ProxyChain -> "Proxy chain"
             is ProfileSource.CrossChain -> "Cross chain"
             is ProfileSource.SniSpoof -> "SNI spoof"
