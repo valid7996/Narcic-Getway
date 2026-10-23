@@ -108,13 +108,16 @@ internal class IPTerminal(private val bridge: SharedBridge) {
         }
     }
 
-    internal fun writePacket(buffer: ByteBuffer) {
+    internal fun writePacket(start: Int, length: Int, buffer: ByteBuffer) {
         val stream = outputStream ?: return
-        val length = buffer.remaining()
         if (length > 0) {
-            stream.write(buffer.array(), buffer.position(), length)
+            stream.write(buffer.array(), start, length)
             bridge.rxBytes.addAndGet(length.toLong())
         }
+    }
+
+    internal fun writePacket(buffer: ByteBuffer) {
+        writePacket(buffer.position(), buffer.remaining(), buffer)
     }
 
     internal fun close() {
