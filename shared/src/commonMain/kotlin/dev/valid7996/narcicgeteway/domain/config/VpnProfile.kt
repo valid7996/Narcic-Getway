@@ -261,30 +261,30 @@ data class VpnProfile(
                 return when (src) {
                     is ProfileSource.Sstp -> copy(
                         source = src,
-                        protocol = "MS-SSTP",
+                        protocol = "SSTP",
                         address = src.settings.serverHost(),
                         port = src.settings.effectivePort(),
                         transportLabel = "SSTP",
                     )
                     is ProfileSource.Aether -> copy(
                         source = src,
-                        protocol = "Aether",
-                        address = src.settings.serverHost,
-                        port = src.settings.effectivePort,
-                        transportLabel = "Aether",
+                        protocol = "AETHER",
+                        address = src.settings.server,
+                        port = src.settings.serverPort,
+                        transportLabel = src.settings.protocol.uppercase(),
                     )
                     is ProfileSource.OpenConnect -> copy(
                         source = src,
-                        protocol = "OpenConnect",
-                        address = src.settings.serverHost,
-                        port = src.settings.effectivePort,
-                        transportLabel = "OpenConnect",
+                        protocol = "OPENCONNECT",
+                        address = src.settings.server,
+                        port = src.settings.serverPort(),
+                        transportLabel = src.settings.protocol.uppercase(),
                     )
                     is ProfileSource.Ikev2 -> copy(
                         source = src,
-                        protocol = "IKEv2",
-                        address = src.settings.serverHost,
-                        port = src.settings.effectivePort,
+                        protocol = "IKEV2",
+                        address = src.settings.server,
+                        port = 0,
                         transportLabel = "IKEv2",
                     )
                     else -> copy(source = src)
@@ -299,7 +299,7 @@ data class VpnProfile(
                 val (profName, settings) = parsed
                 return copy(
                     source = ProfileSource.Sstp(settings),
-                    protocol = "MS-SSTP",
+                    protocol = "SSTP",
                     address = settings.serverHost(),
                     port = settings.effectivePort(),
                     name = profName.ifBlank { name },
@@ -315,11 +315,11 @@ data class VpnProfile(
                 val (profName, settings) = parsed
                 return copy(
                     source = ProfileSource.Aether(settings),
-                    protocol = "Aether",
-                    address = settings.serverHost,
-                    port = settings.effectivePort,
+                    protocol = "AETHER",
+                    address = settings.server,
+                    port = settings.serverPort,
                     name = profName.ifBlank { name },
-                    transportLabel = "Aether",
+                    transportLabel = settings.protocol.uppercase(),
                 )
             }
         }
