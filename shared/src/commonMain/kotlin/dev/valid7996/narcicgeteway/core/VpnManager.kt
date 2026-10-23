@@ -77,6 +77,8 @@ object VpnManager {
 
     const val KIND_SINGBOX = "sing_box"
 
+    const val KIND_SSTP = "sstp"
+
     fun onStarting(remark: String) {
         activeSocksPort = null
         _status.value = Status(

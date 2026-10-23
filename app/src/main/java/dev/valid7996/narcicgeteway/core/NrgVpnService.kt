@@ -63,6 +63,7 @@ class NrgVpnService : VpnService() {
     /** True while this session holds the no-root SNI spoof engine (the profile points at 127.0.0.1:40443). */
     private var rstaHeld = false
     private var openConnect: OpenConnectController? = null
+    private var sstp: dev.valid7996.narcicgeteway.core.sstp.SstpController? = null
     private var singBox: SingBoxEngine? = null
 
     private var singBoxLastUp = 0L
@@ -224,6 +225,8 @@ class NrgVpnService : VpnService() {
         }
 
         if (kind == VpnManager.KIND_OPENCONNECT) { startOpenConnect(configJson, settings); return }
+
+        if (kind == VpnManager.KIND_SSTP) { startSstp(configJson, settings); return }
 
         if (kind == VpnManager.KIND_SINGBOX) { startSingBox(configJson, settings); return }
 
@@ -745,6 +748,33 @@ class NrgVpnService : VpnService() {
         if (!controller.start()) stopEverything()
     }
 
+    private fun startSstp(configJson: String, appSettings: AppSettings) {
+        VpnManager.setActiveKind(kind)
+        advance(VpnNotifications.Stage.Engine)
+        val profile = try {
+            kotlinx.serialization.json.Json.decodeFromString(
+                dev.valid7996.narcicgeteway.domain.config.SstpProfile.serializer(), configJson,
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "bad SSTP config", e)
+            VpnManager.onError("Invalid SSTP config: ${e.message}")
+            stopEverything(); return
+        }
+        val controller = dev.valid7996.narcicgeteway.core.sstp.SstpController(
+            service = this,
+            profile = profile,
+            configureBuilder = { b -> b.applyAppRules(appSettings, selfInTunnel = true) },
+            fallbackDns = appSettings.vpnDns.split(',', ' ').map { it.trim() }.filter { it.isNotEmpty() },
+            onUp = {
+                advance(VpnNotifications.Stage.Tunnel)
+                finishConnected()
+            },
+            onDown = { reason -> onTunnelFailed(reason) },
+        )
+        sstp = controller
+        if (!controller.start()) stopEverything()
+    }
+
     private fun startSingBox(configJson: String, appSettings: AppSettings) {
         VpnManager.setActiveKind(kind)
         advance(VpnNotifications.Stage.Engine)
@@ -1077,6 +1107,7 @@ class NrgVpnService : VpnService() {
         VpnManager.KIND_TOR -> "Tor"
         VpnManager.KIND_SSH -> "SSH"
         VpnManager.KIND_OPENCONNECT -> "OpenConnect"
+        VpnManager.KIND_SSTP -> "MS-SSTP"
         VpnManager.KIND_SINGBOX -> "sing-box"
         VpnManager.KIND_IKEV2 -> "IKEv2"
         VpnManager.KIND_SNISPOOF -> "Xray · SNI"
@@ -1224,6 +1255,7 @@ class NrgVpnService : VpnService() {
                     VpnManager.KIND_TOR -> tor?.isRunning == true
                     VpnManager.KIND_SSH -> ssh?.isRunning == true
                     VpnManager.KIND_OPENCONNECT -> openConnect?.isRunning == true
+                    VpnManager.KIND_SSTP -> sstp?.isRunning == true
                     VpnManager.KIND_SINGBOX -> singBox?.isRunning == true
                     // Aether had no branch here and fell through to Xray's: with the exit proxy down (or a command
                     // that dials out on its own) Xray never runs, so the tunnel was torn down at the first tick.
@@ -1261,6 +1293,7 @@ class NrgVpnService : VpnService() {
                     // The core and its carriers are processes of this app, so their sockets are the tunnel's own traffic.
                     VpnManager.KIND_PSIPHON, VpnManager.KIND_AETHER -> uidTrafficDelta()
                     VpnManager.KIND_OPENCONNECT -> { openConnect?.pokeStats(); openConnect?.trafficDelta() ?: (0L to 0L) }
+                    VpnManager.KIND_SSTP -> sstp?.trafficDelta() ?: (0L to 0L)
                     VpnManager.KIND_MHRV -> socksShim?.readDelta() ?: (0L to 0L)
 
                     VpnManager.KIND_SINGBOX -> singBox?.let { engine ->
@@ -1466,6 +1499,7 @@ class NrgVpnService : VpnService() {
         ssh?.stop(); ssh = null
         if (rstaHeld) { RstaSpoofClient.release(this); rstaHeld = false } else RstaSpoofClient.stop(this)
         openConnect?.stop(); openConnect = null
+        sstp?.stop(); sstp = null
         singBox?.stop(); singBox = null
         socksShim?.stop(); socksShim = null
         outerPsiphon?.stop(); outerPsiphon = null

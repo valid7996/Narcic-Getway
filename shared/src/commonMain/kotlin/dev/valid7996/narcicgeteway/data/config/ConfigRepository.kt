@@ -115,16 +115,26 @@ class ConfigRepository(private val store: KeyValueStore) {
         }
 
         val aetherLines = trimmed.lines().map { it.trim() }.filter { AetherLink.isAetherLink(it) }
-        if (aetherLines.isNotEmpty()) {
+        if (aetherLines.isNotEmpty() && (aetherLines.size == trimmed.lines().count { it.isNotBlank() } || trimmed.lines().none { Protocol.fromScheme(it.substringBefore("://", "").lowercase()) != null })) {
             var added = 0
             aetherLines.forEach { line ->
-                AetherLink.parse(line)?.let { (nm, prof) -> addAether(prof, nm); added++ }
+                AetherLink.parse(line)?.let { (nm, prof) -> addAether(prof, nm, subscriptionId = subscriptionId); added++ }
             }
             if (added > 0) return@runCatching added
             throw IllegalArgumentException("no usable aether:// config found")
         }
 
-        if (NrgLink.isNrgLink(trimmed)) return@runCatching importNrgLink(trimmed)
+        val sstpLines = trimmed.lines().map { it.trim() }.filter { it.startsWith("sstp://", ignoreCase = true) }
+        if (sstpLines.isNotEmpty() && (sstpLines.size == trimmed.lines().count { it.isNotBlank() } || trimmed.lines().none { Protocol.fromScheme(it.substringBefore("://", "").lowercase()) != null })) {
+            var added = 0
+            sstpLines.forEach { line ->
+                dev.valid7996.narcicgeteway.domain.config.SstpProfile.fromLink(line)?.let { (nm, prof) -> addSstp(prof, nm, subscriptionId = subscriptionId); added++ }
+            }
+            if (added > 0) return@runCatching added
+            throw IllegalArgumentException("no usable sstp:// config found")
+        }
+
+        if (NrgLink.isNrgLink(trimmed)) return@runCatching importNrgLink(trimmed, subscriptionId)
 
         val mhrvLooksLike = trimmed.startsWith(
             dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.SHARE_PREFIX, ignoreCase = true,
@@ -144,19 +154,19 @@ class ConfigRepository(private val store: KeyValueStore) {
         }
 
         val nrgMatch = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractLink(trimmed)
-        if (nrgMatch != null) {
+        if (nrgMatch != null && trimmed.lines().count { it.isNotBlank() } <= 1) {
             val bytes = dev.valid7996.narcicgeteway.crypto.NrgLink.decode(nrgMatch)
             val meta = ZsxCrypto.peek(bytes)
             if (meta.isExpired) throw ZsxExpiredException()
 
             if (meta.deviceBound) {
                 // First try automatic unlock with this device's own ID
-                val autoImp = importLocked(bytes, null)
+                val autoImp = importLocked(bytes, null, subscriptionId = subscriptionId)
                 if (autoImp.isSuccess) return@runCatching 1
 
                 val extractedKey = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(trimmed)
                 if (extractedKey != null) {
-                    val keyImp = importLocked(bytes, extractedKey)
+                    val keyImp = importLocked(bytes, extractedKey, subscriptionId = subscriptionId)
                     if (keyImp.isSuccess) return@runCatching 1
                 }
 
@@ -166,14 +176,14 @@ class ConfigRepository(private val store: KeyValueStore) {
 
             val extractedKey = dev.valid7996.narcicgeteway.domain.config.LockedConfigExtractor.extractKey(trimmed)
             if (meta.passwordProtected && extractedKey != null && !isKeyConsumed(extractedKey)) {
-                val imp = importLocked(bytes, extractedKey)
+                val imp = importLocked(bytes, extractedKey, subscriptionId = subscriptionId)
                 if (imp.isSuccess) return@runCatching 1
             }
 
             if (meta.passwordProtected) {
                 throw dev.valid7996.narcicgeteway.crypto.ZsxPasswordRequiredException()
             }
-            importLocked(bytes, null).getOrThrow()
+            importLocked(bytes, null, subscriptionId = subscriptionId).getOrThrow()
             return@runCatching 1
         }
 
@@ -270,6 +280,29 @@ class ConfigRepository(private val store: KeyValueStore) {
                         name = parsed.name,
                         link = link,
                     )
+                } else if (AetherLink.isAetherLink(link)) {
+                    val (nm, prof) = AetherLink.parse(link)
+                        ?: throw IllegalArgumentException("invalid aether link")
+                    VpnProfile.fromAether(
+                        settings = prof,
+                        id = newId(),
+                        addedAt = currentTimeMillis(),
+                        name = nm,
+                        subscriptionId = subscriptionId,
+                    )
+                } else if (link.startsWith("sstp://", ignoreCase = true)) {
+                    val (nm, prof) = dev.valid7996.narcicgeteway.domain.config.SstpProfile.fromLink(link)
+                        ?: throw IllegalArgumentException("invalid sstp link")
+                    VpnProfile.fromSstp(
+                        settings = prof,
+                        id = newId(),
+                        addedAt = currentTimeMillis(),
+                        name = nm,
+                        subscriptionId = subscriptionId,
+                    )
+                } else if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) {
+                    val bytes = dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link)
+                    createLockedProfile(bytes, null, subscriptionId = subscriptionId)
                 } else {
                     VpnProfile.fromLink(
                         link = link,
@@ -579,6 +612,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.AetherProfile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromAether(
@@ -586,6 +620,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -593,7 +628,31 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
+        return profile
+    }
+
+    fun addSstp(
+        settings: dev.valid7996.narcicgeteway.domain.config.SstpProfile,
+        name: String,
+        id: String? = null,
+        subscriptionId: String = "",
+    ): VpnProfile {
+        val existing = id?.let { profile(it) }
+        val profile = VpnProfile.fromSstp(
+            settings = settings,
+            id = existing?.id ?: newId(),
+            addedAt = existing?.addedAt ?: currentTimeMillis(),
+            name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
+        ).let { carryOver(existing, it) }
+        _profiles.value = if (existing != null) {
+            _profiles.value.map { if (it.id == profile.id) profile else it }
+        } else {
+            listOf(profile) + _profiles.value
+        }
+        persistProfiles()
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -850,7 +909,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         return NrgLink.build(profile.name, src, members)
     }
 
-    private fun importNrgLink(text: String): Int {
+    private fun importNrgLink(text: String, subscriptionId: String = ""): Int {
         val payload = NrgLink.parse(text)
             ?: throw IllegalArgumentException("invalid share link")
         val name = payload.name
@@ -863,7 +922,8 @@ class ConfigRepository(private val store: KeyValueStore) {
             is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name); 1 }
             is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
             is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }
-            is ProfileSource.Aether -> { addAether(src.settings, name); 1 }
+            is ProfileSource.Aether -> { addAether(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.Sstp -> { addSstp(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.ProxyChain, is ProfileSource.CrossChain -> {
                 val ids = payload.members.map { link ->
                     val before = _profiles.value.map { it.id }.toSet()
@@ -1559,7 +1619,7 @@ class ConfigRepository(private val store: KeyValueStore) {
 
     fun peekLocked(bytes: ByteArray): ZsxMetadata = ZsxCrypto.peek(bytes)
 
-    fun importLocked(bytes: ByteArray, password: String?): Result<VpnProfile> = runCatching {
+    fun createLockedProfile(bytes: ByteArray, password: String?, subscriptionId: String = ""): VpnProfile {
         val meta = ZsxCrypto.peek(bytes)
         if (meta.isExpired) throw ZsxExpiredException()
         val cleanKey = password?.trim()?.takeIf { it.isNotBlank() }
@@ -1606,9 +1666,10 @@ class ConfigRepository(private val store: KeyValueStore) {
             isLocked = true,
             expiresAt = meta.expiresAt,
             note = meta.note.takeIf { it.isNotBlank() },
+            subscriptionId = subscriptionId,
         )
         val unsealed = baseProfile.resolveUnsealed()
-        val profile = if (unsealed != null) {
+        return if (unsealed != null) {
             baseProfile.copy(
                 protocol = unsealed.protocol,
                 address = unsealed.address,
@@ -1618,15 +1679,19 @@ class ConfigRepository(private val store: KeyValueStore) {
         } else {
             baseProfile
         }
+    }
+
+    fun importLocked(bytes: ByteArray, password: String?, subscriptionId: String = ""): Result<VpnProfile> = runCatching {
+        val profile = createLockedProfile(bytes, password, subscriptionId)
         _profiles.value = _profiles.value + profile
         persistProfiles()
-        setActive(profile.id)
+        if (subscriptionId.isBlank() && _activeId.value == null) setActive(profile.id)
         profile
     }
 
-    fun importLockedLink(linkOrBase64: String, userKey: String?): Result<VpnProfile> = runCatching {
+    fun importLockedLink(linkOrBase64: String, userKey: String?, subscriptionId: String = ""): Result<VpnProfile> = runCatching {
         val bytes = dev.valid7996.narcicgeteway.crypto.NrgLink.decode(linkOrBase64)
-        importLocked(bytes, userKey?.ifBlank { null }).getOrThrow()
+        importLocked(bytes, userKey?.ifBlank { null }, subscriptionId = subscriptionId).getOrThrow()
     }
 
     /**

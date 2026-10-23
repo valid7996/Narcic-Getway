@@ -1847,10 +1847,11 @@ private fun MergedDashboardCard(
                     }
                     info.pingMs?.let { ping ->
                         Text(
-                            text = "$ping ms",
+                            text = if (ping < 0) "$ping" else "$ping ms",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = when {
+                                ping < 0 -> MaterialTheme.colorScheme.error
                                 isBlossom -> Color(0xFFFF85A1)
                                 isNoir -> Color(0xFFFFFFFF)
                                 isAzkaban -> Color(0xFF38BDF8)

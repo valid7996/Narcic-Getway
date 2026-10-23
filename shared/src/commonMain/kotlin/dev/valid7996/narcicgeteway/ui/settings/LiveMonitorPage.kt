@@ -426,6 +426,7 @@ private fun CoreCard(
         VpnManager.KIND_SSH -> "SSH Tunnel"
         VpnManager.KIND_OPENCONNECT -> "OpenConnect (Cisco)"
         VpnManager.KIND_IKEV2 -> "IKEv2 / IPsec"
+        VpnManager.KIND_SSTP -> "MS-SSTP (Microsoft / MikroTik)"
         VpnManager.KIND_AETHER -> "Aether Engine"
         VpnManager.KIND_DNS_TUNNEL -> "DNS Tunnel"
         VpnManager.KIND_MASTERDNS -> "MasterDNS"

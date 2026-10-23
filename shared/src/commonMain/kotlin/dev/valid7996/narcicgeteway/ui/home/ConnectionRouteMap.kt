@@ -454,10 +454,10 @@ fun ConnectionRouteMapCard(
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                         ) {
                             Text(
-                                text = "$ms ms ⚡",
+                                text = if (ms > 0) "$ms ms ⚡" else "$ms ❌",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = secondaryAccent,
+                                color = if (ms > 0) secondaryAccent else MaterialTheme.colorScheme.error,
                             )
                         }
                     }

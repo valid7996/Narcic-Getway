@@ -433,6 +433,7 @@ fun ServersScreen(
     var showMhrv by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
+    var showSstp by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
     var showSniSpoof by remember { mutableStateOf(false) }
     var showSniSpoofNoRoot by remember { mutableStateOf(false) }
@@ -1449,6 +1450,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showIkev2 = true
             },
+            onSstp = {
+                showAddSheet = false
+                showSstp = true
+            },
             onTor = {
                 showAddSheet = false
                 repository.addTor("Tor")
@@ -1727,6 +1732,17 @@ fun ServersScreen(
             onSave = { name, settings ->
                 showIkev2 = false
                 repository.addIkev2(settings, name)
+                onServerActivated()
+            },
+        )
+    }
+
+    if (showSstp) {
+        SstpSheet(
+            onDismiss = { showSstp = false },
+            onSave = { name, settings ->
+                showSstp = false
+                repository.addSstp(settings, name)
                 onServerActivated()
             },
         )
@@ -2255,6 +2271,7 @@ internal fun AddServerSheet(
     onMhrv: () -> Unit,
     onOpenConnect: () -> Unit,
     onIkev2: () -> Unit,
+    onSstp: (() -> Unit)? = null,
     onTor: () -> Unit,
     onSsh: () -> Unit,
     onSniSpoof: () -> Unit,
@@ -2472,6 +2489,18 @@ internal fun AddServerSheet(
                     gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
                     onClick = onIkev2,
                 )
+                if (onSstp != null) {
+                    GlassOptionCard(
+                        title = "MS-SSTP",
+                        subtitle = "پروتکل امن مایکروسافت / میکروتیک (SSL)",
+                        icon = Res.drawable.ic_lock,
+                        accentColor = Color(0xFF00A4EF),
+                        iconTint = Color(0xFF38BDF8),
+                        gradientStart = Color(0xFF0C2442).copy(alpha = 0.90f),
+                        gradientEnd = Color(0xFF0A1A30).copy(alpha = 0.75f),
+                        onClick = onSstp,
+                    )
+                }
 
                 OptionGroup(Res.string.add_group_chains)
                 GlassOptionCard(

@@ -75,6 +75,7 @@ import dev.valid7996.narcicgeteway.ui.servers.MasterDnsSheet
 import dev.valid7996.narcicgeteway.ui.servers.MhrvRelaySheet
 import dev.valid7996.narcicgeteway.ui.servers.OpenConnectSheet
 import dev.valid7996.narcicgeteway.ui.servers.Ikev2Sheet
+import dev.valid7996.narcicgeteway.ui.servers.SstpSheet
 import dev.valid7996.narcicgeteway.ui.servers.SshSheet
 import dev.valid7996.narcicgeteway.ui.theme.Personalization
 import dev.valid7996.narcicgeteway.ui.theme.NrgGreen
@@ -146,6 +147,7 @@ internal fun HomeServerSection(
     var showMhrv by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
+    var showSstp by remember { mutableStateOf(false) }
     var showSsh by remember { mutableStateOf(false) }
     var showIpScanner by remember { mutableStateOf(false) }
     var showTelegramProxy by remember { mutableStateOf(false) }
@@ -787,6 +789,10 @@ internal fun HomeServerSection(
                 showAdd = false
                 showIkev2 = true
             },
+            onSstp = {
+                showAdd = false
+                showSstp = true
+            },
             onTor = {
                 showAdd = false
                 repository.addTor("Tor")
@@ -963,6 +969,16 @@ internal fun HomeServerSection(
             onSave = { name, s ->
                 showIkev2 = false
                 repository.addIkev2(s, name)
+            },
+        )
+    }
+
+    if (showSstp) {
+        SstpSheet(
+            onDismiss = { showSstp = false },
+            onSave = { name, s ->
+                showSstp = false
+                repository.addSstp(s, name)
             },
         )
     }

@@ -80,6 +80,10 @@ sealed interface ProfileSource {
     @Serializable
     @SerialName("sing_box_config")
     data class SingBoxConfig(val json: String) : ProfileSource
+
+    @Serializable
+    @SerialName("sstp")
+    data class Sstp(val settings: SstpProfile) : ProfileSource
 }
 
 @Serializable
@@ -132,9 +136,11 @@ data class VpnProfile(
 
     val isOpenConnect: Boolean get() = source is ProfileSource.OpenConnect
 
-    val isAether: Boolean get() = source is ProfileSource.Aether
+    val isAether: Boolean get() = ((resolveUnsealed() ?: this).source is ProfileSource.Aether)
 
     val isIkev2: Boolean get() = source is ProfileSource.Ikev2
+
+    val isSstp: Boolean get() = ((resolveUnsealed() ?: this).source is ProfileSource.Sstp)
 
     val isProxyChain: Boolean get() = source is ProfileSource.ProxyChain
 
@@ -188,7 +194,7 @@ data class VpnProfile(
 
     val isManagedTunnel: Boolean
         get() = isPsiphon || isDnsTunnel || isMasterDns || isMhrvRelay || isTor || isSsh || isSniSpoof ||
-            isOpenConnect || isIkev2 || isAether || isCrossChain || isSingBoxConfig
+            isOpenConnect || isIkev2 || isAether || isCrossChain || isSingBoxConfig || isSstp
 
     val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns
 
@@ -202,9 +208,11 @@ data class VpnProfile(
 
     fun openConnectSettings(): OpenConnectProfile? = (source as? ProfileSource.OpenConnect)?.settings
 
-    fun aetherSettings(): AetherProfile? = (source as? ProfileSource.Aether)?.settings
+    fun aetherSettings(): AetherProfile? = ((resolveUnsealed() ?: this).source as? ProfileSource.Aether)?.settings
 
     fun ikev2Settings(): Ikev2Profile? = (source as? ProfileSource.Ikev2)?.settings
+
+    fun sstpSettings(): SstpProfile? = ((resolveUnsealed() ?: this).source as? ProfileSource.Sstp)?.settings
 
     fun proxyChainSettings(): List<String>? = (source as? ProfileSource.ProxyChain)?.memberIds
 
@@ -315,6 +323,7 @@ data class VpnProfile(
         is ProfileSource.OpenConnect -> NrgLink.build(name, src)
         is ProfileSource.Ikev2 -> NrgLink.build(name, src)
         is ProfileSource.Aether -> AetherLink.build(src.settings, name)
+        is ProfileSource.Sstp -> src.settings.toLink(name)
 
         is ProfileSource.ProxyChain -> null
         is ProfileSource.CrossChain -> null
@@ -381,6 +390,7 @@ data class VpnProfile(
         is ProfileSource.OpenConnect -> throw IllegalStateException("OpenConnect profiles do not build Xray config")
         is ProfileSource.Aether -> throw IllegalStateException("Aether profiles do not build Xray config")
         is ProfileSource.Ikev2 -> throw IllegalStateException("IKEv2 profiles do not build Xray config")
+        is ProfileSource.Sstp -> throw IllegalStateException("SSTP profiles do not build Xray config")
         is ProfileSource.Tor -> throw IllegalStateException("Tor profiles do not build Xray config")
         is ProfileSource.Ssh -> throw IllegalStateException("SSH profiles do not build Xray config")
 
@@ -553,6 +563,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "Aether ${settings.server.ifBlank { "scan" }}" },
@@ -562,6 +573,25 @@ data class VpnProfile(
             transportLabel = settings.protocol.uppercase(),
             source = ProfileSource.Aether(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
+        )
+
+        fun fromSstp(
+            settings: SstpProfile,
+            id: String,
+            addedAt: Long,
+            name: String,
+            subscriptionId: String = "",
+        ): VpnProfile = VpnProfile(
+            id = id,
+            name = name.ifBlank { "SSTP ${settings.serverHost()}:${settings.effectivePort()}" },
+            protocol = "SSTP",
+            address = settings.serverHost(),
+            port = settings.effectivePort(),
+            transportLabel = "SSTP",
+            source = ProfileSource.Sstp(settings),
+            addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromAutoSelect(subscriptionId: String?, groupName: String, members: Int): VpnProfile = VpnProfile(

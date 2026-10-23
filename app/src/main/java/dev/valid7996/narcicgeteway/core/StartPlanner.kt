@@ -130,6 +130,7 @@ class StartPlanner(context: Context) {
         profile.openConnectSettings() != null -> VpnManager.KIND_OPENCONNECT
         profile.aetherSettings() != null -> VpnManager.KIND_AETHER
         profile.ikev2Settings() != null -> VpnManager.KIND_IKEV2
+        profile.sstpSettings() != null -> VpnManager.KIND_SSTP
         profile.isTor -> VpnManager.KIND_TOR
         profile.sshSettings() != null -> VpnManager.KIND_SSH
         profile.sniSpoofSettings() != null -> VpnManager.KIND_SNISPOOF
@@ -213,6 +214,11 @@ class StartPlanner(context: Context) {
         profile.ikev2Settings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
                 dev.valid7996.narcicgeteway.domain.config.Ikev2Profile.serializer(), it,
+            )
+        }
+        profile.sstpSettings()?.let {
+            return kotlinx.serialization.json.Json.encodeToString(
+                dev.valid7996.narcicgeteway.domain.config.SstpProfile.serializer(), it,
             )
         }
         profile.dnsTunnelSettings()?.let { dnsTunnel ->

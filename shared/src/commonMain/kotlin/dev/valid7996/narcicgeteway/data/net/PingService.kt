@@ -58,7 +58,7 @@ object PingService {
 
     private const val FALLBACK_PROBE_TIMEOUT_MS = 2_200L
 
-    private const val REQUEST_PROBE_TIMEOUT_MS = 5_000
+    private const val REQUEST_PROBE_TIMEOUT_MS = 10_000
 
     private const val CUSTOM_PROBE_CONCURRENCY = 16
 
@@ -119,11 +119,7 @@ object PingService {
             if (second.ok) return@withContext second.ms
         }
 
-        if (VpnManager.activeSocksPort != null) return@withContext -1L
-        val host = url.substringAfter("://", url).substringBefore('/').substringBefore(':')
-        val port = if (url.startsWith("http://", true)) 80 else 443
-        if (host.isBlank()) -1L else runCatching { tcpConnectMillis(host, port, TCP_TIMEOUT_MS) }
-            .getOrDefault(-1L)
+        -1L
     }
 
     suspend fun measureAll(
@@ -145,7 +141,7 @@ object PingService {
         val customPermits = Semaphore(minOf(realPermits, CUSTOM_PROBE_CONCURRENCY))
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
-        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay) || it.isDnsBasedTunnel) }
+        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay) || it.isDnsBasedTunnel) || it.isAether }
         val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
@@ -195,7 +191,8 @@ object PingService {
 
     private suspend fun aetherDelay(profile: VpnProfile, url: String): Long {
         val runner = aetherTunnel ?: return -1L
-        val settings = profile.aetherSettings() ?: return -1L
+        val effective = profile.resolveUnsealed() ?: profile
+        val settings = effective.aetherSettings() ?: return -1L
         return withTimeoutOrNull(AETHER_PROBE_TIMEOUT_MS) {
             runner(settings) { port ->
                 var best = -1L
@@ -232,12 +229,6 @@ object PingService {
         if (effective.isProxyChain) {
             val config = chainConfig(effective) ?: return -1L
             return probeWithTimeout(effective, config, url)
-        }
-
-        // Fast-fail: if the TCP endpoint is completely unreachable, skip expensive core initialization and timeouts
-        if (shouldPrecheck(effective)) {
-            val alive = tcpPing(effective.address, effective.port, PRECHECK_TIMEOUT_MS) > 0
-            if (!alive) return -1L
         }
 
         val config = runCatching { effective.toXrayConfigJson(forSpeedtest = true) }

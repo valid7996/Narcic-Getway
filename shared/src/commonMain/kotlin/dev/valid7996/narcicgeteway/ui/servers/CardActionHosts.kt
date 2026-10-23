@@ -202,6 +202,18 @@ internal fun CardActionHosts(
                     },
                 )
             }
+            target.isSstp -> {
+                SstpSheet(
+                    initial = target.sstpSettings(),
+                    initialName = target.name,
+                    onDismiss = onDismissEdit,
+                    onSave = { name, settings ->
+                        repository.addSstp(settings, name, id = target.id)
+                        toastSaved()
+                        onDismissEdit()
+                    },
+                )
+            }
             target.isSniSpoof -> {
                 SniSpoofSheet(
                     candidates = spoofCandidates,

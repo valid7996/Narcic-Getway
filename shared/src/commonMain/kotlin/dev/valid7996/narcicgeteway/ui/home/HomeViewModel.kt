@@ -34,12 +34,18 @@ class HomeViewModel(
 
     fun refresh(settleDelayMs: Long = 0L) {
         job?.cancel()
-        _info.value = _info.value.copy(loading = true, error = null, fault = null)
+        _info.value = _info.value.copy(loading = true, error = null, fault = null, pingMs = null)
         job = viewModelScope.launch {
             if (settleDelayMs > 0) delay(settleDelayMs)
 
-            val health = async(Dispatchers.IO) { repository.health(preferredDelayUrl) }
-            val ping = async(Dispatchers.IO) { health.await().ms.takeIf { it > 0 }?.toInt() }
+            val health = async(Dispatchers.IO) {
+                var h = repository.health(preferredDelayUrl)
+                if (!h.ok) {
+                    delay(RETRY_DELAY_MS)
+                    h = repository.health(preferredDelayUrl)
+                }
+                h
+            }
             val info = async(Dispatchers.IO) {
                 var r = repository.fetchInfo(preferredIpApiUrl)
                 if (r.ipv4 == null) {
@@ -54,8 +60,11 @@ class HomeViewModel(
                 _info.value = if (h.ok) {
                     _info.value.copy(pingMs = h.ms.toInt(), fault = null)
                 } else {
-                    _info.value.copy(fault = h.error?.takeIf { it.isNotBlank() }
-                        ?.let { dev.valid7996.narcicgeteway.core.ConnectionFault.classify(it) })
+                    _info.value.copy(
+                        pingMs = -1,
+                        fault = h.error?.takeIf { it.isNotBlank() }
+                            ?.let { dev.valid7996.narcicgeteway.core.ConnectionFault.classify(it) },
+                    )
                 }
             }
 
@@ -63,7 +72,7 @@ class HomeViewModel(
             val h = health.await()
             _info.value = resolved.copy(
                 loading = false,
-                pingMs = ping.await() ?: resolved.pingMs,
+                pingMs = if (h.ok) h.ms.toInt() else -1,
                 fault = if (h.ok) null else h.error?.takeIf { it.isNotBlank() }
                     ?.let { dev.valid7996.narcicgeteway.core.ConnectionFault.classify(it) },
             )
