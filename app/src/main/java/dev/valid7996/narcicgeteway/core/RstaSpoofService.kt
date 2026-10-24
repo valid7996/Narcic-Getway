@@ -33,7 +33,7 @@ class RstaSpoofService : Service() {
 
         private const val LOG_FLUSH_INTERVAL_MS = 3_000L
 
-        private val activeSessions = java.util.concurrent.ConcurrentHashMap<Int, Long>()
+        private var activeSessionId = 0L
 
         @Volatile
         var isRunning = false
@@ -67,51 +67,39 @@ class RstaSpoofService : Service() {
                 // "split" was the default here and is no method of the engine; a name it does not know is the default one.
                 val method = SniSpoofConfig.method(intent.getStringExtra(EXTRA_METHOD).orEmpty())
 
-                activeSessions.remove(listenPort)?.let { oldId ->
-                    if (oldId != 0L) RstaSpoofEngine.stop(oldId)
+                if (activeSessionId != 0L) {
+                    RstaSpoofEngine.stop(activeSessionId)
+                    activeSessionId = 0L
                 }
 
                 Log.i(TAG, "Starting RstaSpoofEngine in isolated process :snispoof on port $listenPort -> $ip:$port")
-                val sessionId = RstaSpoofEngine.start(listenPort, ip, port, fakeSni, method)
-                if (sessionId != 0L) {
-                    activeSessions[listenPort] = sessionId
-                }
-                isRunning = activeSessions.isNotEmpty()
+                activeSessionId = RstaSpoofEngine.start(listenPort, ip, port, fakeSni, method)
+                isRunning = activeSessionId != 0L
                 writeStatus(
                     if (isRunning) "active \u2192 $ip:$port (sni=$fakeSni, method=$method)"
                     else "failed: ${RstaSpoofEngine.loadError() ?: "the engine did not start (port $listenPort in use?)"}",
                 )
             }
             ACTION_STOP -> {
-                val listenPort = intent?.getIntExtra(EXTRA_LISTEN_PORT, 0) ?: 0
-                if (listenPort > 0) {
-                    Log.i(TAG, "Stopping RstaSpoofEngine session on port $listenPort")
-                    activeSessions.remove(listenPort)?.let { id ->
-                        if (id != 0L) RstaSpoofEngine.stop(id)
-                    }
-                } else {
-                    Log.i(TAG, "Stopping all RstaSpoofEngine sessions")
-                    activeSessions.values.forEach { id ->
-                        if (id != 0L) RstaSpoofEngine.stop(id)
-                    }
-                    activeSessions.clear()
+                Log.i(TAG, "Stopping RstaSpoofEngine")
+                if (activeSessionId != 0L) {
+                    RstaSpoofEngine.stop(activeSessionId)
+                    activeSessionId = 0L
                 }
-                isRunning = activeSessions.isNotEmpty()
-                if (!isRunning) {
-                    writeStatus("inactive")
-                    synchronized(logLock) { flushLogLocked() }
-                    stopSelf()
-                }
+                isRunning = false
+                writeStatus("inactive")
+                synchronized(logLock) { flushLogLocked() }
+                stopSelf()
             }
         }
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
-        activeSessions.values.forEach { id ->
-            if (id != 0L) RstaSpoofEngine.stop(id)
+        if (activeSessionId != 0L) {
+            RstaSpoofEngine.stop(activeSessionId)
+            activeSessionId = 0L
         }
-        activeSessions.clear()
         isRunning = false
         writeStatus("inactive")
         synchronized(logLock) { flushLogLocked() }

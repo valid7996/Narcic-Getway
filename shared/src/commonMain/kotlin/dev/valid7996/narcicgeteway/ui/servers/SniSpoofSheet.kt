@@ -176,14 +176,13 @@ fun SniSpoofSheet(
                 )
             }
 
-            // ── Connect IP (Real Server / Clean IP, Multi-IP supported) ────────────────────────
+            // ── Connect IP (Real Server / Clean IP) ────────────────────────────────────────────
             SniField(
                 value = ip,
                 labelRes = Res.string.snispoof_clean_ip,
                 placeholder = SniSpoofConfig.DEFAULT_CONNECT_IP,
-                minLines = 2,
                 isError = ip.isNotBlank() && ip.trim().isBlank(),
-            ) { ip = normalizeDigits(it) }
+            ) { ip = normalizeDigits(it).trim() }
 
             // ── Connect Port (Real Server Port) ────────────────────────────────────────────────
             SniField(
@@ -194,14 +193,13 @@ fun SniSpoofSheet(
                 isError = port.isNotEmpty() && portInt == null,
             ) { port = normalizeDigits(it).filter(Char::isDigit).take(5) }
 
-            // ── Fake SNI (DPI Disguise Domain, Multi-SNI supported) ────────────────────────────
+            // ── Fake SNI (DPI Disguise Domain) ─────────────────────────────────────────────────
             SniField(
                 value = fakeSni,
                 labelRes = Res.string.snispoof_fake_sni,
                 placeholder = SniSpoofConfig.DEFAULT_FAKE_SNI,
-                minLines = 2,
                 isError = fakeSni.isNotBlank() && fakeSni.trim().isBlank(),
-            ) { fakeSni = normalizeDigits(it) }
+            ) { fakeSni = normalizeDigits(it).trim() }
 
             // ── Bypass Method Picker ───────────────────────────────────────────────────────────
             PickerField(

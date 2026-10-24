@@ -20,7 +20,7 @@ import kotlinx.serialization.json.jsonPrimitive
 object SniSpoofConfig {
 
     const val DEFAULT_METHOD = "combined"
-    const val DEFAULT_CONNECT_IP = "21.24.57.1"
+    const val DEFAULT_CONNECT_IP = "104.18.38.202"
     const val DEFAULT_CONNECT_PORT = 443
     const val DEFAULT_FAKE_SNI = "cdnjs.cloudflare.com"
 
@@ -63,18 +63,6 @@ object SniSpoofConfig {
         return h == "localhost" || h == "::1" || h.startsWith("127.")
     }
 
-    /** Parses one or multiple IPs separated by comma, newline, semicolon, or space. */
-    fun parseIpList(raw: String): List<String> =
-        raw.split(',', '\n', '\r', ';', ' ', '\t')
-            .map { it.trim().trim('[', ']') }
-            .filter { it.isNotBlank() && !isLoopback(it) && it != "sni-spoof" }
-
-    /** Parses one or multiple fake SNIs separated by comma, newline, semicolon, or space. */
-    fun parseSniList(raw: String): List<String> =
-        raw.split(',', '\n', '\r', ';', ' ', '\t')
-            .map { it.trim().trim('[', ']') }
-            .filter { it.isNotBlank() }
-
     /**
      * Where the engine connects for a profile whose proxy outbound is [realHost]:[realPort]: the clean IP when there is
      * one, else the host itself; the port of the profile, else the link's (443 when the link points at this device).
@@ -85,27 +73,11 @@ object SniSpoofConfig {
         val host = if (candidate.isEmpty() || isLoopback(candidate) || candidate == "sni-spoof") {
             defaultConnectIp
         } else {
-            parseIpList(candidate).firstOrNull() ?: defaultConnectIp
+            candidate
         }
         val port = settings.connectPort.takeIf { it in 1..65535 && it != RSTA_LOCAL_PORT }
             ?: if (isLoopback(realHost) || realPort !in 1..65535 || realPort == RSTA_LOCAL_PORT) defaultConnectPort else realPort
         return host to port
-    }
-
-    /**
-     * Returns candidate connect IPs and port for multi-IP SNI spoofing failover.
-     */
-    fun targetCandidates(settings: SniSpoofProfile, realHost: String, realPort: Int): Pair<List<String>, Int> {
-        val candidate = settings.cleanIp.trim().ifEmpty { realHost.trim() }
-        val ips = if (candidate.isEmpty() || isLoopback(candidate) || candidate == "sni-spoof") {
-            listOf(defaultConnectIp)
-        } else {
-            val list = parseIpList(candidate)
-            if (list.isEmpty()) listOf(defaultConnectIp) else list
-        }
-        val port = settings.connectPort.takeIf { it in 1..65535 && it != RSTA_LOCAL_PORT }
-            ?: if (isLoopback(realHost) || realPort !in 1..65535 || realPort == RSTA_LOCAL_PORT) defaultConnectPort else realPort
-        return ips to port
     }
 
     /** The address and port of the proxy outbound of [xray]: the outbound tagged "proxy", else the first one. */

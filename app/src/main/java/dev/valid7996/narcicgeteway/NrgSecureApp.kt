@@ -35,9 +35,6 @@ class NrgSecureApp : Application(), SingletonImageLoader.Factory {
 
         XrayController.warmUp(this)
         PingService.rstaSpoofLease = { RstaSpoofClient.lease(this, SettingsRepository(this).settings.value) }
-        PingService.rstaSpoofSmartProbe = { profile, config, url ->
-            RstaSpoofClient.probeSmart(this, SettingsRepository(this).settings.value, profile, config, url)
-        }
         PingService.aetherTunnel = { profile, measure -> AetherDelayProbe.run(this, profile, measure) }
         PingService.sniProbe = { ip, sni ->
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {

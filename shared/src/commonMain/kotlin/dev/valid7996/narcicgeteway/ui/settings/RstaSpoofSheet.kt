@@ -115,8 +115,7 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                 label = { Text(stringResource(Res.string.rsta_connect_ip)) },
                 supportingText = { Text(stringResource(Res.string.rsta_connect_ip_hint)) },
                 shape = RoundedCornerShape(12.dp),
-                minLines = 2,
-                maxLines = 4,
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
@@ -133,8 +132,7 @@ fun RstaSpoofSheet(settings: AppSettings, onUpdate: (AppSettings) -> Unit, onDis
                 label = { Text(stringResource(Res.string.rsta_fake_sni)) },
                 supportingText = { Text(stringResource(Res.string.rsta_fake_sni_hint)) },
                 shape = RoundedCornerShape(12.dp),
-                minLines = 2,
-                maxLines = 4,
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             PickerField(
