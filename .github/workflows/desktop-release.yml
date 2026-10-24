@@ -62,6 +62,8 @@ jobs:
             || { echo "::error::artifact 'tor-linux' is missing; run the desktop-natives workflow first"; exit 1; }
           cp -r "/tmp/nat/tor-linux" "$dest/tor"
           cp app/src/main/assets/tor/bridges_default.lst "$dest/tor/"
+          mkdir -p desktop/src/main/resources/psiphon
+          cp app/src/main/assets/psiphon_servers.dat desktop/src/main/resources/psiphon/psiphon_servers.dat
           ( cd "$dest/tor" && find . -type f ! -name files.txt | sed 's#^\./##' | sort > files.txt && cat files.txt )
           ls -l "$dest"
 
@@ -179,6 +181,8 @@ jobs:
             || { echo "::error::artifact 'tor-windows' is missing; run the desktop-natives workflow first"; exit 1; }
           cp -r "/tmp/nat/tor-windows" "$dest/tor"
           cp app/src/main/assets/tor/bridges_default.lst "$dest/tor/"
+          mkdir -p desktop/src/main/resources/psiphon
+          cp app/src/main/assets/psiphon_servers.dat desktop/src/main/resources/psiphon/psiphon_servers.dat
           ( cd "$dest/tor" && find . -type f ! -name files.txt | sed 's#^\./##' | sort > files.txt && cat files.txt )
           ls -l "$dest"
 
@@ -261,6 +265,8 @@ jobs:
             || { echo "::error::artifact 'tor-macos-$ARCH' is missing; run the desktop-natives workflow first"; exit 1; }
           cp -r "/tmp/nat/tor-macos-$ARCH" "$dest/tor"
           cp app/src/main/assets/tor/bridges_default.lst "$dest/tor/"
+          mkdir -p desktop/src/main/resources/psiphon
+          cp app/src/main/assets/psiphon_servers.dat desktop/src/main/resources/psiphon/psiphon_servers.dat
           ( cd "$dest/tor" && find . -type f ! -name files.txt | sed 's#^\./##' | sort > files.txt && cat files.txt )
           file "$dest"/*
 

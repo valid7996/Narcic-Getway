@@ -26,8 +26,13 @@ class DesktopPsiphon(
         val config = File(workDir, "psiphon.config").apply {
             writeText(PsiphonConfigBuilder.build(profile, dataDir.absolutePath, socksPort, httpPort))
         }
+        val serverList = DesktopPsiphonServerList.entriesFile(workDir)
+        val cmd = mutableListOf(bin.absolutePath, "-config", config.absolutePath)
+        if (serverList != null && serverList.isFile) {
+            cmd.addAll(listOf("-serverList", serverList.absolutePath))
+        }
         val started = try {
-            ProcessBuilder(bin.absolutePath, "-config", config.absolutePath)
+            ProcessBuilder(cmd)
                 .redirectErrorStream(true)
                 .directory(workDir)
                 .start()

@@ -87,7 +87,7 @@ class DesktopTorPsiphonTest {
         val outbound = root["outbounds"]!!.jsonArray.single().jsonObject
         val server = outbound["settings"]!!.jsonObject["servers"]!!.jsonArray.single().jsonObject
 
-        assertEquals("socks", inbound["protocol"]!!.jsonPrimitive.content)
+        assertEquals("mixed", inbound["protocol"]!!.jsonPrimitive.content)
         assertEquals("127.0.0.1", inbound["listen"]!!.jsonPrimitive.content)
         assertEquals(10808, inbound["port"]!!.jsonPrimitive.int)
         assertEquals("proxy", outbound["tag"]!!.jsonPrimitive.content)

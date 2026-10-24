@@ -55,7 +55,7 @@ object PsiphonConfigBuilder {
     private const val SPONSOR_ID = "FFFFFFFFFFFFFFFF"
 
     private const val SERVER_LIST_URL =
-        "https://s3.amazonaws.com//psiphon/web/mjr4-p23r-puwl/server_list_compressed"
+        "https://s3.amazonaws.com/psiphon/web/mjr4-p23r-puwl/server_list_compressed"
 
     private const val SERVER_LIST_SIGNATURE_KEY =
         "MIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAt7Ls+/39r+T6zNW7GiVpJfzq/xvL9SBH" +
@@ -92,7 +92,7 @@ object PsiphonConfigBuilder {
 
             putJsonArray("RemoteServerListURLs") {
                 addJsonObject {
-                    put("URL", Base64.encode(SERVER_LIST_URL.encodeToByteArray()))
+                    put("URL", SERVER_LIST_URL)
                 }
             }
             put("RemoteServerListSignaturePublicKey", SERVER_LIST_SIGNATURE_KEY)
