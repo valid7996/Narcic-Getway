@@ -45,7 +45,9 @@ class MhrvRelayController(
             return false
         }
         return try {
-            Native.setDataDir(dataDir().absolutePath)
+            val dDir = dataDir()
+            Native.setDataDir(dDir.absolutePath)
+            com.therealaleph.mhrv.CaInstall.ensureCa(filesDir)
             if (handle != 0L) {
                 runCatching { Native.stopProxy(handle) }
                 handle = 0L
@@ -104,10 +106,8 @@ class MhrvRelayController(
          * Returns the DER bytes, or null when the core could not produce it.
          */
         fun exportCaDer(filesDir: File): ByteArray? = runCatching {
-            Native.setDataDir(File(filesDir, "mhrv").apply { mkdirs() }.absolutePath)
-            val out = File(filesDir, "mhrv-ca.crt")
-            if (!Native.exportCa(out.absolutePath) || !out.exists() || out.length() == 0L) return null
-            pemToDer(out.readBytes()) ?: out.readBytes()
+            com.therealaleph.mhrv.CaInstall.ensureCa(filesDir)
+            com.therealaleph.mhrv.CaInstall.nrgDer
         }.getOrNull()
 
         private fun pemToDer(raw: ByteArray): ByteArray? {

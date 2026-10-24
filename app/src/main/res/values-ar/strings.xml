@@ -662,10 +662,10 @@
     <string name="mhrv_ca_missing">يحتاج وضع Apps Script إلى تثبيت شهادة الترحيل</string>
     <string name="mhrv_ca_install_started">قم بتأكيد الشهادة في مربع حوار النظام</string>
     <string name="mhrv_ca_install_failed">شهادة الترحيل ليست جاهزة بعد: قم بالاتصال مرة واحدة، ثم قم بتثبيتها</string>
-    <string name="mhrv_ca_already_installed">تم بالفعل تثبيت MHRV CA وموثوق به في النظام (%1$s)</string>
-    <string name="mhrv_ca_install_started_legacy">تم حفظ شهادة CA في %1$s. تم فتح مثبت شهادة النظام.</string>
-    <string name="mhrv_ca_downloaded_settings">تم حفظ شهادة CA في %1$s. في الإعدادات، ابحث عن \"شهادة CA\" أو انتقل إلى تثبيت الشهادة وحدد mhrv-ca.crt.</string>
-    <string name="mhrv_ca_downloaded_manual">تم حفظ شهادة CA في %1$s. يرجى تثبيته من إعدادات الجهاز.</string>
+    <string name="mhrv_ca_already_installed">تم بالفعل تثبيت شهادة nrg-ca وموثوق به في النظام (%1$s)</string>
+    <string name="mhrv_ca_install_started_legacy">تم حفظ شهادة nrg-ca في %1$s. تم فتح مثبت شهادة النظام.</string>
+    <string name="mhrv_ca_downloaded_settings">تم حفظ شهادة CA في %1$s. في الإعدادات، ابحث عن \"شهادة CA\" أو انتقل إلى تثبيت الشهادة وحدد nrg-ca.crt.</string>
+    <string name="mhrv_ca_downloaded_manual">تم حفظ شهادة CA في %1$s. يرجى تثبيت nrg-ca.crt من إعدادات الجهاز.</string>
 
     <string name="patt_tools_title">أدوات Patt</string>
     <string name="patt_sni_targets_title">أهداف SNI</string>

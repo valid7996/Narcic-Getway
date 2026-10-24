@@ -1548,8 +1548,8 @@
     <string name="mhrv_auth_key">Auth key</string>
     <string name="mhrv_google_ip">Google IP</string>
     <string name="mhrv_front_domain">Front domain (SNI)</string>
-    <string name="mhrv_ca_hint">Apps Script mode decrypts HTTPS locally. Install the relay certificate so the browser trusts it; many apps ignore user certificates, use Full mode for them.</string>
-    <string name="mhrv_install_ca">Download &amp; install CA certificate (Downloads)</string>
+    <string name="mhrv_ca_hint">Apps Script mode decrypts HTTPS locally. Install the nrg-ca certificate so the browser trusts it; many apps ignore user certificates, use Full mode for them.</string>
+    <string name="mhrv_install_ca">Download &amp; install nrg-ca certificate (Downloads)</string>
     <string name="mhrv_advanced">Advanced</string>
     <string name="mhrv_sni_hosts">SNI pool (one per line)</string>
     <string name="mhrv_upstream_socks">Upstream SOCKS5 for raw TCP (host:port)</string>

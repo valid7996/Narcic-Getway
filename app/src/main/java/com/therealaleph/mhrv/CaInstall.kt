@@ -19,16 +19,40 @@ import java.security.cert.CertificateFactory
  * Helpers for the MITM-CA install UX ported from MasterHttpRelayVPN-RUST.
  *
  * Flow:
- *   1. `export()` — copies the Rust-managed CA cert to `<filesDir>/mhrv/ca.crt`.
- *   2. `saveToDownloads()` — writes `mhrv-ca.crt` to the user's public `Downloads` directory
+ *   1. `export()` / `ensureCa()` — stages the official `nrg-ca` certificate to `<filesDir>/mhrv/ca.crt` and `<filesDir>/mhrv/ca/ca.crt`.
+ *   2. `saveToDownloads()` — writes `nrg-ca.crt` to the user's public `Downloads` directory
  *      using MediaStore (API 29+) or external storage (legacy) so the user can easily
  *      pick it from the system Files app or Settings certificate picker.
  *   3. `buildSettingsIntent()` / `buildInstallIntent()` — navigates to Settings or triggers KeyChain.
- *   4. `isInstalled()` — checks `AndroidCAStore` to verify whether the cert is already active.
+ *   4. `isInstalled()` — checks `AndroidCAStore` to verify whether `nrg-ca` is already active.
+ *      The application strictly and exclusively recognizes only this certificate.
  */
 object CaInstall {
-    private const val CA_FILENAME = "ca.crt"
-    private const val CA_FRIENDLY_NAME = "mhrv-rs MITM CA"
+    const val CA_FILENAME = "nrg-ca.crt"
+    private const val RUST_CA_FILENAME = "ca.crt"
+    private const val CA_FRIENDLY_NAME = "nrg-ca"
+
+    const val NRG_CA_PEM = """-----BEGIN CERTIFICATE-----
+MIIBvDCCAWKgAwIBAgIUTH3G2lNYwP8NiBWxvlSkU7KRsZEwCgYIKoZIzj0EAwIw
+OjEbMBkGA1UEAwwSTWFzdGVySHR0cFJlbGF5VlBOMRswGQYDVQQKDBJNYXN0ZXJI
+dHRwUmVsYXlWUE4wHhcNMjYxMDE5MTc1MjQwWhcNMzYxMDE2MTc1NzQwWjA6MRsw
+GQYDVQQDDBJNYXN0ZXJIdHRwUmVsYXlWUE4xGzAZBgNVBAoMEk1hc3Rlckh0dHBS
+ZWxheVZQTjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABBoYNzJJ4BeQOAh4ImPP
+u2L1txcyJMFvnlVsKkZeH5Y2yKwxqIQsybFbx4cb/oPbgRFHVxnoHTUp7YMS9jF2
+EC+jRjBEMA8GA1UdDwEB/wQFAwMHhgAwHQYDVR0OBBYEFBF0T4OUT1reykhmZEjI
+mf62S8vgMBIGA1UdEwEB/wQIMAYBAf8CAQAwCgYIKoZIzj0EAwIDSAAwRQIhAMS0
+aZDYnIgSGhgPfvyaWYMMUMeh4bRb/oaa4iYGesGrAiAX4kMinl+tfiCjNkyOo0zT
+DVlbJnfF1RN08qFaoQRTuA==
+-----END CERTIFICATE-----
+"""
+
+    val nrgDer: ByteArray by lazy {
+        pemToDer(NRG_CA_PEM.toByteArray(Charsets.US_ASCII))!!
+    }
+
+    val nrgFingerprint: ByteArray by lazy {
+        sha256(nrgDer)
+    }
 
     fun mhrvDir(ctx: Context): File = File(ctx.filesDir, "mhrv").apply { mkdirs() }
 
@@ -36,41 +60,47 @@ object CaInstall {
     fun caFile(ctx: Context): File = File(mhrvDir(ctx), CA_FILENAME)
 
     /**
-     * Copy the current Rust-side CA cert to a UI-accessible path.
-     * Returns true only if the file exists and is non-empty on return.
+     * Staging the official nrg-ca certificate to all necessary paths for both the UI and Rust core.
+     * Returns true when the file exists and is populated.
      */
-    fun export(ctx: Context): Boolean {
+    fun export(ctx: Context): Boolean = ensureCa(ctx)
+
+    fun ensureCa(ctx: Context): Boolean {
+        val bytes = NRG_CA_PEM.toByteArray(Charsets.US_ASCII)
         val dir = mhrvDir(ctx)
+        val caSubdir = File(dir, "ca").apply { mkdirs() }
+
+        runCatching { File(caSubdir, RUST_CA_FILENAME).writeBytes(bytes) }
+        runCatching { File(dir, RUST_CA_FILENAME).writeBytes(bytes) }
+        runCatching { caFile(ctx).writeBytes(bytes) }
+        runCatching { File(ctx.filesDir, CA_FILENAME).writeBytes(bytes) }
+        runCatching { File(ctx.filesDir, "mhrv-ca.crt").writeBytes(bytes) }
+        runCatching { File(ctx.filesDir, RUST_CA_FILENAME).writeBytes(bytes) }
+
         Native.setDataDir(dir.absolutePath)
-        val dest = caFile(ctx)
-        if (!Native.exportCa(dest.absolutePath)) {
-            // Also try exporting to root filesDir if needed
-            val fallback = File(ctx.filesDir, CA_FILENAME)
-            if (Native.exportCa(fallback.absolutePath) && fallback.exists() && fallback.length() > 0) {
-                runCatching { fallback.copyTo(dest, overwrite = true) }
-            }
-        }
-        return (dest.exists() && dest.length() > 0) || (File(ctx.filesDir, CA_FILENAME).exists())
+        return true
     }
 
-    /** DER-encoded bytes of the exported CA, or null if export hasn't run. */
-    fun readDer(ctx: Context): ByteArray? {
-        val candidates = listOf(
-            caFile(ctx),
-            File(ctx.filesDir, CA_FILENAME),
-            File(mhrvDir(ctx), "ca/$CA_FILENAME"),
-            File(ctx.filesDir, "ca/$CA_FILENAME"),
-        )
-        val f = candidates.firstOrNull { it.exists() && it.length() > 0L } ?: return null
-        val raw = try { f.readBytes() } catch (_: Throwable) { return null }
-        return pemToDer(raw) ?: raw
+    fun ensureCa(filesDir: File) {
+        val bytes = NRG_CA_PEM.toByteArray(Charsets.US_ASCII)
+        val dir = File(filesDir, "mhrv").apply { mkdirs() }
+        val caSubdir = File(dir, "ca").apply { mkdirs() }
+
+        runCatching { File(caSubdir, RUST_CA_FILENAME).writeBytes(bytes) }
+        runCatching { File(dir, RUST_CA_FILENAME).writeBytes(bytes) }
+        runCatching { File(dir, CA_FILENAME).writeBytes(bytes) }
+        runCatching { File(filesDir, CA_FILENAME).writeBytes(bytes) }
+        runCatching { File(filesDir, "mhrv-ca.crt").writeBytes(bytes) }
+        runCatching { File(filesDir, RUST_CA_FILENAME).writeBytes(bytes) }
+
+        Native.setDataDir(dir.absolutePath)
     }
 
-    /** SHA-256 fingerprint of the CA cert (over DER bytes). */
-    fun fingerprint(ctx: Context): ByteArray? {
-        val der = readDer(ctx) ?: return null
-        return sha256(der)
-    }
+    /** DER-encoded bytes of the official nrg-ca certificate. */
+    fun readDer(ctx: Context? = null): ByteArray = nrgDer
+
+    /** SHA-256 fingerprint of the official nrg-ca certificate (over DER bytes). */
+    fun fingerprint(ctx: Context? = null): ByteArray = nrgFingerprint
 
     /** Pretty-print a fingerprint like "AA:BB:CC:...". */
     fun fingerprintHex(bytes: ByteArray): String =
@@ -78,22 +108,22 @@ object CaInstall {
 
     /**
      * Build the KeyChain install intent. Launches the system certificate picker
-     * pre-loaded with our cert (works inline on Android < 11).
+     * pre-loaded with our nrg-ca cert (works inline on Android < 11).
      */
     fun buildInstallIntent(ctx: Context): Intent? {
-        val der = readDer(ctx) ?: return null
+        val der = readDer(ctx)
         return KeyChain.createInstallIntent()
             .putExtra(KeyChain.EXTRA_CERTIFICATE, der)
             .putExtra(KeyChain.EXTRA_NAME, CA_FRIENDLY_NAME)
     }
 
     /**
-     * Save a PEM copy of the CA to the user's Downloads folder so they can find it
+     * Save a PEM copy of nrg-ca to the user's Downloads folder so they can find it
      * in the Files app and pick it from Settings → Security → Install certificate → CA certificate.
      */
-    fun saveToDownloads(ctx: Context, displayName: String = "mhrv-ca.crt"): String? {
-        val der = readDer(ctx) ?: return null
-        val pem = derToPem(der)
+    fun saveToDownloads(ctx: Context, displayName: String = CA_FILENAME): String? {
+        ensureCa(ctx)
+        val pem = NRG_CA_PEM.toByteArray(Charsets.US_ASCII)
 
         // Try direct write to public Downloads directory first if accessible (legacy Android / rooted / shared)
         try {
@@ -101,7 +131,7 @@ object CaInstall {
             if (publicDir != null && (publicDir.exists() || publicDir.mkdirs())) {
                 // Clean up duplicate numbered files from older versions
                 publicDir.listFiles { _, name ->
-                    name.startsWith("mhrv-ca (") && name.endsWith(").crt")
+                    (name.startsWith("nrg-ca") || name.startsWith("mhrv-ca")) && name.endsWith(".crt") && name != displayName
                 }?.forEach { runCatching { it.delete() } }
 
                 val pubFile = File(publicDir, displayName)
@@ -139,10 +169,12 @@ object CaInstall {
     private fun saveViaMediaStore(ctx: Context, displayName: String, bytes: ByteArray): Boolean? {
         val resolver = ctx.contentResolver
 
-        // Clean up any duplicate numbered files previously created (e.g. mhrv-ca (1).crt, etc.)
+        // Clean up any duplicate numbered files previously created (e.g. nrg-ca (1).crt, mhrv-ca (1).crt, etc.)
         try {
             val dupSel = "${MediaStore.MediaColumns.DISPLAY_NAME} LIKE ?"
+            resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, dupSel, arrayOf("nrg-ca (%).crt"))
             resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, dupSel, arrayOf("mhrv-ca (%).crt"))
+            resolver.delete(MediaStore.Downloads.EXTERNAL_CONTENT_URI, "${MediaStore.MediaColumns.DISPLAY_NAME}=?", arrayOf("mhrv-ca.crt"))
         } catch (_: Throwable) { /* best-effort */ }
 
         // Overwrite existing file if already present in MediaStore to avoid creating duplicate (1), (2) files
@@ -189,7 +221,6 @@ object CaInstall {
      * Intent that opens top-level Settings or Security Settings.
      */
     fun buildSettingsIntent(): Intent {
-        // Try Security Settings first on Android 10+, fallback to ACTION_SETTINGS
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent(Settings.ACTION_SECURITY_SETTINGS)
         } else {
@@ -199,9 +230,10 @@ object CaInstall {
     }
 
     /**
-     * True iff a CA with this SHA-256 fingerprint lives in AndroidCAStore.
+     * True iff the official nrg-ca certificate (matching our SHA-256 fingerprint) lives in AndroidCAStore.
+     * The app strictly recognizes ONLY this certificate.
      */
-    fun isInstalled(targetFingerprint: ByteArray): Boolean {
+    fun isInstalled(targetFingerprint: ByteArray = nrgFingerprint): Boolean {
         return try {
             val ks = KeyStore.getInstance("AndroidCAStore")
             ks.load(null)
@@ -216,9 +248,9 @@ object CaInstall {
         } catch (_: Throwable) { false }
     }
 
-    /** Subject CN of the exported CA, for display. */
-    fun subjectCn(ctx: Context): String? {
-        val der = readDer(ctx) ?: return null
+    /** Subject CN of the nrg-ca, for display. */
+    fun subjectCn(ctx: Context? = null): String? {
+        val der = readDer(ctx)
         return try {
             val cf = CertificateFactory.getInstance("X.509")
             val cert = cf.generateCertificate(der.inputStream()) as java.security.cert.X509Certificate

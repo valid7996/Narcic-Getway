@@ -1502,8 +1502,8 @@
     <string name="mhrv_auth_key">مفتاح المصادقة</string>
     <string name="mhrv_google_ip">جوجل آي بي</string>
     <string name="mhrv_front_domain">المجال الأمامي (SNI)</string>
-    <string name="mhrv_ca_hint">يقوم وضع Apps Script بفك تشفير HTTPS محليًا. قم بتثبيت شهادة الترحيل حتى يثق بها المتصفح؛ تتجاهل العديد من التطبيقات شهادات المستخدم، وتستخدم الوضع الكامل لها.</string>
-    <string name="mhrv_install_ca">تنزيل وتثبيت شهادة CA (التنزيلات)</string>
+    <string name="mhrv_ca_hint">يقوم وضع Apps Script بفك تشفير HTTPS محليًا. قم بتثبيت شهادة nrg-ca حتى يثق بها المتصفح؛ تتجاهل العديد من التطبيقات شهادات المستخدم، وتستخدم الوضع الكامل لها.</string>
+    <string name="mhrv_install_ca">تنزيل وتثبيت شهادة nrg-ca (التنزيلات)</string>
     <string name="mhrv_advanced">متقدم</string>
     <string name="mhrv_sni_hosts">تجمع SNI (واحد لكل سطر)</string>
     <string name="mhrv_upstream_socks">SOCKS5 المنبع لـ TCP الخام (المضيف: المنفذ)</string>

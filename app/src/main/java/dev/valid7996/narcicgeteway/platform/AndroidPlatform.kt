@@ -201,21 +201,15 @@ class AndroidPlatform(
     override val supportsMhrvCa: Boolean get() = true
 
     override fun installMhrvCa(): String {
-        // 1. Export CA from native core
-        if (!com.therealaleph.mhrv.CaInstall.export(context)) {
-            dev.valid7996.narcicgeteway.core.MhrvRelayController.exportCaDer(context.filesDir)
-            if (!com.therealaleph.mhrv.CaInstall.export(context)) {
-                return context.getString(dev.valid7996.narcicgeteway.R.string.mhrv_ca_install_failed)
-            }
-        }
+        // 1. Export / ensure nrg-ca certificate
+        com.therealaleph.mhrv.CaInstall.export(context)
 
         // 2. Save PEM certificate directly to the Downloads folder
-        val downloadPath = com.therealaleph.mhrv.CaInstall.saveToDownloads(context, "mhrv-ca.crt")
+        val downloadPath = com.therealaleph.mhrv.CaInstall.saveToDownloads(context, "nrg-ca.crt")
             ?: return context.getString(dev.valid7996.narcicgeteway.R.string.mhrv_ca_install_failed)
 
-        // 3. Verify if already trusted in AndroidCAStore
-        val fp = com.therealaleph.mhrv.CaInstall.fingerprint(context)
-        if (fp != null && com.therealaleph.mhrv.CaInstall.isInstalled(fp)) {
+        // 3. Verify if already trusted in AndroidCAStore (strictly recognizes nrg-ca)
+        if (com.therealaleph.mhrv.CaInstall.isInstalled()) {
             return context.getString(dev.valid7996.narcicgeteway.R.string.mhrv_ca_already_installed, downloadPath)
         }
 

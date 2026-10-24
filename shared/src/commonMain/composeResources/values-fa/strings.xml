@@ -1541,8 +1541,8 @@
     <string name="mhrv_auth_key">کلید احراز هویت</string>
     <string name="mhrv_google_ip">IP گوگل</string>
     <string name="mhrv_front_domain">دامنه‌ی فرانت (SNI)</string>
-    <string name="mhrv_ca_hint">حالت Apps Script ترافیک HTTPS را روی دستگاه رمزگشایی می‌کند. گواهی ریلی را نصب کنید تا مرورگر آن را بپذیرد؛ بعضی برنامه‌ها گواهی کاربر را نادیده می‌گیرند و برایشان باید حالت تونل کامل را بزنید.</string>
-    <string name="mhrv_install_ca">دانلود و نصب گواهی CA (پوشه Downloads)</string>
+    <string name="mhrv_ca_hint">حالت Apps Script ترافیک HTTPS را روی دستگاه رمزگشایی می‌کند. گواهی nrg-ca را نصب کنید تا مرورگر آن را بپذیرد؛ بعضی برنامه‌ها گواهی کاربر را نادیده می‌گیرند و برایشان باید حالت تونل کامل را بزنید.</string>
+    <string name="mhrv_install_ca">دانلود و نصب گواهی nrg-ca (پوشه Downloads)</string>
     <string name="mhrv_advanced">پیشرفته</string>
     <string name="mhrv_sni_hosts">لیست SNI (هر خط یکی)</string>
     <string name="mhrv_upstream_socks">SOCKS5 بالادست برای TCP خام (host:port)</string>
