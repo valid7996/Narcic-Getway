@@ -80,8 +80,8 @@ fun MhrvRelaySheet(
     var verifySsl by remember { mutableStateOf(initial?.verifySsl ?: true) }
     var parallel by remember { mutableIntStateOf(initial?.parallelRelay ?: 1) }
     var blockQuic by remember { mutableStateOf(initial?.blockQuic ?: true) }
-    var blockStun by remember { mutableStateOf(initial?.blockStun ?: true) }
-    var blockDoh by remember { mutableStateOf(initial?.blockDoh ?: true) }
+    var blockStun by remember { mutableStateOf(initial?.blockStun ?: false) }
+    var blockDoh by remember { mutableStateOf(initial?.blockDoh ?: false) }
     var tunnelDoh by remember { mutableStateOf(initial?.tunnelDoh ?: true) }
     var coalesceStep by remember { mutableIntStateOf(initial?.coalesceStepMs ?: 10) }
     var coalesceMax by remember { mutableIntStateOf(initial?.coalesceMaxMs ?: 1000) }

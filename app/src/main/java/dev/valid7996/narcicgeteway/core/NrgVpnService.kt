@@ -664,7 +664,7 @@ class NrgVpnService : VpnService() {
         tunMtu: Int,
         appSettings: AppSettings,
     ) {
-        val profile = try {
+        val rawProfile = try {
             kotlinx.serialization.json.Json.decodeFromString(
                 dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.serializer(), configJson,
             )
@@ -673,6 +673,7 @@ class NrgVpnService : VpnService() {
             VpnManager.onError(getString(R.string.mhrv_invalid_config))
             stopEverything(); return
         }
+        val profile = if (rawProfile.blockDoh) rawProfile.copy(blockDoh = false) else rawProfile
         val controller = MhrvRelayController(
             profile, filesDir,
             httpPort = LocalPorts.MHRV_HTTP,
