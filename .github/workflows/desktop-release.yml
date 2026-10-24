@@ -45,7 +45,8 @@ jobs:
           for pair in "xray:xray-linux:xray" \
                       "hev-linux:hev-socks5-tunnel:hev-socks5-tunnel" \
                       "dns-tunnels:zeddns-linux:zeddns" \
-                      "psiphon:psiphon-linux:psiphon"; do
+                      "psiphon:psiphon-linux:psiphon" \
+                      "aether-linux:aether:aether"; do
             art=${pair%%:*}; rest=${pair#*:}; from=${rest%%:*}; to=${rest#*:}
             rm -rf /tmp/nat/$art
             gh run download "$NATIVES_RUN" --repo "$GITHUB_REPOSITORY" --name "$art" --dir "/tmp/nat/$art" \
@@ -162,7 +163,8 @@ jobs:
                       "zeptun-windows:wintun.dll:wintun.dll" \
                       "zeptun-windows:wintun-LICENSE.txt:wintun-LICENSE.txt" \
                       "dns-tunnels:zeddns-windows.exe:zeddns.exe" \
-                      "psiphon:psiphon-windows.exe:psiphon.exe"; do
+                      "psiphon:psiphon-windows.exe:psiphon.exe" \
+                      "aether-windows:aether.exe:aether.exe"; do
             art=${pair%%:*}; rest=${pair#*:}; from=${rest%%:*}; to=${rest#*:}
             if [ ! -d "/tmp/nat/$art" ]; then
               gh run download "$NATIVES_RUN" --repo "$GITHUB_REPOSITORY" --name "$art" --dir "/tmp/nat/$art" \
@@ -242,7 +244,8 @@ jobs:
                       "hev-macos:hev-socks5-tunnel-$ARCH:hev-socks5-tunnel" \
                       "zeptun-macos:zeptun:zeptun" \
                       "dns-tunnels:zeddns-macos-$ARCH:zeddns" \
-                      "psiphon:psiphon-macos-$ARCH:psiphon"; do
+                      "psiphon:psiphon-macos-$ARCH:psiphon" \
+                      "aether-macos:aether-$ARCH:aether"; do
             art=${pair%%:*}; rest=${pair#*:}; from=${rest%%:*}; to=${rest#*:}
             if [ ! -d "/tmp/nat/$art" ]; then
               gh run download "$NATIVES_RUN" --repo "$GITHUB_REPOSITORY" --name "$art" --dir "/tmp/nat/$art" \

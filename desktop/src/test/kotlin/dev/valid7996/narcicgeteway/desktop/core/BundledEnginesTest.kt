@@ -17,9 +17,9 @@ class BundledEnginesTest {
     private val neverLaunched = listOf("psiphon-client", "masterdns-client", "snispoof", "snowflake-client")
 
     private val builtInCi = mapOf(
-        Os.LINUX to listOf("psiphon", "tor/files.txt", "tor/tor", "tor/pt/lyrebird", "tor/bridges_default.lst"),
-        Os.WINDOWS to listOf("psiphon.exe", "tor/files.txt", "tor/tor.exe", "tor/pt/lyrebird.exe", "tor/bridges_default.lst"),
-        Os.MACOS to listOf("psiphon", "tor/files.txt", "tor/tor", "tor/pt/lyrebird", "tor/bridges_default.lst"),
+        Os.LINUX to listOf("aether", "psiphon", "tor/files.txt", "tor/tor", "tor/pt/lyrebird", "tor/bridges_default.lst"),
+        Os.WINDOWS to listOf("aether.exe", "psiphon.exe", "tor/files.txt", "tor/tor.exe", "tor/pt/lyrebird.exe", "tor/bridges_default.lst"),
+        Os.MACOS to listOf("aether", "psiphon", "tor/files.txt", "tor/tor", "tor/pt/lyrebird", "tor/bridges_default.lst"),
     )
 
     @Test

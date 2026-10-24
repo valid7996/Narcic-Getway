@@ -82,19 +82,8 @@ class DesktopDnsTunnel(
         boundPort = 0
     }
 
-    private fun extract(base: String): File? {
-        val (sub, name) = when (Os.current) {
-            Os.LINUX -> "linux" to base
-            Os.MACOS -> "macos" to base
-            Os.WINDOWS -> "windows" to "$base.exe"
-            else -> return null
-        }
-        val stream = javaClass.getResourceAsStream("/bin/$sub/$name") ?: return null
-        val out = File(workDir, name)
-        stream.use { input -> out.outputStream().use { input.copyTo(it) } }
-        out.setExecutable(true)
-        return out
-    }
+    private fun extract(base: String): File? =
+        BundledBinary.extract(workDir, base, "$base.exe")
 
     private fun waitPortReady(port: Int, proc: Process, timeoutMs: Int): Boolean {
         val deadline = System.currentTimeMillis() + timeoutMs

@@ -61,7 +61,8 @@ object SystemProxy {
     private fun windows(host: String, port: Int, on: Boolean): Boolean {
         val key = """HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings"""
         return if (on) {
-            exec("reg", "add", key, "/v", "ProxyServer", "/t", "REG_SZ", "/d", "$host:$port", "/f").first == 0 &&
+            val server = "http=$host:$port;https=$host:$port;socks=$host:$port"
+            exec("reg", "add", key, "/v", "ProxyServer", "/t", "REG_SZ", "/d", server, "/f").first == 0 &&
                 exec("reg", "add", key, "/v", "ProxyOverride", "/t", "REG_SZ", "/d",
                     "localhost;127.*;10.*;172.16.*;192.168.*;<local>", "/f").first == 0 &&
                 exec("reg", "add", key, "/v", "ProxyEnable", "/t", "REG_DWORD", "/d", "1", "/f").first == 0

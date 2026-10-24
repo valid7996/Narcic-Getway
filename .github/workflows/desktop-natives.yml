@@ -14,6 +14,7 @@ permissions:
   contents: read
 
 env:
+  AETHER_RELEASE: "v2.4.0"
   HEV_RELEASE: "2.18.0"
   TOR_BUNDLE: "14.5.1"
   ZEPTUN_RELEASE: "v1.1.1"
@@ -207,3 +208,33 @@ jobs:
         with: { name: hev-windows, path: "windows/*", retention-days: 30 }
       - uses: actions/upload-artifact@v4
         with: { name: hev-macos, path: "macos/*", retention-days: 30 }
+
+  aether:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Take Aether from official releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir -p dl linux windows macos
+          gh release download "$AETHER_RELEASE" --repo patterniha/Aether --dir dl --clobber \
+            --pattern 'aether-windows-x86_64.zip' \
+            --pattern 'aether-linux-x86_64.tar.gz' \
+            --pattern 'aether-macos-arm64.tar.gz' \
+            --pattern 'aether-macos-x86_64.tar.gz'
+          unzip -q -o dl/aether-windows-x86_64.zip -d dl/win
+          cp dl/win/aether.exe windows/aether.exe
+          tar -xzf dl/aether-linux-x86_64.tar.gz -C linux
+          tar -xzf dl/aether-macos-arm64.tar.gz -C dl
+          mv dl/aether macos/aether-arm64
+          tar -xzf dl/aether-macos-x86_64.tar.gz -C dl
+          mv dl/aether macos/aether-x86_64
+          chmod +x linux/aether macos/*
+          ls -l windows linux macos
+      - uses: actions/upload-artifact@v4
+        with: { name: aether-windows, path: "windows/*", retention-days: 30 }
+      - uses: actions/upload-artifact@v4
+        with: { name: aether-linux, path: "linux/*", retention-days: 30 }
+      - uses: actions/upload-artifact@v4
+        with: { name: aether-macos, path: "macos/*", retention-days: 30 }

@@ -41,7 +41,7 @@ object DesktopXray {
                 put("tag", "front-in")
                 put("listen", "127.0.0.1")
                 put("port", listenPort)
-                put("protocol", "socks")
+                put("protocol", "mixed")
                 putJsonObject("settings") {
                     put("auth", "noauth")
                     put("udp", true)

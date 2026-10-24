@@ -6,7 +6,9 @@ import dev.valid7996.narcicgeteway.core.SshController
 import dev.valid7996.narcicgeteway.core.VpnManager
 import dev.valid7996.narcicgeteway.data.config.ConfigRepository
 import dev.valid7996.narcicgeteway.desktop.core.DesktopDnsTunnel
+import dev.valid7996.narcicgeteway.desktop.core.DesktopAether
 import dev.valid7996.narcicgeteway.desktop.core.DesktopIkev2
+import dev.valid7996.narcicgeteway.desktop.core.DesktopSstp
 import dev.valid7996.narcicgeteway.desktop.core.DesktopPsiphon
 import dev.valid7996.narcicgeteway.desktop.core.DesktopTor
 import dev.valid7996.narcicgeteway.desktop.core.DesktopTun
@@ -21,7 +23,9 @@ import dev.valid7996.narcicgeteway.domain.config.Ikev2Profile
 import dev.valid7996.narcicgeteway.domain.config.LocalPorts
 import dev.valid7996.narcicgeteway.domain.config.LocalProxy
 import dev.valid7996.narcicgeteway.domain.config.PsiphonProfile
+import dev.valid7996.narcicgeteway.domain.config.AetherProfile
 import dev.valid7996.narcicgeteway.domain.config.SshProfile
+import dev.valid7996.narcicgeteway.domain.config.SstpProfile
 import dev.valid7996.narcicgeteway.domain.config.autoSelectTuning
 import dev.valid7996.narcicgeteway.domain.config.toBuildOptions
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
@@ -47,6 +51,8 @@ object DesktopVpn {
     @Volatile private var tor: DesktopTor? = null
     @Volatile private var psiphon: DesktopPsiphon? = null
     @Volatile private var ikev2: DesktopIkev2? = null
+    @Volatile private var aether: DesktopAether? = null
+    @Volatile private var sstp: DesktopSstp? = null
     private var meter: DesktopMeter? = null
     private var usedSystemProxy = false
 
@@ -80,12 +86,14 @@ object DesktopVpn {
 
         when {
             profile.ikev2Settings() != null -> startIkev2(profile.name, profile.ikev2Settings()!!)
-            profile.aetherSettings() != null -> { VpnManager.onError("Aether is supported on Android only"); return }
+            profile.sstpSettings() != null -> startSstp(profile.name, profile.sstpSettings()!!)
+            profile.aetherSettings() != null -> startAether(profile.name, profile.aetherSettings()!!)
             profile.psiphonSettings() != null -> startPsiphon(profile.name, profile.psiphonSettings()!!)
             profile.isTor -> startTor(profile.name)
             profile.dnsTunnelSettings() != null -> startDns(profile.name, profile.dnsTunnelSettings()!!)
             profile.sshSettings() != null -> startSsh(profile.name, profile.sshSettings()!!)
             profile.isSingBoxConfig -> startSingBoxConfig(profile.name, profile)
+            profile.mhrvSettings() != null -> { VpnManager.onError("MHRV relay is supported on Android only"); return }
             else -> startXray(profile.name, profile, config)
         }
     }
@@ -133,18 +141,63 @@ object DesktopVpn {
                 sshPort
             } else port
 
-            val shimPort = localPort(SHIM_PORT, setOf(port, upstreamPort))
-            val bridge = SocksTunBridge("127.0.0.1", shimPort, "127.0.0.1", upstreamPort, dnsHost = "8.8.8.8")
-            shim = bridge
-            if (!bridge.start()) { stop(); VpnManager.onError("Shim failed to start"); return@thread }
-
             val bypass = resolveHosts(dnsResolverHosts(dnsProfile) + listOfNotNull(dnsProfile.sshHost.takeIf { it.isNotBlank() }))
-            if (!route(shimPort, bypass, udpOverTcp = true)) {
-                stop(); VpnManager.onError("Could not route traffic (TUN + system proxy failed)"); return@thread
+            if (!connectThrough(upstreamPort, "DNS", bypass = bypass)) {
+                dns.stop(); ssh?.stop(); ssh = null; dnsTunnel = null; return@thread
             }
-            VpnManager.activeSocksPort = shimPort
-            startShimStats(bridge)
             VpnManager.onConnected(name)
+        }
+    }
+
+    private fun startAether(name: String, aetherProfile: AetherProfile) {
+        VpnManager.onStarting(name)
+        thread(name = "desktop-aether") {
+            val aetherPort = localPort(LocalPorts.AETHER_SOCKS)
+            val engine = DesktopAether(aetherProfile, work, aetherPort)
+            aether = engine
+            val started = engine.start()
+            if (aether !== engine) return@thread
+            started.exceptionOrNull()?.let { e ->
+                aether = null
+                VpnManager.onError(e.message ?: "Aether failed to start")
+                return@thread
+            }
+            val bypass = resolveHosts(listOf(aetherProfile.endpoint.substringBefore(':')))
+            if (!connectThrough(engine.socksPort, "Aether", bypass = bypass)) {
+                engine.stop()
+                aether = null
+                return@thread
+            }
+            VpnManager.onConnected(name)
+        }
+    }
+
+    private fun startSstp(name: String, sstpProfile: SstpProfile) {
+        VpnManager.onStarting(name)
+        thread(name = "desktop-sstp") {
+            val engine = DesktopSstp(sstpProfile, work)
+            sstp = engine
+            val connected = engine.connect()
+            if (sstp !== engine) {
+                if (connected.isSuccess) engine.disconnect()
+                return@thread
+            }
+            connected.exceptionOrNull()?.let { e ->
+                sstp = null
+                VpnManager.onError(e.message ?: "MS-SSTP failed to connect")
+                return@thread
+            }
+            LogBus.append("I/SSTP the system VPN '${DesktopSstp.NAME}' carries all traffic")
+            VpnManager.onConnected(name)
+            meter = DesktopMeter(totals = { null }).also { it.start() }
+            while (sstp === engine) {
+                Thread.sleep(15_000)
+                if (sstp === engine && !engine.isUp()) {
+                    sstp = null
+                    VpnManager.onError("MS-SSTP disconnected")
+                    break
+                }
+            }
         }
     }
 
@@ -231,7 +284,7 @@ object DesktopVpn {
         }
     }
 
-    private fun connectThrough(upstreamPort: Int, engine: String): Boolean {
+    private fun connectThrough(upstreamPort: Int, engine: String, bypass: List<String> = emptyList()): Boolean {
         val socksPort = localPort(LocalProxy.SOCKS_PORT, setOf(upstreamPort))
         val metricsPort = localPort(METRICS_PORT, setOf(socksPort, upstreamPort))
         val json = DesktopXray.augmentWithMetrics(DesktopXray.frontConfig(socksPort, upstreamPort), metricsPort)
@@ -241,7 +294,7 @@ object DesktopVpn {
             return false
         }
         xray = core
-        if (!route(socksPort, emptyList(), udpOverTcp = true, tunCarries = engine)) {
+        if (!route(socksPort, bypass, udpOverTcp = true, tunCarries = engine)) {
             core.stop()
             xray = null
             VpnManager.onError("Could not route traffic (system proxy failed)")
@@ -369,17 +422,10 @@ object DesktopVpn {
             val sshPort = controller.start()
             if (sshPort < 0) { VpnManager.onError("SSH failed to connect"); return@thread }
 
-            val shimPort = localPort(SHIM_PORT, setOf(sshPort))
-            val bridge = SocksTunBridge("127.0.0.1", shimPort, "127.0.0.1", sshPort, dnsHost = "8.8.8.8")
-            shim = bridge
-            if (!bridge.start()) { controller.stop(); ssh = null; VpnManager.onError("Shim failed"); return@thread }
             val bypass = resolveHosts(listOf(sshProfile.host))
-            if (!route(shimPort, bypass, udpOverTcp = true)) {
-                bridge.stop(); controller.stop(); ssh = null
-                VpnManager.onError("Could not route traffic"); return@thread
+            if (!connectThrough(sshPort, "SSH", bypass = bypass)) {
+                controller.stop(); ssh = null; return@thread
             }
-            VpnManager.activeSocksPort = shimPort
-            startShimStats(bridge)
             VpnManager.onConnected(name)
         }
     }
@@ -453,6 +499,8 @@ object DesktopVpn {
         tun?.stop(); tun = null
         tor?.let { tor = null; it.stop() }
         ikev2?.let { ikev2 = null; it.disconnect() }
+        sstp?.let { sstp = null; it.disconnect() }
+        aether?.let { aether = null; it.stop() }
         psiphon?.let { psiphon = null; it.stop() }
         shim?.stop(); shim = null
         ssh?.stop(); ssh = null
