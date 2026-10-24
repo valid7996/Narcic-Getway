@@ -1841,6 +1841,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         Subscription(id = DEFAULT_SUB_MCI, name = "همراه اول", url = DEFAULT_SUB_MCI_URL),
         Subscription(id = DEFAULT_SUB_WIREGUARD, name = "وایرگارد", url = DEFAULT_SUB_WIREGUARD_URL),
         Subscription(id = DEFAULT_SUB_SPOOF, name = "اسپوف", url = DEFAULT_SUB_SPOOF_URL),
+        Subscription(id = DEFAULT_SUB_HAMEDVPNS, name = "hamedvpns", url = DEFAULT_SUB_HAMEDVPNS_URL),
     )
 
     /**
@@ -1918,6 +1919,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_MCI = "default-mci"
         const val DEFAULT_SUB_WIREGUARD = "default-wireguard"
         const val DEFAULT_SUB_SPOOF = "default-spoof"
+        const val DEFAULT_SUB_HAMEDVPNS = "default-hamedvpns"
         const val DEFAULT_SUB_IRANCELL_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessirancell.txt"
         const val DEFAULT_SUB_MCI_URL =
@@ -1926,12 +1928,15 @@ class ConfigRepository(private val store: KeyValueStore) {
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/ngwirguard.txt"
         const val DEFAULT_SUB_SPOOF_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
+        const val DEFAULT_SUB_HAMEDVPNS_URL =
+            "https://raw.githubusercontent.com/hamedp-71/N_sub_cheker/refs/heads/patch-1/final.txt"
 
         val DEFAULT_SUB_IDS = setOf(
             DEFAULT_SUB_IRANCELL,
             DEFAULT_SUB_MCI,
             DEFAULT_SUB_WIREGUARD,
             DEFAULT_SUB_SPOOF,
+            DEFAULT_SUB_HAMEDVPNS,
         )
 
         fun isDefaultSubscription(id: String?): Boolean {

@@ -181,12 +181,10 @@ private fun IosInteractiveTabBar(
                 val tabCount = destinations.size.coerceAtLeast(1)
                 val tabWidth = totalWidth / tabCount
                 val selectedIndex = destinations.indexOf(current).coerceAtLeast(0)
-                val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-                val targetSlotIndex = if (isRtl) (tabCount - 1 - selectedIndex) else selectedIndex
 
                 // Smooth fluid sliding animation with spring physics
                 val animatedSlot by animateFloatAsState(
-                    targetValue = targetSlotIndex.toFloat(),
+                    targetValue = selectedIndex.toFloat(),
                     animationSpec = spring(
                         dampingRatio = 0.76f,
                         stiffness = 380f,
@@ -195,7 +193,7 @@ private fun IosInteractiveTabBar(
                 )
 
                 // Elastic rubber-band stretch during movement (inspired by iOS 26 tab menu in video)
-                val diff = kotlin.math.abs(animatedSlot - targetSlotIndex)
+                val diff = kotlin.math.abs(animatedSlot - selectedIndex)
                 val stretchX = 1f + (diff * 0.18f).coerceAtMost(0.24f)
 
                 val indicatorX = (tabWidth * animatedSlot) + 5.dp

@@ -231,7 +231,7 @@ data class AppSettings(
     val customUploadTileColor: Long? = null,
 
     /** The no-root SNI spoof (the Rsta engine), as RstaNG keeps it: one setting for every profile that points at 127.0.0.1:40443. */
-    val rstaSpoofConnectIp: String = "104.18.38.202",
+    val rstaSpoofConnectIp: String = "21.24.57.1",
     val rstaSpoofConnectPort: Int = 443,
     val rstaSpoofFakeSni: String = "cdnjs.cloudflare.com",
     val rstaSpoofMethod: String = "combined",

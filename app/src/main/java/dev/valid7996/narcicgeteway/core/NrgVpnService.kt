@@ -312,8 +312,8 @@ class NrgVpnService : VpnService() {
                 val wrapper = JSONObject(configJson)
                 val xray = wrapper.getJSONObject("xray")
                 val sni = wrapper.getJSONObject("sni")
-                val fakeSni = sni.optString("fakeSni")
-                val cleanIp = sni.optString("cleanIp")
+                val rawFakeSni = sni.optString("fakeSni")
+                val rawCleanIp = sni.optString("cleanIp")
 
                 val orig = readProxyOutbound(xray)
                 if (orig == null) {
@@ -324,41 +324,89 @@ class NrgVpnService : VpnService() {
 
                 val listenPort = SNISPOOF_PORT
                 val method = SniSpoofConfig.method(sni.optString("method"))
-                val target = SniSpoofConfig.target(
+                val (ipCandidates, targetPort) = SniSpoofConfig.targetCandidates(
                     SniSpoofProfile(
-                        link = "", fakeSni = fakeSni, cleanIp = cleanIp, noRoot = true,
+                        link = "", fakeSni = rawFakeSni, cleanIp = rawCleanIp, noRoot = true,
                         method = method, connectPort = sni.optInt("connectPort", 0),
                     ),
                     realHost, realPort,
                 )
-                if (target == null) {
-                    VpnManager.onError(getString(R.string.snispoof_noroot_failed))
+                val sniCandidates = SniSpoofConfig.parseSniList(rawFakeSni).ifEmpty {
+                    listOf(SniSpoofConfig.defaultFakeSni)
+                }
+
+                // Prioritize live IPs via fast socket probe
+                val orderedIps = withContext(Dispatchers.IO) {
+                    RstaSpoofClient.orderIpsByReachability(ipCandidates, targetPort)
+                }
+
+                var connected = false
+                var lastErr: String? = null
+
+                candidateLoop@ for (candidateIp in orderedIps) {
+                    val resolvedIp = runCatching {
+                        java.net.InetAddress.getByName(candidateIp).hostAddress
+                    }.getOrNull() ?: candidateIp
+
+                    for (candidateSni in sniCandidates) {
+                        Log.i(TAG, "SNI-spoof attempt: IP=$resolvedIp, Port=$targetPort, SNI=$candidateSni, Method=$method")
+                        RstaSpoofClient.stop(this@NrgVpnService)
+                        RstaSpoofClient.start(this@NrgVpnService, listenPort, resolvedIp, targetPort, candidateSni, method)
+
+                        if (!RstaSpoofClient.awaitListener(listenPort, timeoutMs = 4_000L)) {
+                            Log.w(TAG, "SNI-spoof listener did not answer on $listenPort for IP $resolvedIp")
+                            lastErr = "Listener failed on $resolvedIp"
+                            continue
+                        }
+
+                        writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost, candidateSni)
+                        XrayController.stop()
+                        if (!XrayController.start(xray.toString())) {
+                            Log.w(TAG, "Xray failed to start for $resolvedIp")
+                            lastErr = coreStartError()
+                            continue
+                        }
+
+                        if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) {
+                            Log.w(TAG, "Tunnel bridge failed for $resolvedIp")
+                            lastErr = "Bridge failed"
+                            continue
+                        }
+
+                        val ready = TunnelReadiness.verify(socksPort, timeoutMs = 3_500, attempts = 2)
+                        if (ready) {
+                            Log.i(TAG, "SNI-spoof verified successfully with IP=$resolvedIp, SNI=$candidateSni")
+                            connected = true
+                            break@candidateLoop
+                        } else {
+                            Log.w(TAG, "SNI-spoof readiness probe failed for IP $resolvedIp, trying fallback IP/SNI...")
+                            lastErr = "Readiness probe failed on $resolvedIp"
+                        }
+                    }
+                }
+
+                if (!connected && orderedIps.isNotEmpty()) {
+                    // Fallback to best effort with first alive candidate
+                    val fallbackIp = orderedIps.first()
+                    val fallbackSni = sniCandidates.first()
+                    val resolvedIp = runCatching {
+                        java.net.InetAddress.getByName(fallbackIp).hostAddress
+                    }.getOrNull() ?: fallbackIp
+                    Log.w(TAG, "Readiness check timed out on all candidates; proceeding with best effort on $resolvedIp")
+                    RstaSpoofClient.stop(this@NrgVpnService)
+                    RstaSpoofClient.start(this@NrgVpnService, listenPort, resolvedIp, targetPort, fallbackSni, method)
+                    writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost, fallbackSni)
+                    XrayController.stop()
+                    XrayController.start(xray.toString())
+                    bridge(descriptor, socksPort, tunMtu, pipeline = true)
+                    connected = true
+                }
+
+                if (!connected) {
+                    VpnManager.onError(lastErr ?: getString(R.string.snispoof_noroot_failed))
                     stopEverything(); return@launch
                 }
-                val ip = sniSpoofEdge
-                    ?: runCatching { java.net.InetAddress.getByName(target.first).hostAddress }.getOrNull()
-                    ?: target.first
 
-                // Run the Go spoof engine inside the isolated :snispoof process
-                RstaSpoofClient.start(this@NrgVpnService, listenPort, ip, target.second, fakeSni, method)
-                if (!RstaSpoofClient.awaitListener(listenPort, timeoutMs = 5_000L)) {
-                    VpnManager.onError(getString(R.string.snispoof_noroot_failed))
-                    stopEverything(); return@launch
-                }
-
-                writeProxyOutbound(xray, "127.0.0.1", listenPort, realHost, fakeSni)
-
-                if (!XrayController.start(xray.toString())) {
-                    VpnManager.onError(coreStartError())
-                    stopEverything(); return@launch
-                }
-
-                if (!bridge(descriptor, socksPort, tunMtu, pipeline = true)) return@launch
-
-                val ready = TunnelReadiness.verify(socksPort, timeoutMs = 4_000, attempts = 2)
-                if (!ready) {
-                    Log.w(TAG, "SNI-spoof: HTTP readiness probe timed out (likely port 80 filtered), proceeding with connection")
-                }
                 VpnManager.activeSocksPort = socksPort
                 finishConnected()
             } catch (e: Exception) {
@@ -1364,13 +1412,15 @@ class NrgVpnService : VpnService() {
         val clean = sni?.optString("cleanIp").orEmpty().trim().ifBlank {
             dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectIp
         }
-        if (!clean.startsWith("127.") && clean != "localhost" && clean != "sni-spoof") {
-            return java.net.InetAddress.getByName(clean).hostAddress
+        val firstIp = dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.parseIpList(clean).firstOrNull() ?: clean
+        if (!firstIp.startsWith("127.") && firstIp != "localhost" && firstIp != "sni-spoof") {
+            return java.net.InetAddress.getByName(firstIp).hostAddress
         }
         val xray = wrapper.optJSONObject("xray") ?: wrapper
         val host = readProxyOutbound(xray)?.first ?: return null
         if (!host.startsWith("127.") && host != "localhost" && host != "sni-spoof") {
-            java.net.InetAddress.getByName(host).hostAddress
+            val resolvedHost = dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.parseIpList(host).firstOrNull() ?: host
+            java.net.InetAddress.getByName(resolvedHost).hostAddress
         } else {
             java.net.InetAddress.getByName(dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectIp).hostAddress
         }

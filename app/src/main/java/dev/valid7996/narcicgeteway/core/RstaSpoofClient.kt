@@ -28,34 +28,64 @@ object RstaSpoofClient {
     private var current: Params? = null
     private var holders = 0
 
+    /** Reorders candidate IPs by testing TCP socket connectivity quickly. Live IPs appear first. */
+    fun orderIpsByReachability(ips: List<String>, port: Int, timeoutMs: Int = 1200): List<String> {
+        if (ips.size <= 1) return ips
+        val alive = mutableListOf<String>()
+        val dead = mutableListOf<String>()
+        for (ip in ips) {
+            val ok = runCatching {
+                Socket().use { s ->
+                    s.connect(InetSocketAddress(ip, port), timeoutMs)
+                    true
+                }
+            }.getOrDefault(false)
+            if (ok) alive.add(ip) else dead.add(ip)
+        }
+        return if (alive.isNotEmpty()) alive + dead else ips
+    }
+
     /**
      * The no-root SNI spoof as RstaNG keeps it: one engine on 127.0.0.1:[PORT], with the connect IP, port, fake SNI and
      * method of the app's settings, for every profile that points at that address. It is started for whoever needs it
      * first (a connection, or a batch of delay tests) and stopped when the last lets go; changed settings restart it.
-     * Blocking: returns once the listener answers. False when the engine did not come up.
+     * Blocking: returns once the listener answers. Supports multi-IP and multi-SNI with automatic fallback.
      */
     @Synchronized
     fun acquire(context: Context, settings: AppSettings): Boolean {
-        val wanted = Params(
-            ip = settings.rstaSpoofConnectIp.trim().ifEmpty { "104.18.38.202" },
-            port = settings.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: 443,
-            sni = settings.rstaSpoofFakeSni.trim().ifEmpty { "cdnjs.cloudflare.com" },
-            method = SniSpoofConfig.method(settings.rstaSpoofMethod),
-        )
-        // Running already, with these settings, and answering: nothing to start (it may have outlived the main process).
-        val up = current == wanted && awaitListener(PORT, timeoutMs = 400L)
-        if (!up) {
-            start(context, PORT, wanted.ip, wanted.port, wanted.sni, wanted.method)
-            current = wanted
-            if (!awaitListener(PORT, timeoutMs = 6_000L)) {
-                stop(context)
-                current = null
-                holders = 0
-                return false
+        val ips = SniSpoofConfig.parseIpList(settings.rstaSpoofConnectIp).ifEmpty { listOf(SniSpoofConfig.DEFAULT_CONNECT_IP) }
+        val snis = SniSpoofConfig.parseSniList(settings.rstaSpoofFakeSni).ifEmpty { listOf(SniSpoofConfig.DEFAULT_FAKE_SNI) }
+        val port = settings.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: 443
+        val method = SniSpoofConfig.method(settings.rstaSpoofMethod)
+
+        val orderedIps = orderIpsByReachability(ips, port)
+
+        for (candidateIp in orderedIps) {
+            for (candidateSni in snis) {
+                val wanted = Params(
+                    ip = candidateIp,
+                    port = port,
+                    sni = candidateSni,
+                    method = method,
+                )
+                val up = current == wanted && awaitListener(PORT, timeoutMs = 400L)
+                if (up) {
+                    holders++
+                    return true
+                }
+                start(context, PORT, wanted.ip, wanted.port, wanted.sni, wanted.method)
+                current = wanted
+                if (awaitListener(PORT, timeoutMs = 3_000L)) {
+                    holders++
+                    return true
+                }
             }
         }
-        holders++
-        return true
+
+        stop(context)
+        current = null
+        holders = 0
+        return false
     }
 
     /** One who needed the engine lets go; it stops with the last of them. */
