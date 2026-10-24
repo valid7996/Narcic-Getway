@@ -168,6 +168,7 @@ fun MainScaffold(
                 style = settings.navBarStyle,
                 current = current,
                 onSelect = { current = it },
+                personalization = settings.toPersonalization(),
             )
         },
     ) { innerPadding ->

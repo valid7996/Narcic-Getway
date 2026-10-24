@@ -64,5 +64,6 @@ jobs:
             gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+              --draft \
               --title "Narcic Getway $V" --notes ""
           fi

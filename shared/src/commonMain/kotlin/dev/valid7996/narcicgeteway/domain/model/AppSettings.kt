@@ -73,6 +73,8 @@ enum class CardCornerStyle(val serverCardDp: Int, val tileScale: Float) {
 }
 
 enum class NavBarStyle {
+    IosInteractive,
+
     FloatingPill,
 
     FullBar,
@@ -247,7 +249,7 @@ data class AppSettings(
 
     val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Slide,
 
-    val navBarStyle: NavBarStyle = NavBarStyle.Minimal,
+    val navBarStyle: NavBarStyle = NavBarStyle.IosInteractive,
 
     val themeProfileId: String? = null,
 
