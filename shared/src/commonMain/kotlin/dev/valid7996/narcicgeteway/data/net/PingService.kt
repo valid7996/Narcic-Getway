@@ -39,6 +39,9 @@ object PingService {
     var rstaSpoofLease: (suspend () -> (() -> Unit)?)? = null
 
     @Volatile
+    var rstaSpoofSmartProbe: (suspend (profile: VpnProfile, config: String, url: String) -> Long)? = null
+
+    @Volatile
     var aetherTunnel: (suspend (AetherProfile, suspend (Int) -> Long) -> Long)? = null
 
     @Volatile
@@ -157,7 +160,7 @@ object PingService {
             }
         }
         // The engine stays up for the whole batch when some profile points at it, instead of starting and stopping around each probe.
-        val batchLease = if (targets.any { it.isSniSpoof || it.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
+        val batchLease = if (rstaSpoofSmartProbe == null && targets.any { it.isSniSpoof || it.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(it.address, it.port) }) rstaSpoofLease?.invoke() else null
         try {
         (aetherJobs + targets.map { profile ->
             launch(Dispatchers.IO) {
@@ -272,17 +275,23 @@ object PingService {
 
     private suspend fun probeWithTimeout(profile: VpnProfile, config: String, url: String): Long {
         val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
-        if (!isSpoof) return probeCore(profile, config, url)
-        val release = rstaSpoofLease?.invoke()
-        if (release == null) {
-            LogBus.append("W/PingService the SNI spoof engine did not start; ${profile.name} cannot be measured")
-            return -1L
+        if (isSpoof) {
+            val smartProbe = rstaSpoofSmartProbe
+            if (smartProbe != null) {
+                return smartProbe(profile, config, url)
+            }
+            val release = rstaSpoofLease?.invoke()
+            if (release == null) {
+                LogBus.append("W/PingService the SNI spoof engine did not start; ${profile.name} cannot be measured")
+                return -1L
+            }
+            try {
+                return probeCore(profile, config, url)
+            } finally {
+                release()
+            }
         }
-        try {
-            return probeCore(profile, config, url)
-        } finally {
-            release()
-        }
+        return probeCore(profile, config, url)
     }
 
     private suspend fun probeCore(profile: VpnProfile, config: String, url: String): Long =
