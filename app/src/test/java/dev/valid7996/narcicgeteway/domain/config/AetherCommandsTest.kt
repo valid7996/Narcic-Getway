@@ -69,10 +69,20 @@ class AetherCommandsTest {
     @Test
     fun keysRequestCarriesItsSettings() {
         val arguments = AetherCommands.keysArguments(
-            AetherCommands.KeysRequest(kind = "masque", enrollAddress = "1.2.3.4:443", fragment = true, fragmentSize = "8-16", ech = true),
+            AetherCommands.KeysRequest(
+                kind = "masque",
+                enrollAddress = "1.2.3.4:443",
+                apiSni = "www.speedtest.net",
+                apiHost = "api.cloudflareclient.com",
+                fragment = true,
+                fragmentSize = "8-16",
+                ech = true,
+            ),
         )
         assertEquals(listOf(AetherCommands.REGISTER, "masque"), arguments.take(2))
         assertEquals("1.2.3.4:443", arguments[arguments.indexOf(AetherCommands.API_ADDRESS) + 1])
+        assertEquals("www.speedtest.net", arguments[arguments.indexOf(AetherCommands.API_SNI) + 1])
+        assertEquals("api.cloudflareclient.com", arguments[arguments.indexOf(AetherCommands.API_HOST) + 1])
         assertEquals("8-16", arguments[arguments.indexOf("--fragment-size") + 1])
         assertTrue("--ech" in arguments)
     }

@@ -975,6 +975,8 @@ private fun AetherKeysPage(
     // Key settings (PattNG AetherKeysSettings)
     var keyKind by remember { mutableStateOf("all") }
     var enrollAddress by remember { mutableStateOf(AetherProfile.DEFAULT_ENROLL_ADDRESS) }
+    var keyApiSni by remember { mutableStateOf("") }
+    var keyApiHost by remember { mutableStateOf("") }
     var keyFragment by remember { mutableStateOf(false) }
     var keyFragmentSize by remember { mutableStateOf("") }
     var keyFragmentDelay by remember { mutableStateOf("") }
@@ -1094,6 +1096,30 @@ private fun AetherKeysPage(
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            // API SNI — the server name the ClientHello of the WARP API call carries (bypasses SNI filtering)
+            OutlinedTextField(
+                value = keyApiSni,
+                onValueChange = { keyApiSni = it },
+                label = { Text("API SNI") },
+                placeholder = { Text("e.g. www.speedtest.net") },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // API Host — the HTTP Host header of the WARP API call
+            OutlinedTextField(
+                value = keyApiHost,
+                onValueChange = { keyApiHost = it },
+                label = { Text("API Host") },
+                placeholder = { Text("e.g. api.cloudflareclient.com") },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             // Fragment
             SettingToggleRow(
                 title = stringResource(Res.string.aether_lab_fragment),
@@ -1204,6 +1230,8 @@ private fun AetherKeysPage(
                         val request = AetherCommands.KeysRequest(
                             kind = keyKind,
                             enrollAddress = enrollAddress,
+                            apiSni = keyApiSni,
+                            apiHost = keyApiHost,
                             fragment = keyFragment,
                             fragmentSize = keyFragmentSize,
                             fragmentDelay = keyFragmentDelay,

@@ -14,6 +14,8 @@ object AetherCommands {
     const val GOOL_CLASSIC = "--gool-classic"
     const val MASQUE_SNI = "--masque-sni"
     const val API_ADDRESS = "--api-address"
+    const val API_SNI = "--api-sni"
+    const val API_HOST = "--api-host"
     const val ENROLL_ADDRESS = "--enroll-address"
     const val GOOL_PEER = "--gool-peer"
     const val LOG_LEVEL = "--log-level"
@@ -413,6 +415,10 @@ object AetherCommands {
     data class KeysRequest(
         val kind: String = "all",
         val enrollAddress: String = AetherProfile.DEFAULT_ENROLL_ADDRESS,
+        /** --api-sni, blank for the core's own: the host name in the ClientHello of the WARP API call. */
+        val apiSni: String = "",
+        /** --api-host, blank for the core's own: the HTTP Host header of the WARP API call. */
+        val apiHost: String = "",
         val fragment: Boolean = false,
         val fragmentSize: String = "",
         val fragmentDelay: String = "",
@@ -431,6 +437,8 @@ object AetherCommands {
     fun keysArguments(request: KeysRequest, logLevel: String = DEFAULT_LOG_LEVEL): List<String> = buildList {
         addAll(listOf(REGISTER, request.kind))
         request.enrollAddress.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf(API_ADDRESS, it)) }
+        request.apiSni.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf(API_SNI, it)) }
+        request.apiHost.trim().takeIf { it.isNotEmpty() && !it.startsWith('-') }?.let { addAll(listOf(API_HOST, it)) }
         if (request.fragment) {
             add("--fragment")
             parseRange(request.fragmentSize, 1..4096)?.let { addAll(listOf("--fragment-size", rangeText(it))) }
