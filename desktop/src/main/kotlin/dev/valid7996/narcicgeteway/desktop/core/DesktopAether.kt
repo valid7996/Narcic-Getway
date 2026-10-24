@@ -20,11 +20,12 @@ class DesktopAether(
             ?: return Result.failure(IllegalStateException("Aether is not bundled for ${Os.current}"))
         val serverList = DesktopPsiphonServerList.entriesFile(workDir)
         var runArgs = AetherCommands.runArguments(profile, socksPort)
-        runArgs = AetherCommands.withShippedList(runArgs, serverList)
-        val overlayFile = File(workDir, "psiphon-overlay.json").apply {
-            writeText(AetherCommands.psiphonOverlay(runArgs))
+        runArgs = AetherCommands.withShippedList(runArgs, serverList?.absolutePath)
+        val overlayContent = AetherCommands.overlayOf(runArgs)
+        val overlayFile = overlayContent?.let {
+            File(workDir, "psiphon-overlay.json").apply { writeText(it) }
         }
-        runArgs = AetherCommands.withOverlay(runArgs, overlayFile)
+        runArgs = AetherCommands.withOverlay(runArgs, overlayFile?.absolutePath)
         val args = listOf(bin.absolutePath) + runArgs
         val started = try {
             ProcessBuilder(args)

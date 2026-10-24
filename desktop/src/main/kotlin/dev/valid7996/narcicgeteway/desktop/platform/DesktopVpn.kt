@@ -93,7 +93,7 @@ object DesktopVpn {
             profile.dnsTunnelSettings() != null -> startDns(profile.name, profile.dnsTunnelSettings()!!)
             profile.sshSettings() != null -> startSsh(profile.name, profile.sshSettings()!!)
             profile.isSingBoxConfig -> startSingBoxConfig(profile.name, profile)
-            profile.mhrvSettings() != null -> { VpnManager.onError("MHRV relay is supported on Android only"); return }
+            profile.mhrvRelaySettings() != null -> { VpnManager.onError("MHRV relay is supported on Android only"); return }
             else -> startXray(profile.name, profile, config)
         }
     }
@@ -162,7 +162,7 @@ object DesktopVpn {
                 VpnManager.onError(e.message ?: "Aether failed to start")
                 return@thread
             }
-            val bypass = resolveHosts(listOf(aetherProfile.endpoint.substringBefore(':')))
+            val bypass = if (aetherProfile.server.isNotBlank()) resolveHosts(listOf(aetherProfile.server)) else emptyList()
             if (!connectThrough(engine.socksPort, "Aether", bypass = bypass)) {
                 engine.stop()
                 aether = null
