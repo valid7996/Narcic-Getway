@@ -957,6 +957,55 @@ internal fun SettingToggleRow(
     }
 }
 
+@Composable
+private fun AetherFormDropdownField(
+    label: String,
+    value: String,
+    options: List<String>,
+    onValueChange: (String) -> Unit,
+    placeholder: String? = null,
+    supportingText: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            placeholder = placeholder?.let { { Text(it) } },
+            supportingText = supportingText?.let { { Text(it) } },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            trailingIcon = {
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        painterResource(Res.drawable.ic_keyboard_arrow_down),
+                        contentDescription = null,
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, style = MaterialTheme.typography.bodyMedium) },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
 /**
  * The WARP keys page, faithful to PattNG's ServerAetherKeysActivity: a radio group for the key
  * kind, the enroll address, fragment / ECH / fingerprint settings, the exit-node fields, a live
@@ -1085,39 +1134,32 @@ private fun AetherKeysPage(
                 }
             }
 
-            // Enroll address
-            OutlinedTextField(
+            // API address
+            AetherFormDropdownField(
+                label = "API address",
                 value = enrollAddress,
+                options = AetherProfile.apiNameOptions,
                 onValueChange = { enrollAddress = it },
-                label = { Text(stringResource(Res.string.aether_enroll_address)) },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth(),
+                placeholder = "Leave blank for the API server name's address",
             )
 
-            // API SNI — the server name the ClientHello of the WARP API call carries (bypasses SNI filtering)
-            OutlinedTextField(
+            // API server name (SNI) — the server name the ClientHello of the WARP API call carries (bypasses SNI filtering)
+            AetherFormDropdownField(
+                label = "API server name (SNI)",
                 value = keyApiSni,
+                options = AetherProfile.apiNameOptions,
                 onValueChange = { keyApiSni = it },
-                label = { Text("API SNI") },
-                placeholder = { Text("e.g. www.speedtest.net") },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth(),
+                placeholder = "Leave blank for the API host",
             )
 
             // API Host — the HTTP Host header of the WARP API call
-            OutlinedTextField(
+            AetherFormDropdownField(
+                label = "API host",
                 value = keyApiHost,
+                options = AetherProfile.apiNameOptions,
                 onValueChange = { keyApiHost = it },
-                label = { Text("API Host") },
-                placeholder = { Text("e.g. api.cloudflareclient.com") },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                modifier = Modifier.fillMaxWidth(),
+                placeholder = "api.devices.cloudflare.com",
+                supportingText = "Leave blank for api.devices.cloudflare.com, then api.cloudflareclient.com",
             )
 
             // Fragment

@@ -110,7 +110,12 @@ data class AetherProfile(
         const val DEFAULT_MASQUE_SNI = "www.cloudflare.com"
         const val DEFAULT_ECH_DNS = "udp://1.1.1.1"
         const val DEFAULT_ECH_DOMAIN = "cloudflare-ech.com"
-        const val DEFAULT_ENROLL_ADDRESS = "api.cloudflareclient.com"
+        const val DEFAULT_ENROLL_ADDRESS = ""
+
+        val apiNameOptions = listOf(
+            "api.devices.cloudflare.com",
+            "api.cloudflareclient.com",
+        )
 
         /**
          * The protocols as PattNG's dropdown offers them: [first] is what a profile and a link hold,
