@@ -21,7 +21,17 @@ while read -r path url rev; do
   if [ -n "${GIT_TOKEN:-}" ]; then
     auth="$(printf '%s' "$url" | sed "s#https://#https://x-access-token:${GIT_TOKEN}@#")"
   fi
-  git clone -q --filter=blob:none "$auth" "$dest"
+  cloned=0
+  for attempt in 1 2 3; do
+    if git clone -q --filter=blob:none "$auth" "$dest"; then
+      cloned=1
+      break
+    fi
+    echo "== clone attempt $attempt for $url failed, retrying in 3s..."
+    rm -rf "$dest"
+    sleep 3
+  done
+  [ "$cloned" = 1 ] || { echo "::error::failed to clone $url after 3 attempts"; exit 1; }
   git -C "$dest" remote set-url origin "$url"
   git -C "$dest" checkout -q "$rev"
 done < "$ROOT/tools/core-sources.txt"
