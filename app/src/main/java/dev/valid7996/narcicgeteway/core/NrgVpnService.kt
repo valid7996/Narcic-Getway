@@ -558,10 +558,15 @@ class NrgVpnService : VpnService() {
             stopEverything(); return
         }
 
-        val upstreamPort = if (dnsProfile.sshEnabled && dnsProfile.sshHost.isNotBlank()) {
+        val upstreamPort = if (dnsProfile.sshEnabled) {
+            val directSsh = dnsProfile.sshHost.isBlank() ||
+                dnsProfile.sshHost == "127.0.0.1" ||
+                dnsProfile.sshHost == "localhost" ||
+                dnsProfile.sshHost.equals(dnsProfile.domain.trim(), ignoreCase = true)
+
             val sshProfile = dev.valid7996.narcicgeteway.domain.config.SshProfile(
-                host = dnsProfile.sshHost,
-                port = dnsProfile.sshPort,
+                host = if (directSsh) "127.0.0.1" else dnsProfile.sshHost,
+                port = if (directSsh) port else dnsProfile.sshPort,
                 username = dnsProfile.sshUsername,
                 authType = dnsProfile.sshAuthType,
                 password = dnsProfile.sshPassword,
@@ -574,10 +579,10 @@ class NrgVpnService : VpnService() {
                 compression = appSettings.sshCompression,
                 listenPort = LocalPorts.SSH_OVER_DNS,
                 maxListenPort = LocalPorts.SSH_OVER_DNS_MAX,
-                proxySocksHost = "127.0.0.1",
-                proxySocksPort = port,
-                proxySocksUser = dnsProfile.socksUser,
-                proxySocksPass = dnsProfile.socksPass,
+                proxySocksHost = if (directSsh) null else "127.0.0.1",
+                proxySocksPort = if (directSsh) 0 else port,
+                proxySocksUser = if (directSsh) "" else dnsProfile.socksUser,
+                proxySocksPass = if (directSsh) "" else dnsProfile.socksPass,
             )
             ssh = sshController
             val sshPort = sshController.start()
@@ -598,9 +603,9 @@ class NrgVpnService : VpnService() {
             stopEverything(); return
         }
 
-        if (!TunnelReadiness.verify(SHIM_PORT)) {
-            VpnManager.onError(getString(R.string.dns_tunnel_unreachable))
-            stopEverything(); return
+        val ready = TunnelReadiness.verify(SHIM_PORT, timeoutMs = 8_000, attempts = 1)
+        if (!ready) {
+            Log.w(TAG, "DNS tunnel: HTTP probe timed out (likely port 80 filtered or high latency), proceeding with connection")
         }
         finishConnected()
     }

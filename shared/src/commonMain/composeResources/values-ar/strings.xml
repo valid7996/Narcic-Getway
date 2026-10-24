@@ -703,6 +703,7 @@
     <string name="tor_fascist_firewall_sum">الوصول فقط إلى المرحلات على المنافذ 80 و443</string>
     <string name="dns_ssh_enable">SSH عبر DNS</string>
     <string name="dns_ssh_forward">توجيه DNS من خلال SSH</string>
+    <string name="dns_ssh_host_placeholder">اختياري (الافتراضي خادم نفق DNS)</string>
     <string name="title_pref_accent">لون مميز</string>
     <string name="title_pref_amoled">أموليد أسود</string>
     <string name="summary_pref_amoled">أسطح سوداء نقية في الوضع المظلم</string>

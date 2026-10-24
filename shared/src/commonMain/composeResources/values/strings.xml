@@ -738,6 +738,7 @@
     <string name="tor_fascist_firewall_sum">Only reach relays on ports 80 and 443</string>
     <string name="dns_ssh_enable">SSH over DNS</string>
     <string name="dns_ssh_forward">Route DNS through SSH</string>
+    <string name="dns_ssh_host_placeholder">Optional (defaults to DNS tunnel server)</string>
     <string name="title_pref_accent">Accent color</string>
     <string name="title_pref_amoled">AMOLED black</string>
     <string name="summary_pref_amoled">Pure-black surfaces in dark mode</string>

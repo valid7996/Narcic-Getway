@@ -732,6 +732,7 @@
     <string name="tor_fascist_firewall_sum">Соединяться с реле только на портах 80 и 443</string>
     <string name="dns_ssh_enable">SSH поверх DNS</string>
     <string name="dns_ssh_forward">Направлять DNS через SSH</string>
+    <string name="dns_ssh_host_placeholder">Необязательно (по умолчанию сервер туннеля)</string>
     <string name="title_pref_accent">Акцентный цвет</string>
     <string name="title_pref_amoled">AMOLED-чёрный</string>
     <string name="summary_pref_amoled">Чисто-чёрные поверхности в тёмной теме</string>

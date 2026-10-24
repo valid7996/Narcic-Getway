@@ -98,20 +98,38 @@ object DesktopVpn {
             val port = dns.start()
             if (port < 0) { VpnManager.onError("DNS tunnel failed to start"); return@thread }
 
-            val upstreamPort = if (dnsProfile.sshEnabled && dnsProfile.sshHost.isNotBlank()) {
+            val upstreamPort = if (dnsProfile.sshEnabled) {
+                val directSsh = dnsProfile.sshHost.isBlank() ||
+                    dnsProfile.sshHost == "127.0.0.1" ||
+                    dnsProfile.sshHost == "localhost" ||
+                    dnsProfile.sshHost.equals(dnsProfile.domain.trim(), ignoreCase = true)
+
                 val sshProfile = SshProfile(
-                    host = dnsProfile.sshHost, port = dnsProfile.sshPort, username = dnsProfile.sshUsername,
-                    authType = dnsProfile.sshAuthType, password = dnsProfile.sshPassword,
-                    privateKey = dnsProfile.sshPrivateKey, keyPassphrase = dnsProfile.sshKeyPassphrase,
+                    host = if (directSsh) "127.0.0.1" else dnsProfile.sshHost,
+                    port = if (directSsh) port else dnsProfile.sshPort,
+                    username = dnsProfile.sshUsername,
+                    authType = dnsProfile.sshAuthType,
+                    password = dnsProfile.sshPassword,
+                    privateKey = dnsProfile.sshPrivateKey,
+                    keyPassphrase = dnsProfile.sshKeyPassphrase,
                 )
                 val controller = SshController(
-                    profile = sshProfile, cipher = "auto", compression = false, listenPort = SSH_PORT,
-                    proxySocksHost = "127.0.0.1", proxySocksPort = port,
-                    proxySocksUser = dnsProfile.socksUser, proxySocksPass = dnsProfile.socksPass,
+                    profile = sshProfile,
+                    cipher = "auto",
+                    compression = false,
+                    listenPort = SSH_PORT,
+                    proxySocksHost = if (directSsh) null else "127.0.0.1",
+                    proxySocksPort = if (directSsh) 0 else port,
+                    proxySocksUser = if (directSsh) "" else dnsProfile.socksUser,
+                    proxySocksPass = if (directSsh) "" else dnsProfile.socksPass,
                 )
                 ssh = controller
                 val sshPort = controller.start()
-                if (sshPort < 0) { dns.stop(); ssh = null; VpnManager.onError("SSH-over-DNS failed to connect"); return@thread }
+                if (sshPort < 0) {
+                    dns.stop(); ssh = null
+                    VpnManager.onError("SSH-over-DNS failed to connect: ${controller.lastError}")
+                    return@thread
+                }
                 sshPort
             } else port
 

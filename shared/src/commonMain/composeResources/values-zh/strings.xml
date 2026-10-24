@@ -732,6 +732,7 @@
     <string name="tor_fascist_firewall_sum">仅访问中继的 80 和 443 端口</string>
     <string name="dns_ssh_enable">通过 DNS 的 SSH</string>
     <string name="dns_ssh_forward">通过 SSH 路由 DNS</string>
+    <string name="dns_ssh_host_placeholder">可选（默认为 DNS 隧道服务器）</string>
     <string name="title_pref_accent">强调色</string>
     <string name="title_pref_amoled">AMOLED 纯黑</string>
     <string name="summary_pref_amoled">深色模式下使用纯黑背景</string>

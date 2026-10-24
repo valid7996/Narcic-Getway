@@ -731,6 +731,7 @@
     <string name="tor_fascist_firewall_sum">فقط به رله‌های پورت ۸۰ و ۴۴۳ وصل شو</string>
     <string name="dns_ssh_enable">SSH روی DNS</string>
     <string name="dns_ssh_forward">عبور DNS از SSH</string>
+    <string name="dns_ssh_host_placeholder">اختیاری (پیش‌فرض سرور تونل DNS)</string>
     <string name="title_pref_accent">رنگ لهجه</string>
     <string name="title_pref_amoled">مشکی AMOLED</string>
     <string name="summary_pref_amoled">سطوح کاملاً مشکی در حالت تیره</string>

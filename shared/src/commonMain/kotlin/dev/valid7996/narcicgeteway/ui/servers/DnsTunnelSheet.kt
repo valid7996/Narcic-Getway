@@ -273,7 +273,7 @@ fun DnsTunnelSheet(
             SwitchRow(Res.string.dns_ssh_enable, sshEnabled) { sshEnabled = it }
             AnimatedVisibility(sshEnabled) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Field(sshHost, Res.string.ssh_host, placeholder = "example.com") { sshHost = it }
+                    Field(sshHost, Res.string.ssh_host, placeholder = stringResource(Res.string.dns_ssh_host_placeholder)) { sshHost = it }
                     Field(sshPort, Res.string.ssh_port, numeric = true) { sshPort = it }
                     Field(sshUser, Res.string.ssh_username) { sshUser = it }
                     PickerField(
