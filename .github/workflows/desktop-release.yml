@@ -290,3 +290,65 @@ jobs:
           name: desktop-macos-${{ matrix.arch }}
           path: dist/*
           retention-days: 14
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the version
+        id: v
+        run: echo "name=$(grep '^narcicgeteway.versionName=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with: { pattern: "desktop-*", path: dist, merge-multiple: true }
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          V='${{ steps.v.outputs.name }}'
+          TAG="v$V"
+          ls -lh dist
+          for f in "NarcicGetway-$V-x86_64.msi" "NarcicGetway-$V-windows-x86_64.zip" \
+                   "NarcicGetway-$V-amd64.deb" "NarcicGetway-$V-x86_64.rpm" \
+                   "NarcicGetway-$V-x86_64.AppImage" "NarcicGetway-$V-linux-x86_64.tar.gz" \
+                   "NarcicGetway-$V-macos-arm64.dmg" "NarcicGetway-$V-macos-x86_64.dmg"; do
+            [ -f "dist/$f" ] || { echo "::error::$f is missing"; exit 1; }
+          done
+
+          cat << EOF > release_notes.md
+### What's new in Narcic Getway $V (Desktop)
+
+#### تغییرات و قابلیت‌های جدید
+- رفع کامل مشکل اتصال IKEv2 در ویندوز (رفع خطای ۷۰۳ و تنظیم خودکار پالیسی‌های مدرن IPsec)
+- اضافه شدن پشتیبانی بومی از پروتکل SSTP در ویندوز بدون نیاز به ابزار جانبی
+- اضافه شدن هسته Aether v2.4.0 در نسخه کامپیوتر با پشتیبانی از تونل و ریله
+- رفع مشکل سایفون (Psiphon) در نسخه کامپیوتر و اتصال پایدار با لیست سرورهای معتبر
+- بهینه‌سازی پراکسی ترکیبی (Mixed Proxy) و سازگاری بهتر با پروکسی سیستم ویندوز
+- بهبود پایداری هسته Xray و رفع مشکلات قطعی در تمامی متدهای اتصال کامپیوتر
+- پشتیبانی کامل از سیستم‌عامل‌های Windows و Linux و macOS (Apple Silicon & Intel)
+
+#### Changelog
+- Fixed IKEv2 VPN connection issues on Windows (resolved Error 703 and auto-configured IPsec policies)
+- Added native SSTP VPN tunnel support on Windows
+- Bundled and integrated Aether v2.4.0 engine for desktop platforms
+- Fixed Psiphon censorship circumvention engine with verified embedded server list
+- Enhanced Mixed Proxy (HTTP & SOCKS5) and improved Windows system proxy handling
+- Improved Xray engine performance and overall desktop connection stability
+- Full cross-platform support for Windows, Linux, and macOS (Apple Silicon & Intel)
+EOF
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, updating notes and assets..."
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file release_notes.md --draft=false
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "Creating release $TAG..."
+            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Narcic Getway $V" \
+              --notes-file release_notes.md
+          fi
