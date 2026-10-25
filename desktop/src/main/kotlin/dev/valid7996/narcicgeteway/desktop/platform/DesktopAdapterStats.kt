@@ -50,17 +50,16 @@ class DesktopAdapterStats(private val interfaceName: String) {
 
         private fun readLinux(name: String): Pair<Long, Long>? {
             val procNetDev = File("/proc/net/dev")
-            if (procNetDev.exists()) {
-                procNetDev.forEachLine { line ->
-                    if (line.contains(":")) {
-                        val iface = line.substringBefore(":").trim()
-                        if (iface.contains(name, ignoreCase = true) || name.contains(iface, ignoreCase = true)) {
-                            val parts = line.substringAfter(":").trim().split(Regex("\\s+"))
-                            if (parts.size >= 10) {
-                                val rx = parts[0].toLongOrNull() ?: 0L
-                                val tx = parts[8].toLongOrNull() ?: 0L
-                                return rx to tx
-                            }
+            if (!procNetDev.exists()) return null
+            for (line in procNetDev.readLines()) {
+                if (line.contains(":")) {
+                    val iface = line.substringBefore(":").trim()
+                    if (iface.contains(name, ignoreCase = true) || name.contains(iface, ignoreCase = true)) {
+                        val parts = line.substringAfter(":").trim().split(Regex("\\s+"))
+                        if (parts.size >= 10) {
+                            val rx = parts[0].toLongOrNull() ?: 0L
+                            val tx = parts[8].toLongOrNull() ?: 0L
+                            return rx to tx
                         }
                     }
                 }
