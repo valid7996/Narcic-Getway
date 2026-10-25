@@ -55,11 +55,6 @@ class DesktopSstp(
     }
 
     internal fun windowsScript(): String {
-        val auth = when (profile.authProtocol) {
-            SstpProfile.AUTH_PAP -> "Pap"
-            SstpProfile.AUTH_CHAP -> "Chap"
-            else -> "MSChapv2"
-        }
         return """
             |${'$'}ErrorActionPreference = 'Stop'
             |${'$'}name = ${'$'}env:ZS_NAME
@@ -67,18 +62,24 @@ class DesktopSstp(
             |  rasdial ${'$'}name /disconnect | Out-Null
             |  Remove-VpnConnection -Name ${'$'}name -Force
             |}
-            |Add-VpnConnection -Name ${'$'}name -ServerAddress ${'$'}env:ZS_SERVER -TunnelType Sstp -EncryptionLevel Optional -AuthenticationMethod $auth -RememberCredential -Force
+            |Add-VpnConnection -Name ${'$'}name -ServerAddress ${'$'}env:ZS_SERVER -TunnelType Sstp -EncryptionLevel Optional -AuthenticationMethod MSChapv2,Pap,Chap -RememberCredential -Force
+            |${'$'}pbk = "${'$'}env:APPDATA\Microsoft\Network\Connections\Pbk\rasphone.pbk"
+            |if (Test-Path ${'$'}pbk) {
+            |  (Get-Content ${'$'}pbk) -replace 'PreviewUserPw=1', 'PreviewUserPw=0' -replace 'PreviewDomain=1', 'PreviewDomain=0' -replace 'AuthenticateServer=1', 'AuthenticateServer=0' | Set-Content ${'$'}pbk
+            |}
             |${'$'}ErrorActionPreference = 'Continue'
             |rasdial ${'$'}name ${'$'}env:ZS_USER ${'$'}env:ZS_PASS
             |exit ${'$'}LASTEXITCODE
             """.trimMargin() + "\n"
     }
 
-    private fun windowsError(code: Int, output: String): String = when (code) {
-        691 -> "The server refused the username or password (Error 691)"
-        800 -> "Unable to create the SSTP connection. Check the server address or firewall (Error 800)"
-        809 -> "The network connection between your computer and the VPN server could not be established (Error 809)"
-        868 -> "The remote connection was not made because the name of the remote access server did not resolve (Error 868)"
+    private fun windowsError(code: Int, output: String): String = when {
+        code == 691 -> "The server refused the username or password (Error 691)"
+        code == 800 -> "Unable to create the SSTP connection. Check the server address or firewall (Error 800)"
+        code == 809 -> "The network connection between your computer and the VPN server could not be established (Error 809)"
+        code == 868 -> "The remote connection was not made because the name of the remote access server did not resolve (Error 868)"
+        code == -2147014835 || output.contains("actively refused", ignoreCase = true) ->
+            "The SSTP server actively refused the connection. The server port may be blocked, closed, or offline (WSAECONNREFUSED)"
         else -> "SSTP failed (rasdial $code): " + output.lineSequence().map { it.trim() }.lastOrNull { it.isNotEmpty() }.orEmpty()
     }
 

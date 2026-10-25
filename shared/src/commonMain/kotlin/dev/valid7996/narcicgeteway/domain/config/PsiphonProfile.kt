@@ -55,7 +55,7 @@ object PsiphonConfigBuilder {
     private const val SPONSOR_ID = "FFFFFFFFFFFFFFFF"
 
     private const val SERVER_LIST_URL =
-        "https://s3.amazonaws.com/psiphon/web/mjr4-p23r-puwl/server_list_compressed"
+        "aHR0cHM6Ly9zMy5hbWF6b25hd3MuY29tL3BzaXBob24vd2ViL21qcjQtcDIzci1wdXdsL3NlcnZlcl9saXN0X2NvbXByZXNzZWQ="
 
     private const val SERVER_LIST_SIGNATURE_KEY =
         "MIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAt7Ls+/39r+T6zNW7GiVpJfzq/xvL9SBH" +
