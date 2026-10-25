@@ -188,8 +188,10 @@ object DesktopVpn {
                 return@thread
             }
             LogBus.append("I/SSTP the system VPN '${DesktopSstp.NAME}' carries all traffic")
+            VpnManager.setActiveKind(VpnManager.KIND_SSTP)
             VpnManager.onConnected(name)
-            meter = DesktopMeter(totals = { null }).also { it.start() }
+            val adapterStats = DesktopAdapterStats(DesktopSstp.NAME)
+            meter = DesktopMeter(totals = { adapterStats.read() }).also { it.start() }
             while (sstp === engine) {
                 Thread.sleep(15_000)
                 if (sstp === engine && !engine.isUp()) {
@@ -271,8 +273,10 @@ object DesktopVpn {
                 return@thread
             }
             LogBus.append("I/IKEv2 the system VPN '${DesktopIkev2.NAME}' carries all traffic")
+            VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
             VpnManager.onConnected(name)
-            meter = DesktopMeter(totals = { null }).also { it.start() }
+            val adapterStats = DesktopAdapterStats(DesktopIkev2.NAME)
+            meter = DesktopMeter(totals = { adapterStats.read() }).also { it.start() }
             while (ikev2 === engine) {
                 Thread.sleep(15_000)
                 if (ikev2 === engine && !engine.isUp()) {
@@ -378,6 +382,7 @@ object DesktopVpn {
             }
             VpnManager.activeSocksPort = socksPort
             DesktopStats(metricsPort).also { stats = it; it.start() }
+            VpnManager.setActiveKind(VpnManager.KIND_XRAY)
             VpnManager.onConnected(name)
         }
     }
@@ -405,6 +410,7 @@ object DesktopVpn {
             }
             VpnManager.activeSocksPort = prepared.socksPort
             DesktopSingBoxStats(prepared.clashApi, prepared.clashSecret).also { singBoxStats = it; it.start() }
+            VpnManager.setActiveKind(VpnManager.KIND_SINGBOX)
             VpnManager.onConnected(name)
         }
     }

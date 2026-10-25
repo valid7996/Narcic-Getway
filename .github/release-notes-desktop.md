@@ -1,6 +1,8 @@
 ### What's new in Narcic Getway __VERSION__ (Desktop)
 
 #### تغییرات و قابلیت‌های جدید
+- رفع مشکل نمایش آپلود و دانلود زنده در اتصالات IKEv2 و SSTP در ویندوز
+- محاسبه دقیق پینگ واقعی (Real Ping / Latency) در اتصال IKEv2 بر روی کامپیوتر
 - رفع کامل مشکل اتصال IKEv2 در ویندوز (رفع خطای ۷۰۳ و تنظیم خودکار پالیسی‌های مدرن IPsec)
 - اضافه شدن پشتیبانی بومی از پروتکل SSTP در ویندوز بدون نیاز به ابزار جانبی
 - اضافه شدن هسته Aether v2.4.0 در نسخه کامپیوتر با پشتیبانی از تونل و ریله
@@ -10,6 +12,8 @@
 - پشتیبانی کامل از سیستم‌عامل‌های Windows و Linux و macOS (Apple Silicon & Intel)
 
 #### Changelog
+- Fixed live upload and download traffic statistics for IKEv2 and SSTP connections on desktop
+- Fixed real ping latency measurement for IKEv2 connections on desktop
 - Fixed IKEv2 VPN connection issues on Windows (resolved Error 703 and auto-configured IPsec policies)
 - Added native SSTP VPN tunnel support on Windows
 - Bundled and integrated Aether v2.4.0 engine for desktop platforms

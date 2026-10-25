@@ -9,6 +9,7 @@ import dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig
 import dev.valid7996.narcicgeteway.domain.config.VpnProfile
 import dev.valid7996.narcicgeteway.platform.httpTimedTransfer
 import dev.valid7996.narcicgeteway.platform.tcpConnectMillis
+import dev.valid7996.narcicgeteway.platform.udpProbeIkev2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,8 +65,19 @@ object PingService {
 
     private val geoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    suspend fun ikev2Probe(host: String, port: Int = 500, timeoutMs: Int = 2_500): Long =
+        udpProbeIkev2(host, port, timeoutMs)
+
     suspend fun tcpPing(host: String, port: Int, timeoutMs: Int = TCP_TIMEOUT_MS): Long =
-        withContext(Dispatchers.IO) { tcpConnectMillis(host, port, timeoutMs) }
+        withContext(Dispatchers.IO) {
+            val tcp = tcpConnectMillis(host, port, timeoutMs)
+            if (tcp > 0) return@withContext tcp
+            if (port == 500 || port == 4500) {
+                val ike = ikev2Probe(host, port, timeoutMs)
+                if (ike > 0) return@withContext ike
+            }
+            -1L
+        }
 
     suspend fun realDelay(
         profile: VpnProfile,
@@ -141,7 +153,7 @@ object PingService {
         val customPermits = Semaphore(minOf(realPermits, CUSTOM_PROBE_CONCURRENCY))
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
-        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp) || it.isDnsBasedTunnel) || it.isAether }
+        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp && !it.isIkev2) || it.isDnsBasedTunnel) || it.isAether }
         val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
@@ -213,6 +225,19 @@ object PingService {
         chainConfig: (VpnProfile) -> String? = { null },
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
+        if (effective.isIkev2 || effective.ikev2Settings() != null) {
+            if (VpnManager.status.value.state == dev.valid7996.narcicgeteway.core.ConnectionState.Connected &&
+                VpnManager.activeKind.value == VpnManager.KIND_IKEV2
+            ) {
+                val activeMs = realDelayOfActiveConnection(url)
+                if (activeMs > 0) return activeMs
+            }
+            val port = if (effective.port in 1..65535) effective.port else 500
+            val ike = ikev2Probe(effective.address, port)
+            if (ike > 0) return ike
+            val tcp = tcpPing(effective.address, port)
+            return if (tcp > 0) tcp else -1L
+        }
         if (effective.isAether) return aetherDelay(effective, url)
         if (effective.isSstp) {
             val sni = effective.address

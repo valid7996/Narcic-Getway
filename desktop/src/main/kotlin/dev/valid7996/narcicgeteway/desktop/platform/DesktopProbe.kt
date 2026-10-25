@@ -30,9 +30,30 @@ object DesktopProbe {
     }
 
     fun measureDelay(url: String): Long {
-        val port = VpnManager.activeSocksPort ?: return -1
-        return timedRequests(url, port)
+        val port = VpnManager.activeSocksPort
+        if (port != null && port > 0) {
+            return timedRequests(url, port)
+        }
+        return directTimedRequest(url)
     }
+
+    private fun directTimedRequest(url: String): Long = runCatching {
+        val start = System.nanoTime()
+        val conn = (java.net.URL(url).openConnection(java.net.Proxy.NO_PROXY) as java.net.HttpURLConnection).apply {
+            connectTimeout = CONNECT_TIMEOUT_MS
+            readTimeout = READ_TIMEOUT_MS
+            instanceFollowRedirects = true
+            setRequestProperty("User-Agent", "NarcicGeteway")
+        }
+        try {
+            val code = conn.responseCode
+            if (code in 200..399) {
+                ((System.nanoTime() - start) / 1_000_000).coerceAtLeast(1)
+            } else -1L
+        } finally {
+            runCatching { conn.disconnect() }
+        }
+    }.getOrDefault(-1L)
 
     fun measureOutboundDelay(configJson: String, url: String): Long {
         val bin = bin() ?: return -1

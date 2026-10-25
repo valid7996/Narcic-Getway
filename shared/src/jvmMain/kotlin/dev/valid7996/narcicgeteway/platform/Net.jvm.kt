@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import java.net.DatagramPacket
+import java.net.DatagramSocket
 import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -180,6 +182,33 @@ internal actual suspend fun tcpConnectMillis(host: String, port: Int, timeoutMs:
         } finally {
             runCatching { socket?.takeIf { !it.isClosed }?.close() }
         }
+    }
+
+internal actual suspend fun udpProbeIkev2(host: String, port: Int, timeoutMs: Int): Long =
+    withContext(Dispatchers.IO) {
+        runCatching {
+            val ip = InetAddress.getByName(host)
+            DatagramSocket().use { socket ->
+                socket.soTimeout = timeoutMs
+                val spiI = ByteArray(8).apply { SecureRandom().nextBytes(this) }
+                val packet = ByteArray(36).apply {
+                    System.arraycopy(spiI, 0, this, 0, 8)
+                    this[16] = 33 // Next Payload: SA
+                    this[17] = 0x20 // Version: 2.0
+                    this[18] = 34 // Exchange: IKE_SA_INIT
+                    this[19] = 0x08 // Flags: Initiator
+                    this[27] = 36 // Length: 36
+                    this[31] = 8  // SA Payload Length: 8
+                }
+                val sendPacket = DatagramPacket(packet, packet.size, ip, port)
+                val t0 = System.currentTimeMillis()
+                socket.send(sendPacket)
+                val recvBuf = ByteArray(2048)
+                val recvPacket = DatagramPacket(recvBuf, recvBuf.size)
+                socket.receive(recvPacket)
+                (System.currentTimeMillis() - t0).coerceAtLeast(1L)
+            }
+        }.getOrDefault(-1L)
     }
 
 internal actual suspend fun httpStreamTransfer(
