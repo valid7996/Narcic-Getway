@@ -226,7 +226,7 @@ object PingService {
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isIkev2 || effective.ikev2Settings() != null) {
-            if (VpnManager.status.value.state == dev.valid7996.narcicgeteway.core.ConnectionState.Connected &&
+            if (VpnManager.status.value.state == dev.valid7996.narcicgeteway.domain.model.ConnectionState.Connected &&
                 VpnManager.activeKind.value == VpnManager.KIND_IKEV2
             ) {
                 val activeMs = realDelayOfActiveConnection(url)
