@@ -77,17 +77,8 @@ class DesktopIkev2(
     }
 
     internal fun windowsScript(): String {
-        val hasCustomProposal = profile.ikeProposal.isNotBlank() || profile.espProposal.isNotBlank()
-        val ipsecBlock = if (hasCustomProposal) {
-            val ike = proposal(profile.ikeProposal)
-            val esp = proposal(profile.espProposal.ifBlank { profile.ikeProposal })
-            """
-            |try {
-            |  Set-VpnConnectionIPsecConfiguration -ConnectionName ${'$'}name -AuthenticationTransformConstants ${esp.windowsAuth} -CipherTransformConstants ${esp.windowsEspCipher} -EncryptionMethod ${ike.windowsCipher} -IntegrityCheckMethod ${ike.windowsIntegrity} -DHGroup ${ike.windowsDh} -PfsGroup None -Force -ErrorAction SilentlyContinue
-            |} catch {}
-            """.trimMargin()
-        } else ""
-
+        val ike = proposal(profile.ikeProposal)
+        val esp = proposal(profile.espProposal.ifBlank { profile.ikeProposal })
         return """
             |${'$'}ErrorActionPreference = 'Stop'
             |${'$'}name = ${'$'}env:ZS_NAME
@@ -100,7 +91,9 @@ class DesktopIkev2(
             |if (Test-Path ${'$'}pbk) {
             |  (Get-Content ${'$'}pbk) -replace 'AuthRestrictions=128', 'AuthRestrictions=552' -replace 'PreviewUserPw=1', 'PreviewUserPw=0' -replace 'PreviewDomain=1', 'PreviewDomain=0' | Set-Content ${'$'}pbk
             |}
-            |$ipsecBlock
+            |try {
+            |  Set-VpnConnectionIPsecConfiguration -ConnectionName ${'$'}name -AuthenticationTransformConstants ${esp.windowsAuth} -CipherTransformConstants ${esp.windowsEspCipher} -EncryptionMethod ${ike.windowsCipher} -IntegrityCheckMethod ${ike.windowsIntegrity} -DHGroup ${ike.windowsDh} -PfsGroup None -Force -ErrorAction SilentlyContinue
+            |} catch {}
             |${'$'}ErrorActionPreference = 'Continue'
             |rasdial ${'$'}name ${'$'}env:ZS_USER ${'$'}env:ZS_PASS
             |exit ${'$'}LASTEXITCODE
