@@ -341,7 +341,7 @@ private fun WelcomeStep(
                     ) {
                         Text("🔘", fontSize = 20.sp)
                         Text(
-                            text = stringResource(Res.string.title_pref_connect_button_style),
+                            text = stringResource(Res.string.connect_style_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
