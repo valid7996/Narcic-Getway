@@ -323,11 +323,12 @@ jobs:
 
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $TAG already exists, updating notes and assets..."
-            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file release_notes.md --draft=false
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file release_notes.md --draft=true
             gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
           else
             echo "Creating release $TAG..."
             gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" \
+              --draft \
               --target "$GITHUB_SHA" \
               --title "Narcic Getway $V" \
               --notes-file release_notes.md

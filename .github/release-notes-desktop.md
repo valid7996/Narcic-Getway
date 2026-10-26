@@ -1,6 +1,7 @@
 ### What's new in Narcic Getway __VERSION__ (Desktop)
 
 #### تغییرات و قابلیت‌های جدید
+- اضافه شدن سابسکریپشن پیش‌فرض «ویندسکرایپ» (Windscribe) با ۱۵ سرور پرسرعت IKEv2
 - رفع مشکل نمایش آپلود و دانلود زنده در اتصالات IKEv2 و SSTP در ویندوز
 - محاسبه دقیق پینگ واقعی (Real Ping / Latency) در اتصال IKEv2 بر روی کامپیوتر
 - رفع کامل مشکل اتصال IKEv2 در ویندوز (رفع خطای ۷۰۳ و تنظیم خودکار پالیسی‌های مدرن IPsec)
@@ -12,6 +13,7 @@
 - پشتیبانی کامل از سیستم‌عامل‌های Windows و Linux و macOS (Apple Silicon & Intel)
 
 #### Changelog
+- Added default "Windscribe" subscription with 15 fast IKEv2 server profiles
 - Fixed live upload and download traffic statistics for IKEv2 and SSTP connections on desktop
 - Fixed real ping latency measurement for IKEv2 connections on desktop
 - Fixed IKEv2 VPN connection issues on Windows (resolved Error 703 and auto-configured IPsec policies)
