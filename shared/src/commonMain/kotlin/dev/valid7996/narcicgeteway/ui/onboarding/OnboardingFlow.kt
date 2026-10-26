@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.sp
 import dev.valid7996.narcicgeteway.domain.model.AppLanguage
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.domain.model.ThemeMode
+import dev.valid7996.narcicgeteway.domain.model.ConnectButtonStyle
+import dev.valid7996.narcicgeteway.domain.model.UiFontScale
 import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.ui.platform.BackHandler
@@ -107,7 +109,7 @@ fun OnboardingFlow(
                         .verticalScroll(rememberScrollState()),
                 ) {
                     when (current) {
-                        0 -> WelcomeStep()
+                        0 -> WelcomeStep(settings, onUpdate)
                         1 -> LanguageStep(settings, onLanguage)
                         2 -> ThemeProfileStep(settings, onUpdate)
                         3 -> ThemeModeStep(settings, onUpdate)
@@ -206,7 +208,10 @@ private fun StepIndicator(currentStep: Int, totalSteps: Int) {
 }
 
 @Composable
-private fun WelcomeStep() {
+private fun WelcomeStep(
+    settings: AppSettings,
+    onUpdate: ((AppSettings) -> AppSettings) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -268,7 +273,113 @@ private fun WelcomeStep() {
             modifier = Modifier.padding(horizontal = 8.dp),
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
+
+        // Quick Preferences Card: Font size and Connect button style
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // Font Size Selector
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text("🔤", fontSize = 20.sp)
+                        Text(
+                            text = stringResource(Res.string.personalize_font_size),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    val fontScales = listOf(
+                        UiFontScale.Smallest to stringResource(Res.string.personalize_font_smallest),
+                        UiFontScale.Smaller to stringResource(Res.string.personalize_font_smaller),
+                        UiFontScale.Normal to stringResource(Res.string.personalize_font_normal),
+                        UiFontScale.Larger to stringResource(Res.string.personalize_font_larger),
+                        UiFontScale.Largest to stringResource(Res.string.personalize_font_largest),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        fontScales.forEach { (scale, label) ->
+                            val isSel = settings.uiFontScale == scale
+                            Surface(
+                                onClick = { onUpdate { it.copy(uiFontScale = scale) } },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                border = if (isSel) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+                                modifier = Modifier.weight(1f).height(38.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Connect Button Style Selector
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text("🔘", fontSize = 20.sp)
+                        Text(
+                            text = stringResource(Res.string.title_pref_connect_button_style),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    val buttonStyles = listOf(
+                        ConnectButtonStyle.Pill to stringResource(Res.string.connect_style_pill),
+                        ConnectButtonStyle.Hero to stringResource(Res.string.connect_style_hero),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        buttonStyles.forEach { (style, label) ->
+                            val isSel = settings.connectButtonStyle == style
+                            Surface(
+                                onClick = { onUpdate { it.copy(connectButtonStyle = style) } },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSel) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                border = if (isSel) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+                                modifier = Modifier.weight(1f).height(44.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSel) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
 
         Surface(
             shape = RoundedCornerShape(20.dp),

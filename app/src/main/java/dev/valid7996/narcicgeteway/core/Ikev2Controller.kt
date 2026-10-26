@@ -101,11 +101,21 @@ object Ikev2Controller {
     private fun isMainThread(): Boolean =
         android.os.Looper.myLooper() == android.os.Looper.getMainLooper()
 
+    private var connectionJob: Job? = null
+
     @RequiresApi(Build.VERSION_CODES.R)
-    fun startProvisioned(context: Context, remark: String) {
+    fun startProvisioned(
+        context: Context,
+        remark: String,
+        onResult: ((Boolean, String?) -> Unit)? = null,
+    ) {
         val vpnManager = context.getSystemService(android.net.VpnManager::class.java) ?: run {
-            VpnManager.onError(context.getString(R.string.ikev2_vpn_manager_unavailable)); return
+            val err = context.getString(R.string.ikev2_vpn_manager_unavailable)
+            VpnManager.onError(err)
+            onResult?.invoke(false, err)
+            return
         }
+        connectionJob?.cancel()
         activeRemark = remark
         note("starting provisioned session for $remark")
         try {
@@ -116,42 +126,62 @@ object Ikev2Controller {
                 vpnManager.startProvisionedVpnProfile()
             }
         } catch (e: SecurityException) {
-            fail(context, context.getString(R.string.ikev2_blocked_by_always_on), e)
+            val err = context.getString(R.string.ikev2_blocked_by_always_on)
+            fail(context, err, e)
+            onResult?.invoke(false, err)
             return
         } catch (e: Exception) {
-            fail(context, e.message ?: context.getString(R.string.ikev2_failed_generic), e)
+            val err = e.message ?: context.getString(R.string.ikev2_failed_generic)
+            fail(context, err, e)
+            onResult?.invoke(false, err)
             return
         }
 
         VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
-        awaitConnected(context, remark)
+        connectionJob = metricsScope.launch {
+            awaitConnected(context, remark, onResult)
+        }
     }
 
-    private fun awaitConnected(context: Context, remark: String) {
+    private suspend fun awaitConnected(
+        context: Context,
+        remark: String,
+        onResult: ((Boolean, String?) -> Unit)?,
+    ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             VpnManager.onConnected(remark).also { startMetrics() }
+            onResult?.invoke(true, null)
             return
         }
         val deadline = System.currentTimeMillis() + CONNECT_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            if (activeRemark == null) return
+            if (activeRemark == null) {
+                onResult?.invoke(false, null)
+                return
+            }
             when (currentState(context)) {
                 VpnProfileState.STATE_CONNECTED -> {
                     note("platform reports CONNECTED")
                     VpnManager.onConnected(remark).also { startMetrics() }
+                    onResult?.invoke(true, null)
                     return
                 }
                 VpnProfileState.STATE_FAILED -> {
-                    fail(context, context.getString(R.string.ikev2_ike_error), null); return
+                    val err = context.getString(R.string.ikev2_ike_error)
+                    fail(context, err, null)
+                    onResult?.invoke(false, err)
+                    return
                 }
                 VpnProfileState.STATE_DISCONNECTED -> {
                     if (System.currentTimeMillis() > deadline - CONNECT_TIMEOUT_MS + 5_000L) Unit
                 }
                 else -> Unit
             }
-            runCatching { Thread.sleep(POLL_INTERVAL_MS) }.onFailure { return }
+            delay(POLL_INTERVAL_MS)
         }
-        fail(context, context.getString(R.string.ikev2_connect_timeout), null)
+        val timeoutErr = context.getString(R.string.ikev2_connect_timeout)
+        fail(context, timeoutErr, null)
+        onResult?.invoke(false, timeoutErr)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -162,6 +192,8 @@ object Ikev2Controller {
 
     private fun fail(context: Context, reason: String, cause: Throwable?) {
         note("failed: $reason", cause)
+        connectionJob?.cancel()
+        connectionJob = null
         activeRemark = null
         runCatching {
             context.getSystemService(android.net.VpnManager::class.java)?.stopProvisionedVpnProfile()
@@ -207,6 +239,8 @@ object Ikev2Controller {
     private var metricsJob: Job? = null
 
     fun stop(context: Context) {
+        connectionJob?.cancel()
+        connectionJob = null
         stopMetrics()
         activeRemark = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

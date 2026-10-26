@@ -66,9 +66,7 @@ class MainActivity : ComponentActivity() {
             val remark = pendingIkev2Remark
             pendingIkev2Remark = null
             if (result.resultCode == RESULT_OK && remark != null) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    dev.valid7996.narcicgeteway.core.Ikev2Controller.startProvisioned(this@MainActivity, remark)
-                }
+                AndroidVpn.start(this@MainActivity, configJson = "{}", remark = remark, socksPort = 0, kind = VpnManager.KIND_IKEV2)
             } else {
                 dev.valid7996.narcicgeteway.core.Ikev2Controller.forgetProvisionedProfile(this)
                 VpnManager.onDisconnected()
@@ -438,7 +436,9 @@ class MainActivity : ComponentActivity() {
                     ikev2ConsentLauncher.launch(consent)
                 }
             } else {
-                controller.startProvisioned(this@MainActivity, remark)
+                withContext(Dispatchers.Main) {
+                    AndroidVpn.start(this@MainActivity, configJson = "{}", remark = remark, socksPort = 0, kind = VpnManager.KIND_IKEV2)
+                }
             }
         }
     }

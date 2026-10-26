@@ -199,7 +199,6 @@ private fun StockPreview() {
 val AllowedConnectButtonStyles = listOf(
     ConnectButtonStyle.Hero,
     ConnectButtonStyle.Pill,
-    ConnectButtonStyle.Slide,
 )
 
 @Composable

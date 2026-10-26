@@ -139,19 +139,19 @@ class NrgVpnService : VpnService() {
                 val socksPort = intent.getIntExtra(VpnManager.EXTRA_SOCKS_PORT, LocalPorts.XRAY_SOCKS)
                 kind = intent.getStringExtra(VpnManager.EXTRA_KIND) ?: VpnManager.KIND_XRAY
                 proxyOnly = intent.getBooleanExtra(VpnManager.EXTRA_PROXY_ONLY, false)
-                if (config.isNullOrBlank()) {
+                if (config.isNullOrBlank() && kind != VpnManager.KIND_IKEV2) {
                     VpnManager.onError(getString(R.string.engine_missing_config))
                     stopForeground(Service.STOP_FOREGROUND_REMOVE)
                     stopSelf()
                     return START_NOT_STICKY
                 }
 
-                if (Ikev2Controller.isActive) Ikev2Controller.stop(this)
+                if (kind != VpnManager.KIND_IKEV2 && Ikev2Controller.isActive) Ikev2Controller.stop(this)
 
                 resetSessionState()
                 stage = VpnNotifications.Stage.Preparing
                 startInForeground(connectingNotification())
-                scope.launch { startTunnel(config, socksPort, kind) }
+                scope.launch { startTunnel(config.orEmpty(), socksPort, kind) }
             }
             command == VpnManager.CMD_STOP -> { userStop = true; stopEverything() }
 
@@ -223,6 +223,8 @@ class NrgVpnService : VpnService() {
             if (kind == VpnManager.KIND_XRAY) { startProxyOnly(configJson, socksPort); return }
             proxyOnly = false
         }
+
+        if (kind == VpnManager.KIND_IKEV2) { startIkev2(remark); return }
 
         if (kind == VpnManager.KIND_OPENCONNECT) { startOpenConnect(configJson, settings); return }
 
@@ -727,6 +729,22 @@ class NrgVpnService : VpnService() {
         null -> getString(R.string.masterdns_failed)
     }
 
+    private fun startIkev2(remark: String) {
+        VpnManager.setActiveKind(kind)
+        advance(VpnNotifications.Stage.Engine)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            onTunnelFailed(getString(R.string.ikev2_requires_android11))
+            return
+        }
+        Ikev2Controller.startProvisioned(this, remark) { success, err ->
+            if (success) {
+                finishConnected()
+            } else {
+                onTunnelFailed(err ?: getString(R.string.ikev2_failed_generic))
+            }
+        }
+    }
+
     private fun startOpenConnect(configJson: String, appSettings: AppSettings) {
         VpnManager.setActiveKind(kind)
         val profile = try {
@@ -1199,6 +1217,24 @@ class NrgVpnService : VpnService() {
         return delta
     }
 
+    private var lastTotalRx = -1L
+    private var lastTotalTx = -1L
+
+    private fun totalTrafficDelta(): Pair<Long, Long> {
+        val rx = android.net.TrafficStats.getTotalRxBytes()
+        val tx = android.net.TrafficStats.getTotalTxBytes()
+        val unsupported = android.net.TrafficStats.UNSUPPORTED.toLong()
+        if (rx == unsupported || tx == unsupported) return 0L to 0L
+        val delta = if (lastTotalRx < 0) {
+            0L to 0L
+        } else {
+            (rx - lastTotalRx).coerceAtLeast(0) to (tx - lastTotalTx).coerceAtLeast(0)
+        }
+        lastTotalRx = rx
+        lastTotalTx = tx
+        return delta
+    }
+
     private val powerManager by lazy { getSystemService(POWER_SERVICE) as android.os.PowerManager }
     @Volatile private var isScreenAwake = true
     private var screenReceiver: android.content.BroadcastReceiver? = null
@@ -1240,6 +1276,8 @@ class NrgVpnService : VpnService() {
         // The uid counters of an earlier session would show as one huge first tick.
         lastUidRx = -1L
         lastUidTx = -1L
+        lastTotalRx = -1L
+        lastTotalTx = -1L
         statsJob = scope.launch {
             val startedAt = android.os.SystemClock.elapsedRealtime()
             var ticks = 0
@@ -1298,6 +1336,7 @@ class NrgVpnService : VpnService() {
 
                     // The core and its carriers are processes of this app, so their sockets are the tunnel's own traffic.
                     VpnManager.KIND_PSIPHON, VpnManager.KIND_AETHER -> uidTrafficDelta()
+                    VpnManager.KIND_IKEV2 -> totalTrafficDelta()
                     VpnManager.KIND_OPENCONNECT -> { openConnect?.pokeStats(); openConnect?.trafficDelta() ?: (0L to 0L) }
                     VpnManager.KIND_SSTP -> sstp?.trafficDelta() ?: (0L to 0L)
                     VpnManager.KIND_MHRV -> socksShim?.readDelta() ?: (0L to 0L)
@@ -1517,6 +1556,9 @@ class NrgVpnService : VpnService() {
         // After the TUN bridges: the native core must have no live connections when it is stopped.
         mhrv?.stop(); mhrv = null
         XrayController.stop()
+        if (Ikev2Controller.isActive) {
+            Ikev2Controller.stop(this)
+        }
     }
 
     private fun resetSessionState() {
@@ -1528,6 +1570,8 @@ class NrgVpnService : VpnService() {
 
         lastUidRx = -1L
         lastUidTx = -1L
+        lastTotalRx = -1L
+        lastTotalTx = -1L
     }
 
     private val tearingDown = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -1614,10 +1658,20 @@ class NrgVpnService : VpnService() {
         stopEverything()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (!connected && !VpnManager.status.value.state.isActive) {
+            stopEverything()
+        }
+    }
+
     override fun onDestroy() {
         XrayController.onCoreShutdown = null
         unregisterScreenReceiver()
         scope.cancel()
+        if (Ikev2Controller.isActive) {
+            Ikev2Controller.stop(this)
+        }
         super.onDestroy()
     }
 

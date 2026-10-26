@@ -442,7 +442,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
                 when (connectStyle) {
                     ConnectButtonStyle.Hero -> Unit
-                    ConnectButtonStyle.Pill, ConnectButtonStyle.Switch -> {
+                    ConnectButtonStyle.Pill, ConnectButtonStyle.Switch, ConnectButtonStyle.Slide -> {
                         if (isAzkabanLike) {
                             AzkabanConnectButton(
                                 state = ui.state,
@@ -462,13 +462,6 @@ fun HomeScreen(
                             )
                         }
                     }
-                    ConnectButtonStyle.Slide -> SlideToConnect(
-                        state = ui.state,
-                        onToggle = onToggleConnection,
-                        customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
-                        customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
-                        compact = compact,
-                    )
                     else -> AltConnectControl(
                         style = connectStyle,
                         state = ui.state,
@@ -1348,28 +1341,6 @@ private fun ConnectButton(
     }
 
     Box(Modifier.fillMaxWidth()) {
-        // Aurora glow behind the button — the signature of the new design.
-        if (glow > 0.01f) {
-            Box(
-                Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .height(if (compact) 56.dp else 72.dp)
-                    .graphicsLayer {
-                        alpha = glow * 0.5f
-                        val spread = 1f + 16.dp.toPx() * glow / size.height.coerceAtLeast(1f)
-                        scaleX = spread
-                        scaleY = spread
-                    }
-                    .clip(RoundedCornerShape(50))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(NrgViolet.copy(alpha = 0.55f), NrgCyan.copy(alpha = 0.55f)),
-                        ),
-                    ),
-            )
-        }
-
         Surface(
             onClick = onToggle,
 

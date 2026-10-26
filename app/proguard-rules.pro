@@ -69,3 +69,8 @@
 }
 
 -keep class com.therealaleph.mhrv.Native { *; }
+
+# ClassValue is only available on Android 14+ (API 34). Prevent R8 verification issues on older Android runtimes (Android 9/10/11/12/13).
+-dontwarn java.lang.ClassValue
+-dontwarn kotlinx.serialization.internal.ClassValueReferences
+
