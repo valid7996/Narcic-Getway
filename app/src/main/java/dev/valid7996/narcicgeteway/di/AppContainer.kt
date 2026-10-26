@@ -61,8 +61,9 @@ class AppContainer(context: Context) {
             }
         }
         CoreProbe.measureDelay = { url ->
-            if (XrayController.running) {
-                XrayController.measureDelay(url)
+            val xrayMs = XrayController.measureDelay(url)
+            if (xrayMs > 0) {
+                xrayMs
             } else {
                 runCatching {
                     kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
@@ -72,14 +73,15 @@ class AppContainer(context: Context) {
             }
         }
         CoreProbe.measureDelayDetailed = { url ->
-            if (XrayController.running) {
-                XrayController.measureDelayDetailed(url)
+            val outcome = XrayController.measureDelayDetailed(url)
+            if (outcome.ok) {
+                outcome
             } else {
                 runCatching {
                     kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
                         dev.valid7996.narcicgeteway.data.net.PingService.activeConnectionHealth(url)
                     }
-                }.getOrElse { CoreProbe.DelayOutcome(-1L, it.message) }
+                }.getOrElse { outcome }
             }
         }
         CoreProbe.measureOutboundDelay = { cfg, url ->
