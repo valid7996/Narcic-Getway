@@ -882,9 +882,10 @@ data class VpnProfile(
             subscriptionId: String = "",
         ): VpnProfile {
             val parsed = ConfigParser.parse(link)
+            val name = parsed.remark.ifBlank { "${parsed.address}:${parsed.port}" }
             return VpnProfile(
                 id = id,
-                name = parsed.remark.ifBlank { "${parsed.address}:${parsed.port}" },
+                name = name,
                 protocol = parsed.protocol.name,
                 address = parsed.address,
                 port = parsed.port,
@@ -921,7 +922,7 @@ data class VpnProfile(
                 source = ProfileSource.RawJson(rawJson),
                 addedAt = addedAt,
                 subscriptionId = subscriptionId,
-                countryCode = CountryDetector.detect(name, parsed.address),
+                countryCode = CountryDetector.detect(name, info.address),
             )
         }
     }
