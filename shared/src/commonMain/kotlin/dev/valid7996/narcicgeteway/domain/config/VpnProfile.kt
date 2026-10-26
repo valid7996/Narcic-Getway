@@ -540,6 +540,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "Psiphon" },
@@ -549,6 +550,7 @@ data class VpnProfile(
             transportLabel = "Psiphon",
             source = ProfileSource.Psiphon(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
             countryCode = settings.country.takeIf { it.isNotBlank() }?.uppercase(),
         )
 
@@ -557,6 +559,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { if (settings.isVaydns) "VayDNS" else "DNSTT" },
@@ -566,6 +569,7 @@ data class VpnProfile(
             transportLabel = if (settings.isVaydns) "VayDNS" else "DNSTT",
             source = ProfileSource.DnsTunnel(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromMasterDns(
@@ -573,6 +577,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "MasterDNS" },
@@ -582,6 +587,7 @@ data class VpnProfile(
             transportLabel = "MasterDNS",
             source = ProfileSource.MasterDns(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromMhrvRelay(
@@ -589,6 +595,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "MHRV Relay" },
@@ -602,6 +609,7 @@ data class VpnProfile(
             },
             source = ProfileSource.MhrvRelay(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromOpenConnect(
@@ -609,6 +617,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "OpenConnect ${settings.server}" },
@@ -619,6 +628,7 @@ data class VpnProfile(
             transportLabel = settings.protocol.uppercase(),
             source = ProfileSource.OpenConnect(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromIkev2(
@@ -626,6 +636,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "IKEv2 ${settings.server}" },
@@ -635,6 +646,7 @@ data class VpnProfile(
             transportLabel = "IKEv2",
             source = ProfileSource.Ikev2(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromAether(
@@ -726,7 +738,7 @@ data class VpnProfile(
             )
         }
 
-        fun fromTor(id: String, addedAt: Long, name: String): VpnProfile = VpnProfile(
+        fun fromTor(id: String, addedAt: Long, name: String, subscriptionId: String = ""): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "Tor" },
             protocol = "TOR",
@@ -735,6 +747,7 @@ data class VpnProfile(
             transportLabel = "Tor",
             source = ProfileSource.Tor,
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromProxyChain(
@@ -798,7 +811,7 @@ data class VpnProfile(
             )
         }
 
-        fun fromSsh(settings: SshProfile, id: String, addedAt: Long, name: String): VpnProfile = VpnProfile(
+        fun fromSsh(settings: SshProfile, id: String, addedAt: Long, name: String, subscriptionId: String = ""): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "SSH ${settings.host}" },
             protocol = "SSH",
@@ -807,7 +820,31 @@ data class VpnProfile(
             transportLabel = "SSH",
             source = ProfileSource.Ssh(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
+
+        fun fromNrgLink(
+            link: String,
+            id: String,
+            addedAt: Long,
+            subscriptionId: String = "",
+        ): VpnProfile? {
+            val payload = NrgLink.parse(link) ?: return null
+            val name = payload.name
+            return when (val src = payload.source) {
+                is ProfileSource.Ikev2 -> fromIkev2(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.OpenConnect -> fromOpenConnect(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.Aether -> fromAether(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.Sstp -> fromSstp(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.Psiphon -> fromPsiphon(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.DnsTunnel -> fromDnsTunnel(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.MasterDns -> fromMasterDns(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.MhrvRelay -> fromMhrvRelay(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.Tor -> fromTor(id, addedAt, name, subscriptionId = subscriptionId)
+                is ProfileSource.Ssh -> fromSsh(src.settings, id, addedAt, name, subscriptionId = subscriptionId)
+                else -> null
+            }
+        }
 
         internal fun configJsonFromPayload(
             payload: String,

@@ -134,7 +134,9 @@ class ConfigRepository(private val store: KeyValueStore) {
             throw IllegalArgumentException("no usable sstp:// config found")
         }
 
-        if (NrgLink.isNrgLink(trimmed)) return@runCatching importNrgLink(trimmed, subscriptionId)
+        if (NrgLink.isNrgLink(trimmed) && trimmed.lines().count { it.isNotBlank() } <= 1) {
+            return@runCatching importNrgLink(trimmed, subscriptionId)
+        }
 
         val mhrvLooksLike = trimmed.startsWith(
             dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.SHARE_PREFIX, ignoreCase = true,
@@ -303,6 +305,13 @@ class ConfigRepository(private val store: KeyValueStore) {
                 } else if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) {
                     val bytes = dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link)
                     createLockedProfile(bytes, null, subscriptionId = subscriptionId)
+                } else if (NrgLink.isNrgLink(link)) {
+                    VpnProfile.fromNrgLink(
+                        link = link,
+                        id = newId(),
+                        addedAt = currentTimeMillis(),
+                        subscriptionId = subscriptionId,
+                    ) ?: throw IllegalArgumentException("invalid narcicgeteway link")
                 } else {
                     VpnProfile.fromLink(
                         link = link,
@@ -315,6 +324,9 @@ class ConfigRepository(private val store: KeyValueStore) {
                 val duplicate = (current + fresh).any {
                     if (it.isLocked) {
                         it.name == profile.name && it.subscriptionId == subscriptionId
+                    } else if (it.isIkev2 && profile.isIkev2) {
+                        (it.ikev2Settings()?.server == profile.ikev2Settings()?.server && it.name == profile.name && it.subscriptionId == subscriptionId) ||
+                        (it.rawPayload() == link && it.subscriptionId == subscriptionId)
                     } else {
                         it.rawPayload() == link && it.subscriptionId == subscriptionId
                     }
@@ -498,6 +510,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.PsiphonProfile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromPsiphon(
@@ -505,6 +518,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -512,7 +526,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -520,6 +534,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.DnsTunnelProfile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromDnsTunnel(
@@ -527,6 +542,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -534,7 +550,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -542,6 +558,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromMasterDns(
@@ -549,6 +566,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -556,7 +574,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -564,6 +582,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromMhrvRelay(
@@ -571,6 +590,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -578,7 +598,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -586,6 +606,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.OpenConnectProfile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromOpenConnect(
@@ -593,6 +614,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -600,7 +622,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -664,6 +686,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.Ikev2Profile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromIkev2(
@@ -671,6 +694,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -678,7 +702,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             listOf(profile) + _profiles.value
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -918,20 +942,20 @@ class ConfigRepository(private val store: KeyValueStore) {
             ?: throw IllegalArgumentException("invalid share link")
         val name = payload.name
         return when (val src = payload.source) {
-            is ProfileSource.Psiphon -> { addPsiphon(src.settings, name); 1 }
-            is ProfileSource.DnsTunnel -> { addDnsTunnel(src.settings, name); 1 }
-            is ProfileSource.Tor -> { addTor(name); 1 }
-            is ProfileSource.Ssh -> { addSsh(src.settings, name); 1 }
-            is ProfileSource.MasterDns -> { addMasterDns(src.settings, name); 1 }
-            is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name); 1 }
-            is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
-            is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }
+            is ProfileSource.Psiphon -> { addPsiphon(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.DnsTunnel -> { addDnsTunnel(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.Tor -> { addTor(name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.Ssh -> { addSsh(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.MasterDns -> { addMasterDns(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name, subscriptionId = subscriptionId); 1 }
+            is ProfileSource.Ikev2 -> { addIkev2(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.Aether -> { addAether(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.Sstp -> { addSstp(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.ProxyChain, is ProfileSource.CrossChain -> {
                 val ids = payload.members.map { link ->
                     val before = _profiles.value.map { it.id }.toSet()
-                    importText(link).getOrThrow()
+                    importText(link, subscriptionId = subscriptionId).getOrThrow()
                     _profiles.value.firstOrNull { it.id !in before }?.id
                         ?: throw IllegalArgumentException("chain member did not import")
                 }
@@ -1064,28 +1088,34 @@ class ConfigRepository(private val store: KeyValueStore) {
         return profile
     }
 
-    fun addSsh(settings: dev.valid7996.narcicgeteway.domain.config.SshProfile, name: String): VpnProfile {
+    fun addSsh(
+        settings: dev.valid7996.narcicgeteway.domain.config.SshProfile,
+        name: String,
+        subscriptionId: String = "",
+    ): VpnProfile {
         val profile = VpnProfile.fromSsh(
             settings = settings,
             id = newId(),
             addedAt = currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId,
         )
         _profiles.value = listOf(profile) + _profiles.value
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
-    fun addTor(name: String): VpnProfile {
+    fun addTor(name: String, subscriptionId: String = ""): VpnProfile {
         val profile = VpnProfile.fromTor(
             id = newId(),
             addedAt = currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId,
         )
         _profiles.value = listOf(profile) + _profiles.value
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
