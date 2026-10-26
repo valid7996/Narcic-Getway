@@ -47,18 +47,41 @@ class AppContainer(context: Context) {
         val connectivity = context.getSystemService(android.net.ConnectivityManager::class.java)
         VpnManager.deviceVpnProbe = { connectivity != null && anyVpnNetwork(connectivity) }
         dev.valid7996.narcicgeteway.platform.VpnNet.urlOpener = { url ->
-            val vpnNetwork = connectivity?.allNetworks?.firstOrNull { network ->
-                connectivity.getNetworkCapabilities(network)
-                    ?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) == true
-            }
+            val vpnNetwork = runCatching {
+                connectivity?.allNetworks?.firstOrNull { network ->
+                    connectivity.getNetworkCapabilities(network)
+                        ?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) == true
+                }
+            }.getOrNull()
             if (vpnNetwork != null) {
-                vpnNetwork.openConnection(url) as java.net.HttpURLConnection
+                runCatching { vpnNetwork.openConnection(url) as java.net.HttpURLConnection }
+                    .getOrElse { url.openConnection() as java.net.HttpURLConnection }
             } else {
                 url.openConnection() as java.net.HttpURLConnection
             }
         }
-        CoreProbe.measureDelay = { url -> XrayController.measureDelay(url) }
-        CoreProbe.measureDelayDetailed = { url -> XrayController.measureDelayDetailed(url) }
+        CoreProbe.measureDelay = { url ->
+            if (XrayController.running) {
+                XrayController.measureDelay(url)
+            } else {
+                runCatching {
+                    kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                        dev.valid7996.narcicgeteway.data.net.PingService.realDelayOfActiveConnection(url)
+                    }
+                }.getOrDefault(-1L)
+            }
+        }
+        CoreProbe.measureDelayDetailed = { url ->
+            if (XrayController.running) {
+                XrayController.measureDelayDetailed(url)
+            } else {
+                runCatching {
+                    kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+                        dev.valid7996.narcicgeteway.data.net.PingService.activeConnectionHealth(url)
+                    }
+                }.getOrElse { CoreProbe.DelayOutcome(-1L, it.message) }
+            }
+        }
         CoreProbe.measureOutboundDelay = { cfg, url ->
             runCatching { Libv2ray.measureOutboundDelay(cfg, url) }.getOrDefault(-1L)
         }

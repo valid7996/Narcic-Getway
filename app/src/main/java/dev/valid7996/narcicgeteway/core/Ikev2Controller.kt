@@ -184,10 +184,10 @@ object Ikev2Controller {
                 val rx = android.net.TrafficStats.getTotalRxBytes()
                 val tx = android.net.TrafficStats.getTotalTxBytes()
 
-                val down = if (rx >= 0 && lastRx >= 0 && rx >= lastRx) rx - lastRx else 0L
-                val up = if (tx >= 0 && lastTx >= 0 && tx >= lastTx) tx - lastTx else 0L
-                lastRx = rx
-                lastTx = tx
+                val down = if (rx > 0 && lastRx > 0 && rx >= lastRx) rx - lastRx else 0L
+                val up = if (tx > 0 && lastTx > 0 && tx >= lastTx) tx - lastTx else 0L
+                if (rx > 0) lastRx = rx
+                if (tx > 0) lastTx = tx
                 totalDown += down
                 totalUp += up
                 VpnManager.onMetrics(
@@ -229,7 +229,10 @@ object Ikev2Controller {
         val remark = activeRemark ?: return
         when {
             reason != null -> fail(context, reason, null)
-            state == VpnProfileState.STATE_CONNECTED -> VpnManager.onConnected(remark).also { startMetrics() }
+            state == VpnProfileState.STATE_CONNECTED -> {
+                VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
+                VpnManager.onConnected(remark).also { startMetrics() }
+            }
             state == VpnProfileState.STATE_DISCONNECTED -> { activeRemark = null; VpnManager.onDisconnected() }
         }
     }
@@ -240,6 +243,7 @@ object Ikev2Controller {
         val up = state == VpnProfileState.STATE_CONNECTED || state == VpnProfileState.STATE_CONNECTING
         if (up && activeRemark == null) {
             activeRemark = context.getString(R.string.ikev2_adopted_session)
+            VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
             if (state == VpnProfileState.STATE_CONNECTED) VpnManager.onConnected(activeRemark).also { startMetrics() }
             else VpnManager.onStarting(activeRemark!!)
         } else if (!up && activeRemark != null) {
@@ -339,7 +343,7 @@ object Ikev2Controller {
 
         builder.setMetered(false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            builder.setRequiresInternetValidation(true)
+            builder.setRequiresInternetValidation(false)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             builder.setAutomaticNattKeepaliveTimerEnabled(true)

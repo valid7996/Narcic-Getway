@@ -1481,12 +1481,17 @@ class ConfigRepository(private val store: KeyValueStore) {
             val sub = _subscriptions.value.firstOrNull { it.id == id }
                 ?: throw IllegalArgumentException("unknown subscription")
 
-            if (sub.url.isBlank()) return@runCatching 0
+            if (sub.url.isBlank() && id != DEFAULT_SUB_WINDSCRIBE) return@runCatching 0
             val primaryUa = resolveUa(sub.userAgent)
-            val response = runCatching { fetch(sub.url, primaryUa) }
-                .getOrElse { throw SubscriptionUnreachableException(it) }
-            val body = response.body
-            var meta = SubscriptionHeaders.parse(response.headers)
+            val responseResult = runCatching { fetch(sub.url, primaryUa) }
+            val (body, meta) = if (responseResult.isSuccess) {
+                val resp = responseResult.getOrThrow()
+                resp.body to SubscriptionHeaders.parse(resp.headers)
+            } else if (id == DEFAULT_SUB_WINDSCRIBE) {
+                dev.valid7996.narcicgeteway.domain.config.WindscribeDefaults.CONFIGS to SubscriptionHeaders()
+            } else {
+                throw SubscriptionUnreachableException(responseResult.exceptionOrNull() ?: Exception("unreachable"))
+            }
 
             val previous = _profiles.value.filter { it.subscriptionId == id }
 
@@ -1842,6 +1847,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         Subscription(id = DEFAULT_SUB_WIREGUARD, name = "وایرگارد", url = DEFAULT_SUB_WIREGUARD_URL),
         Subscription(id = DEFAULT_SUB_SPOOF, name = "اسپوف", url = DEFAULT_SUB_SPOOF_URL),
         Subscription(id = DEFAULT_SUB_HAMEDVPNS, name = "hamedvpns", url = DEFAULT_SUB_HAMEDVPNS_URL),
+        Subscription(id = DEFAULT_SUB_WINDSCRIBE, name = "ویندسکرایپ", url = DEFAULT_SUB_WINDSCRIBE_URL),
     )
 
     /**
@@ -1852,6 +1858,10 @@ class ConfigRepository(private val store: KeyValueStore) {
     fun ensureDefaultSubscriptions(autoFetch: Boolean) {
         val existing = loadSubscriptions().toMutableList()
         val defaults = defaultSubscriptions()
+
+        if (_profiles.value.none { it.subscriptionId == DEFAULT_SUB_WINDSCRIBE }) {
+            importText(dev.valid7996.narcicgeteway.domain.config.WindscribeDefaults.CONFIGS, subscriptionId = DEFAULT_SUB_WINDSCRIBE)
+        }
 
         if (existing.isEmpty()) {
             _subscriptions.value = defaults
@@ -1920,6 +1930,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_WIREGUARD = "default-wireguard"
         const val DEFAULT_SUB_SPOOF = "default-spoof"
         const val DEFAULT_SUB_HAMEDVPNS = "default-hamedvpns"
+        const val DEFAULT_SUB_WINDSCRIBE = "default-windscribe"
         const val DEFAULT_SUB_IRANCELL_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessirancell.txt"
         const val DEFAULT_SUB_MCI_URL =
@@ -1930,6 +1941,8 @@ class ConfigRepository(private val store: KeyValueStore) {
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
         const val DEFAULT_SUB_HAMEDVPNS_URL =
             "https://raw.githubusercontent.com/hamedp-71/N_sub_cheker/refs/heads/patch-1/final.txt"
+        const val DEFAULT_SUB_WINDSCRIBE_URL =
+            "https://raw.githubusercontent.com/valid7996/Narcic-Getway/main/subscriptions/windscribe.txt"
 
         val DEFAULT_SUB_IDS = setOf(
             DEFAULT_SUB_IRANCELL,
@@ -1937,6 +1950,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             DEFAULT_SUB_WIREGUARD,
             DEFAULT_SUB_SPOOF,
             DEFAULT_SUB_HAMEDVPNS,
+            DEFAULT_SUB_WINDSCRIBE,
         )
 
         fun isDefaultSubscription(id: String?): Boolean {

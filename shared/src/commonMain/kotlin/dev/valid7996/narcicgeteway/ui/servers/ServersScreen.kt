@@ -1141,7 +1141,7 @@ fun ServersScreen(
                         onPingTcp = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
-                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
+                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp || profile.isIkev2
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                                 val isMhrv = profile.isMhrvRelay
                                 val ms = if (isSpoof || isSealed || isMhrv) {
@@ -1159,7 +1159,7 @@ fun ServersScreen(
                         onPingReal = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {
                                 repository.clearPings(listOf(profile.id), persist = false)
-                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
+                                val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp || profile.isIkev2
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                                 val ms = PingService.realDelay(
                                     profile,

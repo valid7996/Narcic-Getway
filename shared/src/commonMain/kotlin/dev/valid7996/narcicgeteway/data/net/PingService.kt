@@ -176,8 +176,10 @@ object PingService {
                 val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                 val isMhrv = profile.isMhrvRelay || (isSealed && profile.resolveUnsealed()?.isMhrvRelay == true)
-                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed || isMhrv
-                val pool = if (heavy && (profile.isCustom || isSealed || isMhrv)) customPermits else permits
+                val isIkev2 = profile.isIkev2 || profile.ikev2Settings() != null || (isSealed && profile.resolveUnsealed()?.isIkev2 == true)
+                val isSstp = profile.isSstp || profile.sstpSettings() != null || (isSealed && profile.resolveUnsealed()?.isSstp == true)
+                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed || isMhrv || isIkev2 || isSstp
+                val pool = if (heavy && (profile.isCustom || isSealed || isMhrv || isIkev2 || isSstp)) customPermits else permits
                 val ms = pool.withPermit {
                     if (heavy) measureProfile(profile, url, chainConfig)
                     else tcpPing(profile.address, profile.port)
@@ -275,6 +277,7 @@ object PingService {
         if (effective.isMhrvRelay) return false
         if (effective.isAether) return false
         if (effective.isSstp) return false
+        if (effective.isIkev2 || effective.ikev2Settings() != null) return false
         if (effective.isProxyChain) return false
         if (effective.isSniSpoof || effective.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(effective.address, effective.port)) return false
         if (effective.address.isBlank() || effective.address == "-") return false
