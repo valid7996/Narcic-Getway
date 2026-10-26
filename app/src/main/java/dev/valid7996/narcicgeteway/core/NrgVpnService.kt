@@ -1304,6 +1304,7 @@ class NrgVpnService : VpnService() {
                     // Aether had no branch here and fell through to Xray's: with the exit proxy down (or a command
                     // that dials out on its own) Xray never runs, so the tunnel was torn down at the first tick.
                     VpnManager.KIND_AETHER -> aether?.isRunning == true
+                    VpnManager.KIND_IKEV2 -> Ikev2Controller.isActive
 
                     VpnManager.KIND_CROSS_CHAIN ->
                         engineAlive(crossInnerKind, outer = false) && engineAlive(crossOuterKind, outer = true)

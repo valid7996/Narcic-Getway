@@ -200,6 +200,7 @@ object Ikev2Controller {
         }
         forgetProvisionedProfile(context)
         VpnManager.onError(reason)
+        AndroidVpn.stop(context)
     }
 
     private fun startMetrics() {
@@ -267,7 +268,11 @@ object Ikev2Controller {
                 VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
                 VpnManager.onConnected(remark).also { startMetrics() }
             }
-            state == VpnProfileState.STATE_DISCONNECTED -> { activeRemark = null; VpnManager.onDisconnected() }
+            state == VpnProfileState.STATE_DISCONNECTED -> {
+                activeRemark = null
+                VpnManager.onDisconnected()
+                AndroidVpn.stop(context)
+            }
         }
     }
 

@@ -75,7 +75,8 @@ internal fun extractCountryCode(text: String): String? {
     return null
 }
 
-internal fun cleanProfileName(name: String): String {
+internal fun cleanProfileName(name: String, hasFlagBadge: Boolean = true): String {
+    if (!hasFlagBadge) return name
     val sb = StringBuilder(name.length)
     var i = 0
     while (i < name.length) {
@@ -215,13 +216,15 @@ internal fun ServerCard(
                             )
                             Spacer(Modifier.width(7.dp))
                         }
-                        val flagCountry = extractCountryCode(profile.name) ?: profile.countryCode
+                        val flagCountry = extractCountryCode(profile.name)
+                            ?: profile.countryCode
+                            ?: dev.valid7996.narcicgeteway.domain.config.CountryDetector.detect(profile.name, profile.address)
                         if (!flagCountry.isNullOrBlank()) {
                             FlagBadge(countryCode = flagCountry, size = if (columns >= 3) 13.dp else 16.dp)
                             Spacer(Modifier.width(if (columns >= 3) 4.dp else 6.dp))
                         }
                         Text(
-                            text = cleanProfileName(profile.name),
+                            text = cleanProfileName(profile.name, hasFlagBadge = !flagCountry.isNullOrBlank()),
                             style = (if (columns >= 3) MaterialTheme.typography.bodySmall else MaterialTheme.typography.titleMedium).copy(
                                 textDirection = TextDirection.ContentOrRtl,
                             ),

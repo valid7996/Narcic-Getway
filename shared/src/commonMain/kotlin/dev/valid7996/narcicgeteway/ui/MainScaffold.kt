@@ -67,15 +67,20 @@ fun MainScaffold(
 
     var activeCountryCode by remember { mutableStateOf<String?>(null) }
     androidx.compose.runtime.LaunchedEffect(activeProfile) {
-        activeCountryCode = null
-        val profile = activeProfile?.takeIf { !it.isLocked && !it.isAutoSelect } ?: return@LaunchedEffect
+        val profile = activeProfile?.takeIf { !it.isLocked && !it.isAutoSelect }
+        if (profile == null) {
+            activeCountryCode = null
+            return@LaunchedEffect
+        }
+        activeCountryCode = profile.countryCode
+            ?: dev.valid7996.narcicgeteway.domain.config.CountryDetector.detect(profile.name, profile.address)
         val link = (profile.source as? dev.valid7996.narcicgeteway.domain.config.ProfileSource.Link)?.link
         val parsed = link?.let {
             runCatching { dev.valid7996.narcicgeteway.domain.config.ConfigParser.parse(it) }.getOrNull()
         }
         val host = parsed?.address?.takeIf { it.isNotBlank() }
             ?: profile.address.takeIf { it.isNotBlank() }
-        if (host != null) {
+        if (host != null && activeCountryCode == null) {
             activeCountryCode = dev.valid7996.narcicgeteway.data.net.GeoLookup.countryOf(host)
         }
     }

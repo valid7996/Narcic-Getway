@@ -363,7 +363,6 @@ class MainActivity : ComponentActivity() {
         if (state.isActive || state.isTransitioning) {
             if (dev.valid7996.narcicgeteway.core.Ikev2Controller.isActive) {
                 dev.valid7996.narcicgeteway.core.Ikev2Controller.stop(this)
-                return
             }
             AndroidVpn.stop(this)
             return

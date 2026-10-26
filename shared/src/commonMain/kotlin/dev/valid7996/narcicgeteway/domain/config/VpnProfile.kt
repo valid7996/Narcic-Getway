@@ -894,7 +894,7 @@ data class VpnProfile(
                 isLocked = locked,
                 subscriptionId = subscriptionId,
 
-                countryCode = null,
+                countryCode = CountryDetector.detect(name, parsed.address),
             )
         }
 
@@ -921,7 +921,7 @@ data class VpnProfile(
                 source = ProfileSource.RawJson(rawJson),
                 addedAt = addedAt,
                 subscriptionId = subscriptionId,
-                countryCode = null,
+                countryCode = CountryDetector.detect(name, parsed.address),
             )
         }
     }
