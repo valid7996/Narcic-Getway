@@ -1485,16 +1485,17 @@ class ConfigRepository(private val store: KeyValueStore) {
             val primaryUa = resolveUa(sub.userAgent)
             val responseResult = runCatching { fetch(sub.url, primaryUa) }
             val body: String
-            var meta: SubscriptionHeaders
+            var meta: dev.valid7996.narcicgeteway.domain.config.SubscriptionMeta
             if (responseResult.isSuccess) {
                 val resp = responseResult.getOrThrow()
                 body = resp.body
                 meta = SubscriptionHeaders.parse(resp.headers)
             } else if (id == DEFAULT_SUB_WINDSCRIBE) {
                 body = dev.valid7996.narcicgeteway.domain.config.WindscribeDefaults.CONFIGS
-                meta = SubscriptionHeaders()
+                meta = dev.valid7996.narcicgeteway.domain.config.SubscriptionMeta()
             } else {
-                throw SubscriptionUnreachableException(responseResult.exceptionOrNull() ?: Exception("unreachable"))
+                val err: Throwable = responseResult.exceptionOrNull() ?: Exception("unreachable")
+                throw SubscriptionUnreachableException(err)
             }
 
             val previous = _profiles.value.filter { it.subscriptionId == id }
