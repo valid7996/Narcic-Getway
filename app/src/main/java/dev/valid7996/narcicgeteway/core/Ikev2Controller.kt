@@ -28,11 +28,6 @@ import java.security.PrivateKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.interfaces.RSAPrivateKey
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -69,25 +64,6 @@ object Ikev2Controller {
      */
     @Volatile
     var serviceReportsMetrics: Boolean = false
-
-    /**
-     * Every call into the platform's VpnManager (provision, start, stop, delete) goes through this one thread. Two
-     * reasons: the calls are binder IPC to system_server and must never block the main thread, and they must keep
-     * their order - a "stop + delete" queued by a disconnect must not run after the "provision + start" of the
-     * reconnect that follows it, or it tears down the new session.
-     */
-    private val platformExecutor: ExecutorService = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "ikev2-platform").apply { isDaemon = true }
-    }
-
-    private fun <T> onPlatform(block: () -> T): T {
-        val future = platformExecutor.submit(Callable { block() })
-        try {
-            return future.get(PLATFORM_CALL_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } catch (e: ExecutionException) {
-            throw e.cause ?: e
-        }
-    }
 
     val isActive: Boolean get() = activeRemark != null
 
@@ -130,7 +106,7 @@ object Ikev2Controller {
         built: Ikev2VpnProfile,
         label: String,
     ): Intent? {
-        val consent = onPlatform { vpnManager.provisionVpnProfile(built) }
+        val consent = vpnManager.provisionVpnProfile(built)
         note("provisioned ($label); consent " + if (consent != null) "required" else "already granted")
         return consent
     }
@@ -152,7 +128,7 @@ object Ikev2Controller {
         remark: String,
         onResult: ((Boolean, String?) -> Unit)? = null,
     ) {
-        val vpnManager = context.getSystemService(android.net.VpnManager::class.java) ?: run {
+        val vpnManager = (context.getSystemService(android.net.VpnManager::class.java) ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)) ?: run {
             val err = context.getString(R.string.ikev2_vpn_manager_unavailable)
             VpnManager.onError(err)
             onResult?.invoke(false, err)
@@ -163,14 +139,11 @@ object Ikev2Controller {
         sessionStartedAt = System.currentTimeMillis()
         note("starting provisioned session for $remark")
         try {
-            onPlatform {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    vpnManager.startProvisionedVpnProfileSession()
-                } else {
-                    @Suppress("DEPRECATION")
-                    vpnManager.startProvisionedVpnProfile()
-                }
-                Unit
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                vpnManager.startProvisionedVpnProfileSession()
+            } else {
+                @Suppress("DEPRECATION")
+                vpnManager.startProvisionedVpnProfile()
             }
         } catch (e: SecurityException) {
             val err = context.getString(R.string.ikev2_blocked_by_always_on)
@@ -232,8 +205,9 @@ object Ikev2Controller {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun currentState(context: Context): Int? = runCatching {
-        context.getSystemService(android.net.VpnManager::class.java)
-            ?.getProvisionedVpnProfileState()?.state
+        val vm = context.getSystemService(android.net.VpnManager::class.java)
+            ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)
+        vm?.getProvisionedVpnProfileState()?.state
     }.getOrNull()
 
     private fun fail(context: Context, reason: String, cause: Throwable?) {
@@ -243,7 +217,11 @@ object Ikev2Controller {
         stopMetrics()
         serviceReportsMetrics = false
         activeRemark = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) releasePlatformProfile(context.applicationContext, wait = false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val vpnManager = context.getSystemService(android.net.VpnManager::class.java)
+                ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)
+            runCatching { vpnManager?.stopProvisionedVpnProfile() }
+        }
         VpnManager.onError(reason)
         AndroidVpn.stop(context)
     }
@@ -288,9 +266,6 @@ object Ikev2Controller {
     /**
      * Ends the platform session. [publishState] is false when the caller (the VPN service's teardown) has already
      * published the new state itself and only needs the platform side released.
-     *
-     * Safe on the main thread: the binder calls to the platform are queued on [platformExecutor] instead of
-     * blocking the UI.
      */
     fun stop(context: Context, publishState: Boolean = true) {
         connectionJob?.cancel()
@@ -299,40 +274,22 @@ object Ikev2Controller {
         serviceReportsMetrics = false
         activeRemark = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            releasePlatformProfile(context.applicationContext, wait = !isMainThread())
+            val vpnManager = context.getSystemService(android.net.VpnManager::class.java)
+                ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)
+            runCatching {
+                vpnManager?.stopProvisionedVpnProfile()
+            }.onFailure { Log.w(TAG, "stopProvisionedVpnProfile failed", it) }
         }
         if (publishState) VpnManager.onDisconnected()
     }
 
-    /** Stops the provisioned session and removes the profile. Off the main thread it waits (bounded) for the result. */
-    @RequiresApi(Build.VERSION_CODES.R)
-    private fun releasePlatformProfile(context: Context, wait: Boolean) {
-        val task = Runnable {
-            val vpnManager = context.getSystemService(android.net.VpnManager::class.java) ?: return@Runnable
-            runCatching { vpnManager.stopProvisionedVpnProfile() }
-                .onFailure { Log.w(TAG, "stopProvisionedVpnProfile failed", it) }
-            runCatching { vpnManager.deleteProvisionedVpnProfile() }
-                .onFailure { Log.w(TAG, "deleteProvisionedVpnProfile failed", it) }
-        }
-        if (!wait) {
-            platformExecutor.execute(task)
-            return
-        }
-        try {
-            platformExecutor.submit(task).get(3_000L, TimeUnit.MILLISECONDS)
-        } catch (e: Exception) {
-            note("releasing the platform VPN profile did not finish", e)
-        }
-    }
-
     fun forgetProvisionedProfile(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        val app = context.applicationContext
-        platformExecutor.execute {
-            runCatching {
-                app.getSystemService(android.net.VpnManager::class.java)?.deleteProvisionedVpnProfile()
-            }.onFailure { Log.w(TAG, "deleteProvisionedVpnProfile failed", it) }
-        }
+        val vpnManager = context.getSystemService(android.net.VpnManager::class.java)
+            ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)
+        runCatching {
+            vpnManager?.deleteProvisionedVpnProfile()
+        }.onFailure { Log.w(TAG, "deleteProvisionedVpnProfile failed", it) }
     }
 
     fun onPlatformEvent(context: Context, state: Int?, reason: String?) {
@@ -359,7 +316,11 @@ object Ikev2Controller {
                 note("platform reports DISCONNECTED")
                 activeRemark = null
                 stopMetrics()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) releasePlatformProfile(context.applicationContext, wait = false)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val vm = context.getSystemService(android.net.VpnManager::class.java)
+                        ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)
+                    runCatching { vm?.stopProvisionedVpnProfile() }
+                }
                 // Not VpnManager.onDisconnected() + a no-op stop: the service must be told, so it can drop its
                 // notification and foreground state and publish the new state itself.
                 AndroidVpn.stop(context)
@@ -383,7 +344,7 @@ object Ikev2Controller {
             note("resync: the platform session is down (state $state); releasing it")
             activeRemark = null
             stopMetrics()
-            releasePlatformProfile(context.applicationContext, wait = false)
+            stop(context, publishState = true)
             AndroidVpn.stop(context)
         }
         return up

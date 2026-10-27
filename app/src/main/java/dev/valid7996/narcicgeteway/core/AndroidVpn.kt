@@ -46,13 +46,18 @@ object AndroidVpn {
      */
     fun stop(context: Context) {
         val ikev2Live = Ikev2Controller.isActive
-        val wasActive = VpnManager.onStopping()
-        if (!wasActive && !ikev2Live) return
-
-        // Immediately release platform IKEv2 profile so Android's VPN key in status bar drops instantly
         if (ikev2Live) {
             Ikev2Controller.stop(context, publishState = false)
         }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            runCatching {
+                val vm = context.getSystemService(android.net.VpnManager::class.java)
+                    ?: context.applicationContext.getSystemService(android.net.VpnManager::class.java)
+                vm?.stopProvisionedVpnProfile()
+            }
+        }
+        val wasActive = VpnManager.onStopping()
+        if (!wasActive && !ikev2Live) return
 
         val intent = Intent(context, NrgVpnService::class.java).apply {
             putExtra(VpnManager.EXTRA_COMMAND, VpnManager.CMD_STOP)

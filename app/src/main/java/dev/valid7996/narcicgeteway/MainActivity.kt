@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
             val remark = pendingIkev2Remark
             pendingIkev2Remark = null
             if (result.resultCode == RESULT_OK && remark != null) {
+                dev.valid7996.narcicgeteway.core.Ikev2Controller.startProvisioned(this@MainActivity, remark)
                 AndroidVpn.start(this@MainActivity, configJson = "{}", remark = remark, socksPort = 0, kind = VpnManager.KIND_IKEV2)
             } else {
                 dev.valid7996.narcicgeteway.core.Ikev2Controller.forgetProvisionedProfile(this)
@@ -368,8 +369,9 @@ class MainActivity : ComponentActivity() {
 
         val state = VpnManager.status.value.state
         if (state.isActive || state.isTransitioning) {
-            // One path for every engine, IKEv2 included: the service performs the teardown. Stopping the IKEv2
-            // controller here first published "Idle", which made the call below a no-op.
+            if (dev.valid7996.narcicgeteway.core.Ikev2Controller.isActive) {
+                dev.valid7996.narcicgeteway.core.Ikev2Controller.stop(this)
+            }
             AndroidVpn.stop(this)
             return
         }
@@ -442,6 +444,7 @@ class MainActivity : ComponentActivity() {
                 }
             } else {
                 withContext(Dispatchers.Main) {
+                    controller.startProvisioned(this@MainActivity, remark)
                     AndroidVpn.start(this@MainActivity, configJson = "{}", remark = remark, socksPort = 0, kind = VpnManager.KIND_IKEV2)
                 }
             }
