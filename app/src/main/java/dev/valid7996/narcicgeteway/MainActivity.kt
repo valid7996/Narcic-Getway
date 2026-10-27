@@ -361,9 +361,8 @@ class MainActivity : ComponentActivity() {
     private fun toggleConnection() {
         val state = VpnManager.status.value.state
         if (state.isActive || state.isTransitioning) {
-            if (dev.valid7996.narcicgeteway.core.Ikev2Controller.isActive) {
-                dev.valid7996.narcicgeteway.core.Ikev2Controller.stop(this)
-            }
+            // One path for every engine, IKEv2 included: the service performs the teardown. Stopping the IKEv2
+            // controller here first published "Idle", which made the call below a no-op.
             AndroidVpn.stop(this)
             return
         }

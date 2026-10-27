@@ -38,11 +38,28 @@ object AndroidVpn {
 
     private const val INLINE_CONFIG_LIMIT = 48 * 1024
 
+    /**
+     * Asks the service to tear the session down. The command is sent whenever there is anything to tear down,
+     * not only when the published state says so: callers used to stop the IKEv2 session first (which publishes
+     * "Idle") and then call this, so the early return below swallowed the command and the foreground service,
+     * its notification and the kill-switch bookkeeping were left running with nobody to stop them.
+     */
     fun stop(context: Context) {
-        if (!VpnManager.onStopping()) return
+        val ikev2Live = Ikev2Controller.isActive
+        if (!VpnManager.onStopping() && !ikev2Live) return
         val intent = Intent(context, NrgVpnService::class.java).apply {
             putExtra(VpnManager.EXTRA_COMMAND, VpnManager.CMD_STOP)
         }
-        context.startService(intent)
+        try {
+            context.startService(intent)
+        } catch (e: Exception) {
+            // Android refuses startService() from the background (IllegalStateException). The service cannot be
+            // reached, so release what we can directly instead of leaving the app stuck in "Disconnecting".
+            AppLog.w(TAG, "could not reach the VPN service to stop it; tearing down directly", e)
+            Ikev2Controller.stop(context)
+            VpnManager.onDisconnected()
+        }
     }
+
+    private const val TAG = "AndroidVpn"
 }

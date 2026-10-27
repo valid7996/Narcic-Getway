@@ -56,7 +56,7 @@ class NrgTileService : TileService() {
         val state = VpnManager.status.value.state
         if (state.isActive || state.isTransitioning) {
             runSafely {
-                if (Ikev2Controller.isActive) Ikev2Controller.stop(this) else AndroidVpn.stop(this)
+                AndroidVpn.stop(this)
             }
         } else {
             connectOrOpen()

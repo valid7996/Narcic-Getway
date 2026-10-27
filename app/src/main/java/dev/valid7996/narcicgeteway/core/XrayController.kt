@@ -5,12 +5,28 @@ import dev.valid7996.narcicgeteway.core.AppLog as Log
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.Libv2ray
+import android.os.SystemClock
 import java.io.File
 
 object XrayController {
     private const val TAG = "XrayController"
 
+    @Volatile
     private var controller: CoreController? = null
+
+    /** start() and stop() run from different threads (service start vs teardown); they must not interleave. */
+    private val lifecycleLock = Any()
+
+    /**
+     * The core calls shutdown() when its loop ends - also when we ended it ourselves with stopLoop(). That is not a
+     * failure and must not tear the service down (it used to, which killed a session that was just restarted).
+     */
+    @Volatile
+    private var expectedShutdownUntil = 0L
+
+    private fun expectShutdown() {
+        expectedShutdownUntil = SystemClock.elapsedRealtime() + 2_000L
+    }
 
     @Volatile
     private var initialized = false
@@ -41,7 +57,7 @@ object XrayController {
             override fun onEmitStatus(status: Long, message: String?): Long = 0
             override fun startup(): Long = 0
             override fun shutdown(): Long {
-                onCoreShutdown?.invoke()
+                if (SystemClock.elapsedRealtime() >= expectedShutdownUntil) onCoreShutdown?.invoke()
                 return 0
             }
         })
@@ -63,11 +79,14 @@ object XrayController {
     val isRunning: Boolean
         get() = controller?.isRunning ?: false
 
-    fun start(configJson: String, tunFd: Int = 0): Boolean {
-        val c = ready() ?: return false
-        if (c.isRunning) runCatching { c.stopLoop() }
+    fun start(configJson: String, tunFd: Int = 0): Boolean = synchronized(lifecycleLock) {
+        val c = ready() ?: return@synchronized false
+        if (c.isRunning) {
+            expectShutdown()
+            runCatching { c.stopLoop() }
+        }
         lastError = null
-        return try {
+        try {
             c.startLoop(configJson, tunFd)
             c.isRunning
         } catch (e: Exception) {
@@ -78,8 +97,14 @@ object XrayController {
     }
 
     fun stop() {
-        runCatching { if (controller?.isRunning == true) controller?.stopLoop() }
-            .onFailure { Log.e(TAG, "stopLoop failed", it) }
+        synchronized(lifecycleLock) {
+            runCatching {
+                if (controller?.isRunning == true) {
+                    expectShutdown()
+                    controller?.stopLoop()
+                }
+            }.onFailure { Log.e(TAG, "stopLoop failed", it) }
+        }
     }
 
     fun readTrafficDelta(): Pair<Long, Long> {

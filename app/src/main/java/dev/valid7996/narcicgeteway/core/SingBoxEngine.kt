@@ -94,7 +94,7 @@ class SingBoxEngine(
         Thread({
             runCatching { commandClient.connect() }
                 .onFailure { Log.w(TAG, "command client", it) }
-        }, "sing-box-client").start()
+        }, "sing-box-client").apply { isDaemon = true }.start()
     }
 
     fun stop() {
@@ -283,7 +283,11 @@ class SingBoxEngine(
             }
         }
 
-        cm.registerDefaultNetworkCallback(callback)
+        // Registration can be refused (e.g. too many callbacks); that must not throw into the native core.
+        if (runCatching { cm.registerDefaultNetworkCallback(callback) }.isFailure) {
+            Log.w(TAG, "could not register the default network callback")
+            return
+        }
         networkCallback = callback
         cm.activeNetwork?.let { report(cm, it, listener) }
     }

@@ -79,6 +79,28 @@ class NrgVpnService : VpnService() {
     private var crossInnerKind: String? = null
 
     @Volatile private var userStop = false
+
+    /**
+     * Bumped by every start and every stop command. Work queued by an earlier command compares the value it was
+     * given with the current one and bows out when they differ, so a stop (or a newer start) is never overtaken by
+     * a start that was still waiting to run.
+     */
+    private val sessionEpoch = java.util.concurrent.atomic.AtomicInteger(0)
+
+    /** The thread tearing the previous session down; a new session waits for it before it builds its own engines. */
+    @Volatile private var teardownThread: Thread? = null
+
+    /** True once this service started an IKEv2 session, so teardown releases the platform profile for certain. */
+    @Volatile private var ikev2Session = false
+
+    private val mainHandler by lazy { android.os.Handler(Looper.getMainLooper()) }
+
+    /** The epoch of the start running on this thread (startTunnel is synchronous, so a thread-local is exact). */
+    private val startEpoch = ThreadLocal<Int>()
+
+    /** True when a stop, or a newer start, arrived after the start running on this thread began. */
+    private fun superseded(epoch: Int? = startEpoch.get()): Boolean =
+        epoch != null && sessionEpoch.get() != epoch
     private var killSwitchEnabled = false
 
     private var killSwitchActive = false
@@ -146,14 +168,30 @@ class NrgVpnService : VpnService() {
                     return START_NOT_STICKY
                 }
 
-                if (kind != VpnManager.KIND_IKEV2 && Ikev2Controller.isActive) Ikev2Controller.stop(this)
+                // The new engine replaces a live IKEv2 session; the status stays "connecting", so it is not republished.
+                if (kind != VpnManager.KIND_IKEV2 && Ikev2Controller.isActive) {
+                    Ikev2Controller.stop(this, publishState = false)
+                }
 
+                val epoch = sessionEpoch.incrementAndGet()
+                val startKind = kind
                 resetSessionState()
                 stage = VpnNotifications.Stage.Preparing
                 startInForeground(connectingNotification())
-                scope.launch { startTunnel(config.orEmpty(), socksPort, kind) }
+                scope.launch {
+                    awaitPreviousTeardown()
+                    if (sessionEpoch.get() != epoch) {
+                        Log.i(TAG, "start superseded by a newer command; not starting")
+                        return@launch
+                    }
+                    startTunnel(config.orEmpty(), socksPort, startKind, epoch)
+                }
             }
-            command == VpnManager.CMD_STOP -> { userStop = true; stopEverything() }
+            command == VpnManager.CMD_STOP -> {
+                userStop = true
+                sessionEpoch.incrementAndGet()
+                stopEverything()
+            }
 
             command == VpnManager.CMD_START_ACTIVE -> startActiveProfile(allowProxyOnly = true)
 
@@ -172,7 +210,8 @@ class NrgVpnService : VpnService() {
             startInForeground(if (connected) connectedNotification(0, 0, 0, 0) else connectingNotification())
             return
         }
-        if (Ikev2Controller.isActive) Ikev2Controller.stop(this)
+        if (Ikev2Controller.isActive) Ikev2Controller.stop(this, publishState = false)
+        val epoch = sessionEpoch.incrementAndGet()
         resetSessionState()
         val container = (application as dev.valid7996.narcicgeteway.NrgSecureApp).container
         remark = container.configRepository.activeProfile()?.name.orEmpty()
@@ -182,13 +221,16 @@ class NrgVpnService : VpnService() {
 
         startInForeground(connectingNotification())
         scope.launch {
+            awaitPreviousTeardown()
+            if (sessionEpoch.get() != epoch) return@launch
             when (val plan = StartPlanner(this@NrgVpnService).planActive(allowProxyOnly)) {
                 is StartPlanner.Plan.Start -> {
+                    if (sessionEpoch.get() != epoch) return@launch
                     VpnManager.onStarting(plan.remark)
                     remark = plan.remark
                     kind = plan.kind
                     proxyOnly = plan.proxyOnly
-                    startTunnel(plan.configJson, plan.socksPort, plan.kind)
+                    startTunnel(plan.configJson, plan.socksPort, plan.kind, epoch)
                 }
                 is StartPlanner.Plan.Ikev2 -> {
                     VpnManager.onError(getString(R.string.engine_ikev2_needs_app))
@@ -202,7 +244,8 @@ class NrgVpnService : VpnService() {
         }
     }
 
-    private fun startTunnel(configJson: String, socksPort: Int, kind: String) {
+    private fun startTunnel(configJson: String, socksPort: Int, kind: String, epoch: Int) {
+        startEpoch.set(epoch)
         val settings = SettingsRepository(this).settings.value
         killSwitchEnabled = settings.killSwitch
         userStop = false
@@ -224,7 +267,7 @@ class NrgVpnService : VpnService() {
             proxyOnly = false
         }
 
-        if (kind == VpnManager.KIND_IKEV2) { startIkev2(remark); return }
+        if (kind == VpnManager.KIND_IKEV2) { startIkev2(remark, epoch); return }
 
         if (kind == VpnManager.KIND_OPENCONNECT) { startOpenConnect(configJson, settings); return }
 
@@ -287,6 +330,12 @@ class NrgVpnService : VpnService() {
         if (descriptor == null) {
             VpnManager.onError(getString(R.string.engine_no_interface))
             stopEverything()
+            return
+        }
+        if (superseded()) {
+            // A stop arrived while the interface was being built; teardown has already run, so nobody else closes it.
+            Log.i(TAG, "start superseded while building the interface; closing it")
+            runCatching { descriptor.close() }
             return
         }
         tun = descriptor
@@ -729,7 +778,10 @@ class NrgVpnService : VpnService() {
         null -> getString(R.string.masterdns_failed)
     }
 
-    private fun startIkev2(remark: String) {
+    private fun startIkev2(remark: String, epoch: Int) {
+        ikev2Session = true
+        // This service's stats loop publishes the metrics of an IKEv2 session; the controller must not run its own.
+        Ikev2Controller.serviceReportsMetrics = true
         VpnManager.setActiveKind(kind)
         advance(VpnNotifications.Stage.Engine)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -737,11 +789,18 @@ class NrgVpnService : VpnService() {
             return
         }
         Ikev2Controller.startProvisioned(this, remark) { success, err ->
+            // Stopped, or replaced by a newer start, while the platform was still negotiating: nothing to report.
+            if (sessionEpoch.get() != epoch) return@startProvisioned
             if (success) {
                 finishConnected()
             } else {
                 onTunnelFailed(err ?: getString(R.string.ikev2_failed_generic))
             }
+        }
+        if (sessionEpoch.get() != epoch) {
+            // A stop arrived while the session was being requested. Undo it here: nobody else will.
+            Log.i(TAG, "stop arrived while the IKEv2 session was starting; releasing it")
+            Ikev2Controller.stop(this, publishState = false)
         }
     }
 
@@ -812,13 +871,21 @@ class NrgVpnService : VpnService() {
         singBox = engine
         singBoxLastUp = 0L
         singBoxLastDown = 0L
+        val myEpoch = startEpoch.get()
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 engine.start(configJson)
             } catch (e: Exception) {
                 Log.e(TAG, "sing-box failed to start", e)
-                VpnManager.onError(engineFailed(R.string.engine_singbox_failed, e.message))
-                stopEverything()
+                if (!superseded(myEpoch)) {
+                    VpnManager.onError(engineFailed(R.string.engine_singbox_failed, e.message))
+                    stopEverything()
+                }
+                return@launch
+            }
+            if (superseded(myEpoch)) {
+                // Stopped while it was starting: this engine is not tracked by a session any more.
+                engine.stop()
                 return@launch
             }
             VpnManager.activeSocksPort = runCatching {
@@ -852,10 +919,13 @@ class NrgVpnService : VpnService() {
         VpnManager.setActiveKind(kind)
         advance(VpnNotifications.Stage.Engine)
         if (!XrayController.start(configJson)) {
-            VpnManager.onError(coreStartError())
-            stopEverything()
+            if (!superseded()) {
+                VpnManager.onError(coreStartError())
+                stopEverything()
+            }
             return
         }
+        if (superseded()) { XrayController.stop(); return }
         onXrayStarted()
         VpnManager.activeSocksPort = socksPort
         finishConnected()
@@ -889,8 +959,15 @@ class NrgVpnService : VpnService() {
         }
         val tunFd = if (useHevTun) 0 else descriptor.fd
         if (!XrayController.start(effectiveConfig, tunFd)) {
-            VpnManager.onError(coreStartError())
-            stopEverything()
+            if (!superseded()) {
+                VpnManager.onError(coreStartError())
+                stopEverything()
+            }
+            return
+        }
+        if (superseded()) {
+            XrayController.stop()
+            if (rstaHeld) { RstaSpoofClient.release(this); rstaHeld = false }
             return
         }
         onXrayStarted()
@@ -1533,33 +1610,53 @@ class NrgVpnService : VpnService() {
         }
     }
 
-    private fun stopEngines() {
-        statsJob?.cancel()
-        stopAutoSelectSession()
-        psiphon?.stop(); psiphon = null
-        aether?.stop(); aether = null
-        AetherSupport.releaseExit()
-        dnsTunnel?.stop(); dnsTunnel = null
-        masterDns?.stop(); masterDns = null
-        tor?.stop(); tor = null
-        ssh?.stop(); ssh = null
-        if (rstaHeld) { RstaSpoofClient.release(this); rstaHeld = false } else RstaSpoofClient.stop(this)
-        openConnect?.stop(); openConnect = null
-        sstp?.stop(); sstp = null
-        singBox?.stop(); singBox = null
-        socksShim?.stop(); socksShim = null
-        outerPsiphon?.stop(); outerPsiphon = null
-        outerTor?.stop(); outerTor = null
-        outerSsh?.stop(); outerSsh = null
-        outerDnsTunnel?.stop(); outerDnsTunnel = null
-        ZepTunCore.stop()
-        HevTunCore.stop()
-        // After the TUN bridges: the native core must have no live connections when it is stopped.
-        mhrv?.stop(); mhrv = null
-        XrayController.stop()
-        if (Ikev2Controller.isActive) {
-            Ikev2Controller.stop(this)
+    /** One teardown step. A step that throws must not cancel the steps after it. */
+    private inline fun step(name: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (t: Throwable) {
+            Log.w(TAG, "teardown step '$name' failed", t)
         }
+    }
+
+    private fun stopEngines() {
+        // The platform's own IKEv2 session first: it is the one thing that outlives this process if it is skipped.
+        step("ikev2") {
+            if (ikev2Session || Ikev2Controller.isActive) Ikev2Controller.stop(this, publishState = false)
+            ikev2Session = false
+        }
+        step("stats") { statsJob?.cancel() }
+        step("auto-select") { stopAutoSelectSession() }
+        step("psiphon") { psiphon?.stop(); psiphon = null }
+        step("aether") { aether?.stop(); aether = null }
+        step("aether-exit") { AetherSupport.releaseExit() }
+        step("dns-tunnel") { dnsTunnel?.stop(); dnsTunnel = null }
+        step("masterdns") { masterDns?.stop(); masterDns = null }
+        step("tor") { tor?.stop(); tor = null }
+        step("ssh") { ssh?.stop(); ssh = null }
+        // startService() from here can be refused once the app is in the background; it must not stop the steps below.
+        step("sni-spoof") { if (rstaHeld) { RstaSpoofClient.release(this); rstaHeld = false } else RstaSpoofClient.stop(this) }
+        step("openconnect") { openConnect?.stop(); openConnect = null }
+        step("sstp") { sstp?.stop(); sstp = null }
+        step("sing-box") { singBox?.stop(); singBox = null }
+        step("socks-shim") { socksShim?.stop(); socksShim = null }
+        step("outer-psiphon") { outerPsiphon?.stop(); outerPsiphon = null }
+        step("outer-tor") { outerTor?.stop(); outerTor = null }
+        step("outer-ssh") { outerSsh?.stop(); outerSsh = null }
+        step("outer-dns-tunnel") { outerDnsTunnel?.stop(); outerDnsTunnel = null }
+        step("zeptun") { ZepTunCore.stop() }
+        step("hev-tun") { HevTunCore.stop() }
+        // After the TUN bridges: the native core must have no live connections when it is stopped.
+        step("mhrv") { mhrv?.stop(); mhrv = null }
+        step("xray") { XrayController.stop() }
+    }
+
+    /** Blocks (bounded) until the previous session's teardown has finished. Call from a worker thread. */
+    private fun awaitPreviousTeardown() {
+        val previous = teardownThread ?: return
+        if (previous === Thread.currentThread()) return
+        runCatching { previous.join(TEARDOWN_JOIN_MS) }
+        if (previous.isAlive) Log.w(TAG, "the previous teardown is still running after ${TEARDOWN_JOIN_MS}ms; starting anyway")
     }
 
     private fun resetSessionState() {
@@ -1585,21 +1682,33 @@ class NrgVpnService : VpnService() {
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         NrgWidgetProvider.refresh(this, force = true)
         unregisterScreenReceiver()
+        val epoch = sessionEpoch.get()
 
         if (Looper.myLooper() != Looper.getMainLooper()) {
             stopEngines()
             runCatching { tunToClose?.close() }
-            stopSelf()
+            if (sessionEpoch.get() == epoch) stopSelf()
             return
         }
         if (!tearingDown.compareAndSet(false, true)) return
 
-        Thread({
+        val worker = Thread({
             runCatching { stopEngines() }
             runCatching { tunToClose?.close() }
             tearingDown.set(false)
-            stopSelf()
-        }, "nrg-teardown").apply { isDaemon = false }.start()
+            // A start that arrived meanwhile owns the service now; stopping it here would kill that session.
+            if (sessionEpoch.get() == epoch) stopSelf()
+        }, "nrg-teardown").apply { isDaemon = false }
+        teardownThread = worker
+        worker.start()
+
+        // A stuck engine must not leave the service (and the app's "disconnecting" state) hanging for good.
+        mainHandler.postDelayed({
+            if (tearingDown.get() && worker.isAlive && sessionEpoch.get() == epoch) {
+                Log.w(TAG, "teardown overran ${TEARDOWN_DEADLINE_MS}ms; releasing the service anyway")
+                stopSelf()
+            }
+        }, TEARDOWN_DEADLINE_MS)
     }
 
     private fun armTorBootstrapDeadline(bridged: java.util.concurrent.atomic.AtomicBoolean) {
@@ -1967,6 +2076,12 @@ class NrgVpnService : VpnService() {
         private const val ZEPTUN_PROOF_MS = 6_000L
 
         private const val NETWORK_SETTLE_MS = 1_500L
+
+        /** How long a new session waits for the previous one's teardown before it starts anyway. */
+        private const val TEARDOWN_JOIN_MS = 8_000L
+
+        /** After this long a teardown that has not finished no longer holds the service alive. */
+        private const val TEARDOWN_DEADLINE_MS = 15_000L
 
         private const val SHIM_PORT = LocalPorts.SHIM
 

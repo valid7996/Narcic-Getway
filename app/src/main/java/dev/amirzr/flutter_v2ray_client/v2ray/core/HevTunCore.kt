@@ -12,6 +12,7 @@ object HevTunCore {
     @Volatile
     private var running = false
 
+    @Synchronized
     fun start(
         context: Context,
         tun: ParcelFileDescriptor,
@@ -54,6 +55,7 @@ object HevTunCore {
 
     private val STOP_JOIN_WORKER_MS = 10_000L
 
+    @Synchronized
     fun stop() {
         if (!running) return
         running = false

@@ -16,6 +16,7 @@ object ZepTunCore {
     val version: String
         get() = runCatching { Zeptun.nativeVersion() }.getOrDefault("")
 
+    @Synchronized
     fun start(
         service: VpnService,
         tun: ParcelFileDescriptor,
@@ -86,6 +87,7 @@ object ZepTunCore {
     private fun counter(index: Int): Long =
         runCatching { Zeptun.nativeCounter(index) }.getOrDefault(-1L)
 
+    @Synchronized
     fun stop() {
         if (!running) return
         running = false

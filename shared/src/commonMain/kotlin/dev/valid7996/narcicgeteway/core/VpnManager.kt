@@ -5,6 +5,7 @@ import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 object VpnManager {
     data class Status(
@@ -79,57 +80,74 @@ object VpnManager {
 
     const val KIND_SSTP = "sstp"
 
+    // Every transition below is a single atomic update: the status is written from the main thread, the
+    // service's worker threads, the metrics loops and binder callbacks at once. A plain read-copy-write lost
+    // updates (e.g. a late metrics tick re-publishing "Connected" over a just-published "Idle"), which left the
+    // UI showing a live session that no longer existed.
+
     fun onStarting(remark: String) {
         activeSocksPort = null
-        _status.value = Status(
-            state = ConnectionState.Connecting,
-            serverName = remark,
-            sessionId = _status.value.sessionId + 1,
-        )
+        _status.update { prev ->
+            Status(
+                state = ConnectionState.Connecting,
+                serverName = remark,
+                sessionId = prev.sessionId + 1,
+            )
+        }
     }
 
     fun onStopping(): Boolean {
-        if (_status.value.state == ConnectionState.Idle) return false
-        _status.value = _status.value.copy(state = ConnectionState.Disconnecting)
-        return true
+        while (true) {
+            val prev = _status.value
+            if (prev.state == ConnectionState.Idle) return false
+            if (_status.compareAndSet(prev, prev.copy(state = ConnectionState.Disconnecting))) return true
+        }
     }
 
     fun onConnected(remark: String?) {
-        _status.value = _status.value.copy(
-            state = ConnectionState.Connected,
-            serverName = remark ?: _status.value.serverName,
-            error = null,
-        )
+        _status.update { prev ->
+            // A user stop is already under way: a late "connected" from the engine must not resurrect the session.
+            if (prev.state == ConnectionState.Disconnecting) prev
+            else prev.copy(
+                state = ConnectionState.Connected,
+                serverName = remark ?: prev.serverName,
+                error = null,
+            )
+        }
     }
 
     fun onMetrics(durationSeconds: Int, downBps: Long, upBps: Long, totalDown: Long, totalUp: Long) {
-        val s = _status.value
-        if (s.state != ConnectionState.Connected) return
-        _status.value = s.copy(
-            durationSeconds = durationSeconds,
-            downloadBps = downBps,
-            uploadBps = upBps,
-            totalDownload = totalDown,
-            totalUpload = totalUp,
-        )
+        _status.update { prev ->
+            if (prev.state != ConnectionState.Connected) prev
+            else prev.copy(
+                durationSeconds = durationSeconds,
+                downloadBps = downBps,
+                uploadBps = upBps,
+                totalDownload = totalDown,
+                totalUpload = totalUp,
+            )
+        }
     }
 
     fun onError(reason: String) {
-        _status.value = Status(
-            state = ConnectionState.Error,
-            error = reason,
-            sessionId = _status.value.sessionId,
-        )
+        _status.update { prev ->
+            Status(
+                state = ConnectionState.Error,
+                error = reason,
+                sessionId = prev.sessionId,
+            )
+        }
     }
 
     fun onDisconnected() {
         activeSocksPort = null
         _activeKind.value = null
-        val previous = _status.value
-        _status.value = Status(
-            state = ConnectionState.Idle,
-            serverName = previous.serverName,
-            sessionId = previous.sessionId,
-        )
+        _status.update { prev ->
+            Status(
+                state = ConnectionState.Idle,
+                serverName = prev.serverName,
+                sessionId = prev.sessionId,
+            )
+        }
     }
 }

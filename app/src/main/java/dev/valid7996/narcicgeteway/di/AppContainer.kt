@@ -140,18 +140,31 @@ class AppContainer(context: Context) {
         }
 
         scope.launch {
+            var disconnectingSince = 0L
             while (true) {
                 kotlinx.coroutines.delay(1000)
+
+                // Safety net: a teardown that never reports back must not leave the app stuck in "disconnecting"
+                // (the only way out used to be force-stopping the app).
+                if (VpnManager.status.value.state == ConnectionState.Disconnecting) {
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    if (disconnectingSince == 0L) disconnectingSince = now
+                    if (now - disconnectingSince > 20_000L) {
+                        android.util.Log.w("AppContainer", "stuck in Disconnecting; forcing the state back to idle")
+                        disconnectingSince = 0L
+                        runCatching { dev.valid7996.narcicgeteway.core.AndroidVpn.stop(context) }
+                        VpnManager.onDisconnected()
+                    }
+                } else {
+                    disconnectingSince = 0L
+                }
+
                 if (VpnManager.status.value.state.isActive) {
                     val active = configRepository.activeProfile()
                     val exp = active?.expiresAt
                     if (active?.isLocked == true && exp != null && System.currentTimeMillis() >= exp) {
                         android.util.Log.i("AppContainer", "Active locked profile has expired, disconnecting VPN")
-                        if (dev.valid7996.narcicgeteway.core.Ikev2Controller.isActive) {
-                            dev.valid7996.narcicgeteway.core.Ikev2Controller.stop(context)
-                        } else {
-                            dev.valid7996.narcicgeteway.core.AndroidVpn.stop(context)
-                        }
+                        dev.valid7996.narcicgeteway.core.AndroidVpn.stop(context)
                         VpnManager.onError(context.getString(dev.valid7996.narcicgeteway.R.string.zsx_expired))
                     }
                 }
