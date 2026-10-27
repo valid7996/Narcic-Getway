@@ -16,7 +16,7 @@ object GeoLookup {
     private val cacheLock = Mutex()
     private val cache = HashMap<String, String>()
 
-    private const val FAILURE_TTL_MS = 10 * 60_000L
+    private const val FAILURE_TTL_MS = 15_000L
     private val failures = HashMap<String, Long>()
 
     private const val RESOLVE_TIMEOUT_MS = 3_000L

@@ -1622,7 +1622,7 @@ class NrgVpnService : VpnService() {
     private fun stopEngines() {
         // The platform's own IKEv2 session first: it is the one thing that outlives this process if it is skipped.
         step("ikev2") {
-            if (ikev2Session || Ikev2Controller.isActive) Ikev2Controller.stop(this, publishState = false)
+            Ikev2Controller.stop(this, publishState = false)
             ikev2Session = false
         }
         step("stats") { statsJob?.cancel() }
@@ -1673,6 +1673,7 @@ class NrgVpnService : VpnService() {
     }
 
     private val tearingDown = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val queuedTeardown = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private fun stopEverything() {
         val tunToClose = tun
@@ -1687,24 +1688,33 @@ class NrgVpnService : VpnService() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             stopEngines()
             runCatching { tunToClose?.close() }
-            if (sessionEpoch.get() == epoch) stopSelf()
+            if (sessionEpoch.get() == epoch || userStop) stopSelf()
             return
         }
-        if (!tearingDown.compareAndSet(false, true)) return
+        if (!tearingDown.compareAndSet(false, true)) {
+            queuedTeardown.set(true)
+            return
+        }
 
         val worker = Thread({
-            runCatching { stopEngines() }
-            runCatching { tunToClose?.close() }
-            tearingDown.set(false)
-            // A start that arrived meanwhile owns the service now; stopping it here would kill that session.
-            if (sessionEpoch.get() == epoch) stopSelf()
+            try {
+                do {
+                    queuedTeardown.set(false)
+                    runCatching { stopEngines() }
+                    runCatching { tunToClose?.close() }
+                } while (queuedTeardown.get())
+            } finally {
+                tearingDown.set(false)
+                // A start that arrived meanwhile owns the service now; stopping it here would kill that session.
+                if (sessionEpoch.get() == epoch || userStop) stopSelf()
+            }
         }, "nrg-teardown").apply { isDaemon = false }
         teardownThread = worker
         worker.start()
 
         // A stuck engine must not leave the service (and the app's "disconnecting" state) hanging for good.
         mainHandler.postDelayed({
-            if (tearingDown.get() && worker.isAlive && sessionEpoch.get() == epoch) {
+            if (tearingDown.get() && worker.isAlive && (sessionEpoch.get() == epoch || userStop)) {
                 Log.w(TAG, "teardown overran ${TEARDOWN_DEADLINE_MS}ms; releasing the service anyway")
                 stopSelf()
             }

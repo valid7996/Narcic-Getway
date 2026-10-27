@@ -3,7 +3,9 @@ package dev.valid7996.narcicgeteway.platform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.HttpURLConnection
@@ -165,50 +167,63 @@ private fun parseServerTimingMillis(header: String?): Double {
     return num.toDoubleOrNull() ?: 0.0
 }
 
-internal actual suspend fun resolveHostAddress(host: String): String? = withContext(Dispatchers.IO) {
-    runCatching { InetAddress.getByName(host).hostAddress }.getOrNull()
-}
+private suspend fun resolveIpBounded(host: String, timeoutMs: Long = 2_000L): InetAddress? =
+    withTimeoutOrNull(timeoutMs) {
+        runInterruptible(Dispatchers.IO) {
+            runCatching { InetAddress.getByName(host) }.getOrNull()
+        }
+    }
+
+internal actual suspend fun resolveHostAddress(host: String): String? =
+    resolveIpBounded(host)?.hostAddress
 
 internal actual suspend fun tcpConnectMillis(host: String, port: Int, timeoutMs: Int): Long =
     withContext(Dispatchers.IO) {
-        var socket: Socket? = null
-        val start = System.currentTimeMillis()
-        try {
-            socket = Socket()
-            socket.connect(InetSocketAddress(host, port), timeoutMs)
-            System.currentTimeMillis() - start
-        } catch (e: Exception) {
-            -1L
-        } finally {
-            runCatching { socket?.takeIf { !it.isClosed }?.close() }
-        }
+        val budget = (timeoutMs + 2_000L).coerceAtLeast(3_000L)
+        withTimeoutOrNull(budget) {
+            var socket: Socket? = null
+            val start = System.currentTimeMillis()
+            try {
+                val ip = resolveIpBounded(host, 2_000L) ?: return@withTimeoutOrNull -1L
+                socket = Socket()
+                socket.connect(InetSocketAddress(ip, port), timeoutMs)
+                System.currentTimeMillis() - start
+            } catch (e: Exception) {
+                -1L
+            } finally {
+                runCatching { socket?.takeIf { !it.isClosed }?.close() }
+            }
+        } ?: -1L
     }
 
 internal actual suspend fun udpProbeIkev2(host: String, port: Int, timeoutMs: Int): Long =
     withContext(Dispatchers.IO) {
-        runCatching {
-            val ip = InetAddress.getByName(host)
-            DatagramSocket().use { socket ->
-                socket.soTimeout = timeoutMs
-                val spiI = ByteArray(8).apply { SecureRandom().nextBytes(this) }
-                val packet = ByteArray(36).apply {
-                    System.arraycopy(spiI, 0, this, 0, 8)
-                    this[16] = 33 // Next Payload: SA
-                    this[17] = 0x20 // Version: 2.0
-                    this[18] = 34 // Exchange: IKE_SA_INIT
-                    this[19] = 0x08 // Flags: Initiator
-                    this[27] = 36 // Length: 36
-                    this[31] = 8  // SA Payload Length: 8
+        val budget = (timeoutMs + 2_000L).coerceAtLeast(3_000L)
+        withTimeoutOrNull(budget) {
+            runCatching {
+                val ip = resolveIpBounded(host, 2_000L) ?: return@withTimeoutOrNull -1L
+                DatagramSocket().use { socket ->
+                    socket.soTimeout = timeoutMs
+                    val spiI = ByteArray(8).apply { SecureRandom().nextBytes(this) }
+                    val packet = ByteArray(36).apply {
+                        System.arraycopy(spiI, 0, this, 0, 8)
+                        this[16] = 33 // Next Payload: SA
+                        this[17] = 0x20 // Version: 2.0
+                        this[18] = 34 // Exchange: IKE_SA_INIT
+                        this[19] = 0x08 // Flags: Initiator
+                        this[27] = 36 // Length: 36
+                        this[31] = 8  // SA Payload Length: 8
+                    }
+                    val sendPacket = DatagramPacket(packet, packet.size, ip, port)
+                    val t0 = System.currentTimeMillis()
+                    socket.send(sendPacket)
+                    val recvBuf = ByteArray(2048)
+                    val recvPacket = DatagramPacket(recvBuf, recvBuf.size)
+                    socket.receive(recvPacket)
+                    (System.currentTimeMillis() - t0).coerceAtLeast(1L)
                 }
-                val sendPacket = DatagramPacket(packet, packet.size, ip, port)
-                val t0 = System.currentTimeMillis()
-                socket.send(sendPacket)
-                val recvBuf = ByteArray(2048)
-                val recvPacket = DatagramPacket(recvBuf, recvBuf.size)
-                socket.receive(recvPacket)
-                (System.currentTimeMillis() - t0).coerceAtLeast(1L)
-            }
-        }.getOrDefault(-1L)
+            }.getOrDefault(-1L)
+        } ?: -1L
     }
 
 internal actual suspend fun httpStreamTransfer(

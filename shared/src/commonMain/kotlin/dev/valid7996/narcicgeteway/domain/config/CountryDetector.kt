@@ -44,16 +44,16 @@ object CountryDetector {
             "chicago", "miami", "seattle", "san jose", "silicon valley", "phoenix", "ashburn",
             "virginia", "california", "ohio", "واشنگتن", "نیویورک", "دالاس", "شیکاگو", "میامی",
             "کالیفرنیا", "آمریکا", "ایالات متحده", "-us-", ".us.", " us ", "(us)", "[us]", "_us_",
-            "us-", "-us", "usa",
+            "us-", "-us", "usa", "atl-", "jfk-", "dfw-", "ord-", "lax-", "mia-", "sea-",
         ),
         "FR" to listOf(
             "france", "paris", "marseille", "lyon", "پاریس", "فرانسه", "-fr-", ".fr.", " fr ",
-            "(fr)", "[fr]", "_fr_", "fr-", "-fr", "fra",
+            "(fr)", "[fr]", "_fr_", "fr-", "-fr", "fra", "cdg-", "ory-",
         ),
         "DE" to listOf(
             "germany", "deutschland", "frankfurt", "berlin", "munich", "dusseldorf", "hamburg",
             "فرانکفورت", "برلین", "مونیخ", "آلمان", "-de-", ".de.", " de ", "(de)", "[de]", "_de_",
-            "de-", "-de", "ger",
+            "de-", "-de", "ger", "fra-", "muc-",
         ),
         "GB" to listOf(
             "united kingdom", "great britain", "england", "london", "manchester", "لندن",
@@ -63,14 +63,15 @@ object CountryDetector {
         "CA" to listOf(
             "canada", "toronto", "montreal", "vancouver", "calgary", "ottawa", "تورنتو",
             "مونترال", "ونکوور", "کانادا", "-ca-", ".ca.", " ca ", "(ca)", "[ca]", "_ca_", "ca-", "-ca",
+            "tor-", "yvr-", "yyz-",
         ),
         "NL" to listOf(
             "netherlands", "holland", "amsterdam", "rotterdam", "آمستردام", "هلند",
-            "-nl-", ".nl.", " nl ", "(nl)", "[nl]", "_nl_", "nl-", "-nl", "nld",
+            "-nl-", ".nl.", " nl ", "(nl)", "[nl]", "_nl_", "nl-", "-nl", "nld", "ams-",
         ),
         "IL" to listOf(
             "israel", "tel aviv", "jerusalem", "تل آویو", "اسرائیل",
-            "-il-", ".il.", " il ", "(il)", "[il]", "_il_", "il-", "-il", "isr",
+            "-il-", ".il.", " il ", "(il)", "[il]", "_il_", "il-", "-il", "isr", "tlv-",
         ),
         "IN" to listOf(
             "india", "mumbai", "delhi", "bangalore", "دهلی", "بمبئی", "هند",

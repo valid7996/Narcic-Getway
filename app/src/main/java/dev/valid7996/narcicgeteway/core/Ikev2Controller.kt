@@ -319,7 +319,7 @@ object Ikev2Controller {
             return
         }
         try {
-            platformExecutor.submit(task).get(PLATFORM_CALL_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            platformExecutor.submit(task).get(3_000L, TimeUnit.MILLISECONDS)
         } catch (e: Exception) {
             note("releasing the platform VPN profile did not finish", e)
         }
@@ -344,6 +344,10 @@ object Ikev2Controller {
                 VpnManager.onConnected(remark).also { startMetrics() }
             }
             state == VpnProfileState.STATE_DISCONNECTED -> {
+                if (System.currentTimeMillis() - sessionStartedAt < 3_000L) {
+                    note("ignoring a disconnect event within startup grace period")
+                    return
+                }
                 // The event carries a snapshot; confirm against the platform before tearing the session down, so a
                 // stale or transient snapshot (or an event sent by another app - the receiver is exported) cannot
                 // kill a healthy tunnel.

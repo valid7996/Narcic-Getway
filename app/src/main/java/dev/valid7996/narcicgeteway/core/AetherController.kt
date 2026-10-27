@@ -63,8 +63,20 @@ class AetherController(
 
     fun stop() {
         stopped = true
-        runCatching { process?.destroy() }
+        val p = process
+        process = null
+        if (p != null) {
+            runCatching {
+                p.destroy()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (!p.waitFor(300, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                        p.destroyForcibly()
+                    }
+                }
+            }
+        }
         runCatching { worker?.interrupt() }
+        AetherSupport.reapStale(context, "127.0.0.1:$socksPort")
     }
 
     private fun runSession(binary: File) {
@@ -135,7 +147,9 @@ class AetherController(
             // PattNG waits for the listener as long as the core lives: a scan of a hard network,
             // and a Psiphon or Tor carrier, takes minutes. The stop flag and the process death end it.
             var ready = false
-            while (!stopped) {
+            val startWait = System.currentTimeMillis()
+            val maxWait = 25_000L
+            while (!stopped && (System.currentTimeMillis() - startWait < maxWait)) {
                 if ((!needsWord || readyWordSeen) && AetherSupport.answersSocks(listenPort)) {
                     ready = true
                     break

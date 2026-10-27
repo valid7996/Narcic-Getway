@@ -358,7 +358,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var lastToggleTime = 0L
+    private val toggleDebounceMs = 600L
+
     private fun toggleConnection() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastToggleTime < toggleDebounceMs) return
+        lastToggleTime = now
+
         val state = VpnManager.status.value.state
         if (state.isActive || state.isTransitioning) {
             // One path for every engine, IKEv2 included: the service performs the teardown. Stopping the IKEv2
