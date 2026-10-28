@@ -86,6 +86,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -1348,25 +1349,33 @@ private fun ConnectButton(
     }
 
     Box(Modifier.fillMaxWidth()) {
-        // Aurora glow behind the button — the signature of the new design.
+        // Soft aurora glow behind the button. Drawn as a few stacked rounded
+        // rects that fade outward, so it never gets scaled past the screen
+        // edges and has no hard outline.
         if (glow > 0.01f) {
             Box(
                 Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .height(if (compact) 56.dp else 72.dp)
-                    .graphicsLayer {
-                        alpha = glow * 0.5f
-                        val spread = 1f + 16.dp.toPx() * glow / size.height.coerceAtLeast(1f)
-                        scaleX = spread
-                        scaleY = spread
-                    }
-                    .clip(RoundedCornerShape(50))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(NrgViolet.copy(alpha = 0.55f), NrgCyan.copy(alpha = 0.55f)),
-                        ),
-                    ),
+                    .matchParentSize()
+                    .drawBehind {
+                        val layers = 7
+                        val reach = 12.dp.toPx() * glow
+                        val brush = Brush.horizontalGradient(
+                            listOf(NrgViolet, NrgCyan),
+                        )
+                        for (i in layers downTo 1) {
+                            val t = i / layers.toFloat()
+                            val growY = reach * t
+                            val growX = growY * 0.4f
+                            val h = size.height + growY * 2f
+                            drawRoundRect(
+                                brush = brush,
+                                topLeft = Offset(-growX, -growY),
+                                size = Size(size.width + growX * 2f, h),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(h / 2f),
+                                alpha = 0.07f * glow,
+                            )
+                        }
+                    },
             )
         }
 

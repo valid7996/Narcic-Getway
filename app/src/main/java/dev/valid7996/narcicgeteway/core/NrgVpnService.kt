@@ -153,7 +153,17 @@ class NrgVpnService : VpnService() {
                 startInForeground(connectingNotification())
                 scope.launch { startTunnel(config, socksPort, kind) }
             }
-            command == VpnManager.CMD_STOP -> { userStop = true; stopEverything() }
+            command == VpnManager.CMD_STOP -> {
+                // The notification's Disconnect button also lands here for IKEv2 sessions, which the
+                // platform runs: there is no tunnel of ours to tear down, only the platform profile.
+                if (Ikev2Controller.isActive) {
+                    Ikev2Controller.stop(this)
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                userStop = true
+                stopEverything()
+            }
 
             command == VpnManager.CMD_START_ACTIVE -> startActiveProfile(allowProxyOnly = true)
 

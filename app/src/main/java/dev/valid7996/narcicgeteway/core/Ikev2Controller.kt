@@ -1,5 +1,6 @@
 package dev.valid7996.narcicgeteway.core
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -18,6 +19,7 @@ import dev.valid7996.narcicgeteway.core.AppLog as Log
 import androidx.annotation.RequiresApi
 import dev.valid7996.narcicgeteway.R
 import dev.valid7996.narcicgeteway.core.LogBus
+import dev.valid7996.narcicgeteway.data.settings.SettingsRepository
 import dev.valid7996.narcicgeteway.domain.config.Ikev2Auth
 import dev.valid7996.narcicgeteway.domain.config.Ikev2Profile
 import java.io.ByteArrayInputStream
@@ -43,10 +45,80 @@ object Ikev2Controller {
 
     private const val POLL_INTERVAL_MS = 750L
 
+    private const val NOTIFY_EVERY_TICKS = 2
+
     @Volatile
     private var activeRemark: String? = null
 
     val isActive: Boolean get() = activeRemark != null
+
+    // The platform owns the IKEv2 tunnel, so no foreground service of ours runs for it. Without this the
+    // session had no notification at all (only the system key icon). We post the same notification the
+    // other engines show, as a plain ongoing notification that we update and cancel ourselves.
+    @Volatile
+    private var appCtx: Context? = null
+
+    @Volatile
+    private var connectedAtMs: Long = 0L
+
+    private val notifLock = Any()
+
+    private fun postNotification(
+        context: Context,
+        connected: Boolean,
+        downBps: Long = 0,
+        upBps: Long = 0,
+        totalDown: Long = 0,
+        totalUp: Long = 0,
+    ) {
+        val app = context.applicationContext
+        appCtx = app
+        synchronized(notifLock) {
+            val remark = activeRemark ?: return
+            runCatching {
+                val settings = SettingsRepository(app).settings.value
+                val notifications = VpnNotifications(app)
+                notifications.createChannel()
+                val notification = notifications.build(
+                    server = remark,
+                    phase = if (connected) {
+                        VpnNotifications.Phase.Connected
+                    } else {
+                        VpnNotifications.Phase.Connecting(VpnNotifications.Stage.Tunnel)
+                    },
+                    protocolLabel = "IKEv2",
+                    downBps = downBps,
+                    upBps = upBps,
+                    totalDown = totalDown,
+                    totalUp = totalUp,
+                    connectedAt = if (connected) connectedAtMs else 0L,
+                    showSpeed = settings.speedInNotification,
+                    livePromotion = settings.liveNotification,
+                    chip = settings.notifChip,
+                )
+                app.getSystemService(NotificationManager::class.java)
+                    ?.notify(VpnNotifications.NOTIFICATION_ID, notification)
+            }.onFailure { Log.w(TAG, "could not post the IKEv2 notification", it) }
+        }
+    }
+
+    private fun cancelNotification(context: Context? = null) {
+        val app = (context?.applicationContext ?: appCtx) ?: return
+        synchronized(notifLock) {
+            connectedAtMs = 0L
+            runCatching {
+                app.getSystemService(NotificationManager::class.java)
+                    ?.cancel(VpnNotifications.NOTIFICATION_ID)
+            }
+        }
+    }
+
+    private fun markConnected(context: Context, remark: String?) {
+        if (connectedAtMs == 0L) connectedAtMs = System.currentTimeMillis()
+        VpnManager.onConnected(remark)
+        postNotification(context, connected = true)
+        startMetrics()
+    }
 
     fun isSupported(context: Context): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
@@ -124,12 +196,13 @@ object Ikev2Controller {
         }
 
         VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
+        postNotification(context, connected = false)
         awaitConnected(context, remark)
     }
 
     private fun awaitConnected(context: Context, remark: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            VpnManager.onConnected(remark).also { startMetrics() }
+            markConnected(context, remark)
             return
         }
         val deadline = System.currentTimeMillis() + CONNECT_TIMEOUT_MS
@@ -138,7 +211,7 @@ object Ikev2Controller {
             when (currentState(context)) {
                 VpnProfileState.STATE_CONNECTED -> {
                     note("platform reports CONNECTED")
-                    VpnManager.onConnected(remark).also { startMetrics() }
+                    markConnected(context, remark)
                     return
                 }
                 VpnProfileState.STATE_FAILED -> {
@@ -163,6 +236,7 @@ object Ikev2Controller {
     private fun fail(context: Context, reason: String, cause: Throwable?) {
         note("failed: $reason", cause)
         activeRemark = null
+        cancelNotification(context)
         runCatching {
             context.getSystemService(android.net.VpnManager::class.java)?.stopProvisionedVpnProfile()
         }
@@ -177,6 +251,7 @@ object Ikev2Controller {
         var lastTx = android.net.TrafficStats.getTotalTxBytes()
         var totalDown = 0L
         var totalUp = 0L
+        var ticks = 0
         metricsJob = metricsScope.launch {
             while (isActive) {
                 delay(1_000)
@@ -194,6 +269,10 @@ object Ikev2Controller {
                     ((System.currentTimeMillis() - startedAt) / 1000).toInt(),
                     down, up, totalDown, totalUp,
                 )
+                ticks++
+                if (ticks % NOTIFY_EVERY_TICKS == 0) {
+                    appCtx?.let { postNotification(it, connected = true, down, up, totalDown, totalUp) }
+                }
             }
         }
     }
@@ -209,6 +288,7 @@ object Ikev2Controller {
     fun stop(context: Context) {
         stopMetrics()
         activeRemark = null
+        cancelNotification(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             runCatching {
                 context.getSystemService(android.net.VpnManager::class.java)?.stopProvisionedVpnProfile()
@@ -231,9 +311,14 @@ object Ikev2Controller {
             reason != null -> fail(context, reason, null)
             state == VpnProfileState.STATE_CONNECTED -> {
                 VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
-                VpnManager.onConnected(remark).also { startMetrics() }
+                markConnected(context, remark)
             }
-            state == VpnProfileState.STATE_DISCONNECTED -> { activeRemark = null; VpnManager.onDisconnected() }
+            state == VpnProfileState.STATE_DISCONNECTED -> {
+                stopMetrics()
+                activeRemark = null
+                cancelNotification(context)
+                VpnManager.onDisconnected()
+            }
         }
     }
 
@@ -244,10 +329,15 @@ object Ikev2Controller {
         if (up && activeRemark == null) {
             activeRemark = context.getString(R.string.ikev2_adopted_session)
             VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
-            if (state == VpnProfileState.STATE_CONNECTED) VpnManager.onConnected(activeRemark).also { startMetrics() }
-            else VpnManager.onStarting(activeRemark!!)
+            if (state == VpnProfileState.STATE_CONNECTED) markConnected(context, activeRemark)
+            else {
+                VpnManager.onStarting(activeRemark!!)
+                postNotification(context, connected = false)
+            }
         } else if (!up && activeRemark != null) {
+            stopMetrics()
             activeRemark = null
+            cancelNotification(context)
             VpnManager.onDisconnected()
         }
         return up

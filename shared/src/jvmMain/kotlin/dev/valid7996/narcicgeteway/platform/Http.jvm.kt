@@ -49,6 +49,13 @@ internal actual fun httpGetResponse(
         readTimeout = readTimeoutMs
         instanceFollowRedirects = true
         setRequestProperty("User-Agent", userAgent)
+        target.userInfo?.takeIf { it.isNotBlank() }?.let { info ->
+            val credentials = java.net.URLDecoder.decode(if (':' in info) info else "$info:", "UTF-8")
+            setRequestProperty(
+                "Authorization",
+                "Basic " + java.util.Base64.getEncoder().encodeToString(credentials.toByteArray()),
+            )
+        }
     }
     try {
         val code = connection.responseCode
