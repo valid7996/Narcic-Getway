@@ -79,6 +79,15 @@ class NrgVpnService : VpnService() {
     private var crossInnerKind: String? = null
 
     @Volatile private var userStop = false
+
+    // Stop and start used to overlap: stopEverything() reported "disconnected" at once but closed the engines on a
+    // side thread, so a quick reconnect started a new tunnel while the old one was still being torn down (and the
+    // old teardown then stopped the new engines or the whole service). Teardowns now run one at a time, a start
+    // waits for them, and a stop that arrives while a start is waiting cancels that start.
+    private val teardownExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "nrg-teardown") }
+    private val pendingTeardowns = java.util.concurrent.atomic.AtomicInteger(0)
+    private val sessionGen = java.util.concurrent.atomic.AtomicInteger(0)
+    @Volatile private var lastStartId = 0
     private var killSwitchEnabled = false
 
     private var killSwitchActive = false
@@ -113,6 +122,7 @@ class NrgVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val command = intent?.getStringExtra(VpnManager.EXTRA_COMMAND)
+        lastStartId = startId
 
         if (command != VpnManager.CMD_STOP) {
             val wentForeground = runCatching {
@@ -151,7 +161,11 @@ class NrgVpnService : VpnService() {
                 resetSessionState()
                 stage = VpnNotifications.Stage.Preparing
                 startInForeground(connectingNotification())
-                scope.launch { startTunnel(config, socksPort, kind) }
+                val gen = sessionGen.incrementAndGet()
+                scope.launch {
+                    if (!awaitTeardown(gen)) return@launch
+                    startTunnel(config, socksPort, kind)
+                }
             }
             command == VpnManager.CMD_STOP -> {
                 // The notification's Disconnect button also lands here for IKEv2 sessions, which the
@@ -191,7 +205,9 @@ class NrgVpnService : VpnService() {
         stage = VpnNotifications.Stage.Preparing
 
         startInForeground(connectingNotification())
+        val gen = sessionGen.incrementAndGet()
         scope.launch {
+            if (!awaitTeardown(gen)) return@launch
             when (val plan = StartPlanner(this@NrgVpnService).planActive(allowProxyOnly)) {
                 is StartPlanner.Plan.Start -> {
                     VpnManager.onStarting(plan.remark)
@@ -1540,9 +1556,24 @@ class NrgVpnService : VpnService() {
         lastUidTx = -1L
     }
 
-    private val tearingDown = java.util.concurrent.atomic.AtomicBoolean(false)
+    /**
+     * Waits for any teardown still running, then says whether this start is still wanted (a stop that came in
+     * meanwhile bumps [sessionGen] and cancels it).
+     */
+    private suspend fun awaitTeardown(gen: Int): Boolean {
+        if (pendingTeardowns.get() > 0) {
+            kotlinx.coroutines.withContext(Dispatchers.IO) {
+                runCatching {
+                    teardownExecutor.submit(Runnable { }).get(TEARDOWN_WAIT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+                }.onFailure { Log.w(TAG, "previous session is still closing; starting anyway", it) }
+            }
+        }
+        return sessionGen.get() == gen
+    }
 
     private fun stopEverything() {
+        val stopId = lastStartId
+        sessionGen.incrementAndGet()
         val tunToClose = tun
         tun = null
         connected = false
@@ -1551,20 +1582,22 @@ class NrgVpnService : VpnService() {
         NrgWidgetProvider.refresh(this, force = true)
         unregisterScreenReceiver()
 
-        if (Looper.myLooper() != Looper.getMainLooper()) {
-            stopEngines()
-            runCatching { tunToClose?.close() }
-            stopSelf()
-            return
+        pendingTeardowns.incrementAndGet()
+        val work = Runnable {
+            try {
+                runCatching { stopEngines() }
+                runCatching { tunToClose?.close() }
+            } finally {
+                pendingTeardowns.decrementAndGet()
+                // Only stops the service if no newer start command has arrived in the meantime.
+                stopSelf(stopId)
+            }
         }
-        if (!tearingDown.compareAndSet(false, true)) return
-
-        Thread({
-            runCatching { stopEngines() }
-            runCatching { tunToClose?.close() }
-            tearingDown.set(false)
-            stopSelf()
-        }, "nrg-teardown").apply { isDaemon = false }.start()
+        try {
+            teardownExecutor.execute(work)
+        } catch (e: java.util.concurrent.RejectedExecutionException) {
+            work.run()
+        }
     }
 
     private fun armTorBootstrapDeadline(bridged: java.util.concurrent.atomic.AtomicBoolean) {
@@ -1597,7 +1630,7 @@ class NrgVpnService : VpnService() {
     }
 
     private fun onTunnelFailed(reason: String?) {
-        if (userStop || killSwitchActive) return
+        if (userStop || killSwitchActive || pendingTeardowns.get() > 0) return
         if (killSwitchEnabled && connected && ensureKillSwitchTun()) {
             killSwitchActive = true
             stopEngines()
@@ -1628,6 +1661,7 @@ class NrgVpnService : VpnService() {
         XrayController.onCoreShutdown = null
         unregisterScreenReceiver()
         scope.cancel()
+        teardownExecutor.shutdown()
         super.onDestroy()
     }
 
@@ -1932,6 +1966,8 @@ class NrgVpnService : VpnService() {
         private const val MASTERDNS_MAX_WAIT_MS = 300_000L
 
         private const val TOR_BOOTSTRAP_TIMEOUT_MS = 120_000L
+
+        private const val TEARDOWN_WAIT_MS = 10_000L
 
         private const val SNISPOOF_PORT = LocalPorts.SNI_SPOOF
         private const val MTU = 1500
