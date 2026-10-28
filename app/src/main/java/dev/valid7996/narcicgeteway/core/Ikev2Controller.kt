@@ -54,7 +54,7 @@ object Ikev2Controller {
 
     val isStopping: Boolean get() = isDisconnecting
 
-    private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var pollJob: Job? = null
     private var teardownJob: Job? = null
 
