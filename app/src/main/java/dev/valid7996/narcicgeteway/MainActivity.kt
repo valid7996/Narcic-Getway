@@ -28,6 +28,7 @@ import dev.valid7996.narcicgeteway.core.VpnManager
 import dev.valid7996.narcicgeteway.core.platform.LocaleManager
 import dev.valid7996.narcicgeteway.data.config.ConfigRepository
 import dev.valid7996.narcicgeteway.data.settings.SettingsRepository
+import dev.valid7996.narcicgeteway.domain.model.ConnectionState
 import dev.valid7996.narcicgeteway.domain.model.ThemeMode
 import dev.valid7996.narcicgeteway.platform.AndroidPlatform
 import dev.valid7996.narcicgeteway.ui.MainScaffold
