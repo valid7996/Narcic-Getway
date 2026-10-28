@@ -47,6 +47,17 @@ object Ikev2Controller {
 
     private const val NOTIFY_EVERY_TICKS = 2
 
+    const val DISCONNECT_COOLDOWN_MS = 5_000L
+
+    @Volatile
+    private var isDisconnecting = false
+
+    val isStopping: Boolean get() = isDisconnecting
+
+    private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var pollJob: Job? = null
+    private var teardownJob: Job? = null
+
     @Volatile
     private var activeRemark: String? = null
 
@@ -197,17 +208,20 @@ object Ikev2Controller {
 
         VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
         postNotification(context, connected = false)
-        awaitConnected(context, remark)
+        pollJob?.cancel()
+        pollJob = controllerScope.launch(Dispatchers.IO) {
+            awaitConnected(context, remark)
+        }
     }
 
-    private fun awaitConnected(context: Context, remark: String) {
+    private suspend fun awaitConnected(context: Context, remark: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             markConnected(context, remark)
             return
         }
         val deadline = System.currentTimeMillis() + CONNECT_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
-            if (activeRemark == null) return
+            if (activeRemark == null || isDisconnecting) return
             when (currentState(context)) {
                 VpnProfileState.STATE_CONNECTED -> {
                     note("platform reports CONNECTED")
@@ -222,7 +236,7 @@ object Ikev2Controller {
                 }
                 else -> Unit
             }
-            runCatching { Thread.sleep(POLL_INTERVAL_MS) }.onFailure { return }
+            delay(POLL_INTERVAL_MS)
         }
         fail(context, context.getString(R.string.ikev2_connect_timeout), null)
     }
@@ -235,6 +249,9 @@ object Ikev2Controller {
 
     private fun fail(context: Context, reason: String, cause: Throwable?) {
         note("failed: $reason", cause)
+        pollJob?.cancel()
+        pollJob = null
+        stopMetrics()
         activeRemark = null
         cancelNotification(context)
         runCatching {
@@ -286,16 +303,36 @@ object Ikev2Controller {
     private var metricsJob: Job? = null
 
     fun stop(context: Context) {
+        if (isDisconnecting) return
+        val wasActive = activeRemark != null || VpnManager.status.value.state.isActive
+        pollJob?.cancel()
+        pollJob = null
         stopMetrics()
         activeRemark = null
         cancelNotification(context)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             runCatching {
                 context.getSystemService(android.net.VpnManager::class.java)?.stopProvisionedVpnProfile()
             }
             forgetProvisionedProfile(context)
         }
-        VpnManager.onDisconnected()
+
+        if (wasActive) {
+            isDisconnecting = true
+            VpnManager.onStopping()
+            teardownJob?.cancel()
+            teardownJob = controllerScope.launch {
+                try {
+                    delay(DISCONNECT_COOLDOWN_MS)
+                } finally {
+                    isDisconnecting = false
+                    VpnManager.onDisconnected()
+                }
+            }
+        } else {
+            VpnManager.onDisconnected()
+        }
     }
 
     fun forgetProvisionedProfile(context: Context) {
@@ -314,6 +351,9 @@ object Ikev2Controller {
                 markConnected(context, remark)
             }
             state == VpnProfileState.STATE_DISCONNECTED -> {
+                if (isDisconnecting) return
+                pollJob?.cancel()
+                pollJob = null
                 stopMetrics()
                 activeRemark = null
                 cancelNotification(context)
@@ -335,6 +375,9 @@ object Ikev2Controller {
                 postNotification(context, connected = false)
             }
         } else if (!up && activeRemark != null) {
+            if (isDisconnecting) return false
+            pollJob?.cancel()
+            pollJob = null
             stopMetrics()
             activeRemark = null
             cancelNotification(context)

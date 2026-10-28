@@ -362,6 +362,7 @@ class MainActivity : ComponentActivity() {
 
     private fun toggleConnection() {
         val state = VpnManager.status.value.state
+        if (state == ConnectionState.Disconnecting || dev.valid7996.narcicgeteway.core.Ikev2Controller.isStopping) return
         if (state.isActive || state.isTransitioning) {
             if (dev.valid7996.narcicgeteway.core.Ikev2Controller.isActive) {
                 dev.valid7996.narcicgeteway.core.Ikev2Controller.stop(this)
@@ -405,6 +406,10 @@ class MainActivity : ComponentActivity() {
 
     private fun startIkev2(remark: String, ikev2: dev.valid7996.narcicgeteway.domain.config.Ikev2Profile) {
         val controller = dev.valid7996.narcicgeteway.core.Ikev2Controller
+        if (controller.isStopping) {
+            toast(getString(R.string.state_disconnecting))
+            return
+        }
         if (!controller.isSupportedSdk) {
             toast(getString(R.string.ikev2_requires_android11))
             return
