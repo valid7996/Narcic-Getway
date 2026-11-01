@@ -1907,4 +1907,16 @@
 
     <string name="tg_proxies_fetched">تعداد %1$d پروکسی زنده از @%2$s دریافت شد</string>
     <string name="tg_test_ping_btn">تست پینگ</string>
+    <string name="adb_logs_title">لاگ ADB (Logcat و کرش)</string>
+    <string name="adb_logs_settings_sub">گزارش خطاهای سیستمی و کرش‌ها جهت عیب‌یابی</string>
+    <string name="adb_logs_copied">لاگ ADB در کلیپ‌بورد کپی شد</string>
+    <string name="adb_logs_loading">در حال خواندن لاگ سیستم ADB…</string>
+    <string name="adb_logs_filter_all">همه</string>
+    <string name="adb_logs_filter_errors">خطاها و کرش‌ها</string>
+    <string name="adb_logs_filter_core">هسته و VPN</string>
+    <string name="adb_logs_crash_detected">گزارش کرش ثبت‌شده</string>
+    <string name="adb_logs_empty">هیچ لاگی یافت نشد</string>
+    <string name="adb_logs_switch_btn">لاگ ADB</string>
+    <string name="adb_logs_refresh">تازه‌سازی</string>
+    <string name="adb_logs_share_filename">narcic-adb-log.txt</string>
 </resources>

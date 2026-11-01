@@ -31,6 +31,8 @@ class NrgSecureApp : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
 
+        dev.valid7996.narcicgeteway.core.CrashReporter.init(this)
+
         container = AppContainer(this)
 
         XrayController.warmUp(this)

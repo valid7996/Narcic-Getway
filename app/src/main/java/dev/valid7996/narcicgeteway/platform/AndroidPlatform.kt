@@ -185,6 +185,15 @@ class AndroidPlatform(
             .onFailure { ZsxSharing.shareText(context, "narcicgeteway-export.txt", text) }
     }
 
+    override suspend fun dumpAdbLogs(): String = dev.valid7996.narcicgeteway.core.AdbLogCollector.collect(context)
+
+    override fun shareLogFile(fileName: String, content: String) {
+        ZsxSharing.shareText(context, fileName, content)
+    }
+
+    override val hasRecordedCrash: Boolean
+        get() = dev.valid7996.narcicgeteway.core.CrashReporter.hasCrash(context)
+
     override fun openUri(url: String) {
         runCatching {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {

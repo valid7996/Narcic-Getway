@@ -950,4 +950,16 @@
 
     <string name="tg_proxies_fetched">تم استلام %1$d بروكسي مباشر من @%2$s</string>
     <string name="tg_test_ping_btn">فحص الاستجابة</string>
+    <string name="adb_logs_title">سجل ADB (Logcat والانهيار)</string>
+    <string name="adb_logs_settings_sub">تقرير أخطاء النظام والأعطال لاستكشاف الأخطاء</string>
+    <string name="adb_logs_copied">تم نسخ سجل ADB إلى الحافظة</string>
+    <string name="adb_logs_loading">جارٍ قراءة سجل النظام ADB…</string>
+    <string name="adb_logs_filter_all">الكل</string>
+    <string name="adb_logs_filter_errors">الأخطاء والانهيارات</string>
+    <string name="adb_logs_filter_core">الشبكة و VPN</string>
+    <string name="adb_logs_crash_detected">تم تسجيل تقرير الانهيار</string>
+    <string name="adb_logs_empty">لا توجد سجلات</string>
+    <string name="adb_logs_switch_btn">سجل ADB</string>
+    <string name="adb_logs_refresh">تحديث</string>
+    <string name="adb_logs_share_filename">narcic-adb-log.txt</string>
 </resources>

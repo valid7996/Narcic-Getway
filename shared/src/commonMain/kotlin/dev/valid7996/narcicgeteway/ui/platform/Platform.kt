@@ -48,6 +48,17 @@ interface Platform {
 
     fun shareFiles(files: List<Pair<String, ByteArray>>) {}
 
+    /** Dumps the system/ADB logcat and any recorded crash trace. */
+    suspend fun dumpAdbLogs(): String = ""
+
+    /** Shares log content as a text file named [fileName]. */
+    fun shareLogFile(fileName: String, content: String) {
+        shareText(content)
+    }
+
+    /** True if a recent crash trace has been recorded. */
+    val hasRecordedCrash: Boolean get() = false
+
     fun liveStats(): LiveStats = LiveStats()
 
     /** The state of the no-root SNI spoof engine, one line ("inactive", "active -> ip:port (sni=..., method=...)", "failed: ..."). */

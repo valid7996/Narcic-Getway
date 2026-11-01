@@ -989,4 +989,16 @@
 
     <string name="tg_proxies_fetched">Received %1$d live proxies from @%2$s</string>
     <string name="tg_test_ping_btn">Test Ping</string>
+    <string name="adb_logs_title">ADB Log (Logcat)</string>
+    <string name="adb_logs_settings_sub">System crash &amp; diagnostic logs for troubleshooting</string>
+    <string name="adb_logs_copied">ADB log copied to clipboard</string>
+    <string name="adb_logs_loading">Reading system logcat…</string>
+    <string name="adb_logs_filter_all">All</string>
+    <string name="adb_logs_filter_errors">Errors &amp; Crashes</string>
+    <string name="adb_logs_filter_core">VPN &amp; Cores</string>
+    <string name="adb_logs_crash_detected">Crash Report Recorded</string>
+    <string name="adb_logs_empty">No log lines available</string>
+    <string name="adb_logs_switch_btn">ADB Logcat</string>
+    <string name="adb_logs_refresh">Refresh</string>
+    <string name="adb_logs_share_filename">narcic-adb-log.txt</string>
 </resources>

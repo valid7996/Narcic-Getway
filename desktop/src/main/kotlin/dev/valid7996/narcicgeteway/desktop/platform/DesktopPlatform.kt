@@ -56,6 +56,32 @@ object DesktopPlatform : Platform {
         LogBus.append("I/$message")
     }
 
+    override suspend fun dumpAdbLogs(): String = withContext(Dispatchers.IO) {
+        val sb = StringBuilder()
+        sb.appendLine("==================================================")
+        sb.appendLine("🖥️ Narcic Getway - اطلاعات سیستم دسکتاپ")
+        sb.appendLine("==================================================")
+        sb.appendLine("سیستم‌عامل: ${System.getProperty("os.name")} ${System.getProperty("os.version")} (${System.getProperty("os.arch")})")
+        sb.appendLine("نسخه جاوا: ${System.getProperty("java.version")} (${System.getProperty("java.vendor")})")
+        sb.appendLine("شناسه پردازه (PID): ${ProcessHandle.current().pid()}")
+        sb.appendLine("شتاب رمزنگاری: ${cryptoAcceleration()}")
+        sb.appendLine()
+        sb.appendLine("==================================================")
+        sb.appendLine("📋 لاگ‌های برنامه (Application Logs):")
+        sb.appendLine("==================================================")
+        val lines = LogBus.lines.value
+        if (lines.isEmpty()) {
+            sb.appendLine("هیچ لاگی ثبت نشده است.")
+        } else {
+            lines.forEach { sb.appendLine(it) }
+        }
+        sb.toString()
+    }
+
+    override fun shareLogFile(fileName: String, content: String) {
+        shareFiles(listOf(fileName to content.toByteArray(Charsets.UTF_8)))
+    }
+
     override fun shareFiles(files: List<Pair<String, ByteArray>>) {
         if (files.isEmpty()) return
         val named = uniqueNames(files.map { (name, bytes) ->

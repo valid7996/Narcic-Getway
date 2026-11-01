@@ -1811,4 +1811,16 @@
 
     <string name="tg_proxies_fetched">从 @%2$s 接收到 %1$d 个在线代理</string>
     <string name="tg_test_ping_btn">测试延迟</string>
+    <string name="adb_logs_title">ADB 日志 (Logcat)</string>
+    <string name="adb_logs_settings_sub">系统错误与崩溃日志排查</string>
+    <string name="adb_logs_copied">ADB 日志已复制到剪贴板</string>
+    <string name="adb_logs_loading">正在读取系统 logcat…</string>
+    <string name="adb_logs_filter_all">全部</string>
+    <string name="adb_logs_filter_errors">错误与崩溃</string>
+    <string name="adb_logs_filter_core">VPN与核心</string>
+    <string name="adb_logs_crash_detected">已捕获崩溃报告</string>
+    <string name="adb_logs_empty">暂无可用日志</string>
+    <string name="adb_logs_switch_btn">ADB Logcat</string>
+    <string name="adb_logs_refresh">刷新</string>
+    <string name="adb_logs_share_filename">narcic-adb-log.txt</string>
 </resources>

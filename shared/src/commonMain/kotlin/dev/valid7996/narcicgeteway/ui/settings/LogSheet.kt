@@ -125,7 +125,7 @@ private fun categoryLabel(category: LogCategory): String = when (category) {
 }
 
 @Composable
-fun LogSheet(onDismiss: () -> Unit) {
+fun LogSheet(onDismiss: () -> Unit, onOpenAdb: (() -> Unit)? = null) {
     val platform = LocalPlatform.current
     val logsCopied = stringResource(Res.string.logs_copied)
     val allLines by LogBus.lines.collectAsStateWithLifecycle()
@@ -261,6 +261,24 @@ fun LogSheet(onDismiss: () -> Unit) {
                         selected = !showAll && picked == c,
                         onClick = { showAll = false; picked = c },
                         label = { Text(categoryLabel(c)) },
+                    )
+                }
+                if (onOpenAdb != null) {
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            onDismiss()
+                            onOpenAdb()
+                        },
+                        label = { Text(stringResource(Res.string.adb_logs_switch_btn)) },
+                        leadingIcon = {
+                            Icon(
+                                painterResource(Res.drawable.ic_bug_report),
+                                null,
+                                Modifier.size(16.dp),
+                                tint = if (platform.hasRecordedCrash) Color(0xFFFF453A) else MaterialTheme.colorScheme.primary,
+                            )
+                        },
                     )
                 }
             }

@@ -1811,4 +1811,16 @@
 
     <string name="tg_proxies_fetched">Получено %1$d прокси из @%2$s</string>
     <string name="tg_test_ping_btn">Тест пинга</string>
+    <string name="adb_logs_title">Журнал ADB (Logcat)</string>
+    <string name="adb_logs_settings_sub">Системные ошибки и краш-дампы для отладки</string>
+    <string name="adb_logs_copied">Журнал ADB скопирован в буфер обмена</string>
+    <string name="adb_logs_loading">Чтение системного logcat…</string>
+    <string name="adb_logs_filter_all">Все</string>
+    <string name="adb_logs_filter_errors">Ошибки и падения</string>
+    <string name="adb_logs_filter_core">VPN и ядра</string>
+    <string name="adb_logs_crash_detected">Зафиксирован отчет о падении</string>
+    <string name="adb_logs_empty">Нет записей в журнале</string>
+    <string name="adb_logs_switch_btn">ADB Logcat</string>
+    <string name="adb_logs_refresh">Обновить</string>
+    <string name="adb_logs_share_filename">narcic-adb-log.txt</string>
 </resources>
