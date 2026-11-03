@@ -221,10 +221,9 @@ fun HomeScreen(
     val platform = LocalPlatform.current
     val scope = rememberCoroutineScope()
 
-    val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
-    val isAzkabanLike = isAzkaban || isNoir || isBlossom
+    val isModernTheme = isNoir || isBlossom
 
     Box(
         modifier = modifier
@@ -233,7 +232,6 @@ fun HomeScreen(
     ) {
         DecorativeBackdrop(
             reduceMotion = reduceMotion,
-            isAzkaban = isAzkaban,
             isNoir = isNoir,
             isBlossom = isBlossom,
             amoledBlack = personalization.amoledBlack,
@@ -244,7 +242,6 @@ fun HomeScreen(
             state = ui.state,
             sessionId = ui.sessionId,
             reduceMotion = reduceMotion,
-            isAzkaban = isAzkaban,
             isNoir = isNoir,
             isBlossom = isBlossom,
             amoledBlack = personalization.amoledBlack,
@@ -265,8 +262,8 @@ fun HomeScreen(
             // One scrollable page: header, tiles, the blob, the controls and the server list all
             // travel together, so nothing is pinned mid-screen or clipped by the status bar.
             StageColumn(
-                viewport = if (isAzkabanLike) maxHeight * 0.65f else maxHeight * 0.58f,
-                stageMin = if (isAzkabanLike) 280.dp else if (compact) 110.dp else STAGE_MIN,
+                viewport = if (isModernTheme) maxHeight * 0.65f else maxHeight * 0.58f,
+                stageMin = if (isModernTheme) 280.dp else if (compact) 110.dp else STAGE_MIN,
                 modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
             ) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -297,7 +294,7 @@ fun HomeScreen(
                     val stage = maxHeight
                     val tight = stage < 260.dp
                     val stageHero = minOf(heroSize, stage * 0.58f)
-                    val azkabanHeroSize = minOf(260.dp, maxOf(220.dp, stage * 0.70f))
+                    val modernHeroSize = minOf(260.dp, maxOf(220.dp, stage * 0.70f))
                     Column(
                       modifier = Modifier.fillMaxSize(),
                       horizontalAlignment = Alignment.CenterHorizontally,
@@ -306,7 +303,7 @@ fun HomeScreen(
                       if (isBlossom) {
                         GirlHero(
                             state = ui.state,
-                            size = azkabanHeroSize,
+                            size = modernHeroSize,
                             onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
                                 {
                                     if (ui.state != ConnectionState.Disconnecting) {
@@ -319,7 +316,7 @@ fun HomeScreen(
                       } else if (isNoir) {
                         MontaaHero(
                             state = ui.state,
-                            size = azkabanHeroSize,
+                            size = modernHeroSize,
                             onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
                                 {
                                     if (ui.state != ConnectionState.Disconnecting) {
@@ -329,19 +326,7 @@ fun HomeScreen(
                                 }
                             } else null,
                         )
-                      } else if (isAzkaban) {
-                        AzkabanHero(
-                            state = ui.state,
-                            size = azkabanHeroSize,
-                            onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
-                                {
-                                    if (ui.state != ConnectionState.Disconnecting) {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onToggleConnection()
-                                    }
-                                }
-                            } else null,
-                        )
+
                       } else {
                         Hero(
                             state = ui.state,
@@ -464,8 +449,8 @@ fun HomeScreen(
                 when (connectStyle) {
                     ConnectButtonStyle.Hero -> Unit
                     ConnectButtonStyle.Pill, ConnectButtonStyle.Switch -> {
-                        if (isAzkabanLike) {
-                            AzkabanConnectButton(
+                        if (isModernTheme) {
+                            ModernConnectButton(
                                 state = ui.state,
                                 onClick = onToggleConnection,
                                 isNoir = isNoir,
@@ -513,7 +498,6 @@ fun HomeScreen(
                             destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
                             onClick = homeVm::toggleExpanded,
                             personalization = personalization,
-                            isAzkaban = isAzkaban,
                             isNoir = isNoir,
                             isBlossom = isBlossom,
                         )
@@ -524,7 +508,6 @@ fun HomeScreen(
                                 fallbackCountryCode = activeCountryCode,
                                 onClose = homeVm::toggleExpanded,
                                 personalization = personalization,
-                                isAzkaban = isAzkaban,
                                 isNoir = isNoir,
                                 isBlossom = isBlossom,
                             )
@@ -539,7 +522,6 @@ fun HomeScreen(
                             onToggleMap = homeVm::toggleExpanded,
                             connectedColor = personalization.connectedColor ?: ConnectedGreen,
                             personalization = personalization,
-                            isAzkaban = isAzkaban,
                             isNoir = isNoir,
                             isBlossom = isBlossom,
                         )
@@ -712,7 +694,6 @@ private fun StageColumn(
 @Composable
 private fun DecorativeBackdrop(
     reduceMotion: Boolean,
-    isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
     amoledBlack: Boolean = false,
@@ -735,7 +716,7 @@ private fun DecorativeBackdrop(
             dynamicColor -> MaterialTheme.colorScheme.primary
             isBlossom -> Color(0xFFF472B6)
             isNoir -> Color(0xFFFFFFFF)
-            isAzkaban -> Color(0xFF38BDF8)
+            
             else -> NrgCyan
         }
         listOf(Color(0xFF000000), Color(0xFF000000), accent.copy(alpha = 0.35f))
@@ -749,8 +730,6 @@ private fun DecorativeBackdrop(
         listOf(Color(0xFF150510), Color(0xFF3B1229), Color(0xFFF472B6))
     } else if (isNoir) {
         listOf(Color(0xFF000000), Color(0xFF18181B), Color(0xFF3F3F46))
-    } else if (isAzkaban) {
-        listOf(Color(0xFF040A16), Color(0xFF0C1D38), Color(0xFF38BDF8))
     } else {
         listOf(NrgDeepViolet, NrgViolet, NrgCyan)
     }
@@ -1179,7 +1158,6 @@ private fun ActiveConfigCard(
     )
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isAmoled = personalization.amoledBlack
-    val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
 
@@ -1189,7 +1167,7 @@ private fun ActiveConfigCard(
         personalization.configCardColor != null -> personalization.configCardColor
         isBlossom -> Color(0xFF1F0B16)
         isNoir -> Color(0xFF121214)
-        isAzkaban -> Color(0xFF091424)
+        
         isDark -> Color(0xFF1C1C1E)
         else -> Color(0xFFFFFFFF)
     }
@@ -1197,7 +1175,7 @@ private fun ActiveConfigCard(
         personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (isAmoled) 0.50f else 0.35f)
         isBlossom -> Color(0xFFF472B6).copy(alpha = if (isAmoled) 0.50f else 0.35f)
         isNoir -> Color(0xFFFFFFFF).copy(alpha = if (isAmoled) 0.35f else 0.20f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (isAmoled) 0.50f else 0.35f)
+        
         isAmoled -> Color(0xFF10B981).copy(alpha = 0.45f)
         isDark -> Color(0xFF2C2C2E)
         else -> Color(0xFFE5E5EA)
@@ -1206,7 +1184,7 @@ private fun ActiveConfigCard(
         personalization.configCardTextColor != null -> personalization.configCardTextColor
         isBlossom -> Color(0xFFFFF1F5)
         isNoir -> Color(0xFFFFFFFF)
-        isAzkaban -> Color(0xFFF0F9FF)
+        
         isDark -> Color(0xFFF2F2F7)
         else -> Color(0xFF000000)
     }
@@ -1214,7 +1192,7 @@ private fun ActiveConfigCard(
         personalization.tapHintColor != null -> personalization.tapHintColor
         isBlossom -> Color(0xFFFFD1DC)
         isNoir -> Color(0xFF8E8E93)
-        isAzkaban -> Color(0xFF94A3B8)
+        
         isDark -> Color(0xFF8E8E93)
         else -> Color(0xFF6E6E73)
     }
@@ -1222,7 +1200,7 @@ private fun ActiveConfigCard(
         personalization.dynamicColor -> MaterialTheme.colorScheme.primary
         isBlossom -> Color(0xFFFF85A1)
         isNoir -> Color(0xFF2C2C2E)
-        isAzkaban -> Color(0xFF0284C7)
+        
         personalization.configCardTextColor != null -> personalization.configCardTextColor
         else -> Color(0xFF007AFF)
     }
@@ -1470,7 +1448,6 @@ private fun ConnectingBackdrop(
     state: ConnectionState,
     sessionId: Int,
     reduceMotion: Boolean,
-    isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
     amoledBlack: Boolean = false,
@@ -1510,14 +1487,14 @@ private fun ConnectingBackdrop(
                 dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFDB2777)
                 isNoir -> Color(0xFF3F3F46)
-                isAzkaban -> Color(0xFF0284C7)
+                
                 else -> dev.valid7996.narcicgeteway.ui.theme.NrgGreen
             }
             val accent = when {
                 dynamicColor -> MaterialTheme.colorScheme.tertiary
                 isBlossom -> Color(0xFFF472B6)
                 isNoir -> Color(0xFFFFFFFF)
-                isAzkaban -> Color(0xFF38BDF8)
+                
                 else -> dev.valid7996.narcicgeteway.ui.theme.NrgLime
             }
             listOf(Color(0xFF000000), Color(0xFF000000), primary.copy(alpha = 0.30f), accent.copy(alpha = 0.18f))
@@ -1551,12 +1528,6 @@ private fun ConnectingBackdrop(
         } else {
             listOf(Color(0xFF000000), Color(0xFF09090B), Color(0xFF121214))
         }
-    } else if (isAzkaban) {
-        if (state == ConnectionState.Connected) {
-            listOf(Color(0xFF040A16), Color(0xFF071224), Color(0xFF0284C7).copy(alpha = 0.4f), Color(0xFF38BDF8).copy(alpha = 0.2f))
-        } else {
-            listOf(Color(0xFF02050A), Color(0xFF071224), Color(0xFF0A1830))
-        }
     } else if (state == ConnectionState.Connected) {
         NrgGradients.connectedStops(sessionId)
     } else {
@@ -1582,12 +1553,6 @@ private fun ConnectingBackdrop(
             Color(0xFFE4E4E7), // Silver
             Color(0xFFA1A1AA), // Slate Gray
             Color(0xFF71717A), // Charcoal
-        )
-        isAzkaban -> listOf(
-            Color(0xFF7DD3FC), // Soft Sky Cyan
-            Color(0xFF38BDF8), // Ice Blue
-            Color(0xFFBAE6FD), // Light Frost
-            Color(0xFF94A3B8), // Mellow Slate
         )
         else -> listOf(
             Color(0xFF10B981), // Emerald
