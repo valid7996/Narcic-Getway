@@ -316,7 +316,7 @@ internal fun ServerCard(
                 horizontalArrangement = Arrangement.End,
             ) {
                 Text(
-                    text = "${profile.source.name} • ${profile.address}:${profile.port}",
+                    text = "${profile.protocol} • ${profile.address}:${profile.port}",
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 11.5.sp,
                     ),
