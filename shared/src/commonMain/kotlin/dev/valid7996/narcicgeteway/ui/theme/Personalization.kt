@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.luminance
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.domain.model.CardCornerStyle
 import dev.valid7996.narcicgeteway.domain.model.ListDensity
+import dev.valid7996.narcicgeteway.domain.model.SettingsTileLayout
 import dev.valid7996.narcicgeteway.domain.model.TrafficCardStyle
 import dev.valid7996.narcicgeteway.domain.model.TrafficTileSize
 
@@ -182,6 +183,14 @@ data class Personalization(
     val dashboardBorderColor: Color? = null,
     val dashboardBgColor: Color? = null,
     val dashboardTextColor: Color? = null,
+    val navActiveColor: Color? = null,
+    val navBgColor: Color? = null,
+    val navBorderColor: Color? = null,
+    val ambientGlowColor: Color? = null,
+    val bgGradientTop: Color? = null,
+    val bgGradientBottom: Color? = null,
+    val alwaysShowDashboard: Boolean = false,
+    val settingsTileLayout: SettingsTileLayout = SettingsTileLayout.MasonryGrid,
     val cornerStyle: CardCornerStyle = CardCornerStyle.Rounded,
     val density: ListDensity = ListDensity.Comfortable,
     val showServerPing: Boolean = true,
@@ -220,6 +229,14 @@ fun AppSettings.toPersonalization(): Personalization = Personalization(
     dashboardBorderColor = customDashboardBorderColor?.argbLongToColor(),
     dashboardBgColor = customDashboardBgColor?.argbLongToColor(),
     dashboardTextColor = customDashboardTextColor?.argbLongToColor(),
+    navActiveColor = customNavActiveColor?.argbLongToColor(),
+    navBgColor = customNavBgColor?.argbLongToColor(),
+    navBorderColor = customNavBorderColor?.argbLongToColor(),
+    ambientGlowColor = customAmbientGlowColor?.argbLongToColor(),
+    bgGradientTop = customBgGradientTop?.argbLongToColor(),
+    bgGradientBottom = customBgGradientBottom?.argbLongToColor(),
+    alwaysShowDashboard = alwaysShowDashboard,
+    settingsTileLayout = settingsTileLayout,
     cornerStyle = cardCornerStyle,
     density = listDensity,
     showServerPing = showServerPing,
@@ -253,6 +270,12 @@ fun AppSettings.resetPersonalization(): AppSettings = copy(
     customDashboardBorderColor = null,
     customDashboardBgColor = null,
     customDashboardTextColor = null,
+    customNavActiveColor = null,
+    customNavBgColor = null,
+    customNavBorderColor = null,
+    customAmbientGlowColor = null,
+    customBgGradientTop = null,
+    customBgGradientBottom = null,
 
     themeProfileId = "noir",
     cardCornerStyle = CardCornerStyle.Rounded,

@@ -140,6 +140,12 @@ enum class TrafficCardStyle {
     CyberGauges,
 }
 
+enum class SettingsTileLayout {
+    MasonryGrid,
+    HorizontalCards,
+    SingleColumn,
+}
+
 enum class AnimationMode {
     Normal,
     Slow,
@@ -252,10 +258,18 @@ data class AppSettings(
     val customDashboardBorderColor: Long? = null,
     val customDashboardBgColor: Long? = null,
     val customDashboardTextColor: Long? = null,
+    val customNavActiveColor: Long? = null,
+    val customNavBgColor: Long? = null,
+    val customNavBorderColor: Long? = null,
+    val customAmbientGlowColor: Long? = null,
+    val customBgGradientTop: Long? = null,
+    val customBgGradientBottom: Long? = null,
 
     val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Slide,
 
     val navBarStyle: NavBarStyle = NavBarStyle.IosInteractive,
+    val settingsTileLayout: SettingsTileLayout = SettingsTileLayout.MasonryGrid,
+    val alwaysShowDashboard: Boolean = false,
 
     val themeProfileId: String? = "noir",
 

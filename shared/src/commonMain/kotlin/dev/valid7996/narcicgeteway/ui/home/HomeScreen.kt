@@ -7,6 +7,8 @@ package dev.valid7996.narcicgeteway.ui.home
 import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
 import dev.valid7996.narcicgeteway.ui.theme.NeonFluidWaterWave
 import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
+import dev.valid7996.narcicgeteway.ui.theme.NeonAmbientBackground
+import androidx.compose.ui.graphics.StrokeCap
 
 import org.jetbrains.compose.resources.DrawableResource
 
@@ -224,13 +226,16 @@ fun HomeScreen(
 
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
-    val isModernTheme = isNoir || isBlossom
+    val isModernTheme = true
+    val showDashboard = (live || personalization.alwaysShowDashboard) && showConnectionInfo
 
+    val baseBg = personalization.bgGradientBottom ?: MaterialTheme.colorScheme.surface
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(baseBg),
     ) {
+        NeonAmbientBackground(personalization = personalization)
         DecorativeBackdrop(
             reduceMotion = reduceMotion,
             isNoir = isNoir,
@@ -292,7 +297,7 @@ fun HomeScreen(
                 }
 
                 // Optional: Traffic tiles above hero
-                AnimatedVisibility(visible = live && personalization.trafficTilesAboveHero) {
+                AnimatedVisibility(visible = showDashboard && personalization.trafficTilesAboveHero) {
                     Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
                         TrafficStylesDisplay(
                             downloadBps = ui.downloadBps,
@@ -504,11 +509,20 @@ fun HomeScreen(
                 Spacer(Modifier.height(12.dp))
 
                 // Modular Tiled Dashboard: Separate Live Route, Server Tile, Session Duration/Volume Tiles, and Traffic Styles
-                AnimatedVisibility(visible = live && showConnectionInfo) {
+                AnimatedVisibility(visible = showDashboard) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
+                        // 0. Active Server Name & Protocol Tile
+                        ActiveConfigDetailTile(
+                            activeConfigName = activeConfigName,
+                            activeConfigDetail = activeConfigDetail,
+                            activeLocked = activeLocked,
+                            personalization = personalization,
+                            onClick = onBrowseConfigs,
+                        )
+
                         // 1. Separate Live Route Card
                         ConnectionMapTriggerButton(
                             expanded = infoExpanded,
@@ -2017,6 +2031,70 @@ private fun TrafficStylesDisplay(
     val textColor = personalization.dashboardTextColor ?: Color.White
 
     when (style) {
+        TrafficCardStyle.Graph -> {
+            // Live Real-Time Moving Bezier Wave Graph
+            LiveTrafficWaveGraph(
+                downloadBps = downloadBps,
+                uploadBps = uploadBps,
+                downVal = downVal,
+                downUnit = downUnit,
+                upVal = upVal,
+                upUnit = upUnit,
+                cardBg = cardBg,
+                cardBorder = cardBorder,
+                textColor = textColor,
+                personalization = personalization,
+                modifier = modifier,
+            )
+        }
+
+        TrafficCardStyle.CyberGauges -> {
+            // Live Dual Tachometer Cyber Gauges with sweeping arcs
+            CyberDualGauges(
+                upVal = upVal,
+                upUnit = upUnit,
+                downVal = downVal,
+                downUnit = downUnit,
+                downloadBps = downloadBps,
+                uploadBps = uploadBps,
+                cardBg = cardBg,
+                cardBorder = cardBorder,
+                textColor = textColor,
+                personalization = personalization,
+                modifier = modifier,
+            )
+        }
+
+        TrafficCardStyle.WaveEqualizer -> {
+            // Live Wave Equalizer with responsive bouncing frequency bars
+            WaveEqualizerCard(
+                upVal = upVal,
+                upUnit = upUnit,
+                downVal = downVal,
+                downUnit = downUnit,
+                cardBg = cardBg,
+                cardBorder = cardBorder,
+                textColor = textColor,
+                personalization = personalization,
+                modifier = modifier,
+            )
+        }
+
+        TrafficCardStyle.Rings -> {
+            // Concentric Neon Pulsing Rings
+            ConcentricRingsCard(
+                upVal = upVal,
+                upUnit = upUnit,
+                downVal = downVal,
+                downUnit = downUnit,
+                cardBg = cardBg,
+                cardBorder = cardBorder,
+                textColor = textColor,
+                personalization = personalization,
+                modifier = modifier,
+            )
+        }
+
         TrafficCardStyle.Cards -> {
             Row(
                 modifier = modifier.fillMaxWidth(),
@@ -2042,10 +2120,10 @@ private fun TrafficStylesDisplay(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                            MiniSoundBars(color = Color(0xFFF72585))
+                            MiniSoundBars(color = personalization.connectColor ?: Color(0xFFF72585))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("↑ ", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 15.sp)
+                            Text("↑ ", fontWeight = FontWeight.Bold, color = personalization.connectColor ?: Color(0xFFF72585), fontSize = 15.sp)
                             Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 15.sp)
                         }
                     }
@@ -2100,7 +2178,7 @@ private fun TrafficStylesDisplay(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("↑", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 16.sp)
+                        Text("↑", fontWeight = FontWeight.Bold, color = personalization.connectColor ?: Color(0xFFF72585), fontSize = 16.sp)
                         Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                     }
 
@@ -2109,116 +2187,6 @@ private fun TrafficStylesDisplay(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                         Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 16.sp)
-                    }
-                }
-            }
-        }
-
-        TrafficCardStyle.Rings -> {
-            // Rings Style
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder.copy(alpha = 0.6f), RoundedCornerShape(24.dp))
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x25F72585))
-                                .border(2.5.dp, Color(0xFFF72585), CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text("↑", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 16.sp)
-                        }
-                        Column {
-                            Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                            Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
-                        }
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x2506B6D4))
-                                .border(2.5.dp, Color(0xFF06B6D4), CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 16.sp)
-                        }
-                        Column {
-                            Text("دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                            Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
-                        }
-                    }
-                }
-            }
-        }
-
-        TrafficCardStyle.Minimal -> {
-            // Minimal single row
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(cardBg.copy(alpha = 0.7f))
-                    .border(0.8.dp, cardBorder.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("↑ $upVal $upUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFFF72585))
-                    Text("آمار ترافیک زنده", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                    Text("↓ $downVal $downUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFF06B6D4))
-                }
-            }
-        }
-
-        TrafficCardStyle.Graph -> {
-            // Real-time Wave Graph style
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(cardBg)
-                    .border(1.2.dp, cardBorder, RoundedCornerShape(22.dp)),
-            ) {
-                NeonFluidWaterWave(
-                    color = Color(0xFF7C3AED),
-                    modifier = Modifier.fillMaxSize(),
-                    alpha = 0.16f,
-                    speedMillis = 3600,
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Text("نرخ آپلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                        Text("↑ $upVal $upUnit", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 16.sp)
-                    }
-                    MiniSoundBars(color = Color(0xFF7C3AED), barCount = 5)
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("نرخ دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                        Text("↓ $downVal $downUnit", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 16.sp)
                     }
                 }
             }
@@ -2236,12 +2204,12 @@ private fun TrafficStylesDisplay(
                         .height(64.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color(0x30F72585))
-                        .border(1.5.dp, Color(0xFFF72585), RoundedCornerShape(20.dp))
+                        .border(1.5.dp, personalization.connectColor ?: Color(0xFFF72585), RoundedCornerShape(20.dp))
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("↑", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 18.sp)
+                        Text("↑", fontWeight = FontWeight.Bold, color = personalization.connectColor ?: Color(0xFFF72585), fontSize = 18.sp)
                         Column {
                             Text("بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
                             Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
@@ -2270,103 +2238,505 @@ private fun TrafficStylesDisplay(
             }
         }
 
-        TrafficCardStyle.WaveEqualizer -> {
-            // Wave Equalizer style
+        TrafficCardStyle.Minimal -> {
+            // Minimal single row
             Box(
                 modifier = modifier
                     .fillMaxWidth()
-                    .height(88.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder.copy(alpha = 0.7f), RoundedCornerShape(24.dp)),
-            ) {
-                NeonFluidWaterWave(
-                    color = personalization.cardWaterColor ?: NeonTheme.PrimaryPink,
-                    modifier = Modifier.fillMaxSize(),
-                    alpha = 0.18f,
-                    speedMillis = 4000,
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MiniSoundBars(color = Color(0xFFF72585))
-                        Column {
-                            Text("↑ $upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
-                            Text("سرعت بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
-                        }
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("↓ $downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
-                            Text("سرعت دریافت", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
-                        }
-                        MiniSoundBars(color = Color(0xFF06B6D4))
-                    }
-                }
-            }
-        }
-
-        TrafficCardStyle.CyberGauges -> {
-            // Cyber Gauges style
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(cardBg)
-                    .border(1.2.dp, cardBorder, RoundedCornerShape(24.dp))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(cardBg.copy(alpha = 0.7f))
+                    .border(0.8.dp, cardBorder.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Gauge 1
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x35F72585))
-                                .border(2.dp, Color(0xFFF72585), CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text("UP", fontWeight = FontWeight.ExtraBold, color = Color(0xFFF72585), fontSize = 12.sp)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 13.sp)
-                    }
-
-                    Box(modifier = Modifier.height(36.dp).width(1.dp).background(Color(0x25FFFFFF)))
-
-                    // Gauge 2
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(46.dp)
-                                .clip(CircleShape)
-                                .background(Color(0x3506B6D4))
-                                .border(2.dp, Color(0xFF06B6D4), CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text("DN", fontWeight = FontWeight.ExtraBold, color = Color(0xFF06B6D4), fontSize = 12.sp)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 13.sp)
-                    }
+                    Text("↑ $upVal $upUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = personalization.connectColor ?: Color(0xFFF72585))
+                    Text("آمار ترافیک زنده", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text("↓ $downVal $downUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFF06B6D4))
                 }
             }
         }
     }
 }
 
+/**
+ * Real animated Canvas spline wave chart for TrafficCardStyle.Graph
+ */
 @Composable
+private fun LiveTrafficWaveGraph(
+    downloadBps: Long,
+    uploadBps: Long,
+    downVal: String,
+    downUnit: String,
+    upVal: String,
+    upUnit: String,
+    cardBg: Color,
+    cardBorder: Color,
+    textColor: Color,
+    personalization: Personalization,
+    modifier: Modifier = Modifier,
+) {
+    val transition = rememberInfiniteTransition(label = "traffic-graph-phase")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = (2f * kotlin.math.PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(3200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "graph-phase",
+    )
+
+    val downColor = Color(0xFF06B6D4)
+    val upColor = personalization.connectColor ?: Color(0xFFF72585)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(106.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardBg)
+            .border(1.2.dp, cardBorder, RoundedCornerShape(22.dp)),
+    ) {
+        // Live animated spline curves on Canvas
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            if (w <= 0f || h <= 0f) return@Canvas
+
+            // Download Wave Area (Cyan / Blue)
+            val downPath = Path()
+            val baseDown = h * 0.55f
+            downPath.moveTo(0f, h)
+            downPath.lineTo(0f, baseDown)
+            var x = 0f
+            val step = 6f
+            while (x <= w) {
+                val progress = x / w
+                val y = baseDown +
+                    kotlin.math.sin(progress * 3f * kotlin.math.PI.toFloat() + phase) * (h * 0.20f) +
+                    kotlin.math.cos(progress * 1.5f * kotlin.math.PI.toFloat() + phase * 0.8f) * (h * 0.10f)
+                downPath.lineTo(x, y)
+                x += step
+            }
+            downPath.lineTo(w, h)
+            downPath.close()
+
+            drawPath(
+                path = downPath,
+                brush = Brush.verticalGradient(
+                    listOf(downColor.copy(alpha = 0.35f), downColor.copy(alpha = 0.05f)),
+                    startY = baseDown - h * 0.25f,
+                    endY = h,
+                ),
+            )
+
+            // Upload Wave Line (Pink / Theme Accent)
+            val upPath = Path()
+            val baseUp = h * 0.38f
+            upPath.moveTo(0f, baseUp)
+            x = 0f
+            while (x <= w) {
+                val progress = x / w
+                val y = baseUp +
+                    kotlin.math.cos(progress * 3.5f * kotlin.math.PI.toFloat() - phase * 1.2f) * (h * 0.18f)
+                if (x == 0f) upPath.moveTo(x, y) else upPath.lineTo(x, y)
+                x += step
+            }
+            drawPath(
+                path = upPath,
+                brush = Brush.horizontalGradient(listOf(upColor.copy(alpha = 0.85f), downColor.copy(alpha = 0.85f))),
+                style = Stroke(width = 2.5.dp.toPx()),
+            )
+        }
+
+        // Overlaid Data Metrics
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(downColor))
+                    Text("نرخ زنده ترافیک شبکه", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFD1D5DB))
+                }
+                Text("طرح نمودار موجی", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("↑", fontWeight = FontWeight.Bold, color = upColor, fontSize = 16.sp)
+                    Text("$upVal $upUnit", fontWeight = FontWeight.ExtraBold, color = textColor, fontSize = 15.sp)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("$downVal $downUnit", fontWeight = FontWeight.ExtraBold, color = textColor, fontSize = 15.sp)
+                    Text("↓", fontWeight = FontWeight.Bold, color = downColor, fontSize = 16.sp)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Dual animated tachometer gauges for TrafficCardStyle.CyberGauges
+ */
+@Composable
+private fun CyberDualGauges(
+    upVal: String,
+    upUnit: String,
+    downVal: String,
+    downUnit: String,
+    downloadBps: Long,
+    uploadBps: Long,
+    cardBg: Color,
+    cardBorder: Color,
+    textColor: Color,
+    personalization: Personalization,
+    modifier: Modifier = Modifier,
+) {
+    val upColor = personalization.connectColor ?: Color(0xFFF72585)
+    val downColor = Color(0xFF06B6D4)
+
+    val upPct = ((uploadBps.toFloat() / 2_000_000f).coerceIn(0.08f, 1f))
+    val downPct = ((downloadBps.toFloat() / 5_000_000f).coerceIn(0.08f, 1f))
+
+    val animUpSweep by animateFloatAsState(targetValue = upPct * 220f, animationSpec = tween(400), label = "up-sweep")
+    val animDownSweep by animateFloatAsState(targetValue = downPct * 220f, animationSpec = tween(400), label = "down-sweep")
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(cardBg)
+            .border(1.2.dp, cardBorder, RoundedCornerShape(24.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Upload Tachometer Gauge
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(modifier = Modifier.size(54.dp), contentAlignment = Alignment.Center) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokeW = 4.dp.toPx()
+                        // Track
+                        drawArc(
+                            color = Color(0x30FFFFFF),
+                            startAngle = 160f,
+                            sweepAngle = 220f,
+                            useCenter = false,
+                            style = Stroke(width = strokeW, cap = StrokeCap.Round),
+                        )
+                        // Active Arc
+                        drawArc(
+                            color = upColor,
+                            startAngle = 160f,
+                            sweepAngle = animUpSweep,
+                            useCenter = false,
+                            style = Stroke(width = strokeW, cap = StrokeCap.Round),
+                        )
+                    }
+                    Text("↑", fontWeight = FontWeight.Bold, color = upColor, fontSize = 16.sp)
+                }
+                Column {
+                    Text("بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                }
+            }
+
+            Box(modifier = Modifier.height(38.dp).width(1.dp).background(Color(0x25FFFFFF)))
+
+            // Download Tachometer Gauge
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(modifier = Modifier.size(54.dp), contentAlignment = Alignment.Center) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokeW = 4.dp.toPx()
+                        // Track
+                        drawArc(
+                            color = Color(0x30FFFFFF),
+                            startAngle = 160f,
+                            sweepAngle = 220f,
+                            useCenter = false,
+                            style = Stroke(width = strokeW, cap = StrokeCap.Round),
+                        )
+                        // Active Arc
+                        drawArc(
+                            color = downColor,
+                            startAngle = 160f,
+                            sweepAngle = animDownSweep,
+                            useCenter = false,
+                            style = Stroke(width = strokeW, cap = StrokeCap.Round),
+                        )
+                    }
+                    Text("↓", fontWeight = FontWeight.Bold, color = downColor, fontSize = 16.sp)
+                }
+                Column {
+                    Text("دانلود", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Responsive bouncing equalizer bars for TrafficCardStyle.WaveEqualizer
+ */
+@Composable
+private fun WaveEqualizerCard(
+    upVal: String,
+    upUnit: String,
+    downVal: String,
+    downUnit: String,
+    cardBg: Color,
+    cardBorder: Color,
+    textColor: Color,
+    personalization: Personalization,
+    modifier: Modifier = Modifier,
+) {
+    val upColor = personalization.connectColor ?: Color(0xFFF72585)
+    val downColor = Color(0xFF06B6D4)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(92.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(cardBg)
+            .border(1.2.dp, cardBorder.copy(alpha = 0.7f), RoundedCornerShape(24.dp)),
+    ) {
+        NeonFluidWaterWave(
+            color = personalization.cardWaterColor ?: upColor,
+            modifier = Modifier.fillMaxSize(),
+            alpha = 0.20f,
+            speedMillis = 3600,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                MiniSoundBars(color = upColor, barCount = 6)
+                Column {
+                    Text("↑ $upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
+                    Text("سرعت بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("↓ $downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
+                    Text("سرعت دریافت", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                }
+                MiniSoundBars(color = downColor, barCount = 6)
+            }
+        }
+    }
+}
+
+/**
+ * Concentric pulsing rings for TrafficCardStyle.Rings
+ */
+@Composable
+private fun ConcentricRingsCard(
+    upVal: String,
+    upUnit: String,
+    downVal: String,
+    downUnit: String,
+    cardBg: Color,
+    cardBorder: Color,
+    textColor: Color,
+    personalization: Personalization,
+    modifier: Modifier = Modifier,
+) {
+    val upColor = personalization.connectColor ?: Color(0xFFF72585)
+    val downColor = Color(0xFF06B6D4)
+    val transition = rememberInfiniteTransition(label = "rings-pulse")
+    val ringPulse by transition.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "ring-scale",
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(cardBg)
+            .border(1.2.dp, cardBorder.copy(alpha = 0.7f), RoundedCornerShape(24.dp))
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .graphicsLayer { scaleX = ringPulse; scaleY = ringPulse }
+                        .clip(CircleShape)
+                        .background(upColor.copy(alpha = 0.20f))
+                        .border(2.5.dp, upColor, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("↑", fontWeight = FontWeight.ExtraBold, color = upColor, fontSize = 16.sp)
+                }
+                Column {
+                    Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .graphicsLayer { scaleX = ringPulse; scaleY = ringPulse }
+                        .clip(CircleShape)
+                        .background(downColor.copy(alpha = 0.20f))
+                        .border(2.5.dp, downColor, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("↓", fontWeight = FontWeight.ExtraBold, color = downColor, fontSize = 16.sp)
+                }
+                Column {
+                    Text("دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Dedicated tile displaying current connected server name, protocol & transport badge
+ */
+@Composable
+private fun ActiveConfigDetailTile(
+    activeConfigName: String?,
+    activeConfigDetail: String?,
+    activeLocked: Boolean,
+    personalization: Personalization,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
+    val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
+    val textColor = personalization.dashboardTextColor ?: Color.White
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(cardBg)
+            .border(1.2.dp, cardBorder.copy(alpha = 0.7f), RoundedCornerShape(22.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        NeonFluidWaterWave(
+            color = personalization.cardWaterColor ?: NeonTheme.PrimaryPink,
+            modifier = Modifier.fillMaxWidth().height(36.dp).align(Alignment.BottomCenter),
+            alpha = 0.20f,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Right in RTL: Config Icon/Badge + Server Name & Protocol
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x25F72585))
+                        .border(1.dp, Color(0x60F72585), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_dns),
+                        contentDescription = null,
+                        tint = personalization.connectColor ?: NeonTheme.PrimaryPink,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = activeConfigName?.takeIf { it.isNotBlank() } ?: "سرور فعال انتخاب نشده",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
+                            color = textColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (activeLocked) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_lock),
+                                contentDescription = null,
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = activeConfigDetail?.takeIf { it.isNotBlank() } ?: "VLESS • TCP • TLS",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = Color(0xFF9CA3AF),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            // Left in RTL: Change Server Button / Badge
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0x25FFFFFF))
+                    .border(0.8.dp, Color(0x40FFFFFF), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            ) {
+                Text(
+                    text = "تغییر سرور",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.5.sp),
+                    color = Color.White,
+                )
+            }
+        }
+    }
+}
+
 private fun MergedDashboardCard(
     info: NetworkInfo,
     downloadBps: Long,

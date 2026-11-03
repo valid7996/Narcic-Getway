@@ -82,7 +82,10 @@ object NeonTheme {
  * Ambient background with subtle deep purple gradient and a gentle glowing magenta nebula.
  */
 @Composable
-fun NeonAmbientBackground(modifier: Modifier = Modifier) {
+fun NeonAmbientBackground(
+    modifier: Modifier = Modifier,
+    personalization: Personalization = Personalization.Default,
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "ambient-breath")
     val breathScale by infiniteTransition.animateFloat(
         initialValue = 0.95f,
@@ -94,7 +97,7 @@ fun NeonAmbientBackground(modifier: Modifier = Modifier) {
         label = "breath-scale",
     )
     val breathAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.22f,
+        initialValue = 0.20f,
         targetValue = 0.35f,
         animationSpec = infiniteRepeatable(
             animation = tween(4000, easing = LinearEasing),
@@ -103,20 +106,25 @@ fun NeonAmbientBackground(modifier: Modifier = Modifier) {
         label = "breath-alpha",
     )
 
+    val glowColor = personalization.ambientGlowColor ?: personalization.connectColor ?: NeonTheme.PrimaryPink
+    val secondaryGlow = personalization.serverBorderColor ?: personalization.cardWaterColor ?: glowColor.copy(alpha = 0.6f)
+    val bgTop = personalization.bgGradientTop ?: Color(0xFF080510)
+    val bgBottom = personalization.bgGradientBottom ?: Color(0xFF050507)
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF080510),
-                        Color(0xFF0C0618),
-                        Color(0xFF050507),
+                        bgTop,
+                        bgTop.copy(alpha = 0.85f),
+                        bgBottom,
                     )
                 )
             )
     ) {
-        // Top glowing magenta/pink ambient halo
+        // Top glowing ambient halo fully synchronized with theme
         Box(
             modifier = Modifier
                 .size(360.dp)
@@ -129,8 +137,8 @@ fun NeonAmbientBackground(modifier: Modifier = Modifier) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            NeonTheme.PrimaryPink.copy(alpha = 0.45f),
-                            NeonTheme.Purple.copy(alpha = 0.25f),
+                            glowColor.copy(alpha = 0.45f),
+                            secondaryGlow.copy(alpha = 0.22f),
                             Color.Transparent,
                         ),
                     ),
@@ -138,7 +146,7 @@ fun NeonAmbientBackground(modifier: Modifier = Modifier) {
                 )
         )
 
-        // Bottom right subtle violet ambient glow
+        // Bottom right subtle ambient glow
         Box(
             modifier = Modifier
                 .size(320.dp)
@@ -147,7 +155,7 @@ fun NeonAmbientBackground(modifier: Modifier = Modifier) {
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            NeonTheme.Purple.copy(alpha = 0.4f),
+                            secondaryGlow.copy(alpha = 0.35f),
                             Color.Transparent,
                         ),
                     ),
@@ -346,6 +354,12 @@ data class MasterThemeSpec(
     val dashboardBorderColor: Color,
     val dashboardBgColor: Color,
     val textColor: Color,
+    val ambientGlowColor: Color = primaryColor,
+    val bgGradientTop: Color = Color(0xFF080510),
+    val bgGradientBottom: Color = Color(0xFF050507),
+    val navActiveColor: Color = primaryColor,
+    val navBgColor: Color = cardBgColor,
+    val heroCharacter: String = "noir",
     val previewGradients: List<Color>,
 )
 
@@ -362,7 +376,33 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
         dashboardBorderColor = Color(0xFFF72585),
         dashboardBgColor = Color(0xE6140A20),
         textColor = Color.White,
+        ambientGlowColor = Color(0xFFF72585),
+        bgGradientTop = Color(0xFF0E071A),
+        bgGradientBottom = Color(0xFF050308),
+        navActiveColor = Color(0xFFF72585),
+        navBgColor = Color(0xF212081C),
+        heroCharacter = "blossom",
         previewGradients = listOf(Color(0xFFF72585), Color(0xFF7C3AED)),
+    ),
+    MasterThemeSpec(
+        id = "obsidian_silver",
+        title = "ابسیدین نقره‌ای",
+        subtitle = "مونوکروم لوکس، پلاتین و مشکی خالص بدون رنگ صورتی",
+        primaryColor = Color(0xFFE2E8F0),
+        buttonColor = Color(0xFFE2E8F0),
+        serverBorderColor = Color(0xFF94A3B8),
+        cardWaterColor = Color(0xFF64748B),
+        cardBgColor = Color(0xFF111115),
+        dashboardBorderColor = Color(0xFFCBD5E1),
+        dashboardBgColor = Color(0xE616161A),
+        textColor = Color.White,
+        ambientGlowColor = Color(0xFF94A3B8),
+        bgGradientTop = Color(0xFF141418),
+        bgGradientBottom = Color(0xFF050506),
+        navActiveColor = Color(0xFFE2E8F0),
+        navBgColor = Color(0xF2111115),
+        heroCharacter = "noir",
+        previewGradients = listOf(Color(0xFFFFFFFF), Color(0xFF64748B)),
     ),
     MasterThemeSpec(
         id = "matrix_emerald",
@@ -376,21 +416,13 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
         dashboardBorderColor = Color(0xFF10B981),
         dashboardBgColor = Color(0xE60A2218),
         textColor = Color(0xFFE6FFFA),
+        ambientGlowColor = Color(0xFF10B981),
+        bgGradientTop = Color(0xFF061A12),
+        bgGradientBottom = Color(0xFF020A06),
+        navActiveColor = Color(0xFF10B981),
+        navBgColor = Color(0xF2071911),
+        heroCharacter = "noir",
         previewGradients = listOf(Color(0xFF10B981), Color(0xFF059669)),
-    ),
-    MasterThemeSpec(
-        id = "violet_cosmos",
-        title = "کیهان ویولت",
-        subtitle = "بنفش الکتریک و اسطوخودوس عمیق",
-        primaryColor = Color(0xFF8B5CF6),
-        buttonColor = Color(0xFF8B5CF6),
-        serverBorderColor = Color(0xFF8B5CF6),
-        cardWaterColor = Color(0xFF4F46E5),
-        cardBgColor = Color(0xFF0E0B20),
-        dashboardBorderColor = Color(0xFF8B5CF6),
-        dashboardBgColor = Color(0xE6130E2E),
-        textColor = Color(0xFFF5F3FF),
-        previewGradients = listOf(Color(0xFF8B5CF6), Color(0xFF4F46E5)),
     ),
     MasterThemeSpec(
         id = "ice_ocean",
@@ -404,6 +436,12 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
         dashboardBorderColor = Color(0xFF06B6D4),
         dashboardBgColor = Color(0xE60A1E30),
         textColor = Color(0xFFE0F2FE),
+        ambientGlowColor = Color(0xFF06B6D4),
+        bgGradientTop = Color(0xFF051726),
+        bgGradientBottom = Color(0xFF020910),
+        navActiveColor = Color(0xFF06B6D4),
+        navBgColor = Color(0xF2061522),
+        heroCharacter = "noir",
         previewGradients = listOf(Color(0xFF06B6D4), Color(0xFF0284C7)),
     ),
     MasterThemeSpec(
@@ -418,20 +456,32 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
         dashboardBorderColor = Color(0xFFF59E0B),
         dashboardBgColor = Color(0xE6261308),
         textColor = Color(0xFFFEF3C7),
+        ambientGlowColor = Color(0xFFF59E0B),
+        bgGradientTop = Color(0xFF221006),
+        bgGradientBottom = Color(0xFF0B0502),
+        navActiveColor = Color(0xFFF59E0B),
+        navBgColor = Color(0xF21E0E05),
+        heroCharacter = "blossom",
         previewGradients = listOf(Color(0xFFF59E0B), Color(0xFFEA580C)),
     ),
     MasterThemeSpec(
-        id = "obsidian_silver",
-        title = "ابسیدین نقره‌ای",
-        subtitle = "تک‌رنگ لوکس، پلاتین و مشکی خالص",
-        primaryColor = Color(0xFFE2E8F0),
-        buttonColor = Color(0xFFE2E8F0),
-        serverBorderColor = Color(0xFF94A3B8),
-        cardWaterColor = Color(0xFF475569),
-        cardBgColor = Color(0xFF111114),
-        dashboardBorderColor = Color(0xFFCBD5E1),
-        dashboardBgColor = Color(0xE618181C),
-        textColor = Color.White,
-        previewGradients = listOf(Color(0xFFFFFFFF), Color(0xFF64748B)),
+        id = "violet_cosmos",
+        title = "کیهان ویولت",
+        subtitle = "بنفش الکتریک و اسطوخودوس عمیق",
+        primaryColor = Color(0xFF8B5CF6),
+        buttonColor = Color(0xFF8B5CF6),
+        serverBorderColor = Color(0xFF8B5CF6),
+        cardWaterColor = Color(0xFF4F46E5),
+        cardBgColor = Color(0xFF0E0B20),
+        dashboardBorderColor = Color(0xFF8B5CF6),
+        dashboardBgColor = Color(0xE6130E2E),
+        textColor = Color(0xFFF5F3FF),
+        ambientGlowColor = Color(0xFF8B5CF6),
+        bgGradientTop = Color(0xFF110C29),
+        bgGradientBottom = Color(0xFF05030C),
+        navActiveColor = Color(0xFF8B5CF6),
+        navBgColor = Color(0xF20E0B20),
+        heroCharacter = "noir",
+        previewGradients = listOf(Color(0xFF8B5CF6), Color(0xFF4F46E5)),
     ),
 )

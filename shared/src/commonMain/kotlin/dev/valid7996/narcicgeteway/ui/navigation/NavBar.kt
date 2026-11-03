@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import dev.valid7996.narcicgeteway.domain.model.NavBarStyle
+import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
 import dev.valid7996.narcicgeteway.ui.theme.Personalization
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -84,12 +85,15 @@ fun NrgNavBar(
         NavConfig.SHOW_SERVERS_TAB || destination != TopDestination.Servers
     }
     when (style) {
-        NavBarStyle.IosInteractive, NavBarStyle.Minimal, NavBarStyle.FloatingPill ->
-            IosInteractiveTabBar(destinations, current, onSelect, personalization)
-        NavBarStyle.CompactDock -> FloatingPillBar(destinations, current, onSelect, compact = true)
-        NavBarStyle.ExpressivePill -> ExpressivePillBar(destinations, current, onSelect)
-        NavBarStyle.FullBar -> MaterialBar(destinations, current, onSelect, underline = false)
-        NavBarStyle.Underline -> MaterialBar(destinations, current, onSelect, underline = true)
+        NavBarStyle.IosInteractive,
+        NavBarStyle.FloatingPill,
+        NavBarStyle.CompactDock,
+        NavBarStyle.FullBar,
+        NavBarStyle.Minimal,
+        NavBarStyle.Underline ->
+            IosInteractiveTabBar(destinations, current, onSelect, personalization, navStyle = style)
+        NavBarStyle.ExpressivePill ->
+            ExpressivePillBar(destinations, current, onSelect)
     }
 }
 
@@ -104,19 +108,54 @@ private fun IosInteractiveTabBar(
     current: TopDestination,
     onSelect: (TopDestination) -> Unit,
     personalization: Personalization,
+    navStyle: NavBarStyle = NavBarStyle.IosInteractive,
 ) {
     val haptics = LocalHapticFeedback.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
-    // Premium neon glassmorphic palette
-    val activeAccent = Color(0xFFF72585) // Neon Pink
+    // Fully customizable colors with fallback to theme
+    val activeAccent = personalization.navActiveColor ?: personalization.connectColor ?: NeonTheme.PrimaryPink
+    val dockBg = personalization.navBgColor ?: Color(0xF20A0713)
+    val dockBorderColor = personalization.navBorderColor ?: personalization.serverBorderColor ?: activeAccent.copy(alpha = 0.35f)
 
-    val dockBg = Color(0xF20A0713) // Dark translucent glass
+    val dockHeight = when (navStyle) {
+        NavBarStyle.CompactDock -> 54.dp
+        NavBarStyle.Minimal -> 50.dp
+        NavBarStyle.FloatingPill -> 60.dp
+        NavBarStyle.FullBar -> 64.dp
+        NavBarStyle.Underline -> 58.dp
+        else -> 64.dp
+    }
+
+    val dockShape = when (navStyle) {
+        NavBarStyle.FullBar -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+        NavBarStyle.FloatingPill -> RoundedCornerShape(22.dp)
+        NavBarStyle.Minimal -> RoundedCornerShape(16.dp)
+        NavBarStyle.Underline -> RoundedCornerShape(20.dp)
+        else -> CircleShape
+    }
+
+    val dockMaxW = when (navStyle) {
+        NavBarStyle.FullBar -> 600.dp
+        NavBarStyle.CompactDock -> 300.dp
+        NavBarStyle.Minimal -> 270.dp
+        else -> 350.dp
+    }
+
+    val horizPadding = when (navStyle) {
+        NavBarStyle.FullBar -> 0.dp
+        else -> 24.dp
+    }
+
+    val botPadding = when (navStyle) {
+        NavBarStyle.FullBar -> 0.dp
+        else -> 10.dp
+    }
 
     val dockBorderBrush = Brush.verticalGradient(
         listOf(
-            Color(0x40F72585),
-            Color(0x207C3AED),
+            dockBorderColor.copy(alpha = 0.6f),
+            dockBorderColor.copy(alpha = 0.2f),
         ),
     )
 
@@ -124,28 +163,28 @@ private fun IosInteractiveTabBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 24.dp, end = 24.dp, bottom = 10.dp)
+            .padding(start = horizPadding, end = horizPadding, bottom = botPadding)
             .zIndex(100f),
         contentAlignment = Alignment.Center,
     ) {
         // Outer Pill Dock
         Box(
             modifier = Modifier
-                .widthIn(max = 350.dp)
+                .widthIn(max = dockMaxW)
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(dockHeight)
                 .shadow(
                     elevation = if (isDark) 16.dp else 10.dp,
-                    shape = CircleShape,
-                    ambientColor = if (isDark) Color.Black.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.12f),
-                    spotColor = if (isDark) Color.Black.copy(alpha = 0.75f) else Color.Black.copy(alpha = 0.20f),
+                    shape = dockShape,
+                    ambientColor = activeAccent.copy(alpha = 0.25f),
+                    spotColor = activeAccent.copy(alpha = 0.40f),
                 )
-                .clip(CircleShape)
+                .clip(dockShape)
                 .background(dockBg)
                 .border(
                     width = 1.2.dp,
                     brush = dockBorderBrush,
-                    shape = CircleShape,
+                    shape = dockShape,
                 )
                 // Consume all clicks inside the dock so NO click passes through to underlying cards!
                 .clickable(
@@ -169,58 +208,74 @@ private fun IosInteractiveTabBar(
                     label = "ios-tab-slide",
                 )
 
-                // Elastic rubber-band stretch during movement (inspired by iOS 26 tab menu in video)
+                // Elastic rubber-band stretch during movement
                 val diff = kotlin.math.abs(animatedSlot - selectedIndex)
                 val stretchX = 1f + (diff * 0.18f).coerceAtMost(0.24f)
 
                 val indicatorX = (tabWidth * animatedSlot) + 5.dp
                 val indicatorW = (tabWidth - 10.dp).coerceAtLeast(10.dp)
 
-                // Sliding Active Indicator Capsule (Glass Pill with rim light & glow)
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(indicatorX.roundToPx(), 6.dp.roundToPx()) }
-                        .width(indicatorW)
-                        .height(52.dp)
-                        .graphicsLayer {
-                            scaleX = stretchX
-                            transformOrigin = TransformOrigin(0.5f, 0.5f)
-                        }
-                        .clip(RoundedCornerShape(26.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFFF72585),
-                                    Color(0xFFC026D3),
-                                ),
-                            ),
-                        )
-                        .border(
-                            width = 1.2.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color(0x99FFA0D0),
-                                    Color(0x40F72585),
-                                ),
-                            ),
-                            shape = RoundedCornerShape(26.dp),
-                        ),
-                ) {
-                    // Top specular reflection line
+                if (navStyle == NavBarStyle.Underline) {
+                    // Underline style glowing bar
                     Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(18.dp)
-                            .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+                        modifier = Modifier
+                            .offset { IntOffset(indicatorX.roundToPx() + 10.dp.roundToPx(), (dockHeight - 5.dp).roundToPx()) }
+                            .width((indicatorW - 20.dp).coerceAtLeast(12.dp))
+                            .height(3.dp)
+                            .clip(CircleShape)
+                            .background(activeAccent)
+                            .shadow(6.dp, shape = CircleShape, ambientColor = activeAccent, spotColor = activeAccent)
+                    )
+                } else {
+                    // Sliding Active Indicator Capsule (Glass Pill with rim light & glow)
+                    val capsuleH = (dockHeight - 12.dp).coerceAtLeast(36.dp)
+                    val capsuleRadius = if (navStyle == NavBarStyle.Minimal) 14.dp else 26.dp
+
+                    Box(
+                        modifier = Modifier
+                            .offset { IntOffset(indicatorX.roundToPx(), 6.dp.roundToPx()) }
+                            .width(indicatorW)
+                            .height(capsuleH)
+                            .graphicsLayer {
+                                scaleX = stretchX
+                                transformOrigin = TransformOrigin(0.5f, 0.5f)
+                            }
+                            .clip(RoundedCornerShape(capsuleRadius))
                             .background(
-                                Brush.verticalGradient(
+                                Brush.horizontalGradient(
                                     listOf(
-                                        Color.White.copy(alpha = if (isDark) 0.22f else 0.40f),
-                                        Color.Transparent,
+                                        activeAccent,
+                                        personalization.cardWaterColor ?: activeAccent.copy(alpha = 0.82f),
                                     ),
                                 ),
+                            )
+                            .border(
+                                width = 1.2.dp,
+                                brush = Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.45f),
+                                        activeAccent.copy(alpha = 0.35f),
+                                    ),
+                                ),
+                                shape = RoundedCornerShape(capsuleRadius),
                             ),
-                    )
+                    ) {
+                        // Top specular reflection line
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(topStart = capsuleRadius, topEnd = capsuleRadius))
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.White.copy(alpha = if (isDark) 0.25f else 0.40f),
+                                            Color.Transparent,
+                                        ),
+                                    ),
+                                ),
+                        )
+                    }
                 }
 
                 // Interactive Tab Items
@@ -284,18 +339,19 @@ private fun IosInteractiveTabBar(
                                     rotation = iconRotation,
                                 )
 
-                                Spacer(Modifier.height(3.dp))
-
-                                Text(
-                                    text = stringResource(dest.labelRes),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    ),
-                                    color = textColor,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                if (dockHeight >= 54.dp) {
+                                    Spacer(Modifier.height(3.dp))
+                                    Text(
+                                        text = stringResource(dest.labelRes),
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        ),
+                                        color = textColor,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
@@ -318,22 +374,44 @@ private fun IosTabIcon(
         label = "tab-icon-tint",
     )
 
-    val iconRes = destination.icon
-
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(26.dp),
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = stringResource(destination.labelRes),
-            tint = iconTint,
-            modifier = Modifier
-                .size(22.dp)
-                .graphicsLayer {
-                    rotationZ = rotation
-                },
-        )
+        if (destination == TopDestination.Home) {
+            // Hexagon / rounded shield with "N" Narcic emblem (matching UI screenshot)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(22.dp)
+                    .graphicsLayer { rotationZ = rotation }
+                    .border(
+                        width = 1.4.dp,
+                        color = iconTint,
+                        shape = RoundedCornerShape(6.dp),
+                    )
+            ) {
+                Text(
+                    text = "N",
+                    color = iconTint,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Black,
+                    lineHeight = 12.sp,
+                )
+            }
+        } else {
+            val iconRes = destination.icon
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = stringResource(destination.labelRes),
+                tint = iconTint,
+                modifier = Modifier
+                    .size(22.dp)
+                    .graphicsLayer {
+                        rotationZ = rotation
+                    },
+            )
+        }
     }
 }
 

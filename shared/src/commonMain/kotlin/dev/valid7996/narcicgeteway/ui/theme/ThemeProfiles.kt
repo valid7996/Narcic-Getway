@@ -300,5 +300,11 @@ fun AppSettings.applyMasterTheme(spec: MasterThemeSpec): AppSettings = copy(
     customDashboardBgColor = spec.dashboardBgColor.toArgbLong(),
     customDashboardTextColor = spec.textColor.toArgbLong(),
     customTextColor = spec.textColor.toArgbLong(),
-    themeProfileId = spec.id,
+    customNavActiveColor = spec.navActiveColor.toArgbLong(),
+    customNavBgColor = spec.navBgColor.toArgbLong(),
+    customNavBorderColor = spec.serverBorderColor.toArgbLong(),
+    customAmbientGlowColor = spec.ambientGlowColor.toArgbLong(),
+    customBgGradientTop = spec.bgGradientTop.toArgbLong(),
+    customBgGradientBottom = spec.bgGradientBottom.toArgbLong(),
+    themeProfileId = spec.heroCharacter,
 )
