@@ -1,6 +1,9 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package dev.valid7996.narcicgeteway.ui.servers
+import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
+import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
+import dev.valid7996.narcicgeteway.ui.format.formatBytes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -105,13 +108,10 @@ internal fun ServerCard(
     onShare: () -> Unit = {},
     onShareLocked: (() -> Unit)? = null,
     onShareQr: () -> Unit = {},
-
     shareLink: String? = null,
     onRename: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
-
     onMoveGroup: (() -> Unit)? = null,
-
     selecting: Boolean = false,
     isSelected: Boolean = false,
     onPingTcp: () -> Unit = {},
@@ -123,284 +123,292 @@ internal fun ServerCard(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val isSelectedCard = selecting && isSelected
-    val isAzkaban = personalization.themeProfileId == "azkaban"
-    val isNoir = personalization.themeProfileId == "noir"
-    val isBlossom = personalization.themeProfileId == "blossom"
-    val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: NrgGreen)
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val container = if (isSelectedCard) {
-        MaterialTheme.colorScheme.secondaryContainer
+    val platform = dev.valid7996.narcicgeteway.ui.platform.LocalPlatform.current
+    val scope = rememberCoroutineScope()
+
+    val shape = RoundedCornerShape(26.dp)
+    val cardBg = if (active) Color(0xE6140A1E) else Color(0xE612081C)
+    val cardBorder = if (isSelectedCard) {
+        Color(0xFF38BDF8)
     } else if (active) {
-        activeColor
-    } else if (personalization.amoledBlack) {
-        Color(0xFF000000)
-    } else if (isBlossom) {
-        Color(0xFF180A12)
-    } else if (isNoir) {
-        Color(0xFF121214)
-    } else if (isAzkaban) {
-        Color(0xFF091322)
+        Color(0xFFF72585)
     } else {
-        personalization.serverCardColor
-            ?: if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF)
-    }
-    val frame = when {
-        isSelectedCard -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
-        active -> activeColor.copy(alpha = 0.95f)
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.32f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.22f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
-        personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.40f)
-        else -> if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
+        Color(0x357C3AED)
     }
 
-    val onContainer = when {
-        isSelectedCard -> MaterialTheme.colorScheme.onSecondaryContainer
-        active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
-        !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
-        isBlossom -> Color(0xFFFFF1F5)
-        isNoir -> Color(0xFFF4F4F5)
-        isAzkaban -> Color(0xFFF0F9FF)
-        else -> MaterialTheme.colorScheme.onSurface
+    val pingMs = profile.ping
+    val (signalLevel, pingColor) = when {
+        pingMs in 1..150 -> Pair(3, Color(0xFF22C55E))
+        pingMs in 151..350 -> Pair(2, Color(0xFF06B6D4))
+        pingMs in 351..600 -> Pair(2, Color(0xFFF59E0B))
+        pingMs > 600 -> Pair(1, Color(0xFFEF4444))
+        else -> Pair(0, Color(0xFF6B7280))
     }
-    val vPad = personalization.density.cardVerticalDp.dp
-    val primaryAccent = activeColor
-    Surface(
-        color = Color.Transparent,
-        shape = RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp),
-        modifier = modifier.fillMaxWidth(),
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(cardBg)
+            .border(if (active) 1.5.dp else 1.dp, cardBorder, shape)
+            .clickable(onClick = onClick),
     ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min)
-                .clip(RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
-                .background(container)
-                .border(if (active) 1.dp else 0.5.dp, frame, RoundedCornerShape(personalization.cornerStyle.serverCardDp.dp))
-                .clickable(onClick = onClick),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier
-                    .width(if (columns >= 3) 3.dp else 4.dp)
-                    .fillMaxHeight()
-                    .background(
-                        when {
-                            active -> primaryAccent
-                            isSelectedCard -> MaterialTheme.colorScheme.secondary
-                            else -> Color.Transparent
-                        },
-                    ),
+        // Neon wave accent when active
+        if (active) {
+            NeonWaveAccent(
+                color = Color(0xFFF72585),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .align(Alignment.BottomCenter),
+                alpha = 0.22f,
             )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+        ) {
+            // Top Row: Name + Flag on right; Checkmark / Ping + More menu on left
             Row(
-                Modifier
-                    .weight(1f)
-                    .padding(
-                        start = if (columns >= 3) 8.dp else 14.dp,
-                        end = if (columns >= 3) 2.dp else 4.dp,
-                        top = if (columns >= 3) (vPad * 0.75f).coerceAtLeast(4.dp) else vPad,
-                        bottom = if (columns >= 3) (vPad * 0.75f).coerceAtLeast(4.dp) else vPad,
-                    ),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (active) {
-                            Box(
-                                Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(primaryAccent),
-                            )
-                            Spacer(Modifier.width(7.dp))
-                        }
-                        val flagCountry = extractCountryCode(profile.name) ?: profile.countryCode
-                        if (!flagCountry.isNullOrBlank()) {
-                            FlagBadge(countryCode = flagCountry, size = if (columns >= 3) 13.dp else 16.dp)
-                            Spacer(Modifier.width(if (columns >= 3) 4.dp else 6.dp))
-                        }
-                        Text(
-                            text = cleanProfileName(profile.name),
-                            style = (if (columns >= 3) MaterialTheme.typography.bodySmall else MaterialTheme.typography.titleMedium).copy(
-                                textDirection = TextDirection.ContentOrRtl,
-                            ),
-                            fontWeight = FontWeight.SemiBold,
-                            color = onContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                // Right in RTL: Flag + Server Name
+                Row(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val flagCountry = extractCountryCode(profile.name) ?: profile.countryCode
+                    if (!flagCountry.isNullOrBlank()) {
+                        FlagBadge(countryCode = flagCountry, size = 22.dp)
                     }
-                    val subtle = onContainer.copy(alpha = 0.72f)
-
-                    val typeLabel = if (profile.isCustom) {
-                        stringResource(Res.string.servers_custom_config)
-                    } else {
-                        profile.transportLabel
-                    }
-
                     Text(
-                        text = buildString {
-                            append(typeLabel)
-                            if (profile.address.isNotBlank() && profile.address != "-") {
-                                append("  •  ")
-                                append(profile.address)
-                                if (profile.port > 0) append(":${profile.port}")
-                            }
-                            if (subscriptionName != null) append("  •  $subscriptionName")
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = if (personalization.monospaceAddress) FontFamily.Monospace else null,
-                        color = subtle,
+                        text = cleanProfileName(profile.name),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                        ),
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (personalization.showServerUsage && (profile.bytesDown > 0 || profile.bytesUp > 0)) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = stringResource(
-                                Res.string.servers_usage,
-                                formatBytes(profile.bytesDown),
-                                formatBytes(profile.bytesUp),
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = subtle.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                 }
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(end = 4.dp),
+
+                Spacer(Modifier.width(8.dp))
+
+                // Left in RTL: Checkmark or Ping + More Menu
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    profile.lastPingMs?.takeIf { it >= 0 }?.takeIf { personalization.showServerPing }?.let { ping ->
-                        Surface(
-                            shape = CircleShape,
-                            color = pingColor(ping, container).copy(alpha = 0.16f),
-                            contentColor = pingColor(ping, container),
+                    if (active) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF72585)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_check),
+                                contentDescription = "Active",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    } else if (pingMs > 0) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x25F59E0B))
+                                .border(0.8.dp, Color(0x60F59E0B), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
                         ) {
                             Text(
-                                text = if (ping < 0) "$ping" else "$ping ms",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                text = "ms $pingMs",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                ),
+                                color = Color(0xFFF59E0B),
                             )
                         }
                     }
-                    profile.expiresAt?.let { exp ->
-                        Spacer(Modifier.height(2.dp))
-                        ExpiryCountdownBadge(
-                            expiresAt = exp,
-                            isDark = isDark,
-                        )
-                    }
-                }
-                if (active) {
-                    Spacer(Modifier.width(6.dp))
-                    Icon(
-                        painterResource(Res.drawable.ic_check_circle),
-                        contentDescription = stringResource(Res.string.config_active),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                if (ServersUiConfig.SHOW_CARD_MENU) Box {
-                    IconButton(
-                        onClick = { menuOpen = true },
-                        modifier = if (columns >= 3) Modifier.size(28.dp) else Modifier,
-                    ) {
-                        Icon(
-                            painterResource(Res.drawable.ic_more_vert),
-                            contentDescription = stringResource(Res.string.servers_actions),
-                            tint = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
-                            modifier = if (columns >= 3) Modifier.size(16.dp) else Modifier,
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuOpen,
-                        onDismissRequest = { menuOpen = false },
-                        shape = RoundedCornerShape(14.dp),
-                        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
-                        border = androidx.compose.foundation.BorderStroke(
-                            0.5.dp,
-                            if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
-                        ),
-                    ) {
-                        val isDefaultConfig = ConfigRepository.isDefaultSubscription(profile.subscriptionId)
-                        if (ServersUiConfig.SHOW_SHARE_ACTIONS && !isDefaultConfig) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_share)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null) },
 
-                                enabled = shareLink != null,
-                                onClick = { menuOpen = false; onShare() },
-                            )
-                            onShareLocked?.let { shareLocked ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.server_card_lock_and_share)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_lock), null, tint = Color(0xFFFF9500)) },
-                                    enabled = shareLink != null,
-                                    onClick = { menuOpen = false; shareLocked() },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_share_qr)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null) },
-                                enabled = shareLink != null,
-                                onClick = { menuOpen = false; onShareQr() },
+                    Box {
+                        IconButton(
+                            onClick = { menuOpen = true },
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_more_vert),
+                                contentDescription = "More",
+                                tint = Color(0xFF9CA3AF),
+                                modifier = Modifier.size(18.dp),
                             )
                         }
-                        if (!isDefaultConfig) {
-                            onEdit?.let { edit ->
+
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false },
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            onEdit?.let {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(Res.string.action_edit)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null) },
-                                    enabled = profile.isEditable,
-                                    onClick = { menuOpen = false; edit() },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
+                                    onClick = { menuOpen = false; it() },
                                 )
                             }
-                            onRename?.let { rename ->
+                            onRename?.let {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.servers_rename)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_description), null) },
-                                    onClick = { menuOpen = false; rename() },
+                                    text = { Text(stringResource(Res.string.action_rename)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
+                                    onClick = { menuOpen = false; it() },
                                 )
                             }
-                        }
-                        onMoveGroup?.let { move ->
+                            onMoveGroup?.let {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.action_move_group)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_folder), null, Modifier.size(18.dp)) },
+                                    onClick = { menuOpen = false; it() },
+                                )
+                            }
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.groups_move)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null) },
-                                onClick = { menuOpen = false; move() },
-                            )
-                        }
-
-                        if ((!profile.isManagedTunnel || profile.isSingBoxConfig || profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp) && !profile.isDnsBasedTunnel) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.ping_tcp)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_speed), null) },
-                                onClick = { menuOpen = false; onPingTcp() },
+                                text = { Text(stringResource(Res.string.action_share)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_share), null, Modifier.size(18.dp)) },
+                                onClick = { menuOpen = false; onShare() },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.ping_real)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_bolt), null) },
-                                onClick = { menuOpen = false; onPingReal() },
+                                text = { Text(stringResource(Res.string.action_qr)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code), null, Modifier.size(18.dp)) },
+                                onClick = { menuOpen = false; onShareQr() },
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.action_delete), color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) },
+                                onClick = { menuOpen = false; onDelete() },
                             )
                         }
-                        HorizontalDivider(
-                            thickness = 0.5.dp,
-                            color = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.action_delete), color = Color(0xFFFF3B30), fontWeight = FontWeight.Medium) },
-                            leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
-                            onClick = { menuOpen = false; onDelete() },
-                        )
                     }
                 }
             }
+
+            Spacer(Modifier.height(4.dp))
+
+            // Middle Row: Address + Protocol + Copy Icon
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        platform.copyToClipboard("${profile.address}:${profile.port}")
+                        scope.launch { platform.toast("آدرس کپی شد") }
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Text(
+                    text = "${profile.source.name} • ${profile.address}:${profile.port}",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.5.sp,
+                    ),
+                    color = Color(0xFF9CA3AF),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.width(6.dp))
+                Icon(
+                    painter = painterResource(Res.drawable.ic_content_copy),
+                    contentDescription = "Copy",
+                    tint = Color(0xFF9CA3AF),
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = Color(0x20FFFFFF))
+            Spacer(Modifier.height(8.dp))
+
+            // Bottom Row: Signal & Ping + MTU on right; Download & Upload on left
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Right in RTL: Signal bars + Ping + MTU
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ServerSignalBars(level = signalLevel, color = pingColor)
+                    Text(
+                        text = if (pingMs > 0) "$pingMs ms" else "---",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.5.sp,
+                        ),
+                        color = pingColor,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "MTU: 1420",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = Color(0xFF9CA3AF),
+                    )
+                }
+
+                // Left in RTL: Download & Upload traffic
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "↓ ${formatBytes(profile.totalDownload)}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                        ),
+                        color = Color(0xFF06B6D4),
+                    )
+                    Text(
+                        text = "↑ ${formatBytes(profile.totalUpload)}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                        ),
+                        color = Color(0xFFF72585),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServerSignalBars(
+    level: Int,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.height(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        listOf(3.5.dp, 6.5.dp, 9.5.dp, 12.5.dp).forEachIndexed { index, h ->
+            val barColor = if (index <= level) color else color.copy(alpha = 0.25f)
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(h)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(barColor),
+            )
         }
     }
 }

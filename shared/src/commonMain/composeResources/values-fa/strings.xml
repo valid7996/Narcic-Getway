@@ -1617,9 +1617,6 @@
     <string name="action_connect_secure">برقراری اتصال امن</string>
     <string name="action_disconnect_secure">قطع اتصال امن</string>
     <string name="connecting_secure">در حال برقراری اتصال امن...</string>
-    <string name="azkaban_summon_guardian">احضار محافظ (اتصال امن)</string>
-    <string name="azkaban_break_spell">گسستن طلسم (قطع اتصال)</string>
-    <string name="azkaban_binding">در حال ایجاد پیوند امن...</string>
     <string name="settings_language_ar">العربية</string>
     <string name="settings_language_zh">中文</string>
     <string name="settings_language_ru">Русский</string>
@@ -1796,7 +1793,7 @@
     <string name="onboarding_lang_title">زبان برنامه (Language)</string>
     <string name="onboarding_lang_sub">پشتیبانی کامل از فارسی، انگلیسی و سایر زبان‌ها</string>
     <string name="onboarding_theme_title">انتخاب طرح ظاهری (Themes)</string>
-    <string name="onboarding_theme_sub">چهار تم اختصاصی: پیش‌فرض، آزکابان، سیاه و سفید، و دخترونه صورتی</string>
+    <string name="onboarding_theme_sub">قالب‌های اختصاصی: نوآر و شکوفه</string>
     <string name="onboarding_dark_title">حالت تیره و روشن (Dark Mode)</string>
     <string name="onboarding_dark_sub">امکان هماهنگی خودکار با سیستم یا انتخاب حالت شب/روز</string>
     <string name="onboarding_active">فعال</string>
@@ -1883,11 +1880,9 @@
     <string name="scanner_error_label">خطا</string>
     <string name="mhrv_ids_count">%1$d شناسه</string>
     <string name="mhrv_connection_error">خطا در اتصال</string>
-    <string name="theme_azkaban_name">Azkaban (آزکابان)</string>
     <string name="theme_noir_name">Noir (سیاه و سفید)</string>
     <string name="theme_blossom_name">Blossom (دخترونه صورتی)</string>
     <string name="theme_android8_name">کلاسیک اندروید ۸ (کم‌مصرف)</string>
-    <string name="onboarding_theme_azkaban_desc">آبی سایبرنتیک نئونی و های‌تک</string>
     <string name="onboarding_theme_noir_desc">مشکی مونوکروم دارک و مینیمال</string>
     <string name="onboarding_theme_blossom_desc">صورتی و رز پاستلی دخترونه</string>
     <string name="onboarding_theme_default_desc">سبز زمردی کلاسیک نارسیس</string>

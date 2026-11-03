@@ -54,7 +54,6 @@ fun ColorScheme.withThemeProfile(
 ): ColorScheme {
     val profile = themeProfileOf(profileId)
     val baseAccentColor = when (profile?.id) {
-        "azkaban" -> Color(0xFF38BDF8)
         "noir" -> Color(0xFFFFFFFF)
         "blossom" -> Color(0xFFF472B6)
         "narcis" -> Color(0xFF0F9D6C)
@@ -65,7 +64,6 @@ fun ColorScheme.withThemeProfile(
     val onPrimary = onColorFor(primary)
     val primaryContainer = if (dark) {
         when (profile?.id) {
-            "azkaban" -> Color(0xFF0A1628)
             "noir" -> Color(0xFF18181B)
             "blossom" -> Color(0xFF2A101D)
             "narcis" -> Color(0xFF0A2E22)
@@ -85,7 +83,6 @@ fun ColorScheme.withThemeProfile(
 
     val themeBackground = if (dark) {
         when (profile?.id) {
-            "azkaban" -> Color(0xFF070E1A)
             "noir" -> Color(0xFF000000)
             "blossom" -> Color(0xFF140810)
             "narcis" -> Color(0xFF06140E)
@@ -97,7 +94,6 @@ fun ColorScheme.withThemeProfile(
 
     val themeSurface = if (dark) {
         when (profile?.id) {
-            "azkaban" -> Color(0xFF091322)
             "noir" -> Color(0xFF121214)
             "blossom" -> Color(0xFF180A12)
             "narcis" -> Color(0xFF0B2A20)
@@ -109,7 +105,6 @@ fun ColorScheme.withThemeProfile(
 
     val themeSurfaceContainer = if (dark) {
         when (profile?.id) {
-            "azkaban" -> Color(0xFF0A1628)
             "noir" -> Color(0xFF18181B)
             "blossom" -> Color(0xFF210E1A)
             "narcis" -> Color(0xFF0D2F24)
@@ -121,7 +116,6 @@ fun ColorScheme.withThemeProfile(
 
     val themeSurfaceContainerHigh = if (dark) {
         when (profile?.id) {
-            "azkaban" -> Color(0xFF0E1F36)
             "noir" -> Color(0xFF202024)
             "blossom" -> Color(0xFF2D1424)
             "narcis" -> Color(0xFF123B2D)
@@ -191,7 +185,7 @@ data class Personalization(
     val trafficTilesAboveHero: Boolean = false,
     val trafficTileSize: TrafficTileSize = TrafficTileSize.Normal,
     val trafficCardStyle: TrafficCardStyle = TrafficCardStyle.Cards,
-    val themeProfileId: String? = null,
+    val themeProfileId: String? = "noir",
     val amoledBlack: Boolean = false,
     val dynamicColor: Boolean = false,
 ) {
@@ -239,7 +233,7 @@ fun AppSettings.resetPersonalization(): AppSettings = copy(
     customServerCardColor = null,
     customServerActiveColor = null,
 
-    themeProfileId = null,
+    themeProfileId = "noir",
     cardCornerStyle = CardCornerStyle.Rounded,
     listDensity = ListDensity.Comfortable,
     showServerPing = true,

@@ -91,7 +91,6 @@ fun AutoSelectCard(
     personalization: Personalization = Personalization.Default,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
     val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: NrgGreen)
@@ -103,8 +102,6 @@ fun AutoSelectCard(
         Color(0xFF1F0B16)
     } else if (isNoir) {
         Color(0xFF121214)
-    } else if (isAzkaban) {
-        Color(0xFF091424)
     } else if (isDark) {
         personalization.serverCardColor ?: Color(0xFF1C1C1E)
     } else {
@@ -115,7 +112,6 @@ fun AutoSelectCard(
         !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
         isBlossom -> Color(0xFFFFF1F5)
         isNoir -> Color(0xFFF4F4F5)
-        isAzkaban -> Color(0xFFF0F9FF)
         active -> MaterialTheme.colorScheme.onPrimaryContainer
         isDark -> Color(0xFFF2F2F7)
         else -> Color(0xFF000000)
@@ -126,7 +122,6 @@ fun AutoSelectCard(
         personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
         isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
         isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.22f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
         personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.40f)
         isDark -> Color(0xFF2C2C2E)
         else -> Color(0xFFE5E5EA)
@@ -147,7 +142,7 @@ fun AutoSelectCard(
                 .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val squircleBg = if (isAzkaban) Color(0xFF0284C7) else Color(0xFF007AFF)
+            val squircleBg = Color(0xFF007AFF)
             Box(
                 Modifier
                     .size(36.dp)

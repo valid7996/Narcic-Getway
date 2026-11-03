@@ -878,7 +878,7 @@
     <string name="onboarding_lang_title">Language</string>
     <string name="onboarding_lang_sub">Full support for English, Persian, Arabic and other languages</string>
     <string name="onboarding_theme_title">Themes</string>
-    <string name="onboarding_theme_sub">Four dedicated themes: Default, Azkaban, Noir and Blossom</string>
+    <string name="onboarding_theme_sub">Dedicated themes: Noir and Blossom</string>
     <string name="onboarding_dark_title">Dark Mode</string>
     <string name="onboarding_dark_sub">Automatic system sync or choose dark/light mode</string>
     <string name="onboarding_active">Active</string>
@@ -965,11 +965,9 @@
     <string name="scanner_error_label">Error</string>
     <string name="mhrv_ids_count">%1$d identifiers</string>
     <string name="mhrv_connection_error">Connection error</string>
-    <string name="theme_azkaban_name">Azkaban</string>
     <string name="theme_noir_name">Noir</string>
     <string name="theme_blossom_name">Blossom</string>
     <string name="theme_android8_name">Android 8 Classic</string>
-    <string name="onboarding_theme_azkaban_desc">Cybernetic neon &amp; high-tech blue</string>
     <string name="onboarding_theme_noir_desc">Dark monochrome &amp; minimal black</string>
     <string name="onboarding_theme_blossom_desc">Soft pastel pink &amp; rose</string>
     <string name="onboarding_theme_default_desc">Classic Narcic emerald green</string>

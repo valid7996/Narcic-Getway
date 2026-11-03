@@ -1,6 +1,21 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package dev.valid7996.narcicgeteway.ui.settings
+import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
+import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
+import dev.valid7996.narcicgeteway.ui.theme.NeonAmbientBackground
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.Alignment
 
 import dev.valid7996.narcicgeteway.ui.platform.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
@@ -218,287 +233,217 @@ private fun RootPage(
     onOpen: (SettingsPage) -> Unit,
     onAbout: () -> Unit,
     onUpdate: ((AppSettings) -> AppSettings) -> Unit,
-
     hasAi: Boolean,
     onDeviceCode: (() -> Unit)? = null,
 ) {
     val platform = LocalPlatform.current
 
-    var checkTrigger by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    var checking by androidx.compose.runtime.remember { mutableStateOf(false) }
-    var showLogs by androidx.compose.runtime.remember { mutableStateOf(false) }
-    var showRstaSpoof by androidx.compose.runtime.remember { mutableStateOf(false) }
+    var checkTrigger by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var checking by remember { mutableStateOf(false) }
+    var showLogs by remember { mutableStateOf(false) }
+    var showRstaSpoof by remember { mutableStateOf(false) }
 
-    SettingsPageScaffold(
-        title = stringResource(Res.string.settings_title),
-        contentPadding = contentPadding,
-        modifier = modifier,
-        accentLine = false,
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(NeonTheme.Base),
     ) {
-        if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) SettingsGroup {
-            SettingsMenuRow(
-                stringResource(Res.string.support_title),
-                stringResource(Res.string.support_subtitle),
-                leadingIcon = Res.drawable.ic_favorite,
-                iconTint = Color(0xFFFF2D55),
-            ) { onOpen(SettingsPage.Support) }
-        }
+        NeonAmbientBackground()
 
-        SettingsGroup {
-            SettingsMenuRow(
-                stringResource(Res.string.title_ui_settings),
-                stringResource(Res.string.summary_ui_settings),
-                leadingIcon = Res.drawable.ic_palette,
-                iconTint = Color(0xFF5856D6),
-            ) { onOpen(SettingsPage.Ui) }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_MODE) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.title_mode_settings),
-                    stringResource(Res.string.summary_mode_settings),
-                    leadingIcon = Res.drawable.ic_tune,
-                    iconTint = Color(0xFF007AFF),
-                ) { onOpen(SettingsPage.Mode) }
-            }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_MONITOR) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.monitor_title),
-                    stringResource(Res.string.monitor_subtitle),
-                    leadingIcon = Res.drawable.ic_speedometer,
-                    iconTint = Color(0xFF34C759),
-                ) { onOpen(SettingsPage.Monitor) }
-            }
-            if (hasAi && dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.ai_title),
-                    stringResource(Res.string.ai_subtitle),
-                    leadingIcon = Res.drawable.ic_star,
-                    iconTint = Color(0xFFAF52DE),
-                ) { onOpen(SettingsPage.Ai) }
-            }
-        }
-
-        SettingsGroup(stringResource(Res.string.tools_group_network)) {
-            SettingsMenuRow(
-                stringResource(Res.string.tools_cdn_scanner_title),
-                stringResource(Res.string.tools_cdn_scanner_sub),
-                leadingIcon = Res.drawable.ic_speedometer,
-                iconTint = Color(0xFF007AFF),
-            ) { onOpen(SettingsPage.IpScanner) }
-            SettingsDivider()
-            SettingsMenuRow(
-                stringResource(Res.string.tools_telegram_proxies_title),
-                stringResource(Res.string.tools_telegram_proxies_sub),
-                leadingIcon = Res.drawable.ic_public,
-                iconTint = Color(0xFF34C759),
-            ) { onOpen(SettingsPage.TelegramProxy) }
-            SettingsDivider()
-            SettingsMenuRow(
-                stringResource(Res.string.tools_patts_title),
-                stringResource(Res.string.tools_patts_sub),
-                leadingIcon = Res.drawable.ic_tune,
-                iconTint = Color(0xFFFF9500),
-            ) { onOpen(SettingsPage.Patt) }
-        }
-
-        SettingsGroup(stringResource(Res.string.tools_group_backup)) {
-            SettingsMenuRow(
-                stringResource(Res.string.tools_backup_title),
-                stringResource(Res.string.tools_backup_sub),
-                leadingIcon = Res.drawable.ic_sync,
-                iconTint = Color(0xFF34C759),
-            ) { onOpen(SettingsPage.Backup) }
-        }
-
-        SettingsGroup {
-            SettingsMenuRow(
-                stringResource(Res.string.logs_title),
-                stringResource(Res.string.logs_settings_sub),
-                leadingIcon = Res.drawable.ic_description,
-                iconTint = Color(0xFF8E8E93),
-            ) { showLogs = true }
-            SettingsDivider()
-            SettingsMenuRow(
-                stringResource(Res.string.rsta_title),
-                stringResource(Res.string.rsta_sub),
-                leadingIcon = Res.drawable.ic_bolt,
-                iconTint = Color(0xFFFF9500),
-            ) { showRstaSpoof = true }
-        }
-
-        if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ROUTING) SettingsGroup(
-            stringResource(Res.string.routing_title),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 12.dp),
         ) {
-            SettingsMenuRow(
-                stringResource(Res.string.routing_title),
-                stringResource(Res.string.routing_subtitle),
-                leadingIcon = Res.drawable.ic_public,
-                iconTint = Color(0xFF30B0C7),
-            ) { onOpen(SettingsPage.Routing) }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_PER_APP) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.per_app_title),
-                    if (settings.perAppProxyEnabled) {
-                        stringResource(Res.string.per_app_selected, settings.perAppPackages.size)
-                    } else {
-                        stringResource(Res.string.per_app_mode_off)
-                    },
-                    leadingIcon = Res.drawable.ic_map,
-                    iconTint = Color(0xFF5E5CE6),
-                ) { onOpen(SettingsPage.PerApp) }
-            }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.assets_title),
-                    stringResource(Res.string.assets_subtitle),
-                    leadingIcon = Res.drawable.ic_download,
-                    iconTint = Color(0xFF00C7BE),
-                ) { onOpen(SettingsPage.Assets) }
-            }
-        }
-
-        if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_TUNNELS) SettingsGroup(
-            stringResource(Res.string.title_tunnels_settings),
-        ) {
-            SettingsMenuRow(
-                stringResource(Res.string.title_dns_protocols),
-                stringResource(Res.string.summary_dns_protocols),
-                leadingIcon = Res.drawable.ic_dns,
-                iconTint = Color(0xFF32ADE6),
-            ) { onOpen(SettingsPage.DnsProtocols) }
-            SettingsDivider()
-            SettingsMenuRow(
-                stringResource(Res.string.title_tor_settings),
-                stringResource(Res.string.summary_tor_settings),
-                leadingIcon = Res.drawable.ic_lock,
-                iconTint = Color(0xFFAF52DE),
-            ) { onOpen(SettingsPage.Tor) }
-            SettingsDivider()
-            SettingsMenuRow(
-                stringResource(Res.string.title_ssh_settings),
-                stringResource(Res.string.summary_ssh_settings),
-                leadingIcon = Res.drawable.ic_encrypted,
-                iconTint = Color(0xFF48484A),
-            ) { onOpen(SettingsPage.Ssh) }
-        }
-
-        SettingsGroup(
-            stringResource(Res.string.title_core_settings),
-        ) {
-            SettingsMenuRow(
-                stringResource(Res.string.title_vpn_settings),
-                stringResource(Res.string.summary_vpn_settings),
-                leadingIcon = Res.drawable.ic_lock,
-                iconTint = Color(0xFF28CD41),
-            ) { onOpen(SettingsPage.Vpn) }
-            SettingsDivider()
-            SettingsMenuRow(
-                stringResource(Res.string.title_core_settings),
-                stringResource(Res.string.summary_core_settings),
-                leadingIcon = Res.drawable.ic_settings,
-                iconTint = Color(0xFF007AFF),
-            ) { onOpen(SettingsPage.Core) }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.title_mux_settings),
-                    stringResource(Res.string.summary_mux_settings),
-                    leadingIcon = Res.drawable.ic_speed,
-                    iconTint = Color(0xFF5856D6),
-                ) { onOpen(SettingsPage.Mux) }
-            }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_FRAGMENT || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.title_fragment_settings),
-                    stringResource(Res.string.summary_fragment_settings),
-                    leadingIcon = Res.drawable.ic_contrast,
-                    iconTint = Color(0xFFFF9500),
-                ) { onOpen(SettingsPage.Fragment) }
-            }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.title_singbox_settings),
-                    stringResource(Res.string.summary_singbox_settings),
-                    leadingIcon = Res.drawable.ic_nrg_mark,
-                    iconTint = Color(0xFFFF2D55),
-                ) { onOpen(SettingsPage.SingBox) }
-            }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_AUTO_SELECT || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.title_observatory_settings),
-                    stringResource(Res.string.summary_observatory_settings),
-                    leadingIcon = Res.drawable.ic_sync,
-                    iconTint = Color(0xFF0A84FF),
-                ) { onOpen(SettingsPage.Observatory) }
-            }
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS || dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_CORE_FULL) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.title_advanced),
-                    stringResource(Res.string.summary_advanced),
-                    leadingIcon = Res.drawable.ic_tune,
-                    iconTint = Color(0xFF8E8E93),
-                ) { onOpen(SettingsPage.Advanced) }
-            }
-        }
-
-        SettingsGroup(
-            stringResource(Res.string.settings_about),
-        ) {
-            val fromPlay = platform.distribution == Distribution.PlayStore
-            if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ALL_SETTINGS) {
-                SettingsMenuRow(
-                    stringResource(Res.string.update_check_title),
-                    when {
-                        checking -> stringResource(Res.string.update_checking)
-                        fromPlay -> stringResource(Res.string.update_check_summary)
-                        else -> stringResource(Res.string.update_check_summary_github)
-                    },
-                    leadingIcon = Res.drawable.ic_sync,
-                    iconTint = Color(0xFF34C759),
-                ) { if (!checking) { checking = true; checkTrigger++ } }
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(if (fromPlay) Res.string.rate_title else Res.string.rate_title_github),
-                    stringResource(if (fromPlay) Res.string.rate_summary else Res.string.rate_summary_github),
-                    leadingIcon = Res.drawable.ic_star,
-                    iconTint = Color(0xFFFFCC00),
-                ) { platform.openStorePage() }
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.privacy_title),
-                    stringResource(Res.string.privacy_settings_sub),
-                    leadingIcon = Res.drawable.ic_policy,
-                    iconTint = Color(0xFFFF3B30),
-                ) { onOpen(SettingsPage.Privacy) }
-                SettingsDivider()
-            }
-            SettingsMenuRow(
-                stringResource(Res.string.settings_about),
-                "",
-                leadingIcon = Res.drawable.ic_info,
-                iconTint = Color(0xFF007AFF),
+            // Header: "تنظیمات" with neon pink accent underline
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 22.dp),
+                horizontalAlignment = Alignment.End,
             ) {
-                onAbout()
+                Text(
+                    text = stringResource(Res.string.settings_title),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 28.sp,
+                    ),
+                    color = Color.White,
+                )
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .size(width = 46.dp, height = 3.5.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(NeonTheme.SecondaryPink, NeonTheme.PrimaryPink)
+                            )
+                        ),
+                )
             }
-            if (onDeviceCode != null) {
-                SettingsDivider()
-                SettingsMenuRow(
-                    stringResource(Res.string.device_code_menu_title),
-                    stringResource(Res.string.device_code_menu_sub),
-                    leadingIcon = Res.drawable.ic_lock,
-                    iconTint = Color(0xFFFF9500),
+
+            // Staggered / Masonry 2-Column Grid
+            // In RTL: Row lays out Column 1 on the Right, Column 2 on the Left
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                // Right Column (in RTL):
+                // 1. مانیتور زنده (Live Monitor)
+                // 2. اسکنر آی‌پی تمیز (CDN Scanner)
+                // 3. ابزارهای Patt (Patt's Tools)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    onDeviceCode()
+                    MasonrySettingTile(
+                        title = "مانیتور زنده",
+                        subtitle = "همین حالا این برنامه\nچقدر از گوشیات مصرف\nمی‌کند",
+                        icon = Res.drawable.ic_speedometer,
+                        accentColor = Color(0xFF10B981),
+                        gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)),
+                        borderColor = Color(0x6010B981),
+                        minHeight = 165.dp,
+                        onClick = { onOpen(SettingsPage.Monitor) },
+                    )
+
+                    MasonrySettingTile(
+                        title = "اسکنر آی‌پی تمیز\n(CDN Scanner)",
+                        subtitle = "یافتن آی‌پی‌های بدون فیلتر\nکلادفلر و CDN ها بر اساس\nاپراتور",
+                        icon = Res.drawable.ic_speed,
+                        accentColor = Color(0xFF0284C7),
+                        gradientColors = listOf(Color(0xFF0B2945), Color(0xFF051626)),
+                        borderColor = Color(0x600EA5E9),
+                        minHeight = 175.dp,
+                        onClick = { onOpen(SettingsPage.IpScanner) },
+                    )
+
+                    MasonrySettingTile(
+                        title = "ابزارهای\nPatt (Patt's Tools)",
+                        subtitle = "تست SNI Spoof، بهینه‌سازی\nCloudflare Fix و تزریق ECH\nبه کانفیگ و ...",
+                        icon = Res.drawable.ic_tune,
+                        accentColor = Color(0xFFF59E0B),
+                        gradientColors = listOf(Color(0xFF331C08), Color(0xFF1E1004)),
+                        borderColor = Color(0x60F59E0B),
+                        minHeight = 170.dp,
+                        onClick = { onOpen(SettingsPage.Patt) },
+                    )
+                }
+
+                // Left Column (in RTL):
+                // 1. ظاهر و زبان برنامه (UI)
+                // 2. حالت (Mode: VPN vs Proxy)
+                // 3. پروکسی‌های تلگرام (Telegram Proxies)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    MasonrySettingTile(
+                        title = "ظاهر و زبان برنامه",
+                        subtitle = "تم، زبان، چیدمان فهرست",
+                        icon = Res.drawable.ic_palette,
+                        accentColor = Color(0xFF7C3AED),
+                        gradientColors = listOf(Color(0xFF261144), Color(0xFF140824)),
+                        borderColor = Color(0x608B5CF6),
+                        minHeight = 165.dp,
+                        onClick = { onOpen(SettingsPage.Ui) },
+                    )
+
+                    MasonrySettingTile(
+                        title = "حالت",
+                        subtitle = "VPN یا فقط\nپروکسی محلی",
+                        icon = Res.drawable.ic_tune,
+                        accentColor = Color(0xFF2563EB),
+                        gradientColors = listOf(Color(0xFF0E2254), Color(0xFF071434)),
+                        borderColor = Color(0x603B82F6),
+                        minHeight = 135.dp,
+                        onClick = { onOpen(SettingsPage.Mode) },
+                    )
+
+                    MasonrySettingTile(
+                        title = "پروکسی‌های تلگرام\n(Telegram Proxies)",
+                        subtitle = "دریافت، تست پینگ زنده و\nاتصال مستقیم به\nپروکسی‌های MTProto ..",
+                        icon = Res.drawable.ic_public,
+                        accentColor = Color(0xFF0F766E),
+                        gradientColors = listOf(Color(0xFF0A2E26), Color(0xFF051B16)),
+                        borderColor = Color(0x6014B8A6),
+                        minHeight = 185.dp,
+                        onClick = { onOpen(SettingsPage.TelegramProxy) },
+                    )
                 }
             }
+
+            Spacer(Modifier.height(14.dp))
+
+            // 7. پشتیبان‌گیری و بازیابی (Full width tile)
+            MasonryWideTile(
+                title = "پشتیبان‌گیری و بازیابی",
+                subtitle = "پشتیبان‌گیری کامل از تنظیمات و سرورها و بازیابی سریع اطلاعات",
+                icon = Res.drawable.ic_sync,
+                accentColor = Color(0xFF10B981),
+                gradientColors = listOf(Color(0xFF0A2B1D), Color(0xFF05170F)),
+                borderColor = Color(0x6010B981),
+                onClick = { onOpen(SettingsPage.Backup) },
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // 8. لاگ‌ها (Asymmetric right-aligned tile ~ 58% width in RTL)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                MasonryWideTile(
+                    title = "لاگ‌ها",
+                    subtitle = "لاگ برنامه و تونل",
+                    icon = Res.drawable.ic_description,
+                    accentColor = Color(0xFF6B7280),
+                    gradientColors = listOf(Color(0xFF1E2129), Color(0xFF121418)),
+                    borderColor = Color(0x506B7280),
+                    onClick = { showLogs = true },
+                    modifier = Modifier.fillMaxWidth(0.58f),
+                )
+            }
+
+            Spacer(Modifier.height(18.dp))
+
+            // Subtle About link
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0x14FFFFFF))
+                    .clickable { onAbout() }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_info),
+                        contentDescription = null,
+                        tint = NeonTheme.PrimaryPink,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = stringResource(Res.string.settings_about),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color.White,
+                    )
+                }
+                Icon(
+                    painter = painterResource(Res.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    tint = Color.Gray,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+
+            Spacer(Modifier.height(100.dp))
         }
 
         ManualUpdateCheckHost(
@@ -512,6 +457,186 @@ private fun RootPage(
     }
 }
 
+@Composable
+private fun MasonrySettingTile(
+    title: String,
+    subtitle: String,
+    icon: org.jetbrains.compose.resources.DrawableResource,
+    accentColor: Color,
+    gradientColors: List<Color>,
+    borderColor: Color,
+    minHeight: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val isPressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1.0f,
+        animationSpec = tween(120),
+        label = "masonry-tile-scale",
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            .scale(scale)
+            .clip(RoundedCornerShape(26.dp))
+            .background(Brush.verticalGradient(gradientColors))
+            .border(1.2.dp, borderColor, RoundedCornerShape(26.dp))
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = onClick,
+            ),
+    ) {
+        // Subtle organic wave accent at the bottom
+        NeonWaveAccent(
+            color = accentColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .align(Alignment.BottomCenter),
+            alpha = 0.28f,
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Icon placed at top-left
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accentColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Title & Subtitle right-aligned
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.End,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                    ),
+                    color = Color.White,
+                    textAlign = TextAlign.End,
+                    maxLines = 2,
+                    lineHeight = 18.sp,
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 10.5.sp,
+                    ),
+                    color = Color(0xFF9CA3AF),
+                    textAlign = TextAlign.End,
+                    maxLines = 3,
+                    lineHeight = 14.5.sp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MasonryWideTile(
+    title: String,
+    subtitle: String,
+    icon: org.jetbrains.compose.resources.DrawableResource,
+    accentColor: Color,
+    gradientColors: List<Color>,
+    borderColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val isPressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1.0f,
+        animationSpec = tween(120),
+        label = "wide-tile-scale",
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Brush.horizontalGradient(gradientColors))
+            .border(1.2.dp, borderColor, RoundedCornerShape(24.dp))
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+    ) {
+        // Icon on the right (first child in RTL Row), Text on the left
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.End,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.5.sp,
+                    ),
+                    color = Color.White,
+                    textAlign = TextAlign.End,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = Color(0xFF9CA3AF),
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                )
+            }
+
+            Spacer(Modifier.width(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accentColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+    }
+}
 @Composable
 private fun DnsProtocolsPage(
     s: AppSettings,
@@ -980,15 +1105,10 @@ private fun UiPage(
         ThemeProfileRow(
             label = stringResource(Res.string.theme_profile_title),
             subtitle = stringResource(Res.string.theme_profile_sub),
-            defaultLabel = stringResource(Res.string.theme_profile_none),
             selectedId = s.themeProfileId,
             onSelect = { profile ->
                 onUpdate { settings ->
-                    if (profile != null) {
-                        settings.applyThemeProfile(profile)
-                    } else {
-                        settings.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false)
-                    }
+                    settings.applyThemeProfile(profile)
                 }
             },
         )

@@ -38,9 +38,8 @@ import dev.valid7996.narcicgeteway.ui.platform.draggableHorizontalScroll
 fun ThemeProfileRow(
     label: String,
     subtitle: String,
-    defaultLabel: String,
     selectedId: String?,
-    onSelect: (ThemeProfile?) -> Unit,
+    onSelect: (ThemeProfile) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(label, style = MaterialTheme.typography.titleMedium)
@@ -54,15 +53,10 @@ fun ThemeProfileRow(
             Modifier.fillMaxWidth().draggableHorizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ProfileCard(
-                name = defaultLabel,
-                selected = selectedId == null,
-                onClick = { onSelect(null) },
-            ) { StockPreview() }
             ThemeProfiles.forEach { profile ->
                 ProfileCard(
                     name = profile.name,
-                    selected = selectedId == profile.id,
+                    selected = selectedId == profile.id || (selectedId == null && profile.id == "noir"),
                     onClick = { onSelect(profile) },
                 ) { ProfilePreview(profile) }
             }
@@ -181,20 +175,6 @@ private fun ProfilePreview(p: ThemeProfile) = MiniHome(
     connect = Color(p.connect),
 )
 
-@Composable
-private fun StockPreview() {
-    val cs = MaterialTheme.colorScheme
-    MiniHome(
-        hero = cs.primary,
-        downloadTile = cs.surfaceContainerHighest,
-        uploadTile = cs.surfaceContainerHighest,
-        download = cs.primary,
-        upload = cs.tertiary,
-        configCard = cs.primaryContainer,
-        configText = cs.onPrimaryContainer,
-        connect = cs.primary,
-    )
-}
 
 val AllowedConnectButtonStyles = listOf(
     ConnectButtonStyle.Hero,

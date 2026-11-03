@@ -5,6 +5,9 @@
 )
 
 package dev.valid7996.narcicgeteway.ui.servers
+import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
+import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
+import dev.valid7996.narcicgeteway.ui.theme.NeonAmbientBackground
 
 import org.jetbrains.compose.resources.DrawableResource
 
@@ -633,21 +636,59 @@ fun ServersScreen(
         )
     }
 
-    Box(modifier.fillMaxSize()) {
+    Box(modifier.fillMaxSize().background(NeonTheme.Base)) {
+        NeonAmbientBackground()
         Column(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding())) {
             Spacer(Modifier.height(8.dp))
             Row(
                 Modifier.fillMaxWidth().padding(end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.weight(1f)) {
-                    PageHeader(
-                        title = stringResource(Res.string.nav_servers),
-                        subtitle = if (servers.isEmpty()) null
-                        else stringResource(Res.string.servers_count, headerCount),
-                        singleLine = true,
-                        contentPadding = PaddingValues(start = 20.dp, end = 4.dp),
-                    )
+                // Right in RTL: Server Icon + Title + Count Subtitle
+                Row(
+                    modifier = Modifier.weight(1f).padding(start = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0x28F72585))
+                            .border(1.2.dp, Color(0xFFF72585), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_dns),
+                            contentDescription = null,
+                            tint = Color(0xFFF72585),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = stringResource(Res.string.nav_servers),
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 22.sp,
+                            ),
+                            color = Color.White,
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF22C55E)),
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                text = if (servers.isEmpty()) "" else stringResource(Res.string.servers_count, headerCount),
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = Color(0xFF9CA3AF),
+                            )
+                        }
+                    }
                 }
 
                 if (servers.isNotEmpty()) {
@@ -1291,13 +1332,14 @@ fun ServersScreen(
                 if (fanOpen) 45f else 0f, label = "fabRotation",
             )
             Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shadowElevation = 6.dp,
+                shape = CircleShape,
+                color = Color(0xE6140A1C),
+                contentColor = Color.White,
+                shadowElevation = 8.dp,
+                border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFF72585)),
                 modifier = Modifier
-                    .size(56.dp)
-
+                    .height(48.dp)
+                    .clip(CircleShape)
                     .combinedClickable(
                         interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                         indication = androidx.compose.material3.ripple(),
@@ -1305,12 +1347,35 @@ fun ServersScreen(
                         onLongClick = { fanOpen = true },
                     ),
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painterResource(Res.drawable.ic_add),
-                        stringResource(Res.string.servers_add),
-                        modifier = Modifier.graphicsLayer { rotationZ = rotation },
+                Row(
+                    modifier = Modifier.padding(start = 16.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.servers_add),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                        ),
+                        color = Color.White,
                     )
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF72585)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(Res.drawable.ic_add),
+                            stringResource(Res.string.servers_add),
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .graphicsLayer { rotationZ = rotation },
+                        )
+                    }
                 }
             }
         }
@@ -2146,66 +2211,53 @@ private fun GroupTab(
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
 ) {
-    val isAzkaban = personalization.themeProfileId == "azkaban"
-    val isNoir = personalization.themeProfileId == "noir"
-    val isBlossom = personalization.themeProfileId == "blossom"
-    val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: MaterialTheme.colorScheme.primary)
-    val bg = when {
-        selected -> activeColor
-        personalization.amoledBlack -> Color(0xFF000000)
-        isBlossom -> Color(0xFF260D1A)
-        isNoir -> Color(0xFF161618)
-        isAzkaban -> Color(0xFF091424)
-        else -> MaterialTheme.colorScheme.surfaceContainerHighest
+    val bgModifier = if (selected) {
+        Modifier.background(Brush.horizontalGradient(listOf(Color(0xFFF72585), Color(0xFFC026D3))))
+    } else {
+        Modifier.background(Color(0x20FFFFFF))
     }
-    val contentColor = when {
-        selected -> if (isBlossom) Color(0xFFFFFFFF) else if (isNoir) Color(0xFF000000) else if (isAzkaban) Color(0xFF041220) else MaterialTheme.colorScheme.onPrimary
-        isBlossom -> Color(0xFFFFD1DC)
-        isNoir -> Color(0xFFE4E4E7)
-        isAzkaban -> Color(0xFFBAE6FD)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    val borderModifier = if (selected) {
+        Modifier.border(1.dp, Color(0x60FFFFFF), CircleShape)
+    } else {
+        Modifier.border(1.dp, Color(0x20FFFFFF), CircleShape)
     }
-    val borderModifier = if (!selected && (isAzkaban || isNoir || isBlossom || personalization.amoledBlack || personalization.dynamicColor)) {
-        val bc = when {
-            personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
-            isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.55f else 0.35f)
-            isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.40f else 0.20f)
-            isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.50f else 0.30f)
-            personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.45f)
-            else -> MaterialTheme.colorScheme.outlineVariant
-        }
-        Modifier.border(1.dp, bc, RoundedCornerShape(50))
-    } else Modifier
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(50),
-        color = bg,
-        modifier = borderModifier,
+        shape = CircleShape,
+        color = Color.Transparent,
+        modifier = Modifier
+            .clip(CircleShape)
+            .then(bgModifier)
+            .then(borderModifier),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = contentColor,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 12.5.sp,
+                ),
+                color = if (selected) Color.White else Color(0xFF9CA3AF),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "$count",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Normal,
-                color = contentColor.copy(alpha = 0.85f),
-            )
+            if (count > 0) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "$count",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 11.5.sp,
+                    ),
+                    color = if (selected) Color.White.copy(alpha = 0.9f) else Color(0xFF9CA3AF).copy(alpha = 0.75f),
+                )
+            }
         }
     }
 }
-
 
 @Composable
 private fun SpeedDialAction(

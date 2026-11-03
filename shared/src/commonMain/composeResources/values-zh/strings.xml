@@ -1521,9 +1521,6 @@
     <string name="action_connect_secure">安全连接</string>
     <string name="action_disconnect_secure">断开安全连接</string>
     <string name="connecting_secure">正在建立安全连接...</string>
-    <string name="azkaban_summon_guardian">召唤守护者（安全连接）</string>
-    <string name="azkaban_break_spell">解除法术（断开连接）</string>
-    <string name="azkaban_binding">正在绑定安全链接...</string>
     <string name="settings_language_ar">العربية</string>
     <string name="settings_language_zh">中文</string>
     <string name="settings_language_ru">Русский</string>
@@ -1700,7 +1697,7 @@
     <string name="onboarding_lang_title">Language</string>
     <string name="onboarding_lang_sub">Full support for English, Persian, Arabic and other languages</string>
     <string name="onboarding_theme_title">Themes</string>
-    <string name="onboarding_theme_sub">Four dedicated themes: Default, Azkaban, Noir and Blossom</string>
+    <string name="onboarding_theme_sub">Dedicated themes: Noir and Blossom</string>
     <string name="onboarding_dark_title">Dark Mode</string>
     <string name="onboarding_dark_sub">Automatic system sync or choose dark/light mode</string>
     <string name="onboarding_active">Active</string>
@@ -1787,11 +1784,9 @@
     <string name="scanner_error_label">错误</string>
     <string name="mhrv_ids_count">%1$d 个标识符</string>
     <string name="mhrv_connection_error">连接错误</string>
-    <string name="theme_azkaban_name">Azkaban</string>
     <string name="theme_noir_name">Noir</string>
     <string name="theme_blossom_name">Blossom</string>
     <string name="theme_android8_name">Android 8 经典</string>
-    <string name="onboarding_theme_azkaban_desc">赛博霓虹高科技蓝</string>
     <string name="onboarding_theme_noir_desc">深色单色与极简黑</string>
     <string name="onboarding_theme_blossom_desc">柔和粉嫩玫瑰色</string>
     <string name="onboarding_theme_default_desc">经典 Narcic 翡翠绿</string>

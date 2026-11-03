@@ -28,23 +28,6 @@ data class ThemeProfile(
 
 val ThemeProfiles: List<ThemeProfile> = listOf(
     ThemeProfile(
-        id = "azkaban",
-        name = "Azkaban",
-        accentIndex = 2,
-        amoled = false,
-        download = 0xFFBAE6FD,
-        upload = 0xFFE2E8F0,
-        downloadTile = 0xFF0A1628,
-        uploadTile = 0xFF081220,
-        connect = 0xFF38BDF8,
-        connected = 0xFF0284C7,
-        tapHint = 0xFFBAE6FD,
-        serverCard = 0xFF091322,
-        serverActive = 0xFF38BDF8,
-        configCard = 0xFF0B1728,
-        configCardText = 0xFFF0F9FF,
-    ),
-    ThemeProfile(
         id = "noir",
         name = "Noir",
         accentIndex = 9,
@@ -77,23 +60,6 @@ val ThemeProfiles: List<ThemeProfile> = listOf(
         serverActive = 0xFFDB2777,
         configCard = 0xFF210E1A,
         configCardText = 0xFFFFF1F5,
-    ),
-    ThemeProfile(
-        id = "android8",
-        name = "Android 8 Classic",
-        accentIndex = 0,
-        amoled = false,
-        download = 0xFF4CAF50,
-        upload = 0xFF2196F3,
-        downloadTile = 0xFF1E2822,
-        uploadTile = 0xFF1A232E,
-        connect = 0xFF009688,
-        connected = 0xFF4CAF50,
-        tapHint = 0xFF80CBC4,
-        serverCard = 0xFF21252B,
-        serverActive = 0xFF009688,
-        configCard = 0xFF21252B,
-        configCardText = 0xFFEEEEEE,
     ),
 )
 
@@ -303,7 +269,8 @@ private val HiddenThemeProfiles: List<ThemeProfile> = listOf(
 )
 
 fun themeProfileOf(id: String?): ThemeProfile? =
-    id?.let { wanted -> (ThemeProfiles + HiddenThemeProfiles).firstOrNull { it.id == wanted } }
+    (id?.let { wanted -> (ThemeProfiles + HiddenThemeProfiles).firstOrNull { it.id == wanted } })
+        ?: ThemeProfiles.firstOrNull()
 
 fun AppSettings.applyThemeProfile(profile: ThemeProfile): AppSettings = copy(
     accentColor = profile.accentIndex,

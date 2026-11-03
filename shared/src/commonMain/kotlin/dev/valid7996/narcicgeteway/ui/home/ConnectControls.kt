@@ -51,6 +51,14 @@ import dev.valid7996.narcicgeteway.shared.resources.state_disconnecting
 import dev.valid7996.narcicgeteway.ui.components.CyberRadarIndicator
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.sp
+import dev.valid7996.narcicgeteway.shared.resources.connecting_secure
+import dev.valid7996.narcicgeteway.shared.resources.action_retry
+import dev.valid7996.narcicgeteway.shared.resources.action_connect_secure
+import dev.valid7996.narcicgeteway.shared.resources.action_disconnect_secure
 
 @Composable
 fun AltConnectControl(
@@ -297,6 +305,95 @@ private fun SwitchConnect(
                         text,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun ModernConnectButton(
+    state: ConnectionState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isNoir: Boolean = false,
+    isBlossom: Boolean = false,
+    amoledBlack: Boolean = false,
+    dynamicColor: Boolean = false,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val isPressed by interaction.collectIsPressedAsState()
+    val isConnected = state.isActive
+    val isConnecting = state.isTransitioning
+
+    val buttonScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1.0f,
+        animationSpec = tween(120, easing = FastOutSlowInEasing),
+        label = "connect-btn-scale",
+    )
+
+    // Premium neon pink-to-magenta gradient matching Image 1
+    val bgGradient = Brush.horizontalGradient(
+        listOf(
+            Color(0xFFF72585),
+            Color(0xFFC026D3),
+        )
+    )
+
+    Surface(
+        onClick = onClick,
+        enabled = state != ConnectionState.Disconnecting,
+        shape = CircleShape,
+        color = Color.Transparent,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .scale(buttonScale)
+            .clip(CircleShape)
+            .background(bgGradient)
+            .border(1.dp, Color(0x60FFFFFF), CircleShape),
+        interactionSource = interaction,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (isConnecting) {
+                CyberRadarIndicator(Modifier.size(24.dp))
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = stringResource(Res.string.connecting_secure),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+            } else {
+                Text(
+                    text = when {
+                        state == ConnectionState.Error -> stringResource(Res.string.action_retry)
+                        isConnected -> stringResource(Res.string.action_disconnect_secure)
+                        else -> stringResource(Res.string.action_connect_secure)
+                    },
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x30000000)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(if (isConnected) Res.drawable.ic_close else Res.drawable.ic_bolt),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }

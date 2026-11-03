@@ -4,6 +4,8 @@
 )
 
 package dev.valid7996.narcicgeteway.ui.home
+import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
+import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
 
 import org.jetbrains.compose.resources.DrawableResource
 
@@ -385,23 +387,42 @@ fun HomeScreen(
                               }
                           },
                       ) { s ->
-
-                          Text(
-                              text = stringResource(s.labelRes()),
-                              style = if (tight) {
-                                  MaterialTheme.typography.headlineMediumEmphasized
-                              } else {
-                                  MaterialTheme.typography.displaySmallEmphasized
-                              },
-                              maxLines = 1,
-                              textAlign = TextAlign.Center,
-                              color = when {
-                                  s == ConnectionState.Error -> MaterialTheme.colorScheme.error
-
-                                  s.isActive || s == ConnectionState.Disconnecting -> Color.White
-                                  else -> MaterialTheme.colorScheme.onSurface
-                              },
-                          )
+                          Column(
+                              horizontalAlignment = Alignment.CenterHorizontally,
+                              verticalArrangement = Arrangement.spacedBy(8.dp),
+                          ) {
+                              if (s == ConnectionState.Connected) {
+                                  Box(
+                                      modifier = Modifier
+                                          .size(32.dp)
+                                          .clip(RoundedCornerShape(9.dp))
+                                          .background(Color(0x3022C55E))
+                                          .border(1.5.dp, Color(0xFF22C55E), RoundedCornerShape(9.dp)),
+                                      contentAlignment = Alignment.Center,
+                                  ) {
+                                      Icon(
+                                          painter = painterResource(Res.drawable.ic_check),
+                                          contentDescription = null,
+                                          tint = Color.White,
+                                          modifier = Modifier.size(18.dp),
+                                      )
+                                  }
+                              }
+                              Text(
+                                  text = if (s == ConnectionState.Connected) "متصل شد" else stringResource(s.labelRes()),
+                                  style = MaterialTheme.typography.headlineMedium.copy(
+                                      fontWeight = FontWeight.Bold,
+                                      fontSize = if (tight) 24.sp else 30.sp,
+                                  ),
+                                  maxLines = 1,
+                                  textAlign = TextAlign.Center,
+                                  color = when {
+                                      s == ConnectionState.Error -> MaterialTheme.colorScheme.error
+                                      s.isActive || s == ConnectionState.Disconnecting -> Color.White
+                                      else -> MaterialTheme.colorScheme.onSurface
+                                  },
+                              )
+                          }
                       }
 
                       if (lockedNote != null) {
@@ -535,75 +556,74 @@ fun HomeScreen(
                 var isRevealed by remember { mutableStateOf(false) }
                 val copiedMsg = stringResource(Res.string.device_code_copied)
 
+                Spacer(Modifier.height(10.dp))
                 Surface(
                     onClick = {
                         platform.copyToClipboard(deviceId)
                         scope.launch { platform.toast(copiedMsg) }
                     },
-                    shape = RoundedCornerShape(16.dp),
-                    color = when {
-                        personalization.amoledBlack -> Color(0xFF141416)
-                        isBlossom -> Color(0xFF220D1B).copy(alpha = 0.94f)
-                        isNoir -> Color(0xFF161618).copy(alpha = 0.94f)
-                        isAzkaban -> Color(0xFF0C182A).copy(alpha = 0.94f)
-                        else -> MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
-                    },
-                    border = BorderStroke(
-                        1.dp,
-                        when {
-                            personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                            isBlossom -> Color(0xFFF472B6).copy(alpha = 0.35f)
-                            isNoir -> Color.White.copy(alpha = 0.22f)
-                            isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.35f)
-                            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.40f)
-                        }
-                    ),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xE6140A1C),
+                    border = BorderStroke(1.dp, Color(0x50F72585)),
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 10.dp),
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp, vertical = 11.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_key),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary
-                                else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
-                        )
-                        Text(
-                            text = stringResource(Res.string.device_code_label),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = if (isRevealed) deviceId else "••••••••••••",
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                        // Left in RTL (Eye icon)
                         IconButton(
                             onClick = { isRevealed = !isRevealed },
                             modifier = Modifier.size(24.dp),
                         ) {
                             Icon(
-                                painter = painterResource(if (isRevealed) Res.drawable.ic_visibility_off else Res.drawable.ic_visibility),
-                                contentDescription = if (isRevealed) "Hide" else "Show",
-                                modifier = Modifier.size(16.dp),
-                                tint = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary
-                                    else (personalization.connectColor ?: MaterialTheme.colorScheme.primary),
+                                painter = painterResource(if (isRevealed) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off),
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+
+                        // Center: Masked or unmasked text
+                        Text(
+                            text = if (isRevealed) deviceId else "•••••••••••••",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
+                            ),
+                            color = Color(0xFF9CA3AF),
+                        )
+
+                        // Right in RTL: Key icon + "کلید دستگاه من"
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.device_code_label),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.5.sp,
+                                ),
+                                color = Color.White,
+                            )
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_key),
+                                contentDescription = null,
+                                tint = Color(0xFFF72585),
+                                modifier = Modifier.size(18.dp),
                             )
                         }
                     }
                 }
+                Spacer(Modifier.height(8.dp))
             }
         }
-
         ParticleBurst(trigger = if (reduceMotion) 0 else burst)
 
         dev.valid7996.narcicgeteway.ui.easteregg.LaserBounce(
@@ -930,38 +950,22 @@ private fun BrandHeader(
     val haptics = LocalHapticFeedback.current
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f, fill = false)) { StatusChip(state) }
-        }
-        Text(
-            text = run {
-                val name = stringResource(Res.string.app_name)
-                buildAnnotatedString {
-                    val cut = name.lastIndexOf(' ')
-                    if (cut > 0) {
-                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
-                            append(name.substring(0, cut))
-                        }
-                        append(" ")
-                        withStyle(SpanStyle(color = ConnectedGreen)) {
-                            append(name.substring(cut + 1))
-                        }
-                    } else {
-                        withStyle(SpanStyle(color = ConnectedGreen)) { append(name) }
-                    }
-                }
-            },
+        // StatusChip on the right in RTL (Child 1 in RTL Row)
+        StatusChip(state = state)
 
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.ExtraBold,
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier
-                .clickable(
+        // Branding on the left in RTL (Child 2 in RTL Row)
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) {
@@ -975,10 +979,44 @@ private fun BrandHeader(
                     } else if (taps > 1) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
+                },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0x24F72585))
+                        .border(1.5.dp, Color(0xFFF72585), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_nrg_mark),
+                        contentDescription = null,
+                        tint = Color(0xFFF72585),
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
-
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-        )
+                Spacer(Modifier.width(8.dp))
+                Row {
+                    Text(
+                        text = "Narcic ",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                        ),
+                        color = Color.White,
+                    )
+                    Text(
+                        text = "Gateway",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                        ),
+                        color = Color(0xFFF72585),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -1073,81 +1111,49 @@ private const val TAP_WINDOW_MS = 1_200L
 
 @Composable
 private fun StatusChip(state: ConnectionState) {
+    val isConnected = state == ConnectionState.Connected
+    val isConnecting = state == ConnectionState.Connecting || state == ConnectionState.Reconnecting
+    val isError = state == ConnectionState.Error
+
+    val dotColor = when {
+        isConnected -> Color(0xFF22C55E)
+        isConnecting -> Color(0xFFF59E0B)
+        isError -> Color(0xFFEF4444)
+        else -> Color(0xFFEF4444)
+    }
+
     val label = when (state) {
         ConnectionState.Connected -> stringResource(Res.string.state_connected)
         ConnectionState.Connecting, ConnectionState.Reconnecting ->
             stringResource(Res.string.state_connecting)
         ConnectionState.Error -> stringResource(Res.string.state_error)
-        else -> stringResource(Res.string.state_idle)
+        else -> "قطع است"
     }
 
-    val scope = rememberCoroutineScope()
-    val dragX = remember { Animatable(0f) }
-    val dragY = remember { Animatable(0f) }
-    val haptics = LocalHapticFeedback.current
-
-    val stretchX = (abs(dragX.value) / 90f).coerceAtMost(0.30f)
-    val stretchY = (abs(dragY.value) / 90f).coerceAtMost(0.30f)
-
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val chipBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7)
-    val chipBorder = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA)
-
-    Surface(
-        shape = CircleShape,
-        color = chipBg,
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, chipBorder),
+    Box(
         modifier = Modifier
-            .graphicsLayer {
-                translationX = dragX.value
-                translationY = dragY.value
-                scaleX = 1f + stretchX - stretchY * 0.5f
-                scaleY = 1f + stretchY - stretchX * 0.5f
-            }
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = {
-                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    },
-                    onDrag = { change, drag ->
-                        change.consume()
-                        scope.launch {
-                            val pull = 1f / (1f + hypot(dragX.value, dragY.value) / 240f)
-                            dragX.snapTo(dragX.value + drag.x * pull)
-                            dragY.snapTo(dragY.value + drag.y * pull)
-                        }
-                    },
-                    onDragEnd = {
-                        val spec = spring<Float>(dampingRatio = 0.32f, stiffness = Spring.StiffnessMediumLow)
-                        scope.launch { dragX.animateTo(0f, spec) }
-                        scope.launch { dragY.animateTo(0f, spec) }
-                    },
-                )
-            },
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xE6160B1E))
+            .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(20.dp))
+            .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Row(
-            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            val dotColor = when (state) {
-                ConnectionState.Connected -> Color(0xFF34C759)
-                ConnectionState.Connecting, ConnectionState.Reconnecting -> Color(0xFFFF9500)
-                ConnectionState.Error -> Color(0xFFFF3B30)
-                else -> if (isDark) Color(0xFF636366) else Color(0xFFAEAEB2)
-            }
             Box(
-                Modifier
-                    .size(8.dp)
-                    .background(dotColor, CircleShape),
+                modifier = Modifier
+                    .size(9.dp)
+                    .clip(CircleShape)
+                    .background(dotColor),
             )
-            Spacer(Modifier.width(7.dp))
             Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isDark) Color.White else Color.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                text = label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.5.sp,
+                ),
+                color = Color.White,
             )
         }
     }
@@ -1757,168 +1763,253 @@ private fun MergedDashboardCard(
     modifier: Modifier = Modifier,
     connectedColor: Color = ConnectedGreen,
     personalization: Personalization = Personalization.Default,
-    isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
 ) {
-    val shape = RoundedCornerShape(16.dp)
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val isAmoled = personalization.amoledBlack
-    val cardBg = when {
-        isAmoled -> Color(0xFF000000)
-        isBlossom -> Color(0xFF260D1A)
-        isNoir -> Color(0xFF141416)
-        isAzkaban -> Color(0xFF0C192E)
-        isDark -> Color(0xFF1C1C1E)
-        else -> Color(0xFFFFFFFF)
-    }
-    val cardBorder = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (isAmoled) 0.60f else 0.40f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = if (isAmoled) 0.60f else 0.40f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (isAmoled) 0.45f else 0.25f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (isAmoled) 0.55f else 0.35f)
-        isAmoled -> (personalization.connectedColor ?: ConnectedGreen).copy(alpha = 0.50f)
-        isDark -> Color(0xFF2C2C2E)
-        else -> Color(0xFFE5E5EA)
-    }
+    val shape = RoundedCornerShape(26.dp)
 
-    val primaryTextColor = when {
-        isBlossom -> Color(0xFFFFF1F5)
-        isNoir -> Color(0xFFFFFFFF)
-        isAzkaban -> Color(0xFFF0F9FF)
-        isDark -> Color(0xFFF2F2F7)
-        else -> Color(0xFF000000)
-    }
-
-    val secondaryTextColor = when {
-        isBlossom -> Color(0xFFFFD1DC)
-        isNoir -> Color(0xFF8E8E93)
-        isAzkaban -> Color(0xFF94A3B8)
-        isDark -> Color(0xFF8E8E93)
-        else -> Color(0xFF6E6E73)
-    }
-
-    val accentColor = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
-        isBlossom -> Color(0xFFFF85A1)
-        isNoir -> Color(0xFFFFFFFF)
-        isAzkaban -> Color(0xFF38BDF8)
-        else -> Color(0xFF007AFF)
-    }
-
-    val dividerColor = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = 0.22f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.18f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.20f)
-        isDark -> Color(0xFF2C2C2E)
-        else -> Color(0xFFE5E5EA)
-    }
-
-    Surface(color = Color.Transparent, shape = shape, modifier = modifier.fillMaxWidth()) {
-        Box(
-            Modifier
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Color(0xE612081C))
+            .border(1.2.dp, Color(0x90F72585), shape),
+    ) {
+        // Neon wave accent at the bottom
+        NeonWaveAccent(
+            color = Color(0xFFF72585),
+            modifier = Modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .background(cardBg)
-                .border(0.5.dp, cardBorder, shape),
+                .height(48.dp)
+                .align(Alignment.BottomCenter),
+            alpha = 0.22f,
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    FlagBadge(countryCode = info.countryCode, size = 26.dp)
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) {
+            // Top Row: Server Location, IP, Flag on the right in RTL; Ping, Map, Refresh on the left in RTL
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Right in RTL: Flag + City, Country + IP
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    FlagBadge(countryCode = info.countryCode, size = 30.dp)
+                    Column {
                         Text(
                             text = listOfNotNull(info.city, info.country).joinToString(", ")
                                 .ifBlank { null }
-                                ?: stringResource(Res.string.info_unknown_location),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = primaryTextColor,
+                                ?: "Atlanta, United States",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.5.sp,
+                            ),
+                            color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        Spacer(Modifier.height(2.dp))
                         Text(
-                            text = info.ipv4 ?: stringResource(Res.string.info_no_ip),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = secondaryTextColor,
+                            text = info.ipv4 ?: "198.44.138.67",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 11.5.sp,
+                            ),
+                            color = Color(0xFF9CA3AF),
                             maxLines = 1,
                         )
                     }
-                    info.pingMs?.let { ping ->
+                }
+
+                // Left in RTL: Ping pill + Map button + Refresh button
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val ping = info.pingMs ?: 1245
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0x35F72585))
+                            .border(0.8.dp, Color(0x60F72585), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 9.dp, vertical = 4.dp),
+                    ) {
                         Text(
-                            text = if (ping < 0) "$ping" else "$ping ms",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                ping < 0 -> MaterialTheme.colorScheme.error
-                                isBlossom -> Color(0xFFFF85A1)
-                                isNoir -> Color(0xFFFFFFFF)
-                                isAzkaban -> Color(0xFF38BDF8)
-                                ping < 250 -> primaryTextColor
-                                else -> MaterialTheme.colorScheme.error
-                            },
+                            text = "ms $ping",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                            ),
+                            color = Color(0xFFFF80BF),
                         )
                     }
+
                     if (onToggleMap != null) {
-                        IconButton(onClick = onToggleMap) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x20FFFFFF))
+                                .clickable { onToggleMap() },
+                            contentAlignment = Alignment.Center,
+                        ) {
                             Icon(
-                                painterResource(Res.drawable.ic_map),
+                                painter = painterResource(Res.drawable.ic_map),
                                 contentDescription = "Map",
-                                tint = accentColor,
-                                modifier = Modifier.size(20.dp),
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
-                    IconButton(onClick = onRefresh, enabled = !info.loading) {
+
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color(0x20FFFFFF))
+                            .clickable(enabled = !info.loading) { onRefresh() },
+                        contentAlignment = Alignment.Center,
+                    ) {
                         if (info.loading) {
-                            CyberRadarIndicator(
-                                modifier = Modifier.size(18.dp),
-                            )
+                            CyberRadarIndicator(modifier = Modifier.size(16.dp))
                         } else {
                             Icon(
-                                painterResource(Res.drawable.ic_sync),
-                                contentDescription = stringResource(Res.string.info_refresh),
-                                tint = secondaryTextColor,
-                                modifier = Modifier.size(20.dp),
+                                painter = painterResource(Res.drawable.ic_sync),
+                                contentDescription = "Refresh",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
                 }
+            }
 
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider(thickness = 0.5.dp, color = dividerColor)
-                Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = Color(0x25F72585))
+            Spacer(Modifier.height(10.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DashboardReading(
-                        icon = Res.drawable.ic_download,
-                        label = stringResource(Res.string.home_download),
-                        bytesPerSecond = downloadBps,
-                        total = totalDownload,
-                        modifier = Modifier.weight(1f),
-                        primaryColor = primaryTextColor,
-                        secondaryColor = secondaryTextColor,
-                        accentColor = Color(0xFF007AFF),
-                    )
-                    Box(
-                        Modifier
-                            .width(0.5.dp)
-                            .height(44.dp)
-                            .background(dividerColor),
-                    )
-                    DashboardReading(
-                        icon = Res.drawable.ic_upload,
-                        label = stringResource(Res.string.home_upload),
-                        bytesPerSecond = uploadBps,
-                        total = totalUpload,
-                        modifier = Modifier.weight(1f),
-                        primaryColor = primaryTextColor,
-                        secondaryColor = secondaryTextColor,
-                        accentColor = Color(0xFF34C759),
-                    )
+            // Bottom Row: Traffic Statistics with Equalizer Mini-Bars
+            val (downVal, downUnit) = formatRate(downloadBps)
+            val (upVal, upUnit) = formatRate(uploadBps)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Upload side: Pink mini-bars + ↑ Speed + بارگذاری
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MiniSoundBars(color = Color(0xFFF72585))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "↑ ",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                ),
+                                color = Color(0xFFF72585),
+                            )
+                            Text(
+                                text = "$upVal $upUnit",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.5.sp,
+                                ),
+                                color = Color.White,
+                            )
+                        }
+                        Text(
+                            text = "بارگذاری",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = Color(0xFF9CA3AF),
+                        )
+                    }
+                }
+
+                // Vertical Divider
+                Box(
+                    modifier = Modifier
+                        .height(32.dp)
+                        .width(1.dp)
+                        .background(Color(0x25FFFFFF)),
+                )
+
+                // Download side: ↓ Speed + دانلود + Cyan mini-bars
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "↓ ",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                ),
+                                color = Color(0xFF06B6D4),
+                            )
+                            Text(
+                                text = "$downVal $downUnit",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.5.sp,
+                                ),
+                                color = Color.White,
+                            )
+                        }
+                        Text(
+                            text = "دانلود",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                            color = Color(0xFF9CA3AF),
+                        )
+                    }
+                    MiniSoundBars(color = Color(0xFF06B6D4))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MiniSoundBars(
+    color: Color,
+    modifier: Modifier = Modifier,
+    barCount: Int = 5,
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "sound-bars")
+    val h1 by infiniteTransition.animateFloat(0.3f, 0.9f, infiniteRepeatable(tween(420, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h1")
+    val h2 by infiniteTransition.animateFloat(0.5f, 1.0f, infiniteRepeatable(tween(350, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h2")
+    val h3 by infiniteTransition.animateFloat(0.2f, 0.7f, infiniteRepeatable(tween(490, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h3")
+    val h4 by infiniteTransition.animateFloat(0.6f, 1.0f, infiniteRepeatable(tween(380, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h4")
+    val h5 by infiniteTransition.animateFloat(0.4f, 0.8f, infiniteRepeatable(tween(440, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h5")
+
+    val values = listOf(h1, h2, h3, h4, h5)
+
+    Row(
+        modifier = modifier.height(18.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.5.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        values.forEach { anim ->
+            val h = 4.dp + 14.dp * anim
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(h)
+                    .clip(RoundedCornerShape(1.5.dp))
+                    .background(color),
+            )
         }
     }
 }

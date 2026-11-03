@@ -108,38 +108,15 @@ private fun IosInteractiveTabBar(
     val haptics = LocalHapticFeedback.current
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
-    // Theme adaptive active accent color
-    val activeAccent = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
-        personalization.serverActiveColor != null -> personalization.serverActiveColor
-        personalization.themeProfileId == "azkaban" -> Color(0xFF38BDF8)
-        personalization.themeProfileId == "noir" -> Color(0xFFE4E4E7)
-        personalization.themeProfileId == "blossom" -> Color(0xFFF472B6)
-        else -> MaterialTheme.colorScheme.primary
-    }
+    // Premium neon glassmorphic palette
+    val activeAccent = Color(0xFFF72585) // Neon Pink
 
-    // Theme adaptive outer dock background & frosted glass rim highlight
-    val dockBg = when {
-        personalization.amoledBlack -> Color(0xF204060A)
-        personalization.themeProfileId == "azkaban" -> Color(0xEE091322)
-        personalization.themeProfileId == "noir" -> Color(0xEE121214)
-        personalization.themeProfileId == "blossom" -> Color(0xEE1A0A14)
-        isDark -> Color(0xEA0D1624)
-        else -> Color(0xF2F6F8FC)
-    }
+    val dockBg = Color(0xF20A0713) // Dark translucent glass
 
     val dockBorderBrush = Brush.verticalGradient(
         listOf(
-            when {
-                personalization.themeProfileId == "azkaban" -> Color(0x4038BDF8)
-                personalization.themeProfileId == "blossom" -> Color(0x40F472B6)
-                isDark -> Color(0x35FFFFFF)
-                else -> Color(0x66FFFFFF)
-            },
-            when {
-                isDark -> Color(0x0CFFFFFF)
-                else -> Color(0x18000000)
-            },
+            Color(0x40F72585),
+            Color(0x207C3AED),
         ),
     )
 
@@ -211,19 +188,19 @@ private fun IosInteractiveTabBar(
                         }
                         .clip(RoundedCornerShape(26.dp))
                         .background(
-                            Brush.verticalGradient(
+                            Brush.horizontalGradient(
                                 listOf(
-                                    activeAccent.copy(alpha = if (isDark) 0.30f else 0.20f),
-                                    activeAccent.copy(alpha = if (isDark) 0.14f else 0.08f),
+                                    Color(0xFFF72585),
+                                    Color(0xFFC026D3),
                                 ),
                             ),
                         )
                         .border(
-                            width = 1.dp,
+                            width = 1.2.dp,
                             brush = Brush.verticalGradient(
                                 listOf(
-                                    activeAccent.copy(alpha = if (isDark) 0.75f else 0.60f),
-                                    activeAccent.copy(alpha = if (isDark) 0.20f else 0.12f),
+                                    Color(0x99FFA0D0),
+                                    Color(0x40F72585),
                                 ),
                             ),
                             shape = RoundedCornerShape(26.dp),
@@ -272,8 +249,7 @@ private fun IosInteractiveTabBar(
                         )
 
                         val textColor by animateColorAsState(
-                            targetValue = if (isSelected) activeAccent
-                            else if (isDark) Color(0xFF8E9BAE) else Color(0xFF64748B),
+                            targetValue = if (isSelected) Color.White else Color(0xFF9CA3AF),
                             label = "tab-text-${dest.name}",
                         )
 
@@ -337,28 +313,23 @@ private fun IosTabIcon(
     isDark: Boolean,
     rotation: Float,
 ) {
-    val inactiveTint = if (isDark) Color(0xFFA0B0C4) else Color(0xFF64748B)
     val iconTint by animateColorAsState(
-        targetValue = if (selected) activeAccent else inactiveTint,
+        targetValue = if (selected) Color.White else Color(0xFF9CA3AF),
         label = "tab-icon-tint",
     )
 
+    val iconRes = when (destination) {
+        TopDestination.Home -> dev.valid7996.narcicgeteway.shared.resources.Res.drawable.ic_nrg_mark
+        TopDestination.Servers -> dev.valid7996.narcicgeteway.shared.resources.Res.drawable.ic_dns
+        TopDestination.Settings -> dev.valid7996.narcicgeteway.shared.resources.Res.drawable.ic_settings
+    }
+
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(24.dp),
+        modifier = Modifier.size(26.dp),
     ) {
-        // Glowing halo behind active icon
-        if (selected) {
-            Box(
-                Modifier
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(activeAccent.copy(alpha = 0.22f)),
-            )
-        }
-
         Icon(
-            painter = painterResource(destination.icon),
+            painter = painterResource(iconRes),
             contentDescription = stringResource(destination.labelRes),
             tint = iconTint,
             modifier = Modifier

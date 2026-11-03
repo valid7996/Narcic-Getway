@@ -398,15 +398,11 @@ private fun ThemeProfileStep(
 
         // Live Interactive Theme Preview Card
         val activeProfileId = settings.themeProfileId
-        val strAzkabanDesc = stringResource(Res.string.onboarding_theme_azkaban_desc)
         val strNoirDesc = stringResource(Res.string.onboarding_theme_noir_desc)
         val strBlossomDesc = stringResource(Res.string.onboarding_theme_blossom_desc)
-        val strDefaultDesc = stringResource(Res.string.onboarding_theme_default_desc)
         val preview = when (activeProfileId) {
-            "azkaban" -> ThemePreviewInfo(stringResource(Res.string.theme_azkaban_name), Color(0xFF38BDF8), "🪐", strAzkabanDesc)
-            "noir" -> ThemePreviewInfo(stringResource(Res.string.theme_noir_name), Color(0xFFFFFFFF), "🌑", strNoirDesc)
             "blossom" -> ThemePreviewInfo(stringResource(Res.string.theme_blossom_name), Color(0xFFF472B6), "🌸", strBlossomDesc)
-            else -> ThemePreviewInfo(stringResource(Res.string.onb_preset_stock), Color(0xFF0F9D6C), "🛡️", strDefaultDesc)
+            else -> ThemePreviewInfo(stringResource(Res.string.theme_noir_name), Color(0xFFFFFFFF), "🌑", strNoirDesc)
         }
 
         Surface(
@@ -473,24 +469,9 @@ private fun ThemeProfileStep(
         Spacer(Modifier.height(18.dp))
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // 1. Default (پیش‌فرض)
-            val isStockSelected = settings.themeProfileId == null || settings.themeProfileId == "narcis"
-            ChoiceCard(
-                title = stringResource(Res.string.onb_preset_stock),
-                subtitle = strDefaultDesc,
-                selected = isStockSelected,
-                accentColor = Color(0xFF0F9D6C),
-                onClick = { onUpdate { it.resetPersonalization().copy(themeProfileId = "narcis", dynamicColor = false) } },
-                trailing = {
-                    SwatchDots(listOf(Color(0xFF0F9D6C), Color(0xFF3FD898), Color(0xFFFFCE54)))
-                },
-            )
-
-            // 2, 3, 4. The 3 Ready ThemeProfiles (Azkaban, Noir, Blossom)
             ThemeProfiles.forEach { profile ->
-                val isSelected = settings.themeProfileId == profile.id
+                val isSelected = settings.themeProfileId == profile.id || (settings.themeProfileId == null && profile.id == "noir")
                 val (description, cardAccent) = when (profile.id) {
-                    "azkaban" -> strAzkabanDesc to Color(0xFF38BDF8)
                     "noir" -> strNoirDesc to Color(0xFFFFFFFF)
                     "blossom" -> strBlossomDesc to Color(0xFFF472B6)
                     else -> null to MaterialTheme.colorScheme.primary

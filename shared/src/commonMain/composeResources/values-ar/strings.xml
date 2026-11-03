@@ -1570,9 +1570,6 @@
     <string name="action_connect_secure">اتصال آمن</string>
     <string name="action_disconnect_secure">قطع الاتصال الآمن</string>
     <string name="connecting_secure">جاري إنشاء اتصال آمن...</string>
-    <string name="azkaban_summon_guardian">استدعاء الحارس (اتصال آمن)</string>
-    <string name="azkaban_break_spell">إلغاء التعويذة (قطع الاتصال)</string>
-    <string name="azkaban_binding">جاري ربط الاتصال الآمن...</string>
     <string name="settings_language_ar">العربية</string>
     <string name="settings_language_zh">中文</string>
     <string name="settings_language_ru">Русский</string>
@@ -1749,7 +1746,7 @@
     <string name="onboarding_lang_title">لغة التطبيق</string>
     <string name="onboarding_lang_sub">دعم كامل للعربية والإنجليزية ولغات أخرى</string>
     <string name="onboarding_theme_title">السمات والمظهر</string>
-    <string name="onboarding_theme_sub">أربعة سمات مميزة: الافتراضي، أزكابان، نوار، وبلوسوم</string>
+    <string name="onboarding_theme_sub">Dedicated themes: Noir and Blossom</string>
     <string name="onboarding_dark_title">الوضع الداكن</string>
     <string name="onboarding_dark_sub">مزامنة تلقائية مع النظام أو اختيار الداكن/الفاتح</string>
     <string name="onboarding_active">نشط</string>
@@ -1836,11 +1833,9 @@
     <string name="scanner_error_label">خطأ</string>
     <string name="mhrv_ids_count">%1$d معرّف</string>
     <string name="mhrv_connection_error">خطأ في الاتصال</string>
-    <string name="theme_azkaban_name">Azkaban (أزكابان)</string>
     <string name="theme_noir_name">Noir (أبيض وأسود)</string>
     <string name="theme_blossom_name">Blossom (زهري لطيف)</string>
     <string name="theme_android8_name">أندرويد 8 كلاسيكي</string>
-    <string name="onboarding_theme_azkaban_desc">أزرق سايبرنتيك نيون وتقني</string>
     <string name="onboarding_theme_noir_desc">أسود أحادي اللون وبسيط</string>
     <string name="onboarding_theme_blossom_desc">وردي وروز باستيل لطيف</string>
     <string name="onboarding_theme_default_desc">أخضر زمردي كلاسيكي نارسيس</string>

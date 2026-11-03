@@ -251,7 +251,7 @@ data class AppSettings(
 
     val navBarStyle: NavBarStyle = NavBarStyle.IosInteractive,
 
-    val themeProfileId: String? = null,
+    val themeProfileId: String? = "noir",
 
     val cardCornerStyle: CardCornerStyle = CardCornerStyle.Pill,
     val listDensity: ListDensity = ListDensity.Compact,

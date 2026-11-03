@@ -1239,7 +1239,6 @@ private fun GroupTab(
     onClick: () -> Unit,
 ) {
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val isAzkaban = personalization.themeProfileId == "azkaban"
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
     val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: NrgGreen)
@@ -1252,8 +1251,6 @@ private fun GroupTab(
         Color(0xFF230D18)
     } else if (isNoir) {
         Color(0xFF141416)
-    } else if (isAzkaban) {
-        Color(0xFF0C192E)
     } else if (isDark) {
         Color(0xFF1C1C1E)
     } else {
@@ -1265,8 +1262,6 @@ private fun GroupTab(
         Color(0xFFFFD1DC)
     } else if (isNoir) {
         Color(0xFFE4E4E7)
-    } else if (isAzkaban) {
-        Color(0xFFBAE6FD)
     } else if (isDark) {
         Color(0xFF8E8E93)
     } else {

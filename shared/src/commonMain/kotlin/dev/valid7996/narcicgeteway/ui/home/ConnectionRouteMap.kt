@@ -162,103 +162,77 @@ fun ConnectionMapTriggerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     personalization: Personalization = Personalization.Default,
-    isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
 ) {
-    val bgBrush = when {
-        personalization.amoledBlack -> Brush.horizontalGradient(listOf(Color(0xFF000000), Color(0xFF000000)))
-        isBlossom -> Brush.horizontalGradient(listOf(Color(0xFF260D1A), Color(0xFF381226)))
-        isNoir -> Brush.horizontalGradient(listOf(Color(0xFF141416), Color(0xFF1E1E22)))
-        isAzkaban -> Brush.horizontalGradient(listOf(Color(0xFF0C192E), Color(0xFF07101F)))
-        else -> Brush.horizontalGradient(listOf(Color(0xFF0B7D5A), Color(0xFF064834)))
-    }
-
-    val accent = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary
-        isBlossom -> Color(0xFFF472B6)
-        isNoir -> Color(0xFFFFFFFF)
-        isAzkaban -> Color(0xFF38BDF8)
-        else -> Color(0xFFFFE066)
-    }
-    val accentSub = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-        isBlossom -> Color(0xFFFFD1DC)
-        isNoir -> Color(0xFF94A3B8)
-        isAzkaban -> Color(0xFF94A3B8)
-        else -> Color(0xFFFFE066).copy(alpha = 0.88f)
-    }
-    val borderColor = when {
-        personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
-        isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
-        isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.45f else 0.30f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
-        personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.60f)
-        else -> Color(0xFFFFE066).copy(alpha = 0.55f)
-    }
-
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(24.dp),
         color = Color.Transparent,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(bgBrush)
-            .border(1.dp, borderColor, RoundedCornerShape(18.dp)),
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color(0xE6100918))
+            .border(1.dp, Color(0x50F72585), RoundedCornerShape(24.dp)),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 11.dp),
+                .padding(horizontal = 16.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            // Right in RTL: Map icon + Title + Subtitle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(accent.copy(alpha = 0.18f)),
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0x30F72585)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_map),
                         contentDescription = null,
-                        tint = accent,
-                        modifier = Modifier.size(18.dp),
+                        tint = Color(0xFFF72585),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
                 Column {
                     Text(
-                        text = if (expanded) stringResource(Res.string.route_map_close) else stringResource(Res.string.route_map_open),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        text = if (expanded) stringResource(Res.string.route_map_close) else "مسیر اتصال زنده",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.5.sp,
+                        ),
                         color = Color.White,
                     )
+                    Spacer(Modifier.height(2.dp))
                     Text(
-                        text = stringResource(Res.string.route_map_subtitle),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = accentSub,
+                        text = "اتصال از ایران به آمریکا با مسیر بهینه",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.sp,
+                        ),
+                        color = Color(0xFF9CA3AF),
                     )
                 }
             }
 
+            // Left in RTL: Flag Exchange (Iran ⇄ Dest)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FlagBadge(countryCode = "IR", size = 18.dp)
+                FlagBadge(countryCode = "IR", size = 24.dp)
                 Text(
-                    text = "⟷",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = accent,
+                    text = "⇄",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White,
                 )
-                FlagBadge(countryCode = destCountryCode, size = 18.dp)
+                FlagBadge(countryCode = destCountryCode ?: "US", size = 24.dp)
             }
         }
     }
@@ -272,7 +246,6 @@ fun ConnectionRouteMapCard(
     onClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     personalization: Personalization = Personalization.Default,
-    isAzkaban: Boolean = false,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
 ) {
@@ -372,14 +345,12 @@ fun ConnectionRouteMapCard(
         personalization.amoledBlack -> Color(0xFF000000)
         isBlossom -> Color(0xFF1F0B18)
         isNoir -> Color(0xFF101012)
-        isAzkaban -> Color(0xFF060E1A)
         else -> Color(0xFF071915)
     }
     val cardBorder = when {
         personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = if (personalization.amoledBlack) 0.65f else 0.45f)
         isBlossom -> Color(0xFFF472B6).copy(alpha = if (personalization.amoledBlack) 0.65f else 0.50f)
         isNoir -> Color(0xFFFFFFFF).copy(alpha = if (personalization.amoledBlack) 0.45f else 0.30f)
-        isAzkaban -> Color(0xFF38BDF8).copy(alpha = if (personalization.amoledBlack) 0.60f else 0.45f)
         personalization.amoledBlack -> Color(0xFF10B981).copy(alpha = 0.55f)
         else -> Color(0xFF10B981).copy(alpha = 0.45f)
     }
@@ -387,14 +358,12 @@ fun ConnectionRouteMapCard(
         personalization.dynamicColor -> MaterialTheme.colorScheme.primary
         isBlossom -> Color(0xFFFF85A1)
         isNoir -> Color(0xFFFFFFFF)
-        isAzkaban -> Color(0xFF38BDF8)
         else -> Color(0xFFFFE066)
     }
     val secondaryAccent = when {
         personalization.dynamicColor -> MaterialTheme.colorScheme.tertiary
         isBlossom -> Color(0xFFF472B6)
         isNoir -> Color(0xFFE2E8F0)
-        isAzkaban -> Color(0xFFBAE6FD)
         else -> Color(0xFF6EE7B7)
     }
 
@@ -498,65 +467,56 @@ fun ConnectionRouteMapCard(
                 personalization.amoledBlack -> Color(0xFF000000)
                 isBlossom -> Color(0xFF0F040A)
                 isNoir -> Color(0xFF08080A)
-                isAzkaban -> Color(0xFF03070E)
-                else -> Color(0xFF05120F)
+                        else -> Color(0xFF05120F)
             }
             val gridColor = when {
                 personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 isBlossom -> Color(0xFFF472B6).copy(alpha = 0.10f)
                 isNoir -> Color(0xFFFFFFFF).copy(alpha = 0.08f)
-                isAzkaban -> Color(0xFF38BDF8).copy(alpha = 0.08f)
-                else -> Color(0xFF10B981).copy(alpha = 0.08f)
+                        else -> Color(0xFF10B981).copy(alpha = 0.08f)
             }
             val baseFill = when {
                 personalization.amoledBlack -> Color(0xFF080808)
                 isBlossom -> Color(0xFF2B0E1E)
                 isNoir -> Color(0xFF1A1A1E)
-                isAzkaban -> Color(0xFF0C192E)
-                else -> Color(0xFF12352C)
+                        else -> Color(0xFF12352C)
             }
             val baseStroke = when {
                 personalization.amoledBlack -> Color(0xFF181818)
                 isBlossom -> Color(0xFF4E1A38)
                 isNoir -> Color(0xFF2E2E34)
-                isAzkaban -> Color(0xFF1E3A5F)
-                else -> Color(0xFF216653)
+                        else -> Color(0xFF216653)
             }
             val originFill = when {
                 personalization.dynamicColor -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
                 isBlossom -> Color(0xFF9D174D)
                 isNoir -> Color(0xFF3F3F46)
-                isAzkaban -> Color(0xFF0284C7)
-                else -> Color(0xFFD99B00)
+                        else -> Color(0xFFD99B00)
             }
             val originStroke = when {
                 personalization.dynamicColor -> MaterialTheme.colorScheme.secondary
                 isBlossom -> Color(0xFFFF85A1)
                 isNoir -> Color(0xFFFFFFFF)
-                isAzkaban -> Color(0xFF38BDF8)
-                else -> Color(0xFFFFE066)
+                        else -> Color(0xFFFFE066)
             }
             val destFill = when {
                 personalization.dynamicColor -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 isBlossom -> Color(0xFFDB2777)
                 isNoir -> Color(0xFF52525B)
-                isAzkaban -> Color(0xFF0369A1)
-                else -> Color(0xFF10B981)
+                        else -> Color(0xFF10B981)
             }
             val destStroke = when {
                 personalization.dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFF472B6)
                 isNoir -> Color(0xFFE2E8F0)
-                isAzkaban -> Color(0xFFBAE6FD)
-                else -> Color(0xFFA7F3D0)
+                        else -> Color(0xFFA7F3D0)
             }
             val arcBrush = Brush.linearGradient(
                 colors = when {
                     personalization.dynamicColor -> listOf(MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.primary)
                     isBlossom -> listOf(Color(0xFFFF85A1), Color(0xFFF472B6))
                     isNoir -> listOf(Color(0xFFFFFFFF), Color(0xFF94A3B8))
-                    isAzkaban -> listOf(Color(0xFFBAE6FD), Color(0xFF38BDF8))
-                    else -> listOf(Color(0xFFFFE066), Color(0xFF10B981))
+                                else -> listOf(Color(0xFFFFE066), Color(0xFF10B981))
                 },
                 start = originPt,
                 end = destPt,
@@ -565,16 +525,14 @@ fun ConnectionRouteMapCard(
                 personalization.dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFFFD1DC)
                 isNoir -> Color(0xFFFFFFFF)
-                isAzkaban -> Color(0xFFBAE6FD)
-                else -> Color(0xFFFFE066)
+                        else -> Color(0xFFFFE066)
             }
             val originPinColor = originStroke
             val destPinColor = when {
                 personalization.dynamicColor -> MaterialTheme.colorScheme.primary
                 isBlossom -> Color(0xFFF472B6)
                 isNoir -> Color(0xFFFFFFFF)
-                isAzkaban -> Color(0xFF38BDF8)
-                else -> Color(0xFF10B981)
+                        else -> Color(0xFF10B981)
             }
 
             Box(
