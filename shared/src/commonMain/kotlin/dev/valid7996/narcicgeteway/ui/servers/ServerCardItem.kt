@@ -6,7 +6,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
 import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
-import dev.valid7996.narcicgeteway.ui.theme.NeonFluidWaterWave
 import dev.valid7996.narcicgeteway.domain.config.ProfileSource
 import dev.valid7996.narcicgeteway.ui.format.formatBytes
 
@@ -162,15 +161,15 @@ internal fun ServerCard(
             .border(if (active) 1.5.dp else 1.dp, cardBorder, shape)
             .clickable(onClick = onClick),
     ) {
-        // Animated subtle fluid/water wave gently undulating inside
+        // Subtle vector wave accent inside card (zero CPU/thermal cost)
         val waveColor = personalization.cardWaterColor ?: if (active) (personalization.serverActiveColor ?: NeonTheme.PrimaryPink) else NeonTheme.Purple
-        NeonFluidWaterWave(
+        NeonWaveAccent(
             color = waveColor,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(44.dp)
                 .align(Alignment.BottomCenter),
-            alpha = if (active) 0.32f else 0.16f,
+            alpha = if (active) 0.28f else 0.14f,
         )
 
         Column(

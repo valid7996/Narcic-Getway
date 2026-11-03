@@ -5,7 +5,6 @@
 
 package dev.valid7996.narcicgeteway.ui.home
 import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
-import dev.valid7996.narcicgeteway.ui.theme.NeonFluidWaterWave
 import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
 import dev.valid7996.narcicgeteway.ui.theme.NeonAmbientBackground
 import androidx.compose.ui.graphics.StrokeCap
@@ -750,17 +749,7 @@ private fun DecorativeBackdrop(
     dynamicColor: Boolean = false,
 ) {
     val budget = LocalMotionBudget.current
-    val spin by if (budget == MotionBudget.Full) {
-        rememberInfiniteTransition(label = "backdrop").animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(tween(120_000), RepeatMode.Restart),
-            label = "spin",
-        )
-    } else {
-        remember { mutableFloatStateOf(0f) }
-    }
-    val rotation = if (reduceMotion || budget != MotionBudget.Full) 0f else spin
+    val rotation = 0f
     val splash = if (amoledBlack) {
         val accent = when {
             dynamicColor -> MaterialTheme.colorScheme.primary
@@ -1838,11 +1827,10 @@ private fun SessionStatsTilesRow(
                 .background(cardBg)
                 .border(1.dp, cardBorder.copy(alpha = 0.6f), RoundedCornerShape(20.dp)),
         ) {
-            NeonFluidWaterWave(
+            NeonWaveAccent(
                 color = waterColor,
                 modifier = Modifier.fillMaxSize(),
                 alpha = 0.12f,
-                speedMillis = 4800,
             )
 
             Column(
@@ -1888,11 +1876,10 @@ private fun SessionStatsTilesRow(
                 .background(cardBg)
                 .border(1.dp, cardBorder.copy(alpha = 0.6f), RoundedCornerShape(20.dp)),
         ) {
-            NeonFluidWaterWave(
+            NeonWaveAccent(
                 color = Color(0xFF06B6D4),
                 modifier = Modifier.fillMaxSize(),
                 alpha = 0.12f,
-                speedMillis = 5200,
             )
 
             Column(
@@ -1957,11 +1944,10 @@ private fun ServerConnectionTile(
             .background(cardBg)
             .border(1.2.dp, cardBorder, shape),
     ) {
-        NeonFluidWaterWave(
+        NeonWaveAccent(
             color = waterColor,
             modifier = Modifier.fillMaxSize(),
             alpha = 0.14f,
-            speedMillis = 5500,
         )
 
         Row(
@@ -2339,51 +2325,52 @@ private fun LiveTrafficWaveGraph(
             .background(cardBg)
             .border(1.2.dp, cardBorder, RoundedCornerShape(22.dp)),
     ) {
-        // Live animated spline curves on Canvas
+        // Live animated spline curves on Canvas (high efficiency smooth Bezier)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
             if (w <= 0f || h <= 0f) return@Canvas
 
             // Download Wave Area (Cyan / Blue)
-            val downPath = Path()
             val baseDown = h * 0.55f
-            downPath.moveTo(0f, h)
-            downPath.lineTo(0f, baseDown)
-            var x = 0f
-            val step = 6f
-            while (x <= w) {
-                val progress = x / w
-                val y = baseDown +
-                    kotlin.math.sin(progress * 3f * kotlin.math.PI.toFloat() + phase) * (h * 0.20f) +
-                    kotlin.math.cos(progress * 1.5f * kotlin.math.PI.toFloat() + phase * 0.8f) * (h * 0.10f)
-                downPath.lineTo(x, y)
-                x += step
+            val ampDown = h * 0.20f
+            val dY0 = baseDown + kotlin.math.sin(phase) * ampDown
+            val dY1 = baseDown + kotlin.math.sin(phase + 1.8f) * (ampDown * 1.1f)
+            val dY2 = baseDown + kotlin.math.sin(phase + 3.6f) * (ampDown * 0.9f)
+            val dY3 = baseDown + kotlin.math.sin(phase + 5.2f) * ampDown
+
+            val downPath = Path().apply {
+                moveTo(0f, h)
+                lineTo(0f, dY0)
+                cubicTo(w * 0.25f, dY0, w * 0.25f, dY1, w * 0.5f, dY1)
+                cubicTo(w * 0.75f, dY1, w * 0.75f, dY2, w, dY3)
+                lineTo(w, h)
+                close()
             }
-            downPath.lineTo(w, h)
-            downPath.close()
 
             drawPath(
                 path = downPath,
                 brush = Brush.verticalGradient(
                     listOf(downColor.copy(alpha = 0.35f), downColor.copy(alpha = 0.05f)),
-                    startY = baseDown - h * 0.25f,
+                    startY = baseDown - ampDown,
                     endY = h,
                 ),
             )
 
             // Upload Wave Line (Pink / Theme Accent)
-            val upPath = Path()
-            val baseUp = h * 0.38f
-            upPath.moveTo(0f, baseUp)
-            x = 0f
-            while (x <= w) {
-                val progress = x / w
-                val y = baseUp +
-                    kotlin.math.cos(progress * 3.5f * kotlin.math.PI.toFloat() - phase * 1.2f) * (h * 0.18f)
-                if (x == 0f) upPath.moveTo(x, y) else upPath.lineTo(x, y)
-                x += step
+            val baseUp = h * 0.40f
+            val ampUp = h * 0.18f
+            val uY0 = baseUp + kotlin.math.sin(phase * 1.2f + 1.2f) * ampUp
+            val uY1 = baseUp + kotlin.math.sin(phase * 1.2f + 2.8f) * (ampUp * 1.15f)
+            val uY2 = baseUp + kotlin.math.sin(phase * 1.2f + 4.5f) * (ampUp * 0.85f)
+            val uY3 = baseUp + kotlin.math.sin(phase * 1.2f + 6.0f) * ampUp
+
+            val upPath = Path().apply {
+                moveTo(0f, uY0)
+                cubicTo(w * 0.25f, uY0, w * 0.25f, uY1, w * 0.5f, uY1)
+                cubicTo(w * 0.75f, uY1, w * 0.75f, uY2, w, uY3)
             }
+
             drawPath(
                 path = upPath,
                 brush = Brush.horizontalGradient(listOf(upColor.copy(alpha = 0.85f), downColor.copy(alpha = 0.85f))),
@@ -2558,11 +2545,10 @@ private fun WaveEqualizerCard(
             .background(cardBg)
             .border(1.2.dp, cardBorder.copy(alpha = 0.7f), RoundedCornerShape(24.dp)),
     ) {
-        NeonFluidWaterWave(
+        NeonWaveAccent(
             color = personalization.cardWaterColor ?: upColor,
             modifier = Modifier.fillMaxSize(),
-            alpha = 0.20f,
-            speedMillis = 3600,
+            alpha = 0.16f,
         )
         Row(
             modifier = Modifier
@@ -2695,10 +2681,10 @@ private fun ActiveConfigDetailTile(
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        NeonFluidWaterWave(
+        NeonWaveAccent(
             color = personalization.cardWaterColor ?: NeonTheme.PrimaryPink,
             modifier = Modifier.fillMaxWidth().height(36.dp).align(Alignment.BottomCenter),
-            alpha = 0.20f,
+            alpha = 0.16f,
         )
 
         Row(
@@ -3018,22 +3004,14 @@ private fun MiniSoundBars(
     modifier: Modifier = Modifier,
     barCount: Int = 5,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "sound-bars")
-    val h1 by infiniteTransition.animateFloat(0.3f, 0.9f, infiniteRepeatable(tween(420, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h1")
-    val h2 by infiniteTransition.animateFloat(0.5f, 1.0f, infiniteRepeatable(tween(350, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h2")
-    val h3 by infiniteTransition.animateFloat(0.2f, 0.7f, infiniteRepeatable(tween(490, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h3")
-    val h4 by infiniteTransition.animateFloat(0.6f, 1.0f, infiniteRepeatable(tween(380, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h4")
-    val h5 by infiniteTransition.animateFloat(0.4f, 0.8f, infiniteRepeatable(tween(440, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "h5")
-
-    val values = listOf(h1, h2, h3, h4, h5)
-
+    val factors = listOf(0.40f, 0.85f, 0.55f, 0.95f, 0.65f, 0.45f)
     Row(
         modifier = modifier.height(18.dp),
         horizontalArrangement = Arrangement.spacedBy(2.5.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        values.forEach { anim ->
-            val h = 4.dp + 14.dp * anim
+        for (i in 0 until barCount) {
+            val h = 4.dp + 14.dp * factors[i % factors.size]
             Box(
                 modifier = Modifier
                     .width(3.dp)

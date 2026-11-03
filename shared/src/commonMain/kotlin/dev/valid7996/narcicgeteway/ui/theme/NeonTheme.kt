@@ -86,26 +86,6 @@ fun NeonAmbientBackground(
     modifier: Modifier = Modifier,
     personalization: Personalization = Personalization.Default,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "ambient-breath")
-    val breathScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "breath-scale",
-    )
-    val breathAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.20f,
-        targetValue = 0.35f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "breath-alpha",
-    )
-
     val glowColor = personalization.ambientGlowColor ?: personalization.connectColor ?: NeonTheme.PrimaryPink
     val secondaryGlow = personalization.serverBorderColor ?: personalization.cardWaterColor ?: glowColor.copy(alpha = 0.6f)
     val bgTop = personalization.bgGradientTop ?: Color(0xFF080510)
@@ -124,15 +104,13 @@ fun NeonAmbientBackground(
                 )
             )
     ) {
-        // Top glowing ambient halo fully synchronized with theme
+        // Top glowing ambient halo fully synchronized with theme (static 0% CPU cost)
         Box(
             modifier = Modifier
                 .size(360.dp)
                 .offset(x = 10.dp, y = (-80).dp)
                 .graphicsLayer {
-                    scaleX = breathScale
-                    scaleY = breathScale
-                    alpha = breathAlpha
+                    alpha = 0.28f
                 }
                 .background(
                     Brush.radialGradient(
@@ -242,45 +220,32 @@ fun NeonFluidWaterWave(
         ),
         label = "wave-phase",
     )
-    val secondPhase by transition.animateFloat(
-        initialValue = kotlin.math.PI.toFloat(),
-        targetValue = 3f * kotlin.math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = (speedMillis * 1.3).toInt(), easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "wave-second-phase",
-    )
 
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
         if (w <= 0f || h <= 0f) return@Canvas
 
-        val path = Path()
         val baseLine = h * 0.45f
-        val amp = h * 0.25f
+        val amp = h * 0.22f
+        val y0 = baseLine + kotlin.math.sin(phase) * amp
+        val y1 = baseLine + kotlin.math.sin(phase + 1.8f) * (amp * 1.05f)
+        val y2 = baseLine + kotlin.math.sin(phase + 3.4f) * (amp * 0.95f)
+        val y3 = baseLine + kotlin.math.sin(phase + 5.0f) * amp
 
-        path.moveTo(0f, h)
-        path.lineTo(0f, baseLine)
-
-        var x = 0f
-        val step = 4f
-        while (x <= w) {
-            val progress = x / w
-            val y = baseLine +
-                kotlin.math.sin(progress * 2.5f * kotlin.math.PI.toFloat() + phase) * amp +
-                kotlin.math.cos(progress * 1.8f * kotlin.math.PI.toFloat() + secondPhase) * (amp * 0.35f)
-            path.lineTo(x, y)
-            x += step
+        val path = Path().apply {
+            moveTo(0f, h)
+            lineTo(0f, y0)
+            cubicTo(w * 0.25f, y0, w * 0.25f, y1, w * 0.5f, y1)
+            cubicTo(w * 0.75f, y1, w * 0.75f, y2, w, y3)
+            lineTo(w, h)
+            close()
         }
-        path.lineTo(w, h)
-        path.close()
 
         drawPath(
             path = path,
             brush = Brush.verticalGradient(
-                listOf(color.copy(alpha = alpha), color.copy(alpha = alpha * 0.15f)),
+                listOf(color.copy(alpha = alpha), color.copy(alpha = alpha * 0.20f)),
                 startY = baseLine - amp,
                 endY = h,
             ),

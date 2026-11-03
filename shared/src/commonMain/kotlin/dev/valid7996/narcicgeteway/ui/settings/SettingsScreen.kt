@@ -2,6 +2,13 @@
 
 package dev.valid7996.narcicgeteway.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +32,6 @@ import org.jetbrains.compose.resources.painterResource
 import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
 import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
 
-import dev.valid7996.narcicgeteway.ui.theme.NeonFluidWaterWave
 import dev.valid7996.narcicgeteway.ui.theme.applyMasterTheme
 import dev.valid7996.narcicgeteway.domain.model.ScreenTransition
 import dev.valid7996.narcicgeteway.domain.model.TrafficCardStyle
@@ -723,14 +729,14 @@ private fun MasonrySettingTile(
                 },
             ),
     ) {
-        // Animated subtle fluid/water wave gently undulating inside
-        NeonFluidWaterWave(
+        // Subtle static vector wave accent (0% CPU cost)
+        NeonWaveAccent(
             color = accentColor,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(46.dp)
                 .align(Alignment.BottomCenter),
-            alpha = 0.32f,
+            alpha = 0.22f,
         )
 
         Column(
@@ -828,13 +834,13 @@ private fun MasonryWideTile(
                 },
             ),
     ) {
-        NeonFluidWaterWave(
+        NeonWaveAccent(
             color = accentColor,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(38.dp)
                 .align(Alignment.BottomCenter),
-            alpha = 0.25f,
+            alpha = 0.18f,
         )
         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) {
         // Icon on the right (first child in RTL Row), Text on the left
@@ -1262,12 +1268,24 @@ private fun UiPage(
     onUpdate: ((AppSettings) -> AppSettings) -> Unit,
     onLanguage: (AppLanguage) -> Unit,
 ) {
+    var colorsExpanded by remember { mutableStateOf(false) }
+
     SettingsPageScaffold(
         title = stringResource(Res.string.title_ui_settings),
         subtitle = stringResource(Res.string.summary_ui_settings),
         contentPadding = contentPadding,
         modifier = modifier,
     ) {
+        // ========================================================
+        // بخش ۱: تم‌های آماده یکپارچه و هماهنگ (Master Themes)
+        // ========================================================
+        MasterThemesRow(
+            selectedId = s.themeProfileId,
+            onSelect = { spec ->
+                onUpdate { it.applyMasterTheme(spec) }
+            },
+        )
+
         SettingsGroup {
             SettingsListRow(
                 title = stringResource(Res.string.title_pref_ui_mode_night),
@@ -1281,20 +1299,282 @@ private fun UiPage(
             )
             SettingsDivider(hasIcon = false)
             SettingsSwitchRow(
-                title = stringResource(Res.string.title_pref_dynamic_color),
-                summary = stringResource(Res.string.summary_pref_dynamic_color),
-                checked = s.dynamicColor,
-                enabled = LocalPlatform.current.supportsDynamicColor,
-                onCheckedChange = { v -> onUpdate { it.copy(dynamicColor = v) } },
-            )
-            SettingsDivider(hasIcon = false)
-            SettingsSwitchRow(
                 title = stringResource(Res.string.title_pref_amoled),
                 summary = stringResource(Res.string.summary_pref_amoled),
                 checked = s.amoledBlack,
                 onCheckedChange = { v -> onUpdate { it.copy(amoledBlack = v) } },
             )
             SettingsDivider(hasIcon = false)
+            SettingsSwitchRow(
+                title = stringResource(Res.string.title_pref_dynamic_color),
+                summary = stringResource(Res.string.summary_pref_dynamic_color),
+                checked = s.dynamicColor,
+                enabled = LocalPlatform.current.supportsDynamicColor,
+                onCheckedChange = { v -> onUpdate { it.copy(dynamicColor = v) } },
+            )
+        }
+
+        // ========================================================
+        // بخش ۲: چیدمان، نوار ناوبری و سبک‌های کارت‌ها (Layout & Styles)
+        // ========================================================
+        NavBarStyleRow(
+            selected = s.navBarStyle,
+            onSelect = { st -> onUpdate { it.copy(navBarStyle = st) } },
+        )
+
+        SettingsTileLayoutRow(
+            selected = s.settingsTileLayout,
+            onSelect = { lay -> onUpdate { it.copy(settingsTileLayout = lay) } },
+        )
+
+        TrafficStyleRow(
+            selected = s.trafficCardStyle,
+            onSelect = { style -> onUpdate { it.copy(trafficCardStyle = style) } },
+        )
+
+        ConnectStyleRow(
+            label = stringResource(Res.string.connect_style_title),
+            subtitle = stringResource(Res.string.connect_style_sub),
+            selected = s.connectButtonStyle,
+            nameOf = { style -> stringResource(style.labelRes()) },
+            onSelect = { style -> onUpdate { it.copy(connectButtonStyle = style) } },
+        )
+
+        SettingsGroup {
+            SettingsSwitchRow(
+                title = "نمایش دائمی کادرهای داشبورد صفحه اصلی",
+                summary = "حتی در زمان قطع اتصال، کادرهای آمار، ترافیک و مسیر روی صفحه اصلی باز بمانند",
+                checked = s.alwaysShowDashboard,
+                onCheckedChange = { v -> onUpdate { it.copy(alwaysShowDashboard = v) } },
+            )
+            SettingsDivider(hasIcon = false)
+            SettingsSwitchRow(
+                title = "آوردن کادر ترافیک به بالای صفحه اصلی",
+                summary = "نمایش آمار دانلود و آپلود بالای نشانگر وضعیت اتصال",
+                checked = s.trafficTilesAboveHero,
+                onCheckedChange = { v -> onUpdate { it.copy(trafficTilesAboveHero = v) } },
+            )
+        }
+
+        // ========================================================
+        // بخش ۳: شخصی‌سازی پیشرفته رنگ‌ها (کارت آکاردئونی تاشو و فوق مرتب)
+        // ========================================================
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color(0x18FFFFFF))
+                .border(1.dp, if (colorsExpanded) NeonTheme.PrimaryPink.copy(alpha = 0.5f) else Color(0x22FFFFFF), RoundedCornerShape(22.dp)),
+        ) {
+            // هدر تاشوی کارت انتخاب رنگ‌ها
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { colorsExpanded = !colorsExpanded }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "🎨 شخصی‌سازی پیشرفته رنگ‌ها",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                        )
+                        val hasCustomColor = s.customTextColor != null || s.customConnectColor != null ||
+                            s.customNavActiveColor != null || s.customNavBgColor != null || s.customNavBorderColor != null ||
+                            s.customServerBorderColor != null || s.customCardWaterColor != null || s.customCardBgColor != null ||
+                            s.customDashboardBorderColor != null || s.customDashboardBgColor != null || s.customDashboardTextColor != null
+                        if (hasCustomColor) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(NeonTheme.PrimaryPink.copy(alpha = 0.25f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                            ) {
+                                Text(
+                                    text = "شخصی",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    color = NeonTheme.PrimaryPink,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = if (colorsExpanded) "برای بستن پالت کلیک کنید" else "تغییر جزئی رنگ تک‌تک اجزا (۳۲ رنگ با فیلتر)",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = Color(0xFF9CA3AF),
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x20FFFFFF)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (colorsExpanded) "▲" else "▼",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = colorsExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                ) {
+                    // دکمه بازنشانی همه رنگ‌ها به رنگ‌های هماهنگ قالب
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0x22EF4444))
+                            .clickable {
+                                onUpdate {
+                                    it.copy(
+                                        customTextColor = null,
+                                        customConnectColor = null,
+                                        customNavActiveColor = null,
+                                        customNavBgColor = null,
+                                        customNavBorderColor = null,
+                                        customServerBorderColor = null,
+                                        customCardWaterColor = null,
+                                        customCardBgColor = null,
+                                        customDashboardBorderColor = null,
+                                        customDashboardBgColor = null,
+                                        customDashboardTextColor = null,
+                                    )
+                                }
+                            }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "بازنشانی همه رنگ‌ها به پیش‌فرض قالب هماهنگ",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFFCA5A5),
+                        )
+                    }
+
+                    Spacer(Modifier.height(6.dp))
+
+                    CompactColorPickerRow(
+                        title = "رنگ متن و عنوان‌ها",
+                        subtitle = "انتخاب رنگ اصلی متون از میان ۳۲ رنگ نئونی با فیلتر",
+                        currentColorArgb = s.customTextColor,
+                        defaultColor = Color.White,
+                        onColorSelected = { c -> onUpdate { it.copy(customTextColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ دکمه اتصال",
+                        subtitle = "شخصی‌سازی رنگ دکمه اتصال امن",
+                        currentColorArgb = s.customConnectColor,
+                        defaultColor = NeonTheme.PrimaryPink,
+                        onColorSelected = { c -> onUpdate { it.copy(customConnectColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ تب فعال نوار ناوبری",
+                        subtitle = "رنگ آیکون و کپسول فعال در نوار پایین",
+                        currentColorArgb = s.customNavActiveColor,
+                        defaultColor = NeonTheme.PrimaryPink,
+                        onColorSelected = { c -> onUpdate { it.copy(customNavActiveColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ پس‌زمینه نوار ناوبری",
+                        subtitle = "رنگ شیشه‌ای داک نوار ناوبری پایین",
+                        currentColorArgb = s.customNavBgColor,
+                        defaultColor = Color(0xF20A0713),
+                        onColorSelected = { c -> onUpdate { it.copy(customNavBgColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ حاشیه نوار ناوبری",
+                        subtitle = "خط درخشان و حاشیه نوار پایین صفحه",
+                        currentColorArgb = s.customNavBorderColor,
+                        defaultColor = NeonTheme.PrimaryPink.copy(alpha = 0.4f),
+                        onColorSelected = { c -> onUpdate { it.copy(customNavBorderColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ کادر سرورها",
+                        subtitle = "شخصی‌سازی حاشیه کارت‌های سرور",
+                        currentColorArgb = s.customServerBorderColor,
+                        defaultColor = NeonTheme.PrimaryPink.copy(alpha = 0.5f),
+                        onColorSelected = { c -> onUpdate { it.copy(customServerBorderColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ موج آب داخل کادر سرورها",
+                        subtitle = "تغییر رنگ طرح موج آب در کارت سرور",
+                        currentColorArgb = s.customCardWaterColor,
+                        defaultColor = NeonTheme.PrimaryPink,
+                        onColorSelected = { c -> onUpdate { it.copy(customCardWaterColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ زمینه کارت‌های سرور",
+                        subtitle = "انتخاب رنگ پس‌زمینه کارت‌های سرور",
+                        currentColorArgb = s.customCardBgColor,
+                        defaultColor = Color(0xE6140A1C),
+                        onColorSelected = { c -> onUpdate { it.copy(customCardBgColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ کادر داشبورد اتصال",
+                        subtitle = "حاشیه و درخشش کادر داشبورد صفحه اصلی",
+                        currentColorArgb = s.customDashboardBorderColor,
+                        defaultColor = NeonTheme.PrimaryPink,
+                        onColorSelected = { c -> onUpdate { it.copy(customDashboardBorderColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ زمینه داشبورد اتصال",
+                        subtitle = "رنگ پس‌زمینه کادرهای داشبورد صفحه اصلی",
+                        currentColorArgb = s.customDashboardBgColor,
+                        defaultColor = Color(0xE612081C),
+                        onColorSelected = { c -> onUpdate { it.copy(customDashboardBgColor = c) } },
+                    )
+
+                    CompactColorPickerRow(
+                        title = "رنگ متن داشبورد اتصال",
+                        subtitle = "رنگ نوشته‌ها و آمار سرعت و حجم در داشبورد",
+                        currentColorArgb = s.customDashboardTextColor,
+                        defaultColor = Color.White,
+                        onColorSelected = { c -> onUpdate { it.copy(customDashboardTextColor = c) } },
+                    )
+                }
+            }
+        }
+
+        // ========================================================
+        // بخش ۴: زبان، اندازه قلم، پویانمایی و سیستم (Language & System)
+        // ========================================================
+        TransitionPicker(
+            selected = s.screenTransition,
+            reduceMotion = s.reduceMotion,
+            onSelect = { tr -> onUpdate { it.copy(screenTransition = tr) } },
+        )
+
+        SettingsGroup {
             SettingsListRow(
                 title = stringResource(Res.string.settings_language),
                 options = listOf(
@@ -1337,7 +1617,6 @@ private fun UiPage(
                 title = stringResource(Res.string.settings_import_target_mode),
                 options = listOf(
                     dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Ask to stringResource(Res.string.settings_import_mode_ask),
-                    dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Subscription to stringResource(Res.string.settings_import_mode_sub),
                     dev.valid7996.narcicgeteway.domain.model.ImportTargetMode.Manual to stringResource(Res.string.settings_import_mode_manual),
                 ),
                 selected = s.importTargetMode,
@@ -1350,158 +1629,6 @@ private fun UiPage(
                 onClick = { onUpdate { it.copy(onboardingVersion = 0) } },
             )
         }
-
-        ThemeProfileRow(
-            label = stringResource(Res.string.theme_profile_title),
-            subtitle = stringResource(Res.string.theme_profile_sub),
-            selectedId = s.themeProfileId,
-            onSelect = { profile ->
-                onUpdate { settings ->
-                    settings.applyThemeProfile(profile)
-                }
-            },
-        )
-
-        ConnectStyleRow(
-            label = stringResource(Res.string.connect_style_title),
-            subtitle = stringResource(Res.string.connect_style_sub),
-            selected = s.connectButtonStyle,
-            nameOf = { style -> stringResource(style.labelRes()) },
-            onSelect = { style -> onUpdate { it.copy(connectButtonStyle = style) } },
-        )
-
-        MasterThemesRow(
-            selectedId = s.themeProfileId,
-            onSelect = { spec ->
-                onUpdate { it.applyMasterTheme(spec) }
-            },
-        )
-
-        TrafficStyleRow(
-            selected = s.trafficCardStyle,
-            onSelect = { style -> onUpdate { it.copy(trafficCardStyle = style) } },
-        )
-
-        SettingsGroup {
-            SettingsSwitchRow(
-                title = "نمایش دائمی کادرهای داشبورد صفحه اصلی",
-                summary = "حتی در زمان قطع اتصال، کادرهای آمار، ترافیک و مسیر روی صفحه اصلی باز بمانند",
-                checked = s.alwaysShowDashboard,
-                onCheckedChange = { v -> onUpdate { it.copy(alwaysShowDashboard = v) } },
-            )
-            SettingsDivider(hasIcon = false)
-            SettingsSwitchRow(
-                title = "آوردن کادر ترافیک به بالای صفحه اصلی",
-                summary = "نمایش آمار دانلود و آپلود بالای نشانگر وضعیت اتصال",
-                checked = s.trafficTilesAboveHero,
-                onCheckedChange = { v -> onUpdate { it.copy(trafficTilesAboveHero = v) } },
-            )
-        }
-
-        NavBarStyleRow(
-            selected = s.navBarStyle,
-            onSelect = { st -> onUpdate { it.copy(navBarStyle = st) } },
-        )
-
-        SettingsTileLayoutRow(
-            selected = s.settingsTileLayout,
-            onSelect = { lay -> onUpdate { it.copy(settingsTileLayout = lay) } },
-        )
-
-        TransitionPicker(
-            selected = s.screenTransition,
-            reduceMotion = s.reduceMotion,
-            onSelect = { tr -> onUpdate { it.copy(screenTransition = tr) } },
-        )
-
-        // Compact, De-cluttered 32-Color Pickers with Expandable Palettes & Reset
-        CompactColorPickerRow(
-            title = "رنگ متن و عنوان‌ها",
-            subtitle = "انتخاب رنگ اصلی متون برنامه از میان ۳۲ رنگ نئونی با فیلتر",
-            currentColorArgb = s.customTextColor,
-            defaultColor = Color.White,
-            onColorSelected = { c -> onUpdate { it.copy(customTextColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ دکمه اتصال",
-            subtitle = "شخصی‌سازی رنگ دکمه اتصال امن از میان ۳۲ رنگ",
-            currentColorArgb = s.customConnectColor,
-            defaultColor = NeonTheme.PrimaryPink,
-            onColorSelected = { c -> onUpdate { it.copy(customConnectColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ تب فعال نوار ناوبری",
-            subtitle = "رنگ آیکون و کپسول لغزان تب فعال در نوار پایین",
-            currentColorArgb = s.customNavActiveColor,
-            defaultColor = NeonTheme.PrimaryPink,
-            onColorSelected = { c -> onUpdate { it.copy(customNavActiveColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ پس‌زمینه نوار ناوبری",
-            subtitle = "رنگ شیشه‌ای داک نوار ناوبری پایین صفحه",
-            currentColorArgb = s.customNavBgColor,
-            defaultColor = Color(0xF20A0713),
-            onColorSelected = { c -> onUpdate { it.copy(customNavBgColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ حاشیه نوار ناوبری",
-            subtitle = "خط درخشان و حاشیه نوار پایین صفحه",
-            currentColorArgb = s.customNavBorderColor,
-            defaultColor = NeonTheme.PrimaryPink.copy(alpha = 0.4f),
-            onColorSelected = { c -> onUpdate { it.copy(customNavBorderColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ کادر سرورها",
-            subtitle = "شخصی‌سازی حاشیه و خط دور کارت‌های سرور",
-            currentColorArgb = s.customServerBorderColor,
-            defaultColor = NeonTheme.PrimaryPink.copy(alpha = 0.5f),
-            onColorSelected = { c -> onUpdate { it.copy(customServerBorderColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ موج آب داخل کادر سرورها",
-            subtitle = "تغییر رنگ انیمیشن آب سیال متحرک در پس‌زمینه کارت سرور",
-            currentColorArgb = s.customCardWaterColor,
-            defaultColor = NeonTheme.PrimaryPink,
-            onColorSelected = { c -> onUpdate { it.copy(customCardWaterColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ زمینه کارت‌های سرور",
-            subtitle = "انتخاب رنگ شیشه‌ای پس‌زمینه کارت‌های سرور",
-            currentColorArgb = s.customCardBgColor,
-            defaultColor = Color(0xE6140A1C),
-            onColorSelected = { c -> onUpdate { it.copy(customCardBgColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ کادر داشبورد اتصال",
-            subtitle = "شخصی‌سازی حاشیه و درخشش کادر داشبورد صفحه اصلی",
-            currentColorArgb = s.customDashboardBorderColor,
-            defaultColor = NeonTheme.PrimaryPink,
-            onColorSelected = { c -> onUpdate { it.copy(customDashboardBorderColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ زمینه داشبورد اتصال",
-            subtitle = "رنگ پس‌زمینه شیشه‌ای کادرهای وضعیت اتصال صفحه اصلی",
-            currentColorArgb = s.customDashboardBgColor,
-            defaultColor = Color(0xE612081C),
-            onColorSelected = { c -> onUpdate { it.copy(customDashboardBgColor = c) } },
-        )
-
-        CompactColorPickerRow(
-            title = "رنگ متن داشبورد اتصال",
-            subtitle = "رنگ نوشته‌ها و آمار سرعت و حجم در داشبورد",
-            currentColorArgb = s.customDashboardTextColor,
-            defaultColor = Color.White,
-            onColorSelected = { c -> onUpdate { it.copy(customDashboardTextColor = c) } },
-        )
     }
 }
 
