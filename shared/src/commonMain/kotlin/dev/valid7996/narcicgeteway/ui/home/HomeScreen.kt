@@ -2737,6 +2737,7 @@ private fun ActiveConfigDetailTile(
     }
 }
 
+@Composable
 private fun MergedDashboardCard(
     info: NetworkInfo,
     downloadBps: Long,
