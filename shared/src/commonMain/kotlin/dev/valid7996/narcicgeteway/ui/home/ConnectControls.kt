@@ -319,6 +319,8 @@ fun ModernConnectButton(
     state: ConnectionState,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    customColor: Color? = null,
+    customConnectedColor: Color? = null,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
     amoledBlack: Boolean = false,
@@ -335,13 +337,9 @@ fun ModernConnectButton(
         label = "connect-btn-scale",
     )
 
-    // Premium neon pink-to-magenta gradient matching Image 1
-    val bgGradient = Brush.horizontalGradient(
-        listOf(
-            Color(0xFFF72585),
-            Color(0xFFC026D3),
-        )
-    )
+    val baseColor = if (isConnected) (customConnectedColor ?: customColor ?: Color(0xFFF72585)) else (customColor ?: Color(0xFFF72585))
+    val endColor = if (isConnected) Color(0xFFC026D3) else Color(0xFFFF4FA3)
+    val bgGradient = Brush.horizontalGradient(listOf(baseColor, endColor))
 
     Surface(
         onClick = onClick,

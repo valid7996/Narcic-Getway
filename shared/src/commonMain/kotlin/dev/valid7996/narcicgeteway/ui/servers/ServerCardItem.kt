@@ -130,14 +130,16 @@ internal fun ServerCard(
     val scope = rememberCoroutineScope()
 
     val shape = RoundedCornerShape(26.dp)
-    val cardBg = if (active) Color(0xE6140A1E) else Color(0xE612081C)
+    val cardBg = personalization.cardBgColor ?: if (active) Color(0xE6140A1E) else Color(0xE612081C)
     val cardBorder = if (isSelectedCard) {
         Color(0xFF38BDF8)
     } else if (active) {
-        Color(0xFFF72585)
+        personalization.serverBorderColor ?: personalization.serverActiveColor ?: Color(0xFFF72585)
     } else {
-        Color(0x357C3AED)
+        personalization.serverBorderColor?.copy(alpha = 0.5f) ?: Color(0x357C3AED)
     }
+    val textColor = personalization.textColor ?: Color.White
+    val isDefaultConfig = ConfigRepository.isDefaultSubscription(profile.subscriptionId) || profile.isLocked
 
     val pingMs = profile.lastPingMs ?: -1
     val (signalLevel, pingColor) = when {
@@ -156,17 +158,16 @@ internal fun ServerCard(
             .border(if (active) 1.5.dp else 1.dp, cardBorder, shape)
             .clickable(onClick = onClick),
     ) {
-        // Neon wave accent when active
-        if (active) {
-            NeonWaveAccent(
-                color = Color(0xFFF72585),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp)
-                    .align(Alignment.BottomCenter),
-                alpha = 0.22f,
-            )
-        }
+        // Animated subtle fluid/water wave gently undulating inside
+        val waveColor = personalization.cardWaterColor ?: if (active) (personalization.serverActiveColor ?: NeonTheme.PrimaryPink) else NeonTheme.Purple
+        NeonFluidWaterWave(
+            color = waveColor,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .align(Alignment.BottomCenter),
+            alpha = if (active) 0.32f else 0.16f,
+        )
 
         Column(
             modifier = Modifier
@@ -195,10 +196,19 @@ internal fun ServerCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                         ),
-                        color = Color.White,
+                        color = textColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (isDefaultConfig) {
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_lock),
+                            contentDescription = "Locked",
+                            tint = Color(0xFFFFB800),
+                            modifier = Modifier.size(15.dp),
+                        )
+                    }
                 }
 
                 Spacer(Modifier.width(8.dp))
@@ -260,38 +270,40 @@ internal fun ServerCard(
                             onDismissRequest = { menuOpen = false },
                             shape = RoundedCornerShape(16.dp),
                         ) {
-                            onEdit?.let {
+                            if (!isDefaultConfig) {
+                                onEdit?.let {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.action_edit)) },
+                                        leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
+                                        onClick = { menuOpen = false; it() },
+                                    )
+                                }
+                                onRename?.let {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.servers_rename)) },
+                                        leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
+                                        onClick = { menuOpen = false; it() },
+                                    )
+                                }
+                                onMoveGroup?.let {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.groups_move)) },
+                                        leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null, Modifier.size(18.dp)) },
+                                        onClick = { menuOpen = false; it() },
+                                    )
+                                }
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.action_edit)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
-                                    onClick = { menuOpen = false; it() },
+                                    text = { Text(stringResource(Res.string.action_share)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null, Modifier.size(18.dp)) },
+                                    onClick = { menuOpen = false; onShare() },
                                 )
-                            }
-                            onRename?.let {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.servers_rename)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
-                                    onClick = { menuOpen = false; it() },
+                                    text = { Text(stringResource(Res.string.action_share_qr)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null, Modifier.size(18.dp)) },
+                                    onClick = { menuOpen = false; onShareQr() },
                                 )
+                                HorizontalDivider()
                             }
-                            onMoveGroup?.let {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.groups_move)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null, Modifier.size(18.dp)) },
-                                    onClick = { menuOpen = false; it() },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_share)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null, Modifier.size(18.dp)) },
-                                onClick = { menuOpen = false; onShare() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_share_qr)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null, Modifier.size(18.dp)) },
-                                onClick = { menuOpen = false; onShareQr() },
-                            )
-                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.action_delete), color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) },
@@ -357,12 +369,27 @@ internal fun ServerCard(
                         ),
                         color = pingColor,
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "MTU: 1420",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                        color = Color(0xFF9CA3AF),
-                    )
+                    val configMtu: Int? = remember(profile) {
+                        when (val src = profile.source) {
+                            is ProfileSource.Link -> {
+                                val mtuMatch = Regex("""[?&#]mtu=(\d+)""", RegexOption.IGNORE_CASE).find(src.link)
+                                mtuMatch?.groupValues?.get(1)?.toIntOrNull()
+                            }
+                            is ProfileSource.RawJson -> {
+                                val mtuMatch = Regex(""""mtu"\s*:\s*(\d+)""").find(src.json)
+                                mtuMatch?.groupValues?.get(1)?.toIntOrNull()
+                            }
+                            else -> null
+                        }
+                    }
+                    if (configMtu != null) {
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "MTU: $configMtu",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = Color(0xFF9CA3AF),
+                        )
+                    }
                 }
 
                 // Left in RTL: Download & Upload traffic

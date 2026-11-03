@@ -131,14 +131,13 @@ enum class TrafficTileSize(val paddingDp: Int, val gapDp: Int) {
 
 enum class TrafficCardStyle {
     Cards,
-
     Duo,
-
     Rings,
-
     Minimal,
-
     Graph,
+    NeonPills,
+    WaveEqualizer,
+    CyberGauges,
 }
 
 enum class AnimationMode {
@@ -246,6 +245,13 @@ data class AppSettings(
 
     val customConfigCardColor: Long? = null,
     val customConfigCardTextColor: Long? = null,
+    val customTextColor: Long? = null,
+    val customServerBorderColor: Long? = null,
+    val customCardWaterColor: Long? = null,
+    val customCardBgColor: Long? = null,
+    val customDashboardBorderColor: Long? = null,
+    val customDashboardBgColor: Long? = null,
+    val customDashboardTextColor: Long? = null,
 
     val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Slide,
 

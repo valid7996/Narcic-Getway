@@ -5,6 +5,7 @@
 
 package dev.valid7996.narcicgeteway.ui.home
 import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
+import dev.valid7996.narcicgeteway.ui.theme.NeonFluidWaterWave
 import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
 
 import org.jetbrains.compose.resources.DrawableResource
@@ -290,6 +291,20 @@ fun HomeScreen(
 
                 }
 
+                // Optional: Traffic tiles above hero
+                AnimatedVisibility(visible = live && personalization.trafficTilesAboveHero) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
+                        TrafficStylesDisplay(
+                            downloadBps = ui.downloadBps,
+                            uploadBps = ui.uploadBps,
+                            totalDownload = ui.totalDownload,
+                            totalUpload = ui.totalUpload,
+                            style = personalization.trafficCardStyle,
+                            personalization = personalization,
+                        )
+                    }
+                }
+
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().layoutId(STAGE_ID)) {
                     val stage = maxHeight
                     val tight = stage < 260.dp
@@ -457,6 +472,8 @@ fun HomeScreen(
                                 isBlossom = isBlossom,
                                 amoledBlack = personalization.amoledBlack,
                                 dynamicColor = personalization.dynamicColor,
+                                customColor = personalization.connectColor,
+                                customConnectedColor = personalization.connectedColor,
                             )
                         } else {
                             ConnectButton(
@@ -486,13 +503,13 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.height(12.dp))
 
-                // The one merged dashboard: location, address and live traffic in a single
-                // green panel. It never collapses; it simply exists while the tunnel is up.
+                // Modular Tiled Dashboard: Separate Live Route, Server Tile, Session Duration/Volume Tiles, and Traffic Styles
                 AnimatedVisibility(visible = live && showConnectionInfo) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
+                        // 1. Separate Live Route Card
                         ConnectionMapTriggerButton(
                             expanded = infoExpanded,
                             destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
@@ -512,98 +529,112 @@ fun HomeScreen(
                                 isBlossom = isBlossom,
                             )
                         }
-                        MergedDashboardCard(
+
+                        // 2. Active Server Connection Tile
+                        ServerConnectionTile(
                             info = info,
-                            downloadBps = ui.downloadBps,
-                            uploadBps = ui.uploadBps,
-                            totalDownload = ui.totalDownload,
-                            totalUpload = ui.totalUpload,
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
-                            connectedColor = personalization.connectedColor ?: ConnectedGreen,
                             personalization = personalization,
-                            isNoir = isNoir,
-                            isBlossom = isBlossom,
                         )
+
+                        // 3. Modular Session Duration & Volume Tiles
+                        SessionStatsTilesRow(
+                            elapsedSeconds = ui.elapsedSeconds,
+                            totalBytes = ui.totalDownload + ui.totalUpload,
+                            personalization = personalization,
+                        )
+
+                        // 4. 8-Style Traffic Card (if not placed above hero)
+                        if (!personalization.trafficTilesAboveHero) {
+                            TrafficStylesDisplay(
+                                downloadBps = ui.downloadBps,
+                                uploadBps = ui.uploadBps,
+                                totalDownload = ui.totalDownload,
+                                totalUpload = ui.totalUpload,
+                                style = personalization.trafficCardStyle,
+                                personalization = personalization,
+                            )
+                        }
                     }
                 }
 
+
+                val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
+                if (deviceId.isNotBlank()) {
+                    var isRevealed by remember { mutableStateOf(false) }
+                    val copiedMsg = stringResource(Res.string.device_code_copied)
+
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        onClick = {
+                            platform.copyToClipboard(deviceId)
+                            scope.launch { platform.toast(copiedMsg) }
+                        },
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color(0xE6140A1C),
+                        border = BorderStroke(1.dp, Color(0x50F72585)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            // Left in RTL (Eye icon)
+                            IconButton(
+                                onClick = { isRevealed = !isRevealed },
+                                modifier = Modifier.size(24.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(if (isRevealed) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off),
+                                    contentDescription = null,
+                                    tint = Color(0xFF9CA3AF),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+
+                            // Center: Masked or unmasked text
+                            Text(
+                                text = if (isRevealed) deviceId else "•••••••••••••",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 13.sp,
+                                ),
+                                color = Color(0xFF9CA3AF),
+                            )
+
+                            // Right in RTL: Key icon + "کلید دستگاه من"
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.device_code_label),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.5.sp,
+                                    ),
+                                    color = Color.White,
+                                )
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_key),
+                                    contentDescription = null,
+                                    tint = Color(0xFFF72585),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
 
                 Spacer(Modifier.height(32.dp))
                 Spacer(Modifier.height(96.dp))
-            }
-
-            val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
-            if (deviceId.isNotBlank()) {
-                var isRevealed by remember { mutableStateOf(false) }
-                val copiedMsg = stringResource(Res.string.device_code_copied)
-
-                Spacer(Modifier.height(10.dp))
-                Surface(
-                    onClick = {
-                        platform.copyToClipboard(deviceId)
-                        scope.launch { platform.toast(copiedMsg) }
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color(0xE6140A1C),
-                    border = BorderStroke(1.dp, Color(0x50F72585)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 11.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        // Left in RTL (Eye icon)
-                        IconButton(
-                            onClick = { isRevealed = !isRevealed },
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(if (isRevealed) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off),
-                                contentDescription = null,
-                                tint = Color(0xFF9CA3AF),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-
-                        // Center: Masked or unmasked text
-                        Text(
-                            text = if (isRevealed) deviceId else "•••••••••••••",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 13.sp,
-                            ),
-                            color = Color(0xFF9CA3AF),
-                        )
-
-                        // Right in RTL: Key icon + "کلید دستگاه من"
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.device_code_label),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.5.sp,
-                                ),
-                                color = Color.White,
-                            )
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_key),
-                                contentDescription = null,
-                                tint = Color(0xFFF72585),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
             }
         }
         ParticleBurst(trigger = if (reduceMotion) 0 else burst)
@@ -1717,6 +1748,624 @@ private val ConnectedGreen = dev.valid7996.narcicgeteway.ui.theme.NrgGreen
  * The green wash is the "connected" colour of the app at its 60% focus strength.
  */
 @Composable
+
+private fun formatDuration(seconds: Int): String {
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val s = seconds % 60
+    return if (h > 0) {
+        "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
+    } else {
+        "${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
+    }
+}
+
+/**
+ * 2-Column Modular Session Stats Tiles: Duration and Session Volume (کادر مدت اتصال و کادر حجم اتصال).
+ */
+@Composable
+private fun SessionStatsTilesRow(
+    elapsedSeconds: Int,
+    totalBytes: Long,
+    personalization: Personalization,
+    modifier: Modifier = Modifier,
+) {
+    val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
+    val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
+    val waterColor = personalization.cardWaterColor ?: NeonTheme.PrimaryPink
+    val textColor = personalization.dashboardTextColor ?: Color.White
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        // Tile 1: کادر مدت اتصال
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(86.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(cardBg)
+                .border(1.dp, cardBorder.copy(alpha = 0.6f), RoundedCornerShape(20.dp)),
+        ) {
+            NeonFluidWaterWave(
+                color = waterColor,
+                modifier = Modifier.fillMaxSize(),
+                alpha = 0.12f,
+                speedMillis = 4800,
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_schedule),
+                        contentDescription = null,
+                        tint = NeonTheme.SecondaryPink,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "مدت اتصال",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = Color(0xFF9CA3AF),
+                    )
+                }
+
+                Text(
+                    text = formatDuration(elapsedSeconds),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                    ),
+                    color = textColor,
+                )
+            }
+        }
+
+        // Tile 2: کادر حجم اتصال
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(86.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(cardBg)
+                .border(1.dp, cardBorder.copy(alpha = 0.6f), RoundedCornerShape(20.dp)),
+        ) {
+            NeonFluidWaterWave(
+                color = Color(0xFF06B6D4),
+                modifier = Modifier.fillMaxSize(),
+                alpha = 0.12f,
+                speedMillis = 5200,
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_sync),
+                        contentDescription = null,
+                        tint = Color(0xFF06B6D4),
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "حجم مصرفی",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = Color(0xFF9CA3AF),
+                    )
+                }
+
+                Text(
+                    text = formatBytes(totalBytes),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                    ),
+                    color = textColor,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Active Server Connection Card Tile (کادر اطلاعات سرور فعال مجزا از نقشه).
+ */
+@Composable
+private fun ServerConnectionTile(
+    info: NetworkInfo,
+    onRefresh: () -> Unit,
+    onToggleMap: (() -> Unit)? = null,
+    personalization: Personalization = Personalization.Default,
+    modifier: Modifier = Modifier,
+) {
+    val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
+    val cardBorder = personalization.dashboardBorderColor ?: Color(0x90F72585)
+    val waterColor = personalization.cardWaterColor ?: NeonTheme.PrimaryPink
+    val textColor = personalization.dashboardTextColor ?: Color.White
+    val shape = RoundedCornerShape(22.dp)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(cardBg)
+            .border(1.2.dp, cardBorder, shape),
+    ) {
+        NeonFluidWaterWave(
+            color = waterColor,
+            modifier = Modifier.fillMaxSize(),
+            alpha = 0.14f,
+            speedMillis = 5500,
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Right in RTL: Flag + City, Country + IP
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                FlagBadge(countryCode = info.countryCode, size = 32.dp)
+                Column {
+                    Text(
+                        text = listOfNotNull(info.city, info.country).joinToString(", ")
+                            .ifBlank { null }
+                            ?: "Atlanta, United States",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.5.sp,
+                        ),
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = info.ipv4 ?: "198.44.138.67",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.5.sp,
+                        ),
+                        color = Color(0xFF9CA3AF),
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            // Left in RTL: Ping pill + Refresh
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val ping = info.pingMs ?: 1245
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(cardBorder.copy(alpha = 0.22f))
+                        .border(0.8.dp, cardBorder.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 9.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = "ms $ping",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                        ),
+                        color = if (ping < 120) Color(0xFF10B981) else if (ping < 300) Color(0xFFF59E0B) else Color(0xFFFF80BF),
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x20FFFFFF))
+                        .clickable(enabled = !info.loading) { onRefresh() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (info.loading) {
+                        CyberRadarIndicator(modifier = Modifier.size(16.dp))
+                    } else {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_sync),
+                            contentDescription = "Refresh",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 8 Traffic Card Styles Display (نمایش سبک‌های هشت‌گانه کارت ترافیک).
+ */
+@Composable
+private fun TrafficStylesDisplay(
+    downloadBps: Long,
+    uploadBps: Long,
+    totalDownload: Long,
+    totalUpload: Long,
+    style: TrafficCardStyle,
+    personalization: Personalization,
+    modifier: Modifier = Modifier,
+) {
+    val (downVal, downUnit) = formatRate(downloadBps)
+    val (upVal, upUnit) = formatRate(uploadBps)
+    val cardBg = personalization.dashboardBgColor ?: Color(0xE612081C)
+    val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
+    val textColor = personalization.dashboardTextColor ?: Color.White
+
+    when (style) {
+        TrafficCardStyle.Cards -> {
+            Row(
+                modifier = modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                // Upload Card
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(82.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(cardBg)
+                        .border(1.dp, cardBorder.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                            MiniSoundBars(color = Color(0xFFF72585))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("↑ ", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 15.sp)
+                            Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 15.sp)
+                        }
+                    }
+                }
+
+                // Download Card
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(82.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(cardBg)
+                        .border(1.dp, cardBorder.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                            MiniSoundBars(color = Color(0xFF06B6D4))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("↓ ", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 15.sp)
+                            Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 15.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        TrafficCardStyle.Duo -> {
+            // Duo Split Pill
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .clip(RoundedCornerShape(29.dp))
+                    .background(cardBg)
+                    .border(1.2.dp, cardBorder, RoundedCornerShape(29.dp))
+                    .padding(horizontal = 18.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("↑", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 16.sp)
+                        Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                    }
+
+                    Box(modifier = Modifier.height(24.dp).width(1.dp).background(Color(0x30FFFFFF)))
+
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                        Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 16.sp)
+                    }
+                }
+            }
+        }
+
+        TrafficCardStyle.Rings -> {
+            // Rings Style
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder.copy(alpha = 0.6f), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x25F72585))
+                                .border(2.5.dp, Color(0xFFF72585), CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("↑", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 16.sp)
+                        }
+                        Column {
+                            Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                            Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x2506B6D4))
+                                .border(2.5.dp, Color(0xFF06B6D4), CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 16.sp)
+                        }
+                        Column {
+                            Text("دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                            Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        TrafficCardStyle.Minimal -> {
+            // Minimal single row
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(cardBg.copy(alpha = 0.7f))
+                    .border(0.8.dp, cardBorder.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("↑ $upVal $upUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFFF72585))
+                    Text("آمار ترافیک زنده", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text("↓ $downVal $downUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFF06B6D4))
+                }
+            }
+        }
+
+        TrafficCardStyle.Graph -> {
+            // Real-time Wave Graph style
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(cardBg)
+                    .border(1.2.dp, cardBorder, RoundedCornerShape(22.dp)),
+            ) {
+                NeonFluidWaterWave(
+                    color = Color(0xFF7C3AED),
+                    modifier = Modifier.fillMaxSize(),
+                    alpha = 0.16f,
+                    speedMillis = 3600,
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text("نرخ آپلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                        Text("↑ $upVal $upUnit", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 16.sp)
+                    }
+                    MiniSoundBars(color = Color(0xFF7C3AED), barCount = 5)
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("نرخ دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                        Text("↓ $downVal $downUnit", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 16.sp)
+                    }
+                }
+            }
+        }
+
+        TrafficCardStyle.NeonPills -> {
+            // Neon Pills
+            Row(
+                modifier = modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(64.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0x30F72585))
+                        .border(1.5.dp, Color(0xFFF72585), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("↑", fontWeight = FontWeight.Bold, color = Color(0xFFF72585), fontSize = 18.sp)
+                        Column {
+                            Text("بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
+                            Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(64.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0x3006B6D4))
+                        .border(1.5.dp, Color(0xFF06B6D4), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 18.sp)
+                        Column {
+                            Text("دانلود", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
+                            Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        TrafficCardStyle.WaveEqualizer -> {
+            // Wave Equalizer style
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(88.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder.copy(alpha = 0.7f), RoundedCornerShape(24.dp)),
+            ) {
+                NeonFluidWaterWave(
+                    color = personalization.cardWaterColor ?: NeonTheme.PrimaryPink,
+                    modifier = Modifier.fillMaxSize(),
+                    alpha = 0.18f,
+                    speedMillis = 4000,
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MiniSoundBars(color = Color(0xFFF72585))
+                        Column {
+                            Text("↑ $upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
+                            Text("سرعت بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("↓ $downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
+                            Text("سرعت دریافت", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                        }
+                        MiniSoundBars(color = Color(0xFF06B6D4))
+                    }
+                }
+            }
+        }
+
+        TrafficCardStyle.CyberGauges -> {
+            // Cyber Gauges style
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(cardBg)
+                    .border(1.2.dp, cardBorder, RoundedCornerShape(24.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Gauge 1
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x35F72585))
+                                .border(2.dp, Color(0xFFF72585), CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("UP", fontWeight = FontWeight.ExtraBold, color = Color(0xFFF72585), fontSize = 12.sp)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 13.sp)
+                    }
+
+                    Box(modifier = Modifier.height(36.dp).width(1.dp).background(Color(0x25FFFFFF)))
+
+                    // Gauge 2
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(Color(0x3506B6D4))
+                                .border(2.dp, Color(0xFF06B6D4), CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("DN", fontWeight = FontWeight.ExtraBold, color = Color(0xFF06B6D4), fontSize = 12.sp)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private fun MergedDashboardCard(
     info: NetworkInfo,
     downloadBps: Long,

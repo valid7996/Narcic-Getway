@@ -289,3 +289,16 @@ fun AppSettings.applyThemeProfile(profile: ThemeProfile): AppSettings = copy(
     customConfigCardTextColor = profile.configCardText,
     themeProfileId = profile.id,
 )
+
+
+fun AppSettings.applyMasterTheme(spec: MasterThemeSpec): AppSettings = copy(
+    customConnectColor = spec.buttonColor.toArgbLong(),
+    customServerBorderColor = spec.serverBorderColor.toArgbLong(),
+    customCardWaterColor = spec.cardWaterColor.toArgbLong(),
+    customCardBgColor = spec.cardBgColor.toArgbLong(),
+    customDashboardBorderColor = spec.dashboardBorderColor.toArgbLong(),
+    customDashboardBgColor = spec.dashboardBgColor.toArgbLong(),
+    customDashboardTextColor = spec.textColor.toArgbLong(),
+    customTextColor = spec.textColor.toArgbLong(),
+    themeProfileId = spec.id,
+)
