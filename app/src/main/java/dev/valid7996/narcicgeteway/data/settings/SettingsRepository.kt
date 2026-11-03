@@ -54,7 +54,7 @@ class SettingsRepository(context: Context) {
             customConfigCardTextColor = prefs.argb("custom_color_config_card_text"),
             connectButtonStyle = prefs.enum("connect_button_style", d.connectButtonStyle),
             navBarStyle = prefs.enum("nav_bar_style", d.navBarStyle),
-            themeProfileId = prefs.getString("theme_profile_id", null),
+            themeProfileId = prefs.getString("theme_profile_id", null) ?: "noir",
             cardCornerStyle = prefs.enum("card_corner_style", d.cardCornerStyle),
             listDensity = prefs.enum("list_density", d.listDensity),
             uiFontScale = prefs.enum("ui_font_scale", d.uiFontScale),

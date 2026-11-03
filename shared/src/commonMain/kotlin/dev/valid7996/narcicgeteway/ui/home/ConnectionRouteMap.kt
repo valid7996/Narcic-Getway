@@ -166,6 +166,9 @@ fun ConnectionMapTriggerButton(
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
 ) {
+    val routeAccent = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
+    val routeBg = personalization.cardBgColor ?: (if (isNoir) Color(0xE6111115) else Color(0xE6100918))
+
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(24.dp),
@@ -173,8 +176,8 @@ fun ConnectionMapTriggerButton(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xE6100918))
-            .border(1.dp, Color(0x50F72585), RoundedCornerShape(24.dp)),
+            .background(routeBg)
+            .border(1.dp, routeAccent.copy(alpha = 0.45f), RoundedCornerShape(24.dp)),
     ) {
         Row(
             modifier = Modifier
@@ -192,13 +195,14 @@ fun ConnectionMapTriggerButton(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0x30F72585)),
+                        .background(routeAccent.copy(alpha = 0.18f))
+                        .border(1.dp, routeAccent.copy(alpha = 0.4f), RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_map),
                         contentDescription = null,
-                        tint = Color(0xFFF72585),
+                        tint = routeAccent,
                         modifier = Modifier.size(20.dp),
                     )
                 }

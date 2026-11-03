@@ -337,9 +337,24 @@ fun ModernConnectButton(
         label = "connect-btn-scale",
     )
 
-    val baseColor = if (isConnected) (customConnectedColor ?: customColor ?: Color(0xFFF72585)) else (customColor ?: Color(0xFFF72585))
-    val endColor = if (isConnected) Color(0xFFC026D3) else Color(0xFFFF4FA3)
+    val defaultBase = if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585)
+    val defaultEnd = if (isNoir) Color(0xFF94A3B8) else Color(0xFFFF4FA3)
+    val defaultConnectedBase = if (isNoir) Color(0xFF334155) else Color(0xFFC026D3)
+    val defaultConnectedEnd = if (isNoir) Color(0xFF1E293B) else Color(0xFF7C3AED)
+
+    val baseColor = if (isConnected) (customConnectedColor ?: customColor ?: defaultConnectedBase)
+                    else (customColor ?: defaultBase)
+    val endColor = if (isConnected) {
+        customConnectedColor?.copy(alpha = 0.8f) ?: (if (customColor != null) customColor.copy(alpha = 0.8f) else defaultConnectedEnd)
+    } else {
+        if (customColor != null) {
+            if (isNoir) Color(0xFF94A3B8) else customColor.copy(alpha = 0.85f)
+        } else {
+            defaultEnd
+        }
+    }
     val bgGradient = Brush.horizontalGradient(listOf(baseColor, endColor))
+    val contentColor = if (baseColor.luminance() > 0.6f && !isConnected) Color(0xFF0F172A) else Color.White
 
     Surface(
         onClick = onClick,
@@ -367,7 +382,7 @@ fun ModernConnectButton(
                     text = stringResource(Res.string.connecting_secure),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = contentColor,
                 )
             } else {
                 Text(
@@ -378,20 +393,20 @@ fun ModernConnectButton(
                     },
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = contentColor,
                 )
                 Spacer(Modifier.width(10.dp))
                 Box(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(Color(0x30000000)),
+                        .background(if (contentColor == Color.White) Color(0x30000000) else Color(0x20000000)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         painter = painterResource(if (isConnected) Res.drawable.ic_close else Res.drawable.ic_bolt),
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = contentColor,
                         modifier = Modifier.size(18.dp),
                     )
                 }

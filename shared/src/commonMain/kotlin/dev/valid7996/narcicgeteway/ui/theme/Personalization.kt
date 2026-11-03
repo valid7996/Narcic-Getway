@@ -206,50 +206,82 @@ data class Personalization(
     val dynamicColor: Boolean = false,
 ) {
     companion object {
-        val Default = Personalization()
+        val Default = Personalization(
+            connectColor = Color(0xFFE2E8F0),
+            connectedColor = Color(0xFF27272A),
+            serverBorderColor = Color(0xFF94A3B8),
+            cardWaterColor = Color(0xFF64748B),
+            cardBgColor = Color(0xFF111115),
+            dashboardBorderColor = Color(0xFFCBD5E1),
+            dashboardBgColor = Color(0xE616161A),
+            navActiveColor = Color(0xFFE2E8F0),
+            navBgColor = Color(0xF2111115),
+            navBorderColor = Color(0xFF94A3B8),
+            ambientGlowColor = Color(0xFF94A3B8),
+            bgGradientTop = Color(0xFF141418),
+            bgGradientBottom = Color(0xFF050506),
+            themeProfileId = "noir",
+        )
     }
 }
 
-fun AppSettings.toPersonalization(): Personalization = Personalization(
-    downloadColor = customDownloadColor?.argbLongToColor(),
-    uploadColor = customUploadColor?.argbLongToColor(),
-    downloadTileColor = customDownloadTileColor?.argbLongToColor(),
-    uploadTileColor = customUploadTileColor?.argbLongToColor(),
-    connectColor = customConnectColor?.argbLongToColor(),
-    connectedColor = customConnectedColor?.argbLongToColor(),
-    tapHintColor = customTapHintColor?.argbLongToColor(),
-    configCardColor = customConfigCardColor?.argbLongToColor(),
-    configCardTextColor = customConfigCardTextColor?.argbLongToColor(),
-    serverCardColor = customServerCardColor?.argbLongToColor(),
-    serverActiveColor = customServerActiveColor?.argbLongToColor(),
-    textColor = customTextColor?.argbLongToColor(),
-    serverBorderColor = customServerBorderColor?.argbLongToColor(),
-    cardWaterColor = customCardWaterColor?.argbLongToColor(),
-    cardBgColor = customCardBgColor?.argbLongToColor(),
-    dashboardBorderColor = customDashboardBorderColor?.argbLongToColor(),
-    dashboardBgColor = customDashboardBgColor?.argbLongToColor(),
-    dashboardTextColor = customDashboardTextColor?.argbLongToColor(),
-    navActiveColor = customNavActiveColor?.argbLongToColor(),
-    navBgColor = customNavBgColor?.argbLongToColor(),
-    navBorderColor = customNavBorderColor?.argbLongToColor(),
-    ambientGlowColor = customAmbientGlowColor?.argbLongToColor(),
-    bgGradientTop = customBgGradientTop?.argbLongToColor(),
-    bgGradientBottom = customBgGradientBottom?.argbLongToColor(),
-    alwaysShowDashboard = alwaysShowDashboard,
-    settingsTileLayout = settingsTileLayout,
-    cornerStyle = cardCornerStyle,
-    density = listDensity,
-    showServerPing = showServerPing,
-    showServerUsage = showServerUsage,
-    monospaceAddress = monospaceAddress,
-    showTrafficTiles = showTrafficTiles,
-    trafficTilesAboveHero = trafficTilesAboveHero,
-    trafficTileSize = trafficTileSize,
-    trafficCardStyle = trafficCardStyle,
-    themeProfileId = themeProfileId,
-    amoledBlack = amoledBlack,
-    dynamicColor = dynamicColor,
-)
+fun AppSettings.toPersonalization(): Personalization {
+    val isBlossom = themeProfileId == "blossom"
+    val defaultConnect = if (isBlossom) Color(0xFFF72585) else Color(0xFFE2E8F0)
+    val defaultConnected = if (isBlossom) Color(0xFFDB2777) else Color(0xFF27272A)
+    val defaultServerBorder = if (isBlossom) Color(0xFFF72585) else Color(0xFF94A3B8)
+    val defaultCardWater = if (isBlossom) Color(0xFF7C3AED) else Color(0xFF64748B)
+    val defaultCardBg = if (isBlossom) Color(0xFF12081C) else Color(0xFF111115)
+    val defaultDashBorder = if (isBlossom) Color(0xFFF72585) else Color(0xFFCBD5E1)
+    val defaultDashBg = if (isBlossom) Color(0xE6140A20) else Color(0xE616161A)
+    val defaultNavActive = if (isBlossom) Color(0xFFF72585) else Color(0xFFE2E8F0)
+    val defaultNavBg = if (isBlossom) Color(0xF212081C) else Color(0xF2111115)
+    val defaultNavBorder = if (isBlossom) Color(0xFFF72585) else Color(0xFF94A3B8)
+    val defaultAmbientGlow = if (isBlossom) Color(0xFFF72585) else Color(0xFF94A3B8)
+    val defaultBgTop = if (isBlossom) Color(0xFF0E071A) else Color(0xFF141418)
+    val defaultBgBottom = if (isBlossom) Color(0xFF050308) else Color(0xFF050506)
+
+    return Personalization(
+        downloadColor = customDownloadColor?.argbLongToColor(),
+        uploadColor = customUploadColor?.argbLongToColor(),
+        downloadTileColor = customDownloadTileColor?.argbLongToColor(),
+        uploadTileColor = customUploadTileColor?.argbLongToColor(),
+        connectColor = customConnectColor?.argbLongToColor() ?: defaultConnect,
+        connectedColor = customConnectedColor?.argbLongToColor() ?: defaultConnected,
+        tapHintColor = customTapHintColor?.argbLongToColor(),
+        configCardColor = customConfigCardColor?.argbLongToColor(),
+        configCardTextColor = customConfigCardTextColor?.argbLongToColor(),
+        serverCardColor = customServerCardColor?.argbLongToColor(),
+        serverActiveColor = customServerActiveColor?.argbLongToColor(),
+        textColor = customTextColor?.argbLongToColor(),
+        serverBorderColor = customServerBorderColor?.argbLongToColor() ?: defaultServerBorder,
+        cardWaterColor = customCardWaterColor?.argbLongToColor() ?: defaultCardWater,
+        cardBgColor = customCardBgColor?.argbLongToColor() ?: defaultCardBg,
+        dashboardBorderColor = customDashboardBorderColor?.argbLongToColor() ?: defaultDashBorder,
+        dashboardBgColor = customDashboardBgColor?.argbLongToColor() ?: defaultDashBg,
+        dashboardTextColor = customDashboardTextColor?.argbLongToColor(),
+        navActiveColor = customNavActiveColor?.argbLongToColor() ?: defaultNavActive,
+        navBgColor = customNavBgColor?.argbLongToColor() ?: defaultNavBg,
+        navBorderColor = customNavBorderColor?.argbLongToColor() ?: defaultNavBorder,
+        ambientGlowColor = customAmbientGlowColor?.argbLongToColor() ?: defaultAmbientGlow,
+        bgGradientTop = customBgGradientTop?.argbLongToColor() ?: defaultBgTop,
+        bgGradientBottom = customBgGradientBottom?.argbLongToColor() ?: defaultBgBottom,
+        alwaysShowDashboard = alwaysShowDashboard,
+        settingsTileLayout = settingsTileLayout,
+        cornerStyle = cardCornerStyle,
+        density = listDensity,
+        showServerPing = showServerPing,
+        showServerUsage = showServerUsage,
+        monospaceAddress = monospaceAddress,
+        showTrafficTiles = showTrafficTiles,
+        trafficTilesAboveHero = trafficTilesAboveHero,
+        trafficTileSize = trafficTileSize,
+        trafficCardStyle = trafficCardStyle,
+        themeProfileId = themeProfileId ?: "noir",
+        amoledBlack = amoledBlack,
+        dynamicColor = dynamicColor,
+    )
+}
 
 fun AppSettings.resetPersonalization(): AppSettings = copy(
     customDownloadColor = null,

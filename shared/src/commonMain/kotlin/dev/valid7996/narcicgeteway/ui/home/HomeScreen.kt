@@ -276,6 +276,7 @@ fun HomeScreen(
                 BrandHeader(
                     state = ui.state,
                     onSecretUnlocked = onSecretUnlocked,
+                    personalization = personalization,
                 )
 
                 val fault = when {
@@ -550,6 +551,7 @@ fun HomeScreen(
                             onRefresh = homeVm::refresh,
                             onToggleMap = homeVm::toggleExpanded,
                             personalization = personalization,
+                            activeLocked = activeLocked,
                         )
 
                         // 3. Modular Session Duration & Volume Tiles
@@ -578,6 +580,9 @@ fun HomeScreen(
                 if (deviceId.isNotBlank()) {
                     var isRevealed by remember { mutableStateOf(false) }
                     val copiedMsg = stringResource(Res.string.device_code_copied)
+                    val keyBorder = (personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFF94A3B8) else Color(0xFFF72585))).copy(alpha = 0.5f)
+                    val keyBg = personalization.cardBgColor ?: Color(0xE6140A1C)
+                    val keyTint = personalization.connectColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
 
                     Spacer(Modifier.height(10.dp))
                     Surface(
@@ -586,8 +591,8 @@ fun HomeScreen(
                             scope.launch { platform.toast(copiedMsg) }
                         },
                         shape = RoundedCornerShape(24.dp),
-                        color = Color(0xE6140A1C),
-                        border = BorderStroke(1.dp, Color(0x50F72585)),
+                        color = keyBg,
+                        border = BorderStroke(1.dp, keyBorder),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp),
@@ -638,7 +643,7 @@ fun HomeScreen(
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_key),
                                     contentDescription = null,
-                                    tint = Color(0xFFF72585),
+                                    tint = keyTint,
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -968,10 +973,13 @@ private fun Hero(
 private fun BrandHeader(
     state: ConnectionState,
     onSecretUnlocked: () -> Unit,
+    personalization: Personalization = Personalization.Default,
 ) {
     var taps by remember { mutableIntStateOf(0) }
     var lastTap by remember { mutableLongStateOf(0L) }
     val haptics = LocalHapticFeedback.current
+    val isNoir = personalization.themeProfileId == "noir"
+    val brandAccent = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
 
     Row(
         modifier = Modifier
@@ -981,7 +989,7 @@ private fun BrandHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         // StatusChip on the right in RTL (Child 1 in RTL Row)
-        StatusChip(state = state)
+        StatusChip(state = state, personalization = personalization)
 
         // Branding on the left in RTL (Child 2 in RTL Row)
         androidx.compose.runtime.CompositionLocalProvider(
@@ -1005,22 +1013,43 @@ private fun BrandHeader(
                     }
                 },
             ) {
+                // Styled Hexagon Emblem with "N" matching reference UI
                 Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0x24F72585))
-                        .border(1.5.dp, Color(0xFFF72585), RoundedCornerShape(10.dp)),
+                    modifier = Modifier.size(34.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_nrg_mark),
-                        contentDescription = null,
-                        tint = Color(0xFFF72585),
-                        modifier = Modifier.size(18.dp),
+                    androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                        val w = size.width
+                        val h = size.height
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(w * 0.5f, 1f)
+                            lineTo(w - 1f, h * 0.25f)
+                            lineTo(w - 1f, h * 0.75f)
+                            lineTo(w * 0.5f, h - 1f)
+                            lineTo(1f, h * 0.75f)
+                            lineTo(1f, h * 0.25f)
+                            close()
+                        }
+                        drawPath(path, color = brandAccent.copy(alpha = 0.18f), style = androidx.compose.ui.graphics.drawscope.Fill)
+                        drawPath(
+                            path,
+                            color = brandAccent,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                width = 1.8.dp.toPx(),
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                join = androidx.compose.ui.graphics.StrokeJoin.Round,
+                            ),
+                        )
+                    }
+                    Text(
+                        text = "N",
+                        color = brandAccent,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        lineHeight = 15.sp,
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(9.dp))
                 Row {
                     Text(
                         text = "Narcic ",
@@ -1036,7 +1065,7 @@ private fun BrandHeader(
                             fontWeight = FontWeight.Bold,
                             fontSize = 17.sp,
                         ),
-                        color = Color(0xFFF72585),
+                        color = brandAccent,
                     )
                 }
             }
@@ -1134,7 +1163,10 @@ private const val TAPS_TO_UNLOCK = 5
 private const val TAP_WINDOW_MS = 1_200L
 
 @Composable
-private fun StatusChip(state: ConnectionState) {
+private fun StatusChip(
+    state: ConnectionState,
+    personalization: Personalization = Personalization.Default,
+) {
     val isConnected = state == ConnectionState.Connected
     val isConnecting = state == ConnectionState.Connecting || state == ConnectionState.Reconnecting
     val isError = state == ConnectionState.Error
@@ -1154,11 +1186,14 @@ private fun StatusChip(state: ConnectionState) {
         else -> "قطع است"
     }
 
+    val chipBg = personalization.cardBgColor ?: Color(0xE6121118)
+    val chipBorder = (personalization.serverBorderColor ?: Color(0x35FFFFFF)).copy(alpha = 0.35f)
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xE6160B1E))
-            .border(1.dp, Color(0x35FFFFFF), RoundedCornerShape(20.dp))
+            .background(chipBg)
+            .border(1.dp, chipBorder, RoundedCornerShape(20.dp))
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Row(
@@ -1784,9 +1819,10 @@ private fun SessionStatsTilesRow(
     personalization: Personalization,
     modifier: Modifier = Modifier,
 ) {
-    val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
-    val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
-    val waterColor = personalization.cardWaterColor ?: NeonTheme.PrimaryPink
+    val isNoir = personalization.themeProfileId == "noir"
+    val cardBg = personalization.dashboardBgColor ?: personalization.cardBgColor ?: (if (isNoir) Color(0xE616161A) else Color(0xE6140A1C))
+    val cardBorder = personalization.dashboardBorderColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFFCBD5E1) else Color(0x60F72585))
+    val waterColor = personalization.cardWaterColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFF64748B) else NeonTheme.PrimaryPink)
     val textColor = personalization.dashboardTextColor ?: Color.White
 
     Row(
@@ -1904,11 +1940,13 @@ private fun ServerConnectionTile(
     onRefresh: () -> Unit,
     onToggleMap: (() -> Unit)? = null,
     personalization: Personalization = Personalization.Default,
+    activeLocked: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
-    val cardBorder = personalization.dashboardBorderColor ?: Color(0x90F72585)
-    val waterColor = personalization.cardWaterColor ?: NeonTheme.PrimaryPink
+    val isNoir = personalization.themeProfileId == "noir"
+    val cardBg = personalization.dashboardBgColor ?: personalization.cardBgColor ?: (if (isNoir) Color(0xE616161A) else Color(0xE6140A1C))
+    val cardBorder = personalization.dashboardBorderColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFFCBD5E1) else Color(0x90F72585))
+    val waterColor = personalization.cardWaterColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFF64748B) else NeonTheme.PrimaryPink)
     val textColor = personalization.dashboardTextColor ?: Color.White
     val shape = RoundedCornerShape(22.dp)
 
@@ -1954,7 +1992,7 @@ private fun ServerConnectionTile(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = info.ipv4 ?: "198.44.138.67",
+                        text = if (activeLocked) "محافظت‌شده • رمزنگاری زنده" else (info.ipv4 ?: "198.44.138.67"),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.5.sp,
                         ),
@@ -2674,18 +2712,20 @@ private fun ActiveConfigDetailTile(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.weight(1f),
             ) {
+                val isNoirTile = personalization.themeProfileId == "noir"
+                val tileAccent = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoirTile) Color(0xFFE2E8F0) else NeonTheme.PrimaryPink)
                 Box(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0x25F72585))
-                        .border(1.dp, Color(0x60F72585), RoundedCornerShape(12.dp)),
+                        .background(tileAccent.copy(alpha = 0.18f))
+                        .border(1.dp, tileAccent.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_dns),
                         contentDescription = null,
-                        tint = personalization.connectColor ?: NeonTheme.PrimaryPink,
+                        tint = tileAccent,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -2710,7 +2750,7 @@ private fun ActiveConfigDetailTile(
                     }
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = activeConfigDetail?.takeIf { it.isNotBlank() } ?: "VLESS • TCP • TLS",
+                        text = if (activeLocked) "پروتکل امن • سرور محافظت‌شده" else (activeConfigDetail?.takeIf { it.isNotBlank() } ?: "VLESS • TCP • TLS"),
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = Color(0xFF9CA3AF),
                         maxLines = 1,
@@ -2754,16 +2794,21 @@ private fun MergedDashboardCard(
 ) {
     val shape = RoundedCornerShape(26.dp)
 
+    val dashBorder = personalization.dashboardBorderColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFFCBD5E1) else Color(0x90F72585))
+    val dashBg = personalization.dashboardBgColor ?: personalization.cardBgColor ?: (if (isNoir) Color(0xE616161A) else Color(0xE612081C))
+    val dashWave = personalization.cardWaterColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFF64748B) else Color(0xFFF72585))
+    val upColor = personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Color(0xE612081C))
-            .border(1.2.dp, Color(0x90F72585), shape),
+            .background(dashBg)
+            .border(1.2.dp, dashBorder, shape),
     ) {
         // Neon wave accent at the bottom
         NeonWaveAccent(
-            color = Color(0xFFF72585),
+            color = dashWave,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
@@ -2889,12 +2934,12 @@ private fun MergedDashboardCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Upload side: Pink mini-bars + ↑ Speed + بارگذاری
+                // Upload side: Mini-bars + ↑ Speed + بارگذاری
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    MiniSoundBars(color = Color(0xFFF72585))
+                    MiniSoundBars(color = upColor)
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -2903,7 +2948,7 @@ private fun MergedDashboardCard(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
                                 ),
-                                color = Color(0xFFF72585),
+                                color = upColor,
                             )
                             Text(
                                 text = "$upVal $upUnit",

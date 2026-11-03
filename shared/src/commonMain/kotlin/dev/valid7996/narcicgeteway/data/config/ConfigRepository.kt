@@ -1245,6 +1245,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         _profiles.value
             .filterNot { it.isLocked || it.source is ProfileSource.Sealed }
             .filterNot { isDefaultSubscription(it.subscriptionId) }
+            .filter { it.subscriptionId.isEmpty() }
             .mapNotNull { it.rawPayload() }
             .joinToString("\n")
 
@@ -1413,6 +1414,7 @@ class ConfigRepository(private val store: KeyValueStore) {
     private fun subscriptionUrlIn(text: String): String? {
         val t = text.withoutFormatChars().trim()
         if (t.isEmpty() || t.any { it.isWhitespace() }) return null
+        if (runCatching { ConfigParser.parse(t) }.isSuccess) return null
         return t.takeIf { it.startsWith("http://", true) || it.startsWith("https://", true) }
     }
 

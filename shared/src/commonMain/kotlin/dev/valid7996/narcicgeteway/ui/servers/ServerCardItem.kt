@@ -132,13 +132,15 @@ internal fun ServerCard(
     val scope = rememberCoroutineScope()
 
     val shape = RoundedCornerShape(26.dp)
-    val cardBg = personalization.cardBgColor ?: if (active) Color(0xE6140A1E) else Color(0xE612081C)
+    val isNoir = personalization.themeProfileId == "noir"
+    val cardBg = personalization.cardBgColor ?: if (active) (if (isNoir) Color(0xE616161A) else Color(0xE6140A1E)) else (if (isNoir) Color(0xE6111115) else Color(0xE612081C))
+    val activeDotColor = personalization.serverBorderColor ?: personalization.serverActiveColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
     val cardBorder = if (isSelectedCard) {
         Color(0xFF38BDF8)
     } else if (active) {
-        personalization.serverBorderColor ?: personalization.serverActiveColor ?: Color(0xFFF72585)
+        activeDotColor
     } else {
-        personalization.serverBorderColor?.copy(alpha = 0.5f) ?: Color(0x357C3AED)
+        personalization.serverBorderColor?.copy(alpha = 0.4f) ?: (if (isNoir) Color(0x3094A3B8) else Color(0x357C3AED))
     }
     val textColor = personalization.textColor ?: Color.White
     val isDefaultConfig = ConfigRepository.isDefaultSubscription(profile.subscriptionId) || profile.isLocked
@@ -221,17 +223,18 @@ internal fun ServerCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     if (active) {
+                        val checkTint = if (activeDotColor.luminance() > 0.6f) Color.Black else Color.White
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFF72585)),
+                                .background(activeDotColor),
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 painter = painterResource(Res.drawable.ic_check),
                                 contentDescription = "Active",
-                                tint = Color.White,
+                                tint = checkTint,
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -318,33 +321,58 @@ internal fun ServerCard(
 
             Spacer(Modifier.height(4.dp))
 
-            // Middle Row: Address + Protocol + Copy Icon
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        platform.copyToClipboard("${profile.address}:${profile.port}")
-                        scope.launch { platform.toast("آدرس کپی شد") }
-                    },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Text(
-                    text = "${profile.protocol} • ${profile.address}:${profile.port}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 11.5.sp,
-                    ),
-                    color = Color(0xFF9CA3AF),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.width(6.dp))
-                Icon(
-                    painter = painterResource(Res.drawable.ic_content_paste),
-                    contentDescription = "Copy",
-                    tint = Color(0xFF9CA3AF),
-                    modifier = Modifier.size(14.dp),
-                )
+            // Middle Row: Address + Protocol + Copy Icon (Locked configs do NOT reveal IP or allow copying)
+            if (isDefaultConfig) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Text(
+                        text = "${profile.protocol} • سرور محافظت‌شده",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        color = Color(0xFF9CA3AF),
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_lock),
+                        contentDescription = null,
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(13.dp),
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            platform.copyToClipboard("${profile.address}:${profile.port}")
+                            scope.launch { platform.toast("آدرس کپی شد") }
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Text(
+                        text = "${profile.protocol} • ${profile.address}:${profile.port}",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.5.sp,
+                        ),
+                        color = Color(0xFF9CA3AF),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_content_paste),
+                        contentDescription = "Copy",
+                        tint = Color(0xFF9CA3AF),
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
             }
 
             Spacer(Modifier.height(10.dp))
@@ -413,7 +441,7 @@ internal fun ServerCard(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 11.sp,
                         ),
-                        color = Color(0xFFF72585),
+                        color = personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585)),
                     )
                 }
             }

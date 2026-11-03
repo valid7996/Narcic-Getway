@@ -651,18 +651,20 @@ fun ServersScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    val isNoirHeader = personalization.themeProfileId == "noir"
+                    val serverIconAccent = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoirHeader) Color(0xFFE2E8F0) else Color(0xFFF72585))
                     Box(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0x28F72585))
-                            .border(1.2.dp, Color(0xFFF72585), RoundedCornerShape(12.dp)),
+                            .background(serverIconAccent.copy(alpha = 0.20f))
+                            .border(1.2.dp, serverIconAccent, RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_dns),
                             contentDescription = null,
-                            tint = Color(0xFFF72585),
+                            tint = serverIconAccent,
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -1332,12 +1334,15 @@ fun ServersScreen(
             val rotation by androidx.compose.animation.core.animateFloatAsState(
                 if (fanOpen) 45f else 0f, label = "fabRotation",
             )
+            val isNoirFab = personalization.themeProfileId == "noir"
+            val fabAccent = personalization.connectColor ?: personalization.serverBorderColor ?: (if (isNoirFab) Color(0xFFE2E8F0) else Color(0xFFF72585))
+            val fabPlusTint = if (fabAccent.luminance() > 0.6f) Color.Black else Color.White
             Surface(
                 shape = CircleShape,
-                color = Color(0xE6140A1C),
+                color = personalization.cardBgColor ?: Color(0xE6140A1C),
                 contentColor = Color.White,
                 shadowElevation = 8.dp,
-                border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFF72585)),
+                border = androidx.compose.foundation.BorderStroke(1.2.dp, fabAccent),
                 modifier = Modifier
                     .height(48.dp)
                     .clip(CircleShape)
@@ -1365,13 +1370,13 @@ fun ServersScreen(
                         modifier = Modifier
                             .size(34.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF72585)),
+                            .background(fabAccent),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             painterResource(Res.drawable.ic_add),
                             stringResource(Res.string.servers_add),
-                            tint = Color.White,
+                            tint = fabPlusTint,
                             modifier = Modifier
                                 .size(18.dp)
                                 .graphicsLayer { rotationZ = rotation },
@@ -1663,7 +1668,14 @@ fun ServersScreen(
             onDismiss = { showManual = false },
             onSave = { link ->
                 showManual = false
-                requestImport(link)
+                scope.launch {
+                    val res = repository.importText(link, "")
+                    res.onSuccess { count ->
+                        platform.toast(getString(Res.string.servers_imported, count))
+                    }.onFailure { err ->
+                        toastImportFailure(err)
+                    }
+                }
             },
         )
     }
@@ -2212,8 +2224,13 @@ private fun GroupTab(
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
 ) {
+    val isNoirTab = personalization.themeProfileId == "noir"
+    val chipPrimary = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoirTab) Color(0xFFE2E8F0) else Color(0xFFF72585))
+    val chipSecondary = if (isNoirTab) Color(0xFF94A3B8) else (personalization.cardWaterColor ?: Color(0xFFC026D3))
+    val chipTextColor = if (chipPrimary.luminance() > 0.6f) Color.Black else Color.White
+
     val bgModifier = if (selected) {
-        Modifier.background(Brush.horizontalGradient(listOf(Color(0xFFF72585), Color(0xFFC026D3))))
+        Modifier.background(Brush.horizontalGradient(listOf(chipPrimary, chipSecondary)))
     } else {
         Modifier.background(Color(0x20FFFFFF))
     }
@@ -2242,7 +2259,7 @@ private fun GroupTab(
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 12.5.sp,
                 ),
-                color = if (selected) Color.White else Color(0xFF9CA3AF),
+                color = if (selected) chipTextColor else Color(0xFF9CA3AF),
                 maxLines = 1,
             )
             if (count > 0) {
@@ -2253,7 +2270,7 @@ private fun GroupTab(
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 11.5.sp,
                     ),
-                    color = if (selected) Color.White.copy(alpha = 0.9f) else Color(0xFF9CA3AF).copy(alpha = 0.75f),
+                    color = if (selected) chipTextColor.copy(alpha = 0.9f) else Color(0xFF9CA3AF).copy(alpha = 0.75f),
                 )
             }
         }
