@@ -2366,6 +2366,7 @@ private fun TrafficStylesDisplay(
     }
 }
 
+@Composable
 private fun MergedDashboardCard(
     info: NetworkInfo,
     downloadBps: Long,
