@@ -1,6 +1,9 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package dev.valid7996.narcicgeteway.ui.servers
+import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import dev.valid7996.narcicgeteway.ui.theme.NeonTheme
 import dev.valid7996.narcicgeteway.ui.theme.NeonWaveAccent
 import dev.valid7996.narcicgeteway.ui.format.formatBytes
@@ -136,7 +139,7 @@ internal fun ServerCard(
         Color(0x357C3AED)
     }
 
-    val pingMs = profile.ping
+    val pingMs = profile.lastPingMs ?: -1
     val (signalLevel, pingColor) = when {
         pingMs in 1..150 -> Pair(3, Color(0xFF22C55E))
         pingMs in 151..350 -> Pair(2, Color(0xFF06B6D4))
@@ -266,26 +269,26 @@ internal fun ServerCard(
                             }
                             onRename?.let {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.action_rename)) },
+                                    text = { Text(stringResource(Res.string.servers_rename)) },
                                     leadingIcon = { Icon(painterResource(Res.drawable.ic_edit), null, Modifier.size(18.dp)) },
                                     onClick = { menuOpen = false; it() },
                                 )
                             }
                             onMoveGroup?.let {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.action_move_group)) },
-                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_folder), null, Modifier.size(18.dp)) },
+                                    text = { Text(stringResource(Res.string.groups_move)) },
+                                    leadingIcon = { Icon(painterResource(Res.drawable.ic_add_link), null, Modifier.size(18.dp)) },
                                     onClick = { menuOpen = false; it() },
                                 )
                             }
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.action_share)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_share), null, Modifier.size(18.dp)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null, Modifier.size(18.dp)) },
                                 onClick = { menuOpen = false; onShare() },
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.action_qr)) },
-                                leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code), null, Modifier.size(18.dp)) },
+                                text = { Text(stringResource(Res.string.action_share_qr)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null, Modifier.size(18.dp)) },
                                 onClick = { menuOpen = false; onShareQr() },
                             )
                             HorizontalDivider()
@@ -323,7 +326,7 @@ internal fun ServerCard(
                 )
                 Spacer(Modifier.width(6.dp))
                 Icon(
-                    painter = painterResource(Res.drawable.ic_content_copy),
+                    painter = painterResource(Res.drawable.ic_content_paste),
                     contentDescription = "Copy",
                     tint = Color(0xFF9CA3AF),
                     modifier = Modifier.size(14.dp),
@@ -368,7 +371,7 @@ internal fun ServerCard(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = "↓ ${formatBytes(profile.totalDownload)}",
+                        text = "↓ ${formatBytes(profile.bytesDown)}",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 11.sp,
@@ -376,7 +379,7 @@ internal fun ServerCard(
                         color = Color(0xFF06B6D4),
                     )
                     Text(
-                        text = "↑ ${formatBytes(profile.totalUpload)}",
+                        text = "↑ ${formatBytes(profile.bytesUp)}",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 11.sp,

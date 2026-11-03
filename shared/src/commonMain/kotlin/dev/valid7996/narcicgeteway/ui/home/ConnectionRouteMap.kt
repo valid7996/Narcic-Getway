@@ -1,5 +1,6 @@
 package dev.valid7996.narcicgeteway.ui.home
 
+import androidx.compose.ui.unit.sp
 import dev.valid7996.narcicgeteway.ui.theme.Personalization
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing

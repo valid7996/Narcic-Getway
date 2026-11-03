@@ -1,5 +1,6 @@
 package dev.valid7996.narcicgeteway.ui.home
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState

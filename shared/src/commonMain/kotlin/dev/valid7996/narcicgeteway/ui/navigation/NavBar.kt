@@ -318,11 +318,7 @@ private fun IosTabIcon(
         label = "tab-icon-tint",
     )
 
-    val iconRes = when (destination) {
-        TopDestination.Home -> dev.valid7996.narcicgeteway.shared.resources.Res.drawable.ic_nrg_mark
-        TopDestination.Servers -> dev.valid7996.narcicgeteway.shared.resources.Res.drawable.ic_dns
-        TopDestination.Settings -> dev.valid7996.narcicgeteway.shared.resources.Res.drawable.ic_settings
-    }
+    val iconRes = destination.icon
 
     Box(
         contentAlignment = Alignment.Center,
