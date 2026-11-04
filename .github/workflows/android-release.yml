@@ -41,7 +41,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "21" }
       - uses: actions/setup-go@v5
-        with: { go-version: "1.26.3" }
+        with: { go-version: "1.27" }
       - name: Install an NDK that can link cronet
         run: |
           set -e

@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: "1.26.3" }
+        with: { go-version: "1.27" }
       - run: bash tools/fetch-cores.sh vendor/xray-core reference/amneziawg-go reference/sing-openvpn
       - name: Build patched Xray with every protocol and collect cronet
         working-directory: vendor/xray-core
@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: "1.26.3" }
+        with: { go-version: "1.27" }
       - run: bash tools/fetch-cores.sh vendor/xray-core reference/amneziawg-go reference/sing-openvpn
       - name: Build patched Xray with every protocol, cronet linked in
         working-directory: vendor/xray-core
@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: "1.26.3" }
+        with: { go-version: "1.27" }
       - run: bash tools/fetch-cores.sh vendor/AndroidLibXrayLite reference/vaydns
       - name: Build zeddns
         run: |

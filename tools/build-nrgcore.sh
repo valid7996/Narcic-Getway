@@ -2,7 +2,7 @@
 set -e -u -x
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-export GOTOOLCHAIN=go1.26.3
+export GOTOOLCHAIN=auto
 export PATH="$HOME/go/bin:$PATH"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 ANDROID_API=24
