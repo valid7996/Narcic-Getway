@@ -18,6 +18,7 @@ import dev.valid7996.narcicgeteway.domain.config.AutoMember
 import dev.valid7996.narcicgeteway.domain.config.AutoSelectBuild
 import dev.valid7996.narcicgeteway.domain.config.AutoSelectIds
 import dev.valid7996.narcicgeteway.domain.config.AutoSelectTuning
+import dev.valid7996.narcicgeteway.domain.config.RuleGroup
 import dev.valid7996.narcicgeteway.domain.config.SniSpoofLink
 import dev.valid7996.narcicgeteway.domain.config.NrgLink
 import dev.valid7996.narcicgeteway.domain.config.ConfigParser
@@ -959,6 +960,42 @@ class ConfigRepository(private val store: KeyValueStore) {
             (p.source is ProfileSource.Link || p.source is ProfileSource.RawJson || p.source is ProfileSource.SingBox) &&
             (excluded.isEmpty() || dev.valid7996.narcicgeteway.domain.config.ProfileCountry.of(p) !in excluded)
     }
+
+    private fun autoMembersOf(members: List<VpnProfile>): List<AutoMember> = members.mapNotNull { p ->
+        when (val src = p.source) {
+            is ProfileSource.Link -> if (SingBoxLinks.handles(src.link)) {
+                runCatching { SingBoxLinks.parse(src.link) }.getOrNull()
+                    ?.let { AutoMember.SingBox(p.id, it.fragment, it.name) }
+            } else {
+                runCatching { ConfigParser.parse(src.link) }.getOrNull()
+                    ?.let { AutoMember.Server(p.id, it) }
+            }
+            is ProfileSource.RawJson -> AutoMember.Custom(p.id, src.json)
+            is ProfileSource.SingBox -> AutoMember.SingBox(p.id, src.json, src.carrier)
+            else -> null
+        }
+    }
+
+    private fun fastestOf(members: List<VpnProfile>): String? =
+        members.filter { (it.lastPingMs ?: -1) > 0 }.minByOrNull { it.lastPingMs!! }?.id
+
+    fun resolveRuleGroups(
+        rulesets: List<dev.valid7996.narcicgeteway.domain.model.RulesetItem>,
+        excluded: Set<String> = emptySet(),
+    ): Map<String, RuleGroup> = rulesets
+        .asSequence()
+        .filter { it.enabled && AutoSelectIds.isAuto(it.outboundTag) }
+        .map { it.outboundTag }
+        .distinct()
+        .mapNotNull { tag ->
+            val subscriptionId = AutoSelectIds.subscriptionOf(tag)
+            if (!subscriptionId.isNullOrEmpty() && _subscriptions.value.none { it.id == subscriptionId }) return@mapNotNull null
+            val members = autoSelectMembers(subscriptionId, excluded)
+            val built = autoMembersOf(members)
+            if (built.isEmpty()) return@mapNotNull null
+            tag to RuleGroup(built, fastestOf(members))
+        }
+        .toMap()
 
     fun buildAutoSelectConfig(
         profile: VpnProfile,

@@ -316,7 +316,7 @@ class StartPlanner(context: Context) {
         } else emptyMap()
         return toBuildOptions(
             geoAssetsAvailable = geoReady,
-            geoCodes = GeoCodeReader.read(appContext),
+            geoCodes = if (geoReady) GeoCodeReader.readFor(GeoAssetsRepository(appContext).assetDir, rulesets) else null,
             carrier = carrier,
             ruleOutbounds = ruleOutbounds,
             ruleGroups = ruleGroups,
