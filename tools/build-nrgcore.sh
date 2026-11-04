@@ -64,6 +64,25 @@ if ! go list -m golang.org/x/mobile >/dev/null 2>&1; then
   go get golang.org/x/mobile/bind
 fi
 
+# In Go >= 1.27, psiphon-tls panics in init() because crypto/tls.ConnectionState has changed layout.
+# Download psiphon-tls, patch unsafe.go to bypass the panic, and replace it so nrgcore loads safely.
+PSI_PATCH_DIR="$ROOT/vendor/psiphon-tls-patched"
+rm -rf "$PSI_PATCH_DIR"
+mkdir -p "$PSI_PATCH_DIR"
+go mod download github.com/Psiphon-Labs/psiphon-tls || true
+PSI_MOD_DIR="$(go list -m -f '{{.Dir}}' github.com/Psiphon-Labs/psiphon-tls 2>/dev/null || true)"
+if [ -n "$PSI_MOD_DIR" ] && [ -d "$PSI_MOD_DIR" ]; then
+  cp -r "$PSI_MOD_DIR"/* "$PSI_PATCH_DIR"/
+  chmod -R u+w "$PSI_PATCH_DIR"
+  sed -i 's/if err != nil {/if false \&\& err != nil {/g' "$PSI_PATCH_DIR/unsafe.go"
+  go mod edit -replace github.com/Psiphon-Labs/psiphon-tls="$PSI_PATCH_DIR"
+fi
+GOPATH_DIR="$(go env GOPATH)"
+for f in $(find "$GOPATH_DIR/pkg/mod/github.com/"*psiphon*tls* -name "unsafe.go" 2>/dev/null); do
+  chmod +w "$f" 2>/dev/null || true
+  sed -i 's/if err != nil {/if false \&\& err != nil {/g' "$f" 2>/dev/null || true
+done
+
 gomobile bind -v -x -trimpath -androidapi "$ANDROID_API" -target="$TARGETS" -tags="$SINGBOX_TAGS" -ldflags="$LDFLAGS" -o "$RAW" \
   github.com/2dust/AndroidLibXrayLite \
   github.com/sagernet/sing-box/experimental/libbox \

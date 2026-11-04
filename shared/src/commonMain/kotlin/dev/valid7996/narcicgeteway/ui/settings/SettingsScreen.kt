@@ -667,7 +667,7 @@ private fun RootPage(
             // درباره و پشتیبانی
             MasonryWideTile(
                 title = "درباره نارسیس و پشتیبانی",
-                subtitle = "نسخه 4.2.4 • ارتباط با کانال و توسعه‌دهندگان",
+                subtitle = "نسخه 4.2.5 • ارتباط با کانال و توسعه‌دهندگان",
                 icon = Res.drawable.ic_info,
                 accentColor = NeonTheme.PrimaryPink,
                 gradientColors = listOf(Color(0xFF2C0B1E), Color(0xFF180510)),
