@@ -26,6 +26,14 @@ object ConfigParser {
     private val UNSUPPORTED_SS_METHODS = setOf("none", "plain")
 
     fun parse(link: String): ServerConfig {
+        val parsed = parseScheme(link)
+        return if (parsed.runOnSingBox && !parsed.protocol.sharedWithSingBox) parsed.copy(runOnSingBox = false) else parsed
+    }
+
+    private fun wantsSingBox(value: String?): Boolean =
+        value?.trim()?.lowercase()?.let { it == "singbox" || it == "sing-box" } == true
+
+    private fun parseScheme(link: String): ServerConfig {
         val trimmed = link.trim()
         val scheme = trimmed.substringBefore("://", "").lowercase()
         return when (val protocol = Protocol.fromScheme(scheme)) {
@@ -33,9 +41,10 @@ object ConfigParser {
             Protocol.VMESS -> parseVmess(trimmed)
             Protocol.TROJAN -> parseTrojan(trimmed)
             Protocol.SHADOWSOCKS -> parseShadowsocks(trimmed)
-            Protocol.SOCKS, Protocol.HTTP -> parseUserPass(trimmed, protocol)
+            Protocol.SOCKS, Protocol.HTTP -> parseUserPass(trimmed, protocol, scheme)
             Protocol.HYSTERIA -> parseHysteria(trimmed)
             Protocol.WIREGUARD, Protocol.AMNEZIAWG -> parseWireguard(trimmed, protocol)
+            Protocol.MASQUE -> parseMasque(trimmed)
             null -> throw ConfigParseException("Unsupported or invalid link scheme")
         }
     }
@@ -62,19 +71,19 @@ object ConfigParser {
 
             pinnedCertSha256 = q["pcs"]?.takeIf { it.isNotBlank() },
             tls = securityFrom(q, defaultSecurity = q["security"] ?: ""),
+            runOnSingBox = wantsSingBox(q["core"]),
         )
     }
 
     private fun parseVmess(link: String): ServerConfig {
-        val fullPayload = link.removePrefix("vmess://")
+        val payload = link.removePrefix("vmess://")
 
-        if (fullPayload.contains('@') || (fullPayload.contains('?') && fullPayload.contains('&'))) {
-            return parseVmessStd(fullPayload)
+        if (payload.contains('@') || (payload.contains('?') && payload.contains('&'))) {
+            return parseVmessStd(payload)
         }
-        val fragmentRemark = if (fullPayload.contains('#')) decodeRemark(fullPayload.substringAfter('#')) else ""
-        val payload = fullPayload.substringBefore('#')
+        val fragment = payload.substringAfter('#', "")
         val obj = runCatching {
-            json.parseToJsonElement(decodeBase64Utf8(payload)) as JsonObject
+            json.parseToJsonElement(decodeBase64Utf8(payload.substringBefore('#'))) as JsonObject
         }.getOrElse { throw ConfigParseException("Invalid vmess payload") }
 
         fun str(key: String): String? = obj[key]?.jsonPrimitive?.contentOrNull()
@@ -87,11 +96,9 @@ object ConfigParser {
         val isGrpc = net == "grpc"
         val isKcp = net == "kcp" || net == "mkcp"
 
-        val remark = fragmentRemark.ifBlank { str("ps").orEmpty() }
-
         return ServerConfig(
             protocol = Protocol.VMESS,
-            remark = remark,
+            remark = str("ps")?.takeIf { it.isNotBlank() } ?: decodeRemark(fragment),
             address = str("add").orEmpty(),
             port = str("port")?.toIntOrNull() ?: 443,
             userId = str("id").orEmpty(),
@@ -120,10 +127,14 @@ object ConfigParser {
                 publicKey = str("pbk")?.takeIf { it.isNotBlank() },
                 shortId = str("sid")?.takeIf { it.isNotBlank() },
                 spiderX = str("spx")?.takeIf { it.isNotBlank() },
+                mldsa65Verify = str("pqv")?.takeIf { it.isNotBlank() },
                 echConfigList = str("ech")?.takeIf { it.isNotBlank() },
                 echOutbound = (str("echOutbound") ?: str("ech_outbound"))?.takeIf { it.isNotBlank() },
+                verifyPeerCertByName = str("vcn")?.takeIf { it.isNotBlank() },
                 allowInsecure = str("allowInsecure") == "1" || str("allowInsecure")?.lowercase() == "true",
             ),
+            pinnedCertSha256 = str("pcs")?.takeIf { it.isNotBlank() },
+            runOnSingBox = wantsSingBox(str("core")),
         )
     }
 
@@ -144,6 +155,7 @@ object ConfigParser {
 
             pinnedCertSha256 = q["pcs"]?.takeIf { it.isNotBlank() },
             tls = securityFrom(q, defaultSecurity = q["security"].orEmpty()),
+            runOnSingBox = wantsSingBox(q["core"]),
         )
     }
 
@@ -163,6 +175,7 @@ object ConfigParser {
 
             pinnedCertSha256 = q["pcs"]?.takeIf { it.isNotBlank() },
             tls = securityFrom(q, defaultSecurity = q["security"] ?: "tls"),
+            runOnSingBox = wantsSingBox(q["core"]),
         )
     }
 
@@ -222,6 +235,7 @@ object ConfigParser {
 
             pinnedCertSha256 = q["pcs"]?.takeIf { it.isNotBlank() },
             tls = securityFrom(q, defaultSecurity = q["security"] ?: if (mapped?.tls == true) "tls" else ""),
+            runOnSingBox = wantsSingBox(q["core"]),
         )
     }
 
@@ -277,7 +291,7 @@ object ConfigParser {
         }
     }
 
-    private fun parseUserPass(link: String, protocol: Protocol): ServerConfig {
+    private fun parseUserPass(link: String, protocol: Protocol, scheme: String): ServerConfig {
         val body = link.substringAfter("://")
         if (protocol == Protocol.HTTP && hasPath(body)) {
             throw ConfigParseException("A web address, not an HTTP proxy")
@@ -309,37 +323,90 @@ object ConfigParser {
             port = p.port ?: if (protocol == Protocol.HTTP) 80 else 1080,
             userId = pass,
             username = user,
-            transport = transportFrom(p.query),
+            transport = transportFrom(p.query).copy(
+                headers = p.query["headers"]?.takeIf { protocol == Protocol.HTTP && it.isNotBlank() },
+            ),
 
             pinnedCertSha256 = p.query["pcs"]?.takeIf { it.isNotBlank() },
-            tls = securityFrom(p.query, defaultSecurity = p.query["security"] ?: ""),
+            tls = securityFrom(p.query, defaultSecurity = p.query["security"] ?: if (scheme == "https") "tls" else ""),
+            runOnSingBox = wantsSingBox(p.query["core"]),
         )
     }
 
     private fun parseHysteria(link: String): ServerConfig {
-        val p = parseLink(link.substringAfter("://"))
+        val body = link.substringAfter("://")
+        val p = parseLink(body)
         if (p.host.isBlank()) throw ConfigParseException("Invalid hysteria link")
+        val portSpec = rawPortSpec(body)
+        val multiPort = portSpec?.takeIf { spec -> spec.any { it == '-' || it == ',' } }
+        val firstPort = multiPort?.split(',', '-')?.firstNotNullOfOrNull { it.trim().toIntOrNull() }
         return ServerConfig(
             protocol = Protocol.HYSTERIA,
             remark = p.fragment,
             address = p.host,
-            port = p.port ?: 443,
+            port = p.port ?: firstPort ?: 443,
             userId = p.userInfo,
             secretKey = p.userInfo,
             tls = securityFrom(p.query, defaultSecurity = "tls"),
+            transport = TransportConfig(finalMask = p.query["fm"]?.takeIf { it.isNotBlank() }),
+            runOnSingBox = wantsSingBox(p.query["core"]),
 
             obfsPassword = p.query["obfs-password"]?.takeIf { it.isNotBlank() },
-            portHopping = p.query["mport"]?.takeIf { it.isNotBlank() },
+            portHopping = p.query["mport"]?.takeIf { it.isNotBlank() } ?: multiPort,
+            hopInterval = (p.query["hopInterval"] ?: p.query["hop_interval"] ?: p.query["mportHopInt"])
+                ?.trim()?.removeSuffix("s")?.takeIf { it.isNotBlank() },
             pinnedCertSha256 = p.query["pinSHA256"]?.takeIf { it.isNotBlank() },
             bandwidthUp = p.query["upmbps"]?.takeIf { it.isNotBlank() },
             bandwidthDown = p.query["downmbps"]?.takeIf { it.isNotBlank() },
         )
     }
 
+    private fun rawPortSpec(body: String): String? {
+        val authority = body.substringBefore('#').substringBefore('?').substringBefore('/').substringAfterLast('@')
+        val spec = if (authority.startsWith("[")) authority.substringAfter("]:", "") else authority.substringAfter(':', "")
+        return spec.trim().takeIf { it.isNotEmpty() }
+    }
+
+    private fun parseMasque(link: String): ServerConfig {
+        val p = parseLink(link.substringAfter("://"))
+        if (p.host.isBlank()) throw ConfigParseException("Invalid masque link")
+        val q = p.query
+        val user = if (p.userInfo.contains(':')) p.userInfo.substringBefore(':') else p.userInfo
+        val pass = if (p.userInfo.contains(':')) p.userInfo.substringAfter(':') else ""
+        fun list(key: String) = q[key]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+        return ServerConfig(
+            protocol = Protocol.MASQUE,
+            remark = p.fragment,
+            address = p.host,
+            port = p.port ?: 443,
+            username = user,
+            userId = pass,
+            secretKey = q["privatekey"]?.trim().orEmpty(),
+            peerPublicKey = q["publickey"]?.trim().orEmpty(),
+            localAddresses = list("address"),
+            dnsServers = list("dns"),
+            pinnedCertSha256 = q["pcs"]?.takeIf { it.isNotBlank() },
+            transport = TransportConfig(
+                network = "masque",
+                host = q["host"]?.takeIf { it.isNotBlank() },
+                path = q["path"]?.takeIf { it.isNotBlank() },
+                headers = q["headers"]?.takeIf { it.isNotBlank() },
+                xhttpExtra = q["extra"]?.takeIf { it.isNotBlank() },
+                finalMask = q["fm"]?.takeIf { it.isNotBlank() },
+            ),
+            tls = securityFrom(q, defaultSecurity = "tls"),
+        )
+    }
+
     private fun parseWireguard(link: String, protocol: Protocol = Protocol.WIREGUARD): ServerConfig {
         val p = parseLink(link.substringAfter("://"))
         if (p.host.isBlank()) throw ConfigParseException("Invalid wireguard link")
-        val addresses = (p.query["address"] ?: p.query["ip"])
+        val param = { names: List<String> ->
+            names.firstNotNullOfOrNull { name ->
+                p.query.entries.firstOrNull { linkKey(it.key) == name }?.value?.trim()?.takeIf { it.isNotEmpty() }
+            }
+        }
+        val addresses = param(listOf("address", "ip", "localaddress", "addresses"))
             ?.split(",")
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }
@@ -351,35 +418,44 @@ object ConfigParser {
             remark = p.fragment,
             address = p.host,
             port = p.port ?: 51820,
-            secretKey = p.userInfo,
-            peerPublicKey = p.query["publickey"] ?: p.query["pbk"] ?: "",
-            preSharedKey = (p.query["presharedkey"] ?: p.query["psk"])?.takeIf { it.isNotBlank() },
+            secretKey = p.userInfo.ifBlank { param(listOf("privatekey", "secretkey", "key")).orEmpty() },
+            peerPublicKey = param(listOf("publickey", "pbk", "peerpublickey", "serverpublickey")).orEmpty(),
+            preSharedKey = param(listOf("presharedkey", "psk")),
             localAddresses = addresses,
-            reserved = p.query["reserved"]?.takeIf { it.isNotBlank() },
-            wireguardMtu = p.query["mtu"]?.toIntOrNull(),
-            wireguardKeepalive = (p.query["keepalive"] ?: p.query["persistentkeepalive"])
-                ?.toIntOrNull()?.takeIf { it > 0 },
-            allowedIps = (p.query["allowedips"] ?: p.query["allowed_ips"])
+            reserved = param(listOf("reserved")),
+            wireguardMtu = param(listOf("mtu"))?.toIntOrNull(),
+            wireguardKeepalive = keepaliveSeconds(
+                param(listOf("keepalive", "persistentkeepalive", "persistentkeepaliveinterval")),
+            ),
+            allowedIps = param(listOf("allowedips"))
                 ?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
-            dnsServers = p.query["dns"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
+            dnsServers = param(listOf("dns"))?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
             awg = awg,
+            transport = TransportConfig(finalMask = p.query["fm"]?.takeIf { it.isNotBlank() }),
+            runOnSingBox = wantsSingBox(p.query["core"]),
         )
     }
 
     fun parseWireguardConf(text: String, remark: String = ""): ServerConfig {
         var section = ""
+        var peers = 0
         val iface = LinkedHashMap<String, String>()
         val peer = LinkedHashMap<String, String>()
         text.lineSequence().forEach { rawLine ->
             val line = rawLine.substringBefore('#').substringBefore(';').trim()
             when {
                 line.isEmpty() -> Unit
-                line.startsWith("[") && line.endsWith("]") -> section = line.trim('[', ']').lowercase()
+                line.startsWith("[") && line.endsWith("]") -> {
+                    section = line.trim('[', ']').lowercase()
+                    if (section == "peer") peers++
+                }
                 else -> {
-                    val k = line.substringBefore('=', "").trim()
+                    val k = line.substringBefore('=', "").trim().lowercase()
                     val v = line.substringAfter('=', "").trim()
-                    if (k.isNotEmpty() && v.isNotEmpty()) {
-                        if (section == "peer") peer[k.lowercase()] = v else iface[k.lowercase()] = v
+                    if (k.isNotEmpty() && v.isNotEmpty() && !(section == "peer" && peers > 1)) {
+                        val target = if (section == "peer") peer else iface
+                        val previous = target[k]
+                        target[k] = if (previous != null && k in REPEATABLE_WG_KEYS) "$previous, $v" else v
                     }
                 }
             }
@@ -410,11 +486,18 @@ object ConfigParser {
             localAddresses = iface["address"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
             dnsServers = iface["dns"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
             wireguardMtu = iface["mtu"]?.toIntOrNull(),
-            wireguardKeepalive = peer["persistentkeepalive"]?.toIntOrNull()?.takeIf { it > 0 },
+            wireguardKeepalive = keepaliveSeconds(peer["persistentkeepalive"]),
             allowedIps = peer["allowedips"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
             awg = awg,
         )
     }
+
+    private val REPEATABLE_WG_KEYS = setOf("address", "allowedips", "dns")
+
+    private fun linkKey(raw: String): String = raw.trim().lowercase().replace("_", "").replace("-", "")
+
+    fun keepaliveSeconds(value: String?): Int? =
+        value?.trim()?.substringBefore('-')?.trim()?.toIntOrNull()?.takeIf { it > 0 }
 
     fun looksLikeWireguardConf(text: String): Boolean {
         var iface = false
@@ -458,6 +541,8 @@ object ConfigParser {
         kcpTti = q["tti"]?.toIntOrNull(),
 
         finalMask = q["fm"]?.takeIf { it.isNotBlank() },
+
+        xdriveSettings = q["xdrive"]?.takeIf { it.isNotBlank() },
     )
 
     private fun securityFrom(q: Map<String, String>, defaultSecurity: String) = SecurityConfig(
@@ -471,7 +556,6 @@ object ConfigParser {
         spiderX = q["spx"],
 
         echConfigList = (q["ech"] ?: q["echConfigList"])?.takeIf { it.isNotBlank() },
-        echOutbound = (q["echOutbound"] ?: q["ech_outbound"])?.takeIf { it.isNotBlank() },
 
         cipherSuites = q["cs"]?.takeIf { it.isNotBlank() },
 

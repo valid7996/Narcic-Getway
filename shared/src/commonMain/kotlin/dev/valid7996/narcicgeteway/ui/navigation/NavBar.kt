@@ -88,6 +88,7 @@ fun NrgNavBar(
         NavBarStyle.IosInteractive,
         NavBarStyle.FloatingPill,
         NavBarStyle.CompactDock,
+        NavBarStyle.Dock,
         NavBarStyle.FullBar,
         NavBarStyle.Minimal,
         NavBarStyle.Underline ->

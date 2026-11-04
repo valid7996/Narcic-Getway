@@ -48,7 +48,13 @@ interface Platform {
 
     fun shareFiles(files: List<Pair<String, ByteArray>>) {}
 
+    fun saveFile(name: String, mime: String, bytes: ByteArray) {}
+
     fun liveStats(): LiveStats = LiveStats()
+
+    val canInstallUpdates: Boolean get() = false
+
+    fun installUpdate(tag: String, url: String) {}
 
     /** The state of the no-root SNI spoof engine, one line ("inactive", "active -> ip:port (sni=..., method=...)", "failed: ..."). */
     fun rstaSpoofStatus(): String = ""

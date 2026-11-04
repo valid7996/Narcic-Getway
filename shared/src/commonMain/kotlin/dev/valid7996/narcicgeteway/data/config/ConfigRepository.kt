@@ -953,10 +953,11 @@ class ConfigRepository(private val store: KeyValueStore) {
         return VpnProfile.fromAutoSelect(subscriptionId, groupName, autoSelectMembers(subscriptionId).size)
     }
 
-    fun autoSelectMembers(subscriptionId: String?): List<VpnProfile> = _profiles.value.filter { p ->
+    fun autoSelectMembers(subscriptionId: String?, excluded: Set<String> = emptySet()): List<VpnProfile> = _profiles.value.filter { p ->
         !p.isLocked &&
             (subscriptionId == null || p.subscriptionId == subscriptionId) &&
-            (p.source is ProfileSource.Link || p.source is ProfileSource.RawJson || p.source is ProfileSource.SingBox)
+            (p.source is ProfileSource.Link || p.source is ProfileSource.RawJson || p.source is ProfileSource.SingBox) &&
+            (excluded.isEmpty() || dev.valid7996.narcicgeteway.domain.config.ProfileCountry.of(p) !in excluded)
     }
 
     fun buildAutoSelectConfig(

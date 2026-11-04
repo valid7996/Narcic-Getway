@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">Narcic Getway</string>
+<?xml version="1.0" encoding="utf-8"?>
+<resources><string name="app_name">Narcic Getway</string>
     <string name="brand_tagline">Private. Fast. Yours.</string>
 
     <string name="nav_home">Home</string>
@@ -956,7 +956,7 @@
     <string name="import_err_ovpn_no_remote">This OpenVPN profile names no server (no \"remote\" line).</string>
     <string name="import_err_ovpn_tap">OpenVPN profiles in TAP mode cannot run on Android.</string>
     <string name="import_err_amnezia_backup">That is an Amnezia backup. Restore it in Amnezia, then share the server from there.</string>
-    <string name="import_err_amnezia_subscription">That is an Amnezia Free/Premium key. Those servers are only reachable from Amnezia&#8217;s own app.</string>
+    <string name="import_err_amnezia_subscription">That is an Amnezia Free/Premium key. Those servers are only reachable from Amnezia’s own app.</string>
     <string name="import_err_amnezia_unsupported">This Amnezia config only offers OpenVPN over Cloak or over Shadowsocks, which Amnezia itself no longer supports.</string>
     <string name="import_err_ovpn_files">This profile keeps its certificates in separate files. Ask your provider for the single-file (inline) version.</string>
     <string name="import_err_ovpn_creds">This profile signs in with a certificate store (pkcs12 / smartcard), which the app cannot use.</string>
@@ -1572,7 +1572,7 @@
     <string name="mhrv_deployment_ids_title">Deployment IDs (Token rotation)</string>
     <string name="mhrv_deployment_ids_desc">If token 1 quota is exhausted, the core automatically rotates to the next.</string>
 
-    <!-- NRG Secure Share and Device Code -->
+    
     <string name="server_card_lock_and_share">Lock &amp; Secure Share (NRG)</string>
     <string name="device_code_title">My Device Code</string>
     <string name="device_code_menu_title">My Device Code (For Locked Config)</string>
@@ -1583,7 +1583,7 @@
     <string name="device_code_copied">Device code copied to clipboard</string>
     <string name="device_code_label">My Device Code:</string>
 
-    <!-- Network Tools and Scanners -->
+    
     <string name="tools_group_network">Network Tools &amp; Scanners</string>
     <string name="tools_cdn_scanner_title">Clean IP Scanner (CDN Scanner)</string>
     <string name="tools_cdn_scanner_sub">Find unfiltered Cloudflare and CDN IPs based on carrier</string>
@@ -1597,7 +1597,7 @@
     <string name="tools_backup_title">Backup &amp; Restore</string>
     <string name="tools_backup_sub">Complete backup of settings, servers and fast data restore</string>
 
-    <!-- Settings Preferences -->
+    
     <string name="settings_animation_mode">Animation Mode</string>
     <string name="settings_anim_normal">Normal</string>
     <string name="settings_anim_slow">Slow Motion</string>
@@ -1609,7 +1609,7 @@
     <string name="settings_onboarding_wizard_title">Welcome &amp; Initial Setup Wizard</string>
     <string name="settings_onboarding_wizard_sub">Reconfigure language, theme and display mode</string>
 
-    <!-- Connection Route Map & Action Labels -->
+    
     <string name="route_map_open">Show Live Route Map</string>
     <string name="route_map_close">Close Route Map</string>
     <string name="route_map_subtitle">Origin to destination route + IPv4 and active config</string>
@@ -1697,7 +1697,7 @@
     <string name="lock_buyer_device_title">Buyer Device Code (Exclusive Lock):</string>
     <string name="lock_buyer_device_label">Buyer Device Code</string>
     <string name="lock_buyer_device_placeholder">e.g. NG-XXXX-XXXX</string>
-    <string name="lock_buyer_device_desc">Buyer copies their code from \'Settings -> About -> My Device Code\'. The config is encrypted and unlocks exclusively on that device.</string>
+    <string name="lock_buyer_device_desc">Buyer copies their code from \'Settings -&gt; About -&gt; My Device Code\'. The config is encrypted and unlocks exclusively on that device.</string>
     <string name="lock_paste_device_code">Paste device code</string>
     <string name="lock_public_desc">This config is encrypted without device binding. Sensitive server details (address, port, UUID) remain fully masked (•••). Suitable for public channels; any user can connect but cannot extract credentials.</string>
     <string name="lock_expiration_title">Validity &amp; Expiration:</string>
@@ -1909,4 +1909,863 @@
 
     <string name="tg_proxies_fetched">Received %1$d live proxies from @%2$s</string>
     <string name="tg_test_ping_btn">Test Ping</string>
+    <string name="subs_reorder">Drag to reorder</string>
+    
+    <string name="info_tap_to_refresh">Tap a tile to fetch it again</string>
+
+    
+    <string name="mode_tun_system_proxy">Also set the system proxy</string>
+    
+    <string name="mode_tun_system_proxy_sum">Apps that read the system proxy, such as Chrome, use the same connection while the tunnel is up. It is cleared when you disconnect.</string>
+    
+    <string name="tray_server">Server</string>
+    
+    <string name="tray_all_servers">All %1$d servers…</string>
+    
+    <string name="tray_mode">Mode</string>
+    
+    <string name="tray_copy_proxy">Copy proxy address</string>
+    
+    <string name="tray_show">Show window</string>
+    
+    <string name="tray_hide">Hide window</string>
+    
+    <string name="tray_quit">Quit Narcic Getway</string>
+    
+    <string name="tray_missing_minimized">Still connected. This desktop has no tray, so Narcic Getway was minimized instead. Disconnect first to quit.</string>
+    
+    <string name="tray_missing_gnome">On GNOME, the AppIndicator extension adds the tray icon.</string>
+    
+    <string name="routing_geo_missing_title">Geo files are missing</string>
+    
+    <string name="routing_geo_missing_body">Rules that use geosite or geoip are off until these files are downloaded. Narcic Getway fetches them on its own once it can.</string>
+    
+    <string name="routing_geo_failed">The download failed. Connect and try again, or add the files in Settings › Asset files.</string>
+    
+    <string name="routing_geo_download">Download</string>
+    
+    <string name="routing_geo_downloading">Downloading…</string>
+    
+    <string name="rule_network_type">Network type</string>
+    
+    <string name="rule_network_type_hint">The rule only applies while the phone is on one of the selected networks. Select none to apply it on every network.</string>
+    
+    <string name="network_type_wifi">Wi-Fi</string>
+    
+    <string name="network_type_cellular">Mobile data</string>
+    
+    <string name="network_type_ethernet">Ethernet</string>
+    
+    <string name="network_type_other">Other</string>
+    
+    <string name="rule_unlock_title">Unlock this rule?</string>
+    
+    <string name="rule_unlock">Unlock</string>
+    
+    <string name="tun_engine_zeptun_default">zeptun (default)</string>
+    
+    <string name="tun_engine_sub_mac">zeptun is the default on macOS. If VPN mode makes this Mac hot or slow, switch to hev.</string>
+    
+    <string name="tun_engine_hev_default">hev-socks5-tunnel (default)</string>
+    
+    <string name="tun_engine_sub_desktop">hev is the default on Windows. zeptun also blocks DNS that tries to leave outside the tunnel through the Windows firewall; switch to it if hev does not work on this PC.</string>
+    
+    <string name="title_pref_local_proxy_port">Local proxy port</string>
+    
+    <string name="toast_local_proxy_port_invalid">Use a port from 1024 to 65534 that Narcic Getway and LAN sharing do not use</string>
+    
+    <string name="settings_backup_group">Settings backup</string>
+    
+    <string name="settings_export">Export settings</string>
+    
+    <string name="settings_export_sum">Saves every setting to a file for another device. The file includes the LAN sharing password.</string>
+    
+    <string name="settings_import">Import settings</string>
+    
+    <string name="settings_import_sum">Loads a settings file exported from Narcic Getway. Configs and subscriptions are not changed.</string>
+    
+    <string name="settings_imported">Settings imported</string>
+    
+    <string name="settings_import_invalid">This file is not a Narcic Getway settings backup</string>
+    
+    <string name="update_downloading">Downloading %1$s</string>
+    
+    <string name="update_verifying">Checking the download…</string>
+    
+    <string name="update_failed">The update could not be installed. You can download it from the release page instead.</string>
+    
+    <string name="update_open_page">Open the download page</string>
+    
+    <string name="subs_preset_title">Change every server in this subscription</string>
+    
+    <string name="subs_preset_hint">Applied each time the subscription updates. Leave a field empty to keep what the server sends.</string>
+    
+    <string name="subs_preset_address">Clean IP for WS, gRPC and XHTTP servers</string>
+    
+    <string name="subs_preset_fingerprint">TLS fingerprint (fp)</string>
+    
+    <string name="subs_preset_alpn">ALPN (auto picks one by transport)</string>
+    
+    <string name="subs_preset_finalmask">Fragment / finalmask JSON (fm)</string>
+    
+    <string name="subs_preset_ciphers">Cipher suites (cs)</string>
+    
+    <string name="subs_preset_ech">ECH config (ech)</string>
+    
+    <string name="add_free_badge">Free</string>
+    
+    <string name="add_free_hint">Psiphon, Tor and Cloudflare WARP are free and need no server of your own. Everything else connects to your own server or subscription.</string>
+    
+    <string name="home_local_proxy">Proxy · %1$s</string>
+    
+    <string name="mode_local_proxy_title">Local proxy address</string>
+    
+    <string name="mode_local_proxy_body">SOCKS5 and HTTP on %1$s. Tap to copy.</string>
+    
+    <string name="fault_port_busy">Port already in use</string>
+    
+    <string name="fault_port_busy_hint">Another app, or another copy of Narcic Getway, is already using the local proxy port. Disconnect it, then try again.</string>
+    
+    <string name="fault_config">The config could not be read</string>
+    
+    <string name="fault_config_hint">The core stopped at a setting in this config before connecting. The details below show which one. Import the config again or update its subscription.</string>
+    
+    <string name="title_pref_lan_auth">Require a username and password</string>
+    
+    <string name="summary_pref_lan_auth">When this is off, anyone on the same network can use the shared proxy.</string>
+    
+    <string name="lan_share_no_auth">No username or password</string>
+    
+    <string name="auto_pref_excluded">Excluded countries</string>
+    
+    <string name="auto_pref_excluded_none">None. Auto can use servers in any country.</string>
+    
+    <string name="auto_pref_excluded_sum">Auto skips servers in %1$s. You can still pick them yourself.</string>
+    
+    <string name="auto_excluded_title">Countries Auto skips</string>
+    
+    <string name="auto_excluded_empty">No countries yet. Test your servers and their countries show up here.</string>
+    
+    <string name="admin_password_remember">Don't ask again on this computer</string>
+    
+    <string name="settings_admin_remember_title">Remember administrator access</string>
+    
+    <string name="settings_admin_remember_body">Narcic Getway asks for your password once each time it runs. Turn this on to stop asking on this computer. Only Narcic Getway's tunnel helper gets the rights, and you are asked once more after an update.</string>
+    
+    <string name="settings_admin_remember_failed">Could not change administrator access</string>
+    
+    <string name="settings_hero_tagline">Make it yours</string>
+    
+    <string name="settings_group_personal">Personalize</string>
+    
+    <string name="settings_group_tools">Tools</string>
+    
+    <string name="settings_group_colors">Colors</string>
+    
+    <string name="settings_group_display">Language and display</string>
+    
+    <string name="settings_group_behaviour">Lists</string>
+    
+    <string name="color_style_title">Color style</string>
+    
+    <string name="color_style_sub">A full palette is generated from your accent color</string>
+    
+    <string name="color_style_narcicgeteway">Narcic Getway</string>
+    
+    <string name="color_style_tonal">Tonal</string>
+    
+    <string name="color_style_vibrant">Vibrant</string>
+    
+    <string name="color_style_expressive">Expressive</string>
+    
+    <string name="color_style_rainbow">Rainbow</string>
+    
+    <string name="color_style_fruit_salad">Fruit salad</string>
+    
+    <string name="color_style_fidelity">Fidelity</string>
+    
+    <string name="color_style_neutral">Neutral</string>
+    
+    <string name="color_style_monochrome">Monochrome</string>
+    
+    <string name="contrast_title">Contrast</string>
+    
+    <string name="contrast_standard">Standard</string>
+    
+    <string name="contrast_medium">Medium</string>
+    
+    <string name="contrast_high">High</string>
+    
+    <string name="portal_hint">Tap to connect</string>
+    
+    <string name="home_design_title">App design</string>
+    
+    <string name="home_design_sub">The look of the whole app: home, type, shapes and motion. Colours stay separate.</string>
+    
+    <string name="home_design_old">Old</string>
+    
+    <string name="home_design_old_note">Button, tile and card styles belong to the Old design. Pick Old to change them.</string>
+    
+    <string name="home_design_pixel">Pixel</string>
+    
+    <string name="pixel_tap_cancel">Tap to cancel</string>
+    
+    <string name="pixel_other_server">Other server</string>
+    
+    <string name="title_pref_use_system_ca">Trust this device's certificates</string>
+    
+    <string name="summary_pref_use_system_ca">Check TLS servers against the system certificate store instead of the root list built into the core. Turn on only if you installed your own certificate authority.</string>
+    
+    <string name="manual_vless_encryption">Encryption (VLESS Encryption, none if unused)</string>
+    
+    <string name="manual_hop_interval">Hop interval in seconds (e.g. 30 or 20-40)</string>
+    
+    <string name="manual_masque_warp">Cloudflare WARP</string>
+    
+    <string name="manual_masque_warp_hint">WARP uses a registered device key instead of a username and password. Add one from Servers › Add › Cloudflare WARP.</string>
+    
+    <string name="manual_masque_warp_private_key">Device private key (ECDSA P-256)</string>
+    
+    <string name="manual_masque_warp_public_key">Endpoint public key</string>
+    
+    <string name="manual_masque_http">HTTP version</string>
+    
+    <string name="manual_masque_path">Path (empty = /.well-known/masque/ip/*/*/)</string>
+    
+    <string name="manual_masque_authority">Authority host (optional)</string>
+    
+    <string name="manual_masque_headers">Extra headers (Name: value; Name: value)</string>
+    
+    <string name="manual_masque_dns">DNS inside the tunnel (IP addresses)</string>
+    
+    <string name="manual_masque_extra">Extra masqueSettings JSON (optional)</string>
+    
+    <string name="manual_xdrive_hint">XDRIVE carries VLESS through a storage service. It needs VLESS Encryption on both sides; multiplexing is turned on for it automatically.</string>
+    
+    <string name="manual_xdrive_settings">xdriveSettings JSON (service, remoteFolder, secrets…)</string>
+    
+    <string name="warp_add_title">Cloudflare WARP</string>
+    
+    <string name="warp_add_body">Registers a free WARP device with Cloudflare and adds it as a MASQUE server. If you are connected, registration goes through the current connection.</string>
+    
+    <string name="warp_add_terms">By adding WARP you accept Cloudflare's terms of service (cloudflare.com/application/terms).</string>
+    
+    <string name="warp_registering">Registering with Cloudflare…</string>
+    
+    <string name="warp_failed">Registration failed: %1$s</string>
+    
+    <string name="warp_add_action">Register</string>
+    
+    <string name="warp_added">Cloudflare WARP added</string>
+    
+    <string name="manual_core">Core</string>
+    
+    <string name="singbox_blocked_title">sing-box can't run this server:</string>
+    
+    <string name="singbox_blocker_protocol">sing-box has no %1$s</string>
+    
+    <string name="singbox_blocker_transport">sing-box has no %1$s transport</string>
+    
+    <string name="singbox_blocker_tcp_header">sing-box has no HTTP header camouflage for TCP</string>
+    
+    <string name="singbox_blocker_vless_encryption">sing-box has no VLESS encryption</string>
+    
+    <string name="singbox_blocker_flow">sing-box has no %1$s flow</string>
+    
+    <string name="singbox_blocker_finalmask">sing-box doesn't support finalmask</string>
+    
+    <string name="singbox_blocker_pinned_cert">sing-box can't pin a certificate hash</string>
+    
+    <string name="singbox_blocker_verify_name">sing-box can't check the certificate against another name (vcn)</string>
+    
+    <string name="singbox_blocker_reality">Newer Xray servers reject sing-box's REALITY handshake, so REALITY stays on Xray</string>
+    
+    <string name="singbox_blocker_fingerprint">sing-box has no %1$s fingerprint</string>
+    
+    <string name="singbox_blocker_cipher">sing-box has no %1$s cipher</string>
+    
+    <string name="singbox_blocker_socks_tls">sing-box has no SOCKS over TLS</string>
+    
+    <string name="singbox_blocker_grpc_mode">sing-box gRPC has no multi mode or custom path</string>
+    
+    <string name="singbox_blocker_grpc_authority">sing-box gRPC can't set a separate authority</string>
+    
+    <string name="singbox_blocker_ss_transport">sing-box carries Shadowsocks only over TCP, HTTP obfs or WebSocket</string>
+    
+    <string name="singbox_blocker_bandwidth">sing-box can't read the bandwidth “%1$s”</string>
+    
+    <string name="singbox_blocker_address">sing-box can't read the address “%1$s”</string>
+    
+    <string name="singbox_blocker_reserved">sing-box can't read the reserved bytes “%1$s”</string>
+    
+    <string name="subs_preset_core">Core</string>
+    
+    <string name="subs_preset_core_link">As each link says</string>
+    
+    <string name="subs_preset_core_singbox">sing-box where it can run</string>
+    
+    <string name="sb_congestion">Congestion control</string>
+    
+    <string name="sb_udp_relay">UDP relay mode</string>
+    
+    <string name="sb_udp_over_stream">UDP over stream</string>
+    
+    <string name="sb_zero_rtt">0-RTT handshake</string>
+    
+    <string name="sb_heartbeat">Heartbeat (e.g. 10s)</string>
+    
+    <string name="sb_idle_check">Idle session check interval (e.g. 30s)</string>
+    
+    <string name="sb_idle_timeout">Idle session timeout (e.g. 30s)</string>
+    
+    <string name="sb_min_idle">Minimum idle sessions</string>
+    
+    <string name="sb_recv_window_conn">Receive window per connection (bytes)</string>
+    
+    <string name="sb_recv_window">Receive window (bytes)</string>
+    
+    <string name="sb_disable_mtu">Disable path MTU discovery</string>
+    
+    <string name="sb_quic">Use QUIC</string>
+    
+    <string name="sb_quic_congestion">QUIC congestion control</string>
+    
+    <string name="sb_insecure_concurrency">Parallel connections</string>
+    
+    <string name="sb_socks4a">SOCKS4a (server resolves names)</string>
+    
+    <string name="sb_disable_sni">Don't send SNI</string>
+    
+    <string name="sb_edit_json">Edit as JSON</string>
+    
+    <string name="action_back">Back</string>
+    
+    <string name="action_clear">Clear</string>
+    
+    <string name="bento_slide_on">Slide to connect</string>
+    
+    <string name="bento_slide_off">Slide to disconnect</string>
+    
+    <string name="bento_slide_retry">Slide to try again</string>
+    
+    <string name="bento_tap_cancel">Tap to cancel</string>
+    
+    <string name="bento_search_settings">Search settings</string>
+    
+    <string name="bento_all_settings">All settings</string>
+    
+    <string name="bento_edit_tiles">Edit tiles</string>
+    
+    <string name="bento_done">Done</string>
+    
+    <string name="bento_edit_hint">Hold a tile for a moment, then drag it anywhere. It lands where you let go. The corner button changes its size.</string>
+    
+    <string name="bento_add_tile">Add tile</string>
+    
+    <string name="bento_add_tile_empty">Every tile is already on the board</string>
+    
+    <string name="bento_reset">Reset</string>
+    
+    <string name="bento_hide_tile">Hide %1$s</string>
+    
+    <string name="bento_resize_tile">Resize %1$s</string>
+    
+    <string name="bento_size_small">Small</string>
+    
+    <string name="bento_size_wide">Wide</string>
+    
+    <string name="bento_size_tall">Tall</string>
+    
+    <string name="bento_hidden_title">Hidden tiles</string>
+    
+    <string name="bento_no_results">No settings match</string>
+    
+    <string name="bento_move_earlier">Move earlier</string>
+    
+    <string name="bento_move_later">Move later</string>
+    
+    <string name="bento_current_server">Current server</string>
+    
+    <string name="bento_connected_for">Connected for</string>
+    
+    <string name="bento_data_session">Data this session</string>
+    
+    <string name="bento_fastest">Fastest servers</string>
+    
+    <string name="bento_no_server">No server yet</string>
+    
+    <string name="bento_no_server_hint">Tap to add or pick a server</string>
+    
+    <string name="bento_sub_meta">%1$d servers</string>
+    
+    <string name="bento_updated_now">updated just now</string>
+    
+    <string name="bento_updated_minutes">updated %1$d min ago</string>
+    
+    <string name="bento_updated_hours">updated %1$d h ago</string>
+    
+    <string name="bento_updated_days">updated %1$d d ago</string>
+    
+    <string name="bento_group_look">Bento look</string>
+    
+    <string name="bento_palette_title">Palette</string>
+    
+    <string name="bento_palette_brand">ZedLime</string>
+    
+    <string name="bento_palette_accent">Accent</string>
+    
+    <string name="bento_palette_pastel">Pastel</string>
+    
+    <string name="bento_palette_vivid">Vivid</string>
+    
+    <string name="bento_palette_mono">Mono</string>
+    
+    <string name="bento_corners_title">Corners</string>
+    
+    <string name="bento_corners_leaf">Leaf</string>
+    
+    <string name="bento_corners_round">Round</string>
+    
+    <string name="bento_corners_soft">Soft</string>
+    
+    <string name="bento_title_title">Page titles</string>
+    
+    <string name="bento_title_huge">Huge</string>
+    
+    <string name="bento_title_large">Large</string>
+    
+    <string name="bento_title_compact">Compact</string>
+    
+    <string name="bento_density_title">Spacing</string>
+    
+    <string name="bento_density_comfortable">Roomy</string>
+    
+    <string name="bento_density_compact">Compact</string>
+    
+    <string name="bento_motifs">Shape motifs</string>
+    
+    <string name="bento_motifs_sum">Large faded shapes behind tiles and cards</string>
+    
+    <string name="bento_playful">Playful touch</string>
+    
+    <string name="bento_playful_sum">Tiles squash and badges spin when pressed</string>
+    
+    <string name="bento_group_board">Settings board</string>
+    
+    <string name="bento_indexes">Tile numbers</string>
+    
+    <string name="bento_indexes_sum">Show 01, 02… on tiles and page headers</string>
+    
+    <string name="bento_live_tiles">Live summaries</string>
+    
+    <string name="bento_live_tiles_sum">Tiles show your current values, like MTU or DNS</string>
+    
+    <string name="bento_reset_tiles">Reset tile layout</string>
+    
+    <string name="bento_group_dock">Navigation dock</string>
+    
+    <string name="bento_dock_labels_title">Labels</string>
+    
+    <string name="bento_dock_labels_active">Current</string>
+    
+    <string name="bento_dock_labels_always">Always</string>
+    
+    <string name="bento_dock_labels_never">Never</string>
+    
+    <string name="bento_dock_autohide">Hide while scrolling</string>
+    
+    <string name="bento_dock_autohide_sum">Slides away when you scroll down and comes back when you scroll up</string>
+    
+    <string name="bento_group_home">Home screen</string>
+    
+    <string name="bento_connect_title">Connect control</string>
+    
+    <string name="bento_connect_slide">Slide</string>
+    
+    <string name="bento_connect_button">Button</string>
+    
+    <string name="bento_wave">Wave on the bar</string>
+    
+    <string name="bento_wave_sum">Moves only while connecting</string>
+    
+    <string name="bento_home_speed">Speed tiles</string>
+    
+    <string name="bento_home_session">Session tiles</string>
+    
+    <string name="bento_home_quick">Fastest servers</string>
+    
+    <string name="bento_home_chips">Shortcut chips</string>
+    
+    <string name="bento_reset_look">Reset Bento look</string>
+    
+    <string name="home_design_bento">Bento</string>
+    
+    <string name="bento_search_servers">Search servers</string>
+    
+    <string name="bento_live_mode_vpn">VPN mode</string>
+    
+    <string name="bento_live_mode_proxy">Proxy only</string>
+    
+    <string name="bento_live_mode_system">System proxy</string>
+    
+    <string name="bento_live_vpn">MTU %1$d · %2$s</string>
+    
+    <string name="bento_live_kill">kill switch on</string>
+    
+    <string name="bento_live_rules">%1$d rules</string>
+    
+    <string name="bento_detect_location_title">Show server locations</string>
+    
+    <string name="bento_detect_location_sum">Look up each server's country while testing and show its flag in the server list. Server addresses are sent to a lookup service.</string>
+    
+    <string name="bento_net_change_title">Rebuild on network change</string>
+    
+    <string name="bento_net_change_sum">When you move between Wi-Fi and mobile data, the tunnel moves too, so WireGuard and Hysteria keep working.</string>
+    
+    <string name="bento_proxy_auth_title">Password on the local proxy</string>
+    
+    <string name="bento_proxy_auth_sum">Other apps on this phone can't use the tunnel's SOCKS port to reveal the VPN. Proxy-only mode is not changed.</string>
+    
+    <string name="sb_snell_psk">PSK</string>
+    
+    <string name="sb_snell_version">Snell version</string>
+    
+    <string name="sb_snell_obfs">Obfuscation</string>
+    
+    <string name="sb_snell_obfs_host">Obfuscation host</string>
+    
+    <string name="sb_snell_userkey">User key (optional)</string>
+    
+    <string name="sb_snell_reuse">Reuse connections</string>
+    
+    <string name="sb_network">Network</string>
+    
+    <string name="settings_group_notification">Notification</string>
+    
+    <string name="nav_subs">Subscriptions</string>
+    
+    <string name="nav_speed">Speed test</string>
+    
+    <string name="nav_map">Map</string>
+    
+    <string name="nav_logs">Logs</string>
+    
+    <string name="nav_routing">Routing</string>
+    
+    <string name="nav_apps">Apps</string>
+    
+    <string name="navbar_page_sub">Pick the tabs, their order and the bar style</string>
+    
+    <string name="navbar_tabs">Tabs in the bar</string>
+    
+    <string name="navbar_count">%1$d of %2$d tabs. Drag the handle to reorder.</string>
+    
+    <string name="navbar_add">Add a tab</string>
+    
+    <string name="navbar_style">Bar style</string>
+    
+    <string name="navbar_fixed">Always in the bar</string>
+    
+    <string name="navbar_remove">Remove %1$s</string>
+    
+    <string name="nav_style_dock">Bento dock</string>
+    
+    <string name="font_title">Font</string>
+    
+    <string name="font_auto">Automatic</string>
+    
+    <string name="font_vazirmatn">Vazirmatn</string>
+    
+    <string name="font_estedad">Estedad</string>
+    
+    <string name="font_system">System font</string>
+    
+    <string name="scale_title">Scale everything</string>
+    
+    <string name="scale_custom">Custom size</string>
+    
+    <string name="scale_apply">Apply</string>
+    
+    <string name="scale_note">Cards, buttons, icons and text grow or shrink together. Any value from %1$s to %2$s. Text size above still applies on top.</string>
+    
+    <string name="bento_connect_morph">Shape</string>
+    
+    <string name="bento_connect_rail">Switch</string>
+    
+    <string name="bento_connect_hold">Hold</string>
+    
+    <string name="bento_connect_tile">Big tile</string>
+    
+    <string name="bento_tap_connect">Tap to connect</string>
+    
+    <string name="bento_tap_disconnect">Tap to disconnect</string>
+    
+    <string name="bento_hold_connect">Hold to connect</string>
+    
+    <string name="bento_hold_disconnect">Hold to disconnect</string>
+    
+    <string name="bento_hold_note">Let go early to cancel</string>
+    
+    <string name="notif_style_title">Notification look</string>
+    
+    <string name="notif_style_bento">Bento card</string>
+    
+    <string name="notif_style_system">System</string>
+    
+    <string name="notif_style_note">Android draws Live Update notifications itself, so the Bento card appears once Live Update is off.</string>
+    
+    <string name="map_ip">IP address</string>
+    
+    <string name="map_network">Network</string>
+    
+    <string name="map_refresh">Check again</string>
+    
+    <string name="map_route">Route</string>
+    
+    <string name="speedtest_loaded_down">Ping while downloading</string>
+    
+    <string name="speedtest_loaded_up">Ping while uploading</string>
+    
+    <string name="speedtest_quality">Good for (Cloudflare scoring)</string>
+    
+    <string name="speedtest_streaming">Video streaming</string>
+    
+    <string name="speedtest_gaming">Online gaming</string>
+    
+    <string name="speedtest_rtc">Video calls</string>
+    
+    <string name="speedtest_grade_bad">Bad</string>
+    
+    <string name="speedtest_grade_poor">Poor</string>
+    
+    <string name="speedtest_grade_average">Average</string>
+    
+    <string name="speedtest_grade_good">Good</string>
+    
+    <string name="speedtest_grade_great">Great</string>
+    
+    <string name="speedtest_server">Cloudflare server</string>
+    
+    <string name="speedtest_steps">Cloudflare steps</string>
+    
+    <string name="speedtest_save_data">Save data</string>
+    
+    <string name="speedtest_save_data_sum">Stop the test once it has used %1$s MB</string>
+    
+    <string name="speedtest_data_full">Full Cloudflare test. Faster connections use more data.</string>
+    
+    <string name="onb_finish">Finish</string>
+    
+    <string name="onb_region_title">Where are you?</string>
+    
+    <string name="onb_region_body">Sites and addresses from your own country can skip the tunnel. Pick the country you connect from.</string>
+    
+    <string name="onb_region_picked">Your country</string>
+    
+    <string name="onb_region_search">Search countries</string>
+    
+    <string name="onb_region_change">Region rules</string>
+    
+    <string name="onb_region_change_sum">Pick your country again and rebuild the routing rules</string>
+    
+    <string name="onb_rules_title">Traffic rules</string>
+    
+    <string name="onb_rules_body">Built for your country. You can change every rule later in Settings → Routing.</string>
+    
+    <string name="onb_rules_apply">Replace my current rules</string>
+    
+    <string name="onb_rules_apply_sum">Off keeps the routing rules you already have</string>
+    
+    <string name="onb_rules_proxy_all">Send everything through the tunnel</string>
+    
+    <string name="onb_rules_proxy_all_sum">Ignore country rules; only local network stays direct</string>
+    
+    <string name="onb_rules_local">%1$s directly</string>
+    
+    <string name="onb_rules_local_sum">Domestic sites and addresses skip the tunnel</string>
+    
+    <string name="onb_rules_ads">Block ads</string>
+    
+    <string name="onb_rules_ads_sum">Uses the ad domain list from the routing data</string>
+    
+    <string name="onb_rules_quic">Block QUIC (UDP 443)</string>
+    
+    <string name="onb_rules_quic_sum">Apps fall back to TCP, which most tunnels carry better</string>
+    
+    <string name="onb_rules_torrent">BitTorrent directly</string>
+    
+    <string name="onb_rules_torrent_sum">Keeps torrent traffic off your server</string>
+    
+    <string name="onb_rules_preview">%1$d rules</string>
+    
+    <string name="onb_look_title">Make it yours</string>
+    
+    <string name="onb_look_body">Theme, colours and the connect control. Everything here can be changed later.</string>
+    
+    <string name="onb_ready_title">All set</string>
+    
+    <string name="onb_ready_rules">%1$d routing rules ready</string>
+    
+    <string name="onb_ready_kept">Your routing rules stay as they were</string>
+    
+    <string name="onb_replay_title">Run setup again</string>
+    
+    <string name="onb_replay_sub">Language, country rules and look, step by step</string>
+    
+    <string name="onb_region_needed">Choose your country from the list to continue.</string>
+    
+    <string name="onb_region_detected">Detected from %1$s</string>
+    
+    <string name="onb_region_change_hint">Not right? Tap your country below.</string>
+    
+    <string name="onb_region_from_sim">your SIM card</string>
+    
+    <string name="onb_region_from_mobile">your mobile network</string>
+    
+    <string name="onb_region_from_network">your current Wi-Fi or data connection</string>
+    
+    <string name="onb_region_from_language">your phone's language and region</string>
+    
+    <string name="sb_snell_psk_short">Snell v6 servers need a key of 12 to 255 bytes.</string>
+    
+    <string name="dns_region_title">Local DNS for direct sites</string>
+    
+    <string name="dns_region_sum">Domestic sites resolve through %1$s, so they get local servers</string>
+    
+    <string name="ipd_title">IP and connection</string>
+    
+    <string name="ipd_subtitle">What websites can see about this connection</string>
+    
+    <string name="ipd_open">Full IP details</string>
+    
+    <string name="ipd_open_sum">ISP, ASN, reputation, registry and DNS leak check</string>
+    
+    <string name="ipd_failed">The lookup services did not answer. Check the connection and try again.</string>
+    
+    <string name="ipd_sources">Sources: %1$s</string>
+    
+    <string name="ipd_sources_tunnel">Sources: %1$s · checked through the tunnel</string>
+    
+    <string name="ipd_public_ip">Public IP</string>
+    
+    <string name="ipd_via_tunnel">Through the tunnel</string>
+    
+    <string name="ipd_direct">Without VPN</string>
+    
+    <string name="ipd_hostname">Hostname (PTR)</string>
+    
+    <string name="ipd_country">Country</string>
+    
+    <string name="ipd_timezone">Time zone</string>
+    
+    <string name="ipd_local_time">Time there: %1$s</string>
+    
+    <string name="ipd_tz_mismatch">Your device's time zone (%1$s) differs from this IP's. Some sites use this to tell that a VPN is on.</string>
+    
+    <string name="ipd_network">Network</string>
+    
+    <string name="ipd_isp">ISP</string>
+    
+    <string name="ipd_org">Organization</string>
+    
+    <string name="ipd_asn">ASN</string>
+    
+    <string name="ipd_range">Network range</string>
+    
+    <string name="ipd_usage">Connection type</string>
+    
+    <string name="ipd_coords">Coordinates</string>
+    
+    <string name="ipd_usage_hosting">Data center</string>
+    
+    <string name="ipd_usage_isp">Home or office internet</string>
+    
+    <string name="ipd_usage_mobile">Mobile network</string>
+    
+    <string name="ipd_usage_business">Business</string>
+    
+    <string name="ipd_usage_education">Education</string>
+    
+    <string name="ipd_usage_government">Government</string>
+    
+    <string name="ipd_reputation">IP reputation</string>
+    
+    <string name="ipd_reputation_note">Sites and apps use lists like this to block VPNs or ask for extra checks.</string>
+    
+    <string name="ipd_vpn_yes">Known VPN</string>
+    
+    <string name="ipd_vpn_named">VPN: %1$s</string>
+    
+    <string name="ipd_vpn_no">Not a known VPN</string>
+    
+    <string name="ipd_proxy_yes">Known proxy</string>
+    
+    <string name="ipd_proxy_no">Not a proxy</string>
+    
+    <string name="ipd_tor_yes">Tor exit</string>
+    
+    <string name="ipd_tor_no">Not Tor</string>
+    
+    <string name="ipd_dc_yes">Data center</string>
+    
+    <string name="ipd_dc_no">Not a data center</string>
+    
+    <string name="ipd_abuse_yes">Abuse reported</string>
+    
+    <string name="ipd_abuse_no">No abuse reports</string>
+    
+    <string name="ipd_registry">Registry (RDAP)</string>
+    
+    <string name="ipd_reg_name">Network name</string>
+    
+    <string name="ipd_reg_owner">Registered to</string>
+    
+    <string name="ipd_reg_date">Registered on</string>
+    
+    <string name="ipd_reg_rir">Registry</string>
+    
+    <string name="ipd_dns">DNS and leaks</string>
+    
+    <string name="ipd_dns_offline">Connect first. The check sends a DNS query through the tunnel, the same way other apps do.</string>
+    
+    <string name="ipd_dns_failed">The DNS check got no answer.</string>
+    
+    <string name="ipd_dns_resolver">DNS server that answered</string>
+    
+    <string name="ipd_dns_answer">Answer</string>
+    
+    <string name="ipd_dns_country">DNS country</string>
+    
+    <string name="ipd_dns_ok">No leak</string>
+    
+    <string name="ipd_dns_leak">Leak: DNS goes out from %1$s</string>
+    
+    <string name="ipd_dns_elsewhere">DNS is in another country</string>
+    
+    <string name="ipd_dns_fake_chip">FakeDNS</string>
+    
+    <string name="ipd_dns_fake">FakeDNS is on: apps get placeholder addresses and the core resolves the real ones through the tunnel.</string>
+    
+    <string name="ipd_ipv6">IPv6</string>
+    
+    <string name="ipd_ipv6_on">Active</string>
+    
+    <string name="ipd_ipv6_off">None</string>
+    
+    <string name="manual_edit_title">Edit server</string>
+    
+    <string name="bento_palette_citrus">Citrus</string>
+    
+    <string name="bento_palette_matcha">Matcha</string>
+    
+    <string name="bento_palette_neon">Neon</string>
+    
+    <string name="bento_palette_pistachio">Pistachio</string>
+    
+    <string name="bento_palette_ocean">Ocean</string>
+    
+    <string name="bento_palette_sunset">Sunset</string>
+    
+    <string name="bento_palette_berry">Berry</string>
+
 </resources>

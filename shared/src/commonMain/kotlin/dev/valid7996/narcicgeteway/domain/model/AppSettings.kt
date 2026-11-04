@@ -27,9 +27,22 @@ enum class AppLanguage(val tag: String?) {
     Arabic("ar"),
     Chinese("zh"),
     Russian("ru"),
+    Spanish("es"),
 }
 
 enum class RoutingMode { Global, BypassLan, BypassIran, BypassLanAndIran }
+
+enum class NotifStyle { System, Bento }
+
+enum class UiFont { Auto, GoogleSans, Inter, Vazirmatn, Estedad, Nunito, System }
+
+object UiScale {
+    const val MIN = 0.5f
+    const val MAX = 2f
+    const val DEFAULT = 1f
+
+    fun clamp(value: Float): Float = if (value.isNaN()) DEFAULT else value.coerceIn(MIN, MAX)
+}
 
 enum class DomainStrategy(val value: String) {
     AsIs("AsIs"),
@@ -82,6 +95,7 @@ enum class NavBarStyle {
     ExpressivePill,
 
     CompactDock,
+    Dock,
 
     Underline,
 
@@ -495,6 +509,21 @@ data class AppSettings(
 
     val torFakeSniEnabled: Boolean = false,
     val torFakeSniHosts: String = "",
+
+    val autoSelectExcludedCountries: List<String> = emptyList(),
+    val localProxyAuth: Boolean = false,
+    val reconnectOnNetworkChange: Boolean = true,
+    val useSystemCa: Boolean = false,
+    val useHevOnMac: Boolean = false,
+    val localProxyPort: Int = dev.valid7996.narcicgeteway.domain.config.LocalPorts.XRAY_SOCKS,
+    val lanShareAuth: Boolean = true,
+    val detectServerLocation: Boolean = false,
+    val regionCode: String = "",
+    val notifStyle: NotifStyle = NotifStyle.System,
+    val bento: BentoPrefs = BentoPrefs(),
+    val uiFont: UiFont = UiFont.Auto,
+    val uiScale: Float = UiScale.DEFAULT,
+
 ) {
     val localProxyForced: Boolean get() = runMode == RunMode.Vpn && useHevTun
 

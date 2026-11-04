@@ -9,12 +9,12 @@ sealed interface DeepLinkRequest {
 object DeepLinkParser {
     val SCHEMES: Set<String> = setOf(
         "narcicgeteway", "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
-        "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard",
+        "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "wg", "awg",
         "socks", "socks5", "snispoof", "aether", "sstp", "nrg", "zsx",
     )
 
     private val CONFIG_SCHEMES = setOf(
-        "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "socks", "socks5",
+        "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "wg", "awg", "socks", "socks5",
         "snispoof", "aether", "sstp", "nrg", "zsx",
     )
 

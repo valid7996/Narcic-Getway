@@ -12,11 +12,19 @@ data class RulesetItem(
     val port: String = "",
     val network: String = "",
     val protocol: List<String> = emptyList(),
+    val networkType: List<String> = emptyList(),
     val enabled: Boolean = true,
 
     val locked: Boolean = false,
 ) {
     companion object {
+        const val NETWORK_WIFI = "wifi"
+        const val NETWORK_CELLULAR = "cellular"
+        const val NETWORK_ETHERNET = "ethernet"
+        const val NETWORK_OTHER = "other"
+
+        val NETWORK_TYPES = listOf(NETWORK_WIFI, NETWORK_CELLULAR, NETWORK_ETHERNET, NETWORK_OTHER)
+
         const val OUTBOUND_PROXY = "proxy"
         const val OUTBOUND_DIRECT = "direct"
         const val OUTBOUND_BLOCK = "block"
@@ -41,7 +49,10 @@ data class RulesetItem(
 
     val isEmpty: Boolean
         get() = domain.isEmpty() && ip.isEmpty() && port.isBlank() &&
-            network.isBlank() && protocol.isEmpty()
+            network.isBlank() && protocol.isEmpty() && networkType.isEmpty()
+
+    fun appliesOn(currentNetworkType: String?): Boolean =
+        networkType.isEmpty() || (currentNetworkType != null && currentNetworkType in networkType)
 }
 
 class RulesetPreset(val label: String, private val make: () -> List<RulesetItem>) {
@@ -169,8 +180,65 @@ object RoutingPresets {
     private val directLanIp = { rule("Direct LAN IP", RulesetItem.OUTBOUND_DIRECT, ip = listOf("geoip:private")) }
     private val directLanDomain = { rule("Direct LAN domains", RulesetItem.OUTBOUND_DIRECT, domain = listOf("geosite:private")) }
 
+    data class RegionOptions(
+        val directLocal: Boolean = true,
+        val blockAds: Boolean = true,
+        val blockQuic: Boolean = true,
+        val directTorrent: Boolean = true,
+        val proxyAll: Boolean = false,
+    )
+
+    data class RegionDns(val name: String, val address: String)
+
+    fun regionDirectDns(code: String): RegionDns? = when (code.trim().uppercase()) {
+        "IR" -> RegionDns("Shecan", "178.22.122.100")
+        "CN" -> RegionDns("AliDNS", "223.5.5.5")
+        "RU" -> RegionDns("Yandex", "77.88.8.8")
+        else -> null
+    }
+
+    fun forRegion(code: String, options: RegionOptions = RegionOptions()): List<RulesetItem> {
+        val cc = code.trim().lowercase().takeIf { it.length == 2 && it.all { ch -> ch in 'a'..'z' } }
+        return buildList {
+            if (options.directTorrent && !options.proxyAll) add(rule("Bypass BitTorrent", RulesetItem.OUTBOUND_DIRECT, protocol = listOf("bittorrent")))
+            if (options.blockQuic) add(blockUdp443())
+            if (options.blockAds) add(rule("Block ads", RulesetItem.OUTBOUND_BLOCK, domain = listOf("geosite:category-ads-all")))
+            add(directLanIp())
+            add(directLanDomain())
+            if (options.proxyAll || cc == null) {
+                add(rule("Proxy everything else", RulesetItem.OUTBOUND_PROXY, port = "0-65535"))
+                return@buildList
+            }
+            if (!options.directLocal) return@buildList
+            when (cc) {
+                "ir" -> {
+                    add(rule("Bypass Iran domains", RulesetItem.OUTBOUND_DIRECT, domain = listOf("domain:ir", "geosite:category-ir")))
+                    add(rule("Bypass Iran IP", RulesetItem.OUTBOUND_DIRECT, ip = listOf("geoip:ir")))
+                }
+                "cn" -> {
+                    add(rule("Proxy Google", RulesetItem.OUTBOUND_PROXY, domain = listOf("geosite:google")))
+                    add(rule("Bypass Chinese public DNS IP", RulesetItem.OUTBOUND_DIRECT, ip = CN_PUBLIC_DNS_IP))
+                    add(rule("Bypass Chinese public DNS domains", RulesetItem.OUTBOUND_DIRECT, domain = CN_PUBLIC_DNS_DOMAIN))
+                    add(rule("Bypass China IP", RulesetItem.OUTBOUND_DIRECT, ip = listOf("geoip:cn")))
+                    add(rule("Bypass China domains", RulesetItem.OUTBOUND_DIRECT, domain = listOf("geosite:cn")))
+                }
+                "ru" -> {
+                    add(rule("Bypass Russia domains", RulesetItem.OUTBOUND_DIRECT, domain = listOf("geosite:category-ru")))
+                    add(rule("Bypass Russia IP", RulesetItem.OUTBOUND_DIRECT, ip = listOf("geoip:ru")))
+                }
+                else -> {
+                    val name = cc.uppercase()
+                    add(rule("Bypass $name domains", RulesetItem.OUTBOUND_DIRECT, domain = listOf("domain:$cc")))
+                    add(rule("Bypass $name IP", RulesetItem.OUTBOUND_DIRECT, ip = listOf("geoip:$cc")))
+                }
+            }
+        }
+    }
+
     private fun iranWhitelist() = listOf(
+        rule("Bypass BitTorrent", RulesetItem.OUTBOUND_DIRECT, protocol = listOf("bittorrent")),
         blockUdp443(),
+        rule("Block ads", RulesetItem.OUTBOUND_BLOCK, domain = listOf("geosite:category-ads-all")),
         directLanIp(),
         directLanDomain(),
         rule("Bypass Iran domains", RulesetItem.OUTBOUND_DIRECT, domain = listOf("domain:ir", "geosite:category-ir")),

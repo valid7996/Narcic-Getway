@@ -23,6 +23,11 @@ import dev.valid7996.narcicgeteway.domain.model.RulesetItem
 import dev.valid7996.narcicgeteway.domain.model.VpnBypassLan
 import dev.valid7996.narcicgeteway.domain.model.VpnInterfaceAddress
 import dev.valid7996.narcicgeteway.domain.config.XrayJsonBuilder
+import dev.valid7996.narcicgeteway.domain.config.effectiveLocalProxyPort
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -47,6 +52,14 @@ class NrgVpnService : VpnService() {
 
     private var showSpeed: Boolean = true
     private var livePromotion: Boolean = true
+private var bentoCard: Boolean = false
+    private var engineName: String = dev.valid7996.narcicgeteway.domain.config.VpnProfile.ENGINE_XRAY
+    private var localAuth: dev.valid7996.narcicgeteway.domain.config.LocalProxyAuth.Credentials? = null
+    private var underlyingWatch: android.net.ConnectivityManager.NetworkCallback? = null
+    @Volatile private var underlyingNetwork: android.net.Network? = null
+    private var underlyingJob: kotlinx.coroutines.Job? = null
+    private val startLock = kotlinx.coroutines.sync.Mutex()
+    private var localProxyPort: Int = LocalPorts.XRAY_SOCKS
     private var notifChip: dev.valid7996.narcicgeteway.domain.model.NotifChip =
         dev.valid7996.narcicgeteway.domain.model.NotifChip.Speed
     private var psiphon: PsiphonController? = null
@@ -109,6 +122,7 @@ class NrgVpnService : VpnService() {
 
         XrayController.warmUp(this)
         XrayController.onCoreShutdown = { onTunnelFailed(null) }
+        FrontCore.onLost = { onTunnelFailed(null) }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -138,6 +152,7 @@ class NrgVpnService : VpnService() {
                 remark = intent.getStringExtra(VpnManager.EXTRA_REMARK).orEmpty()
                 val socksPort = intent.getIntExtra(VpnManager.EXTRA_SOCKS_PORT, LocalPorts.XRAY_SOCKS)
                 kind = intent.getStringExtra(VpnManager.EXTRA_KIND) ?: VpnManager.KIND_XRAY
+                engineName = intent.getStringExtra(VpnManager.EXTRA_ENGINE) ?: dev.valid7996.narcicgeteway.domain.config.VpnProfile.ENGINE_XRAY
                 proxyOnly = intent.getBooleanExtra(VpnManager.EXTRA_PROXY_ONLY, false)
                 if (config.isNullOrBlank()) {
                     VpnManager.onError(getString(R.string.engine_missing_config))
@@ -151,7 +166,12 @@ class NrgVpnService : VpnService() {
                 resetSessionState()
                 stage = VpnNotifications.Stage.Preparing
                 startInForeground(connectingNotification())
-                scope.launch { startTunnel(config, socksPort, kind) }
+                scope.launch {
+                    startLock.withLock {
+                        if (tun != null) stopEngines()
+                        startTunnel(config, socksPort, kind)
+                    }
+                }
             }
             command == VpnManager.CMD_STOP -> { userStop = true; stopEverything() }
 
@@ -456,7 +476,7 @@ class NrgVpnService : VpnService() {
 
     private fun startSsh(
         configJson: String,
-        descriptor: ParcelFileDescriptor,
+        descriptor: ParcelFileDescriptor?,
         tunMtu: Int,
         appSettings: AppSettings,
     ) {
@@ -483,43 +503,24 @@ class NrgVpnService : VpnService() {
                 VpnManager.onError(engineFailed(R.string.engine_failed_ssh, controller.lastError))
                 stopEverything(); return@launch
             }
-            val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
-            val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", port, dnsHost = dns)
-            socksShim = shim
-            if (shim.start() && bridge(descriptor, SHIM_PORT, tunMtu, udpOverTcp = true)) {
-                finishConnected()
-            } else {
-                stopEverything()
-            }
+            bridgeEngine(descriptor, port, tunMtu)
         }
     }
 
-    private fun startTor(settings: AppSettings, descriptor: ParcelFileDescriptor, tunMtu: Int) {
+    private fun startTor(settings: AppSettings, descriptor: ParcelFileDescriptor?, tunMtu: Int) {
         val bridged = java.util.concurrent.atomic.AtomicBoolean(false)
-        val dns = if (settings.remoteDnsMode == "custom") settings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
+        val torPort = LocalPortPicker.pick(LocalPorts.TOR_SOCKS)
         val controller = dev.valid7996.narcicgeteway.core.tor.TorController(
             context = this,
             settings = settings,
             onBootstrapped = {
-                if (bridged.compareAndSet(false, true)) {
-                    val shim = SocksTunBridge(
-                        listenHost = "127.0.0.1", listenPort = SHIM_PORT,
-                        upstreamHost = "127.0.0.1",
-                        upstreamPort = dev.valid7996.narcicgeteway.core.tor.TorConfigBuilder.SOCKS_PORT,
-                        dnsHost = dns,
-                    )
-                    socksShim = shim
-                    if (shim.start() && bridge(descriptor, SHIM_PORT, tunMtu, udpOverTcp = true)) {
-                        finishConnected()
-                    } else {
-                        stopEverything()
-                    }
-                }
+                if (bridged.compareAndSet(false, true)) bridgeEngine(descriptor, torPort, tunMtu, onion = true)
             },
             onProgress = { pct -> LogBus.append("I/Tor bootstrap $pct%") },
             onStopped = { reason ->
                 onTunnelFailed(reason)
             },
+            socksPort = torPort,
         )
         tor = controller
         if (!controller.start()) stopEverything() else armTorBootstrapDeadline(bridged)
@@ -796,7 +797,8 @@ class NrgVpnService : VpnService() {
         singBoxLastDown = 0L
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                engine.start(configJson)
+                val securedJson = localAuth?.let { dev.valid7996.narcicgeteway.domain.config.LocalProxyAuth.secureSingBox(configJson, it) } ?: configJson
+                engine.start(securedJson)
             } catch (e: Exception) {
                 Log.e(TAG, "sing-box failed to start", e)
                 VpnManager.onError(engineFailed(R.string.engine_singbox_failed, e.message))
@@ -829,11 +831,69 @@ class NrgVpnService : VpnService() {
         return getString(R.string.core_start_failed_reason, raw.take(240))
     }
 
+    
+    private fun startEngineProxyOnly(configJson: String, settings: AppSettings) {
+        killSwitchEnabled = false
+        VpnManager.setActiveKind(kind)
+        val dns = kind == VpnManager.KIND_DNS_TUNNEL || kind == VpnManager.KIND_MASTERDNS
+        val mtu = if (dns) 1280 else settings.vpnMtu.coerceIn(1000, 9000)
+        when (kind) {
+            VpnManager.KIND_PSIPHON -> startPsiphon(configJson, null, mtu)
+            VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, null, mtu, settings)
+            VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, null, mtu, settings)
+            VpnManager.KIND_TOR -> startTor(settings, null, mtu)
+            VpnManager.KIND_SSH -> startSsh(configJson, null, mtu, settings)
+        }
+    }
+
+    private fun ported(json: String, port: Int): String {
+        val moved = XrayJsonBuilder.withLocalPorts(json, LocalPorts.XRAY_SOCKS, port)
+        return localAuth?.let { dev.valid7996.narcicgeteway.domain.config.LocalProxyAuth.secureXray(moved, it) } ?: moved
+    }
+
+    private fun freePairFor(preferred: Int): Int =
+        if (LocalPortPicker.isFree(preferred) && LocalPortPicker.isFree(preferred + 1)) preferred
+        else LocalPortPicker.pickPair(preferred + 2).also {
+            LogBus.append("W/Engine port $preferred is taken; using $it")
+        }
+
+    private fun bridgeEngine(
+        descriptor: ParcelFileDescriptor?,
+        enginePort: Int,
+        tunMtu: Int,
+        onion: Boolean = false,
+        unreachable: Int? = null,
+    ) {
+        if (enginePort <= 0) {
+            VpnManager.onError(getString(R.string.crosschain_inner_failed))
+            stopEverything(); return
+        }
+        val front = runCatching { StartPlanner(this).engineFront(enginePort, onion) }
+            .onFailure { Log.e(TAG, "the routing front could not be built", it) }
+            .getOrNull()
+        val port = freePairFor(localProxyPort)
+        if (front == null || !FrontCore.start(this, ported(front, port))) {
+            VpnManager.onError(coreStartError(FrontCore.lastError))
+            stopEverything(); return
+        }
+        if (descriptor != null) {
+            if (!bridge(descriptor, port, tunMtu, pipeline = true)) return
+        } else {
+            advance(VpnNotifications.Stage.Engine)
+        }
+        if (unreachable != null && !TunnelReadiness.verify(port)) {
+            VpnManager.onError(getString(unreachable))
+            stopEverything(); return
+        }
+        VpnManager.activeSocksPort = port
+        finishConnected()
+    }
+
     private fun startProxyOnly(configJson: String, socksPort: Int) {
         killSwitchEnabled = false
         VpnManager.setActiveKind(kind)
         advance(VpnNotifications.Stage.Engine)
-        if (!XrayController.start(configJson)) {
+        if (!XrayController.start(ported(configJson, socksPort))) {
             VpnManager.onError(coreStartError())
             stopEverything()
             return
@@ -993,7 +1053,7 @@ class NrgVpnService : VpnService() {
         if (!controller.start()) stopEverything()
     }
 
-    private fun startPsiphon(configJson: String, descriptor: ParcelFileDescriptor, tunMtu: Int) {
+    private fun startPsiphon(configJson: String, descriptor: ParcelFileDescriptor?, tunMtu: Int) {
         val socksPort = java.util.concurrent.atomic.AtomicInteger(0)
         val bridged = java.util.concurrent.atomic.AtomicBoolean(false)
         val controller = PsiphonController(
@@ -1001,10 +1061,7 @@ class NrgVpnService : VpnService() {
             configJson = configJson,
             onSocksPort = { port -> socksPort.set(port) },
             onEstablished = {
-                if (bridged.compareAndSet(false, true) && bridge(descriptor, socksPort.get(), tunMtu)) {
-                    VpnManager.activeSocksPort = socksPort.get()
-                    finishConnected()
-                }
+                if (bridged.compareAndSet(false, true)) bridgeEngine(descriptor, socksPort.get(), tunMtu)
             },
             onStopped = { reason ->
                 onTunnelFailed(reason)
@@ -1032,7 +1089,8 @@ class NrgVpnService : VpnService() {
                 ipv4 = hevIpv4,
                 ipv6 = hevIpv6,
                 preferIpv6 = hevIpv6 != null,
-                udpOverTcp = udpOverTcp,
+                socksUser = localAuth?.user,
+                socksPass = localAuth?.pass,
                 pipeline = pipeline,
                 logLevel = hevLogLevel,
                 rwTimeout = hevRwTimeout,
@@ -1047,7 +1105,8 @@ class NrgVpnService : VpnService() {
                 mtu = tunMtu,
                 ipv4 = hevIpv4,
                 ipv6 = hevIpv6,
-                udpOverTcp = udpOverTcp,
+                socksUser = localAuth?.user,
+                socksPass = localAuth?.pass,
                 pipeline = pipeline,
                 logLevel = hevLogLevel,
                 rwTimeout = hevRwTimeout,
@@ -1293,7 +1352,7 @@ class NrgVpnService : VpnService() {
                     pollAutoSelect()
                 }
 
-                val (down, up) = when (kind) {
+                val (down, up) = if (FrontCore.isRunning) FrontCore.readTrafficDelta() else when (kind) {
                     VpnManager.KIND_XRAY, VpnManager.KIND_SNISPOOF -> XrayController.readTrafficDelta()
 
                     // The core and its carriers are processes of this app, so their sockets are the tunnel's own traffic.
@@ -1514,6 +1573,7 @@ class NrgVpnService : VpnService() {
         outerDnsTunnel?.stop(); outerDnsTunnel = null
         ZepTunCore.stop()
         HevTunCore.stop()
+        FrontCore.stop()
         // After the TUN bridges: the native core must have no live connections when it is stopped.
         mhrv?.stop(); mhrv = null
         XrayController.stop()

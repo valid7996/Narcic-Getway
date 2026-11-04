@@ -54,6 +54,8 @@ import dev.valid7996.narcicgeteway.ui.components.PickerField
 import dev.valid7996.narcicgeteway.ui.components.SectionTitle
 
 private val NETWORKS = listOf("tcp", "ws", "grpc", "httpupgrade", "xhttp", "kcp")
+private val MASQUE_ALPNS = listOf("h3" to "HTTP/3", "h2" to "HTTP/2")
+
 private val SECURITIES = listOf("" to "None", "tls" to "TLS", "reality" to "REALITY")
 
 private val FLOWS = listOf(
@@ -156,6 +158,8 @@ fun ManualConfigSheet(
     var echConfigList by remember { mutableStateOf(initial?.tls?.echConfigList ?: "") }
     var echOutbound by remember { mutableStateOf(initial?.tls?.echOutbound ?: "") }
     var echError by remember { mutableStateOf<String?>(null) }
+    var warp by remember { mutableStateOf(initial?.isWarp == true) }
+    var transportHeaders by remember { mutableStateOf(initial?.transport?.headers.orEmpty()) }
     var cipherSuites by remember { mutableStateOf(initial?.tls?.cipherSuites ?: "") }
 
     var finalMask by remember { mutableStateOf(initial?.transport?.finalMask ?: "") }
@@ -271,6 +275,42 @@ fun ManualConfigSheet(
                         selected = alpn,
                         onSelect = { alpn = it },
                     )
+                }
+                Protocol.MASQUE -> {
+                    LabeledSwitch(
+                        label = stringResource(Res.string.manual_masque_warp),
+                        checked = warp,
+                        onChange = { warp = it },
+                    )
+                    if (warp) {
+                        Text(
+                            stringResource(Res.string.manual_masque_warp_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Field(secretKey, { secretKey = it }, Res.string.manual_masque_warp_private_key)
+                        Field(peerPublicKey, { peerPublicKey = it }, Res.string.manual_masque_warp_public_key)
+                        Field(localAddress, { localAddress = it }, Res.string.manual_local_address)
+                    } else {
+                        Field(username, { username = it }, Res.string.manual_username)
+                        Field(userId, { userId = it }, Res.string.manual_password)
+                    }
+                    PickerField(
+                        label = stringResource(Res.string.manual_masque_http),
+                        options = MASQUE_ALPNS,
+                        selected = if (alpn.trim().lowercase() == "h2") "h2" else "h3",
+                        onSelect = { alpn = it },
+                    )
+                    Field(sni, { sni = it }, Res.string.manual_sni)
+                    if (alpn.trim().lowercase() == "h2") {
+                        PickerField(
+                            label = stringResource(Res.string.manual_fingerprint),
+                            options = UTLS_FINGERPRINTS,
+                            selected = fingerprint,
+                            onSelect = { fingerprint = it },
+                        )
+                    }
+                    Field(transportHeaders, { transportHeaders = it }, Res.string.manual_masque_headers)
                 }
                 Protocol.WIREGUARD, Protocol.AMNEZIAWG -> {
                     Field(secretKey, { secretKey = it }, Res.string.manual_private_key)
@@ -541,6 +581,7 @@ fun ManualConfigSheet(
                     Protocol.WIREGUARD, Protocol.AMNEZIAWG ->
                         secretKey.isNotBlank() && peerPublicKey.isNotBlank()
                     Protocol.HYSTERIA -> secretKey.isNotBlank()
+                    Protocol.MASQUE -> if (warp) secretKey.isNotBlank() else true
                     else -> userId.isNotBlank()
                 },
                 shape = RoundedCornerShape(14.dp),

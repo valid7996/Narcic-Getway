@@ -24,6 +24,7 @@ data class Subscription(
     val title: String? = null,
 
     val updateIntervalHours: Int? = null,
+    val preset: SubscriptionPreset = SubscriptionPreset(),
 
     val supportUrl: String? = null,
 

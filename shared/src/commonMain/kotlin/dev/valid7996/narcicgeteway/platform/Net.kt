@@ -38,3 +38,11 @@ internal expect suspend fun httpStreamTransfer(
     readTimeoutMs: Int,
     onChunk: (deltaBytes: Long) -> Boolean,
 ): HttpTiming
+
+internal expect suspend fun dnsOverTcp(
+    server: String,
+    port: Int,
+    query: ByteArray,
+    socksPort: Int?,
+    timeoutMs: Int,
+): ByteArray

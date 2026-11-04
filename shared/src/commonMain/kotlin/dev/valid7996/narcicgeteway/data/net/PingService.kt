@@ -21,6 +21,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 object PingService {
+    @kotlin.concurrent.Volatile
+    var probeOptions: () -> dev.valid7996.narcicgeteway.domain.config.XrayJsonBuilder.BuildOptions =
+        { dev.valid7996.narcicgeteway.domain.config.XrayJsonBuilder.BuildOptions() }
+
     private const val TCP_TIMEOUT_MS = 2_500
 
     /** An Aether profile has no server to knock on: its core is started for the test (see AetherDelayProbe) and timed through. */
@@ -130,6 +134,7 @@ object PingService {
         delayUrl: String = NetworkInfoRepository.DELAY_TEST_URL,
 
         chainConfig: (VpnProfile) -> String? = { null },
+        detectCountry: Boolean = false,
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
         onResult: (id: String, ms: Int?, countryCode: String?) -> Unit,
 
@@ -175,6 +180,13 @@ object PingService {
 
                 onResult(profile.id, latency, profile.countryCode)
                 doneLock.withPermit { onProgress(++done, total) }
+
+                if (detectCountry && latency > 0 && profile.countryCode == null) {
+                    geoScope.launch {
+                        val country = geoPermits.withPermit { GeoLookup.countryOf(profile.address) }
+                        if (country != null) onResult(profile.id, latency, country)
+                    }
+                }
 
                 if (latency > 0 && profile.countryCode == null && !isSpoof && !isSealed) {
                     geoScope.launch {

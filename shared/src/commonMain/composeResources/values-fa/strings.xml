@@ -1,5 +1,5 @@
-<resources>
-    <string name="brand_tagline">خصوصی. سریع. مالِ خودت.</string>
+<?xml version="1.0" encoding="utf-8"?>
+<resources><string name="brand_tagline">خصوصی. سریع. مالِ خودت.</string>
 
     <string name="nav_home">خانه</string>
     <string name="nav_servers">سرورها</string>
@@ -1565,7 +1565,7 @@
     <string name="mhrv_deployment_ids_title">شناسه‌های دیپلوی Apps Script (چرخش توکن)</string>
     <string name="mhrv_deployment_ids_desc">با اتمام محدودیت توکن اول، به طور خودکار به توکن بعدی منتقل می‌شود.</string>
 
-    <!-- NRG Secure Share and Device Code -->
+    
     <string name="server_card_lock_and_share">قفل و اشتراک امن (NRG)</string>
     <string name="device_code_title">کد دستگاه من</string>
     <string name="device_code_menu_title">کد دستگاه من (برای کانفیگ قفل‌شده)</string>
@@ -1576,7 +1576,7 @@
     <string name="device_code_copied">کد دستگاه کپی شد</string>
     <string name="device_code_label">کد دستگاه من:</string>
 
-    <!-- Network Tools and Scanners -->
+    
     <string name="tools_group_network">ابزارهای شبکه و اسکنر</string>
     <string name="tools_cdn_scanner_title">اسکنر آی‌پی تمیز (CDN Scanner)</string>
     <string name="tools_cdn_scanner_sub">یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور</string>
@@ -1590,7 +1590,7 @@
     <string name="tools_backup_title">پشتیبان‌گیری و بازیابی</string>
     <string name="tools_backup_sub">پشتیبان‌گیری کامل از تنظیمات و سرورها و بازیابی سریع اطلاعات</string>
 
-    <!-- Settings Preferences -->
+    
     <string name="settings_animation_mode">حالت انیمیشن</string>
     <string name="settings_anim_normal">حالت معمولی</string>
     <string name="settings_anim_slow">حالت آهسته</string>
@@ -1602,7 +1602,7 @@
     <string name="settings_onboarding_wizard_title">ویزارد خوش‌آمدگویی و راه‌اندازی اولیه</string>
     <string name="settings_onboarding_wizard_sub">تنظیم مجدد زبان، قالب و حالت نمایش</string>
 
-    <!-- Connection Route Map & Action Labels -->
+    
     <string name="route_map_open">نمایش نقشه مسیر اتصال زنده</string>
     <string name="route_map_close">بستن نقشه مسیر اتصال</string>
     <string name="route_map_subtitle">مسیر کشور مبدأ به مقصد + IPv4 و نام کانفیگ</string>
@@ -1902,4 +1902,864 @@
 
     <string name="tg_proxies_fetched">تعداد %1$d پروکسی زنده از @%2$s دریافت شد</string>
     <string name="tg_test_ping_btn">تست پینگ</string>
+    <string name="subs_reorder">برای جابه‌جایی بکشید</string>
+    
+    <string name="info_tap_to_refresh">برای دریافت دوباره، روی هر کاشی بزنید</string>
+
+    
+    <string name="routing_geo_missing_title">فایل‌های geo نیستند</string>
+    
+    <string name="routing_geo_missing_body">قانون‌هایی که از geosite یا geoip استفاده می‌کنند تا دانلود این فایل‌ها خاموش‌اند. Narcic Getway هر وقت بتواند خودش آن‌ها را می‌گیرد.</string>
+    
+    <string name="routing_geo_failed">دانلود نشد. وصل شوید و دوباره امتحان کنید، یا فایل‌ها را از تنظیمات › فایل‌های داده اضافه کنید.</string>
+    
+    <string name="routing_geo_download">دانلود</string>
+    
+    <string name="routing_geo_downloading">در حال دانلود…</string>
+    
+    <string name="rule_network_type">نوع شبکه</string>
+    
+    <string name="rule_network_type_hint">این قانون فقط وقتی اعمال می‌شود که گوشی به یکی از شبکه‌های انتخاب‌شده وصل است. اگر هیچ‌کدام را انتخاب نکنید، روی همهٔ شبکه‌ها اعمال می‌شود.</string>
+    
+    <string name="network_type_wifi">وای‌فای</string>
+    
+    <string name="network_type_cellular">دادهٔ همراه</string>
+    
+    <string name="network_type_ethernet">اترنت</string>
+    
+    <string name="network_type_other">سایر</string>
+    
+    <string name="rule_unlock_title">قفل این قانون باز شود؟</string>
+    
+    <string name="rule_unlock">باز کردن قفل</string>
+    
+    <string name="mode_tun_system_proxy">پروکسی سیستم هم تنظیم شود</string>
+    
+    <string name="mode_tun_system_proxy_sum">برنامه‌هایی که پروکسی سیستم را می‌خوانند، مثل کروم، تا وقتی تونل وصل است از همین اتصال استفاده می‌کنند. با قطع اتصال پاک می‌شود.</string>
+    
+    <string name="tray_server">سرور</string>
+    
+    <string name="tray_all_servers">همهٔ %1$d سرور…</string>
+    
+    <string name="tray_mode">حالت</string>
+    
+    <string name="tray_copy_proxy">کپی آدرس پروکسی</string>
+    
+    <string name="tray_show">نمایش پنجره</string>
+    
+    <string name="tray_hide">پنهان کردن پنجره</string>
+    
+    <string name="tray_quit">خروج از Narcic Getway</string>
+    
+    <string name="tray_missing_minimized">هنوز وصله. این دسکتاپ tray نداره، برای همین Narcic Getway کوچک شد. برای خروج اول قطع کن.</string>
+    
+    <string name="tray_missing_gnome">روی GNOME، افزونه‌ی AppIndicator آیکون tray رو اضافه می‌کنه.</string>
+    
+    <string name="tun_engine_zeptun_default">zeptun (پیش‌فرض)</string>
+    
+    <string name="tun_engine_sub_mac">zeptun روی macOS پیش‌فرض است. اگر حالت VPN این مک را داغ یا کند می‌کند، به hev تغییر دهید.</string>
+    
+    <string name="tun_engine_hev_default">hev-socks5-tunnel (پیش‌فرض)</string>
+    
+    <string name="tun_engine_sub_desktop">روی ویندوز hev پیش‌فرض است. zeptun با فایروال ویندوز جلوی DNSهایی را هم که بیرون از تونل می‌روند می‌گیرد؛ اگر hev روی این کامپیوتر کار نکرد، آن را انتخاب کنید.</string>
+    
+    <string name="title_pref_local_proxy_port">پورت پروکسی محلی</string>
+    
+    <string name="toast_local_proxy_port_invalid">پورتی بین ۱۰۲۴ و ۶۵۵۳۴ انتخاب کنید که Narcic Getway و اشتراک در شبکهٔ محلی از آن استفاده نمی‌کنند</string>
+    
+    <string name="settings_backup_group">پشتیبان تنظیمات</string>
+    
+    <string name="settings_export">خروجی گرفتن از تنظیمات</string>
+    
+    <string name="settings_export_sum">همهٔ تنظیمات را در یک فایل ذخیره می‌کند تا به دستگاه دیگری ببرید. رمز اشتراک در شبکهٔ محلی هم در فایل هست.</string>
+    
+    <string name="settings_import">وارد کردن تنظیمات</string>
+    
+    <string name="settings_import_sum">فایل تنظیماتی را که از Narcic Getway گرفته شده بارگذاری می‌کند. کانفیگ‌ها و اشتراک‌ها تغییر نمی‌کنند.</string>
+    
+    <string name="settings_imported">تنظیمات وارد شد</string>
+    
+    <string name="settings_import_invalid">این فایل پشتیبان تنظیمات Narcic Getway نیست</string>
+
+    
+    <string name="update_downloading">در حال دانلود %1$s</string>
+    
+    <string name="update_verifying">در حال بررسی فایل دانلودشده…</string>
+    
+    <string name="update_failed">نصب به‌روزرسانی انجام نشد. می‌توانید آن را از صفحهٔ انتشار دانلود کنید.</string>
+    
+    <string name="update_open_page">باز کردن صفحهٔ دانلود</string>
+    
+    <string name="subs_preset_title">تغییر همهٔ سرورهای این اشتراک</string>
+    
+    <string name="subs_preset_hint">هر بار که اشتراک به‌روز می‌شود اعمال می‌شود. فیلدی را خالی بگذارید تا همان مقداری که سرور می‌فرستد بماند.</string>
+    
+    <string name="subs_preset_address">IP تمیز برای سرورهای WS، gRPC و XHTTP</string>
+    
+    <string name="subs_preset_fingerprint">اثر انگشت TLS (fp)</string>
+    
+    <string name="subs_preset_alpn">ALPN (auto بر اساس ترنسپورت انتخاب می‌کند)</string>
+    
+    <string name="subs_preset_finalmask">JSON فرگمنت / finalmask (fm)</string>
+    
+    <string name="subs_preset_ciphers">Cipher suites (cs)</string>
+    
+    <string name="subs_preset_ech">پیکربندی ECH (ech)</string>
+    
+    <string name="add_free_badge">رایگان</string>
+    
+    <string name="add_free_hint">سایفون، Tor و Cloudflare WARP رایگان هستند و سرور شخصی لازم ندارند. بقیهٔ روش‌ها به سرور یا اشتراک خودتان وصل می‌شوند.</string>
+    
+    <string name="home_local_proxy">پروکسی · %1$s</string>
+    
+    <string name="mode_local_proxy_title">آدرس پروکسی محلی</string>
+    
+    <string name="mode_local_proxy_body">SOCKS5 و HTTP روی %1$s. برای کپی بزنید.</string>
+    
+    <string name="fault_port_busy">پورت در حال استفاده است</string>
+    
+    <string name="fault_port_busy_hint">برنامهٔ دیگری، یا نسخهٔ دیگری از Narcic Getway، همین حالا از پورت پروکسی محلی استفاده می‌کند. آن را قطع کنید و دوباره امتحان کنید.</string>
+    
+    <string name="fault_config">کانفیگ قابل خواندن نیست</string>
+    
+    <string name="fault_config_hint">هسته پیش از اتصال روی یکی از تنظیمات این کانفیگ متوقف شد. جزئیات پایین نشان می‌دهد کدام بخش. کانفیگ را دوباره وارد کنید یا اشتراکش را به‌روز کنید.</string>
+    
+    <string name="title_pref_lan_auth">نیاز به نام کاربری و رمز</string>
+    
+    <string name="summary_pref_lan_auth">اگر خاموش باشد، هر کسی در همین شبکه می‌تواند از پروکسی اشتراکی استفاده کند.</string>
+    
+    <string name="lan_share_no_auth">بدون نام کاربری و رمز</string>
+    
+    <string name="auto_pref_excluded">کشورهای کنارگذاشته</string>
+    
+    <string name="auto_pref_excluded_none">هیچ‌کدام. حالت خودکار از سرورهای همهٔ کشورها استفاده می‌کند.</string>
+    
+    <string name="auto_pref_excluded_sum">حالت خودکار سرورهای %1$s را کنار می‌گذارد. همچنان می‌توانید خودتان آن‌ها را انتخاب کنید.</string>
+    
+    <string name="auto_excluded_title">کشورهایی که حالت خودکار کنار می‌گذارد</string>
+    
+    <string name="auto_excluded_empty">هنوز کشوری مشخص نیست. سرورها را آزمایش کنید تا کشورشان اینجا نمایش داده شود.</string>
+    
+    <string name="admin_password_remember">روی این کامپیوتر دیگر نپرس</string>
+    
+    <string name="settings_admin_remember_title">به خاطر سپردن دسترسی مدیر</string>
+    
+    <string name="settings_admin_remember_body">Narcic Getway در هر اجرا یک‌بار رمز را می‌پرسد. با روشن کردن این گزینه روی این کامپیوتر دیگر نمی‌پرسد. این دسترسی فقط به ابزار تونل Narcic Getway داده می‌شود و بعد از هر به‌روزرسانی یک‌بار دیگر پرسیده می‌شود.</string>
+    
+    <string name="settings_admin_remember_failed">تغییر دسترسی مدیر انجام نشد</string>
+    
+    <string name="settings_hero_tagline">به سلیقهٔ خودت</string>
+    
+    <string name="settings_group_personal">شخصی‌سازی</string>
+    
+    <string name="settings_group_tools">ابزارها</string>
+    
+    <string name="settings_group_colors">رنگ‌ها</string>
+    
+    <string name="settings_group_display">زبان و نمایش</string>
+    
+    <string name="settings_group_behaviour">فهرست‌ها</string>
+    
+    <string name="color_style_title">سبک رنگ</string>
+    
+    <string name="color_style_sub">یک پالت کامل از رنگ تأکیدی شما ساخته می‌شود</string>
+    
+    <string name="color_style_narcicgeteway">Narcic Getway</string>
+    
+    <string name="color_style_tonal">ملایم</string>
+    
+    <string name="color_style_vibrant">پرانرژی</string>
+    
+    <string name="color_style_expressive">اکسپرسیو</string>
+    
+    <string name="color_style_rainbow">رنگین‌کمان</string>
+    
+    <string name="color_style_fruit_salad">سالاد میوه</string>
+    
+    <string name="color_style_fidelity">وفادار</string>
+    
+    <string name="color_style_neutral">خنثی</string>
+    
+    <string name="color_style_monochrome">تک‌رنگ</string>
+    
+    <string name="contrast_title">کنتراست</string>
+    
+    <string name="contrast_standard">استاندارد</string>
+    
+    <string name="contrast_medium">متوسط</string>
+    
+    <string name="contrast_high">زیاد</string>
+    
+    <string name="portal_hint">برای اتصال لمس کنید</string>
+    
+    <string name="home_design_title">طراحی اپ</string>
+    
+    <string name="home_design_sub">ظاهر کل اپ: صفحهٔ اصلی، فونت، شکل‌ها و حرکت‌ها. رنگ‌ها جدا تنظیم می‌شوند.</string>
+    
+    <string name="home_design_old">قدیمی</string>
+    
+    <string name="home_design_old_note">سبک دکمه، کاشی‌ها و کارت‌ها مخصوص طراحی قدیمی است. برای تغییرشان «قدیمی» را انتخاب کن.</string>
+    
+    <string name="home_design_pixel">پیکسل</string>
+    
+    <string name="pixel_tap_cancel">برای لغو لمس کنید</string>
+    
+    <string name="pixel_other_server">سرور دیگر</string>
+    
+    <string name="title_pref_use_system_ca">اعتماد به گواهی‌های این دستگاه</string>
+    
+    <string name="summary_pref_use_system_ca">سرورهای TLS به‌جای فهرست ریشهٔ داخل هسته، با مخزن گواهی سیستم بررسی می‌شوند. فقط اگر مرجع گواهی خودتان را نصب کرده‌اید روشنش کنید.</string>
+    
+    <string name="manual_vless_encryption">رمزنگاری (VLESS Encryption، اگر استفاده نمی‌شود none)</string>
+    
+    <string name="manual_hop_interval">فاصلهٔ پرش پورت به ثانیه (مثلاً 30 یا 20-40)</string>
+    
+    <string name="manual_masque_warp">Cloudflare WARP</string>
+    
+    <string name="manual_masque_warp_hint">WARP به‌جای نام کاربری و رمز از کلید دستگاه ثبت‌شده استفاده می‌کند. از سرورها › افزودن › Cloudflare WARP یکی بسازید.</string>
+    
+    <string name="manual_masque_warp_private_key">کلید خصوصی دستگاه (ECDSA P-256)</string>
+    
+    <string name="manual_masque_warp_public_key">کلید عمومی سرور</string>
+    
+    <string name="manual_masque_http">نسخهٔ HTTP</string>
+    
+    <string name="manual_masque_path">مسیر (خالی = /.well-known/masque/ip/*/*/)</string>
+    
+    <string name="manual_masque_authority">میزبان Authority (اختیاری)</string>
+    
+    <string name="manual_masque_headers">هدرهای اضافه (Name: value; Name: value)</string>
+    
+    <string name="manual_masque_dns">DNS داخل تونل (آدرس IP)</string>
+    
+    <string name="manual_masque_extra">JSON اضافهٔ masqueSettings (اختیاری)</string>
+    
+    <string name="manual_xdrive_hint">XDRIVE ترافیک VLESS را از راه یک سرویس ذخیره‌سازی می‌برد. به VLESS Encryption در هر دو طرف نیاز دارد و Mux برایش خودکار روشن می‌شود.</string>
+    
+    <string name="manual_xdrive_settings">JSON تنظیمات xdriveSettings (service، remoteFolder، secrets…)</string>
+    
+    <string name="warp_add_title">Cloudflare WARP</string>
+    
+    <string name="warp_add_body">یک دستگاه رایگان WARP در Cloudflare ثبت می‌کند و آن را به‌صورت سرور MASQUE اضافه می‌کند. اگر وصل هستید، ثبت از راه همان اتصال انجام می‌شود.</string>
+    
+    <string name="warp_add_terms">با افزودن WARP شرایط استفادهٔ Cloudflare را می‌پذیرید (cloudflare.com/application/terms).</string>
+    
+    <string name="warp_registering">در حال ثبت در Cloudflare…</string>
+    
+    <string name="warp_failed">ثبت ناموفق بود: %1$s</string>
+    
+    <string name="warp_add_action">ثبت</string>
+    
+    <string name="warp_added">Cloudflare WARP اضافه شد</string>
+    
+    <string name="manual_core">هسته</string>
+    
+    <string name="singbox_blocked_title">sing-box نمی‌تواند این سرور را اجرا کند:</string>
+    
+    <string name="singbox_blocker_protocol">sing-box از %1$s پشتیبانی نمی‌کند</string>
+    
+    <string name="singbox_blocker_transport">sing-box ترنسپورت %1$s ندارد</string>
+    
+    <string name="singbox_blocker_tcp_header">sing-box هدر HTTP برای TCP ندارد</string>
+    
+    <string name="singbox_blocker_vless_encryption">sing-box رمزنگاری VLESS ندارد</string>
+    
+    <string name="singbox_blocker_flow">sing-box فلوی %1$s ندارد</string>
+    
+    <string name="singbox_blocker_finalmask">sing-box از finalmask پشتیبانی نمی‌کند</string>
+    
+    <string name="singbox_blocker_pinned_cert">sing-box نمی‌تواند هش گواهی را پین کند</string>
+    
+    <string name="singbox_blocker_verify_name">sing-box نمی‌تواند گواهی را با نام دیگری (vcn) بررسی کند</string>
+    
+    <string name="singbox_blocker_reality">سرورهای جدید Xray دست‌دهی REALITY در sing-box را رد می‌کنند، برای همین REALITY روی Xray می‌ماند</string>
+    
+    <string name="singbox_blocker_fingerprint">sing-box اثرانگشت %1$s ندارد</string>
+    
+    <string name="singbox_blocker_cipher">sing-box رمز %1$s ندارد</string>
+    
+    <string name="singbox_blocker_socks_tls">sing-box برای SOCKS از TLS پشتیبانی نمی‌کند</string>
+    
+    <string name="singbox_blocker_grpc_mode">gRPC در sing-box حالت multi یا مسیر سفارشی ندارد</string>
+    
+    <string name="singbox_blocker_grpc_authority">gRPC در sing-box نمی‌تواند authority جداگانه بگیرد</string>
+    
+    <string name="singbox_blocker_ss_transport">sing-box شدوساکس را فقط روی TCP، مبهم‌سازی HTTP یا WebSocket می‌برد</string>
+    
+    <string name="singbox_blocker_bandwidth">sing-box نمی‌تواند پهنای باند «%1$s» را بخواند</string>
+    
+    <string name="singbox_blocker_address">sing-box نمی‌تواند آدرس «%1$s» را بخواند</string>
+    
+    <string name="singbox_blocker_reserved">sing-box نمی‌تواند بایت‌های reserved «%1$s» را بخواند</string>
+    
+    <string name="subs_preset_core">هسته</string>
+    
+    <string name="subs_preset_core_link">همان که هر لینک می‌گوید</string>
+    
+    <string name="subs_preset_core_singbox">sing-box هرجا که بتواند</string>
+    
+    <string name="sb_congestion">کنترل ازدحام</string>
+    
+    <string name="sb_udp_relay">حالت رله UDP</string>
+    
+    <string name="sb_udp_over_stream">UDP روی استریم</string>
+    
+    <string name="sb_zero_rtt">دست‌دهی 0-RTT</string>
+    
+    <string name="sb_heartbeat">ضربان (مثلاً 10s)</string>
+    
+    <string name="sb_idle_check">فاصله بررسی نشست بیکار (مثلاً 30s)</string>
+    
+    <string name="sb_idle_timeout">مهلت نشست بیکار (مثلاً 30s)</string>
+    
+    <string name="sb_min_idle">کمترین تعداد نشست بیکار</string>
+    
+    <string name="sb_recv_window_conn">پنجره دریافت هر اتصال (بایت)</string>
+    
+    <string name="sb_recv_window">پنجره دریافت (بایت)</string>
+    
+    <string name="sb_disable_mtu">خاموش کردن کشف MTU مسیر</string>
+    
+    <string name="sb_quic">استفاده از QUIC</string>
+    
+    <string name="sb_quic_congestion">کنترل ازدحام QUIC</string>
+    
+    <string name="sb_insecure_concurrency">اتصال‌های موازی</string>
+    
+    <string name="sb_socks4a">SOCKS4a (سرور نام‌ها را حل می‌کند)</string>
+    
+    <string name="sb_disable_sni">SNI فرستاده نشود</string>
+    
+    <string name="sb_edit_json">ویرایش به‌صورت JSON</string>
+    
+    <string name="action_back">بازگشت</string>
+    
+    <string name="action_clear">پاک کردن</string>
+    
+    <string name="bento_slide_on">بکشید تا وصل شود</string>
+    
+    <string name="bento_slide_off">بکشید تا قطع شود</string>
+    
+    <string name="bento_slide_retry">بکشید تا دوباره امتحان شود</string>
+    
+    <string name="bento_tap_cancel">برای لغو بزنید</string>
+    
+    <string name="bento_search_settings">جستجوی تنظیمات</string>
+    
+    <string name="bento_all_settings">همه تنظیمات</string>
+    
+    <string name="bento_edit_tiles">ویرایش کاشی‌ها</string>
+    
+    <string name="bento_done">تمام</string>
+    
+    <string name="bento_edit_hint">کاشی را یک لحظه نگه دارید و هر جا خواستید بکشید؛ همان‌جا که رها کنید می‌نشیند. دکمهٔ گوشه اندازه‌اش را عوض می‌کند.</string>
+    
+    <string name="bento_add_tile">افزودن کاشی</string>
+    
+    <string name="bento_add_tile_empty">همه کاشی‌ها روی صفحه هستند</string>
+    
+    <string name="bento_reset">بازنشانی</string>
+    
+    <string name="bento_hide_tile">پنهان کردن %1$s</string>
+    
+    <string name="bento_resize_tile">تغییر اندازه %1$s</string>
+    
+    <string name="bento_size_small">کوچک</string>
+    
+    <string name="bento_size_wide">پهن</string>
+    
+    <string name="bento_size_tall">بلند</string>
+    
+    <string name="bento_hidden_title">کاشی‌های پنهان</string>
+    
+    <string name="bento_no_results">تنظیمی پیدا نشد</string>
+    
+    <string name="bento_move_earlier">جابه‌جایی به قبل</string>
+    
+    <string name="bento_move_later">جابه‌جایی به بعد</string>
+    
+    <string name="bento_current_server">سرور فعلی</string>
+    
+    <string name="bento_connected_for">مدت اتصال</string>
+    
+    <string name="bento_data_session">حجم این اتصال</string>
+    
+    <string name="bento_fastest">سریع‌ترین سرورها</string>
+    
+    <string name="bento_no_server">هنوز سروری نیست</string>
+    
+    <string name="bento_no_server_hint">بزنید تا سروری اضافه یا انتخاب کنید</string>
+    
+    <string name="bento_sub_meta">%1$d سرور</string>
+    
+    <string name="bento_updated_now">همین حالا به‌روز شد</string>
+    
+    <string name="bento_updated_minutes">%1$d دقیقه پیش به‌روز شد</string>
+    
+    <string name="bento_updated_hours">%1$d ساعت پیش به‌روز شد</string>
+    
+    <string name="bento_updated_days">%1$d روز پیش به‌روز شد</string>
+    
+    <string name="bento_group_look">ظاهر بنتو</string>
+    
+    <string name="bento_palette_title">پالت رنگ</string>
+    
+    <string name="bento_palette_brand">ZedLime</string>
+    
+    <string name="bento_palette_accent">رنگ تأکیدی</string>
+    
+    <string name="bento_palette_pastel">پاستلی</string>
+    
+    <string name="bento_palette_vivid">پررنگ</string>
+    
+    <string name="bento_palette_mono">تک‌رنگ</string>
+    
+    <string name="bento_corners_title">گوشه‌ها</string>
+    
+    <string name="bento_corners_leaf">برگی</string>
+    
+    <string name="bento_corners_round">گرد</string>
+    
+    <string name="bento_corners_soft">ملایم</string>
+    
+    <string name="bento_title_title">عنوان صفحه‌ها</string>
+    
+    <string name="bento_title_huge">خیلی بزرگ</string>
+    
+    <string name="bento_title_large">بزرگ</string>
+    
+    <string name="bento_title_compact">جمع‌وجور</string>
+    
+    <string name="bento_density_title">فاصله‌ها</string>
+    
+    <string name="bento_density_comfortable">جادار</string>
+    
+    <string name="bento_density_compact">جمع‌وجور</string>
+    
+    <string name="bento_motifs">نقش شکل‌ها</string>
+    
+    <string name="bento_motifs_sum">شکل‌های بزرگ و کم‌رنگ پشت کاشی‌ها و کارت‌ها</string>
+    
+    <string name="bento_playful">لمس بازیگوش</string>
+    
+    <string name="bento_playful_sum">کاشی‌ها موقع لمس فشرده می‌شوند و نشان‌ها می‌چرخند</string>
+    
+    <string name="bento_group_board">صفحه تنظیمات</string>
+    
+    <string name="bento_indexes">شماره کاشی‌ها</string>
+    
+    <string name="bento_indexes_sum">نمایش ۰۱، ۰۲… روی کاشی‌ها و سرصفحه‌ها</string>
+    
+    <string name="bento_live_tiles">خلاصه زنده</string>
+    
+    <string name="bento_live_tiles_sum">کاشی‌ها مقدار فعلی، مثل MTU یا DNS، را نشان می‌دهند</string>
+    
+    <string name="bento_reset_tiles">بازنشانی چیدمان کاشی‌ها</string>
+    
+    <string name="bento_group_dock">نوار ناوبری</string>
+    
+    <string name="bento_dock_labels_title">برچسب‌ها</string>
+    
+    <string name="bento_dock_labels_active">فقط فعلی</string>
+    
+    <string name="bento_dock_labels_always">همیشه</string>
+    
+    <string name="bento_dock_labels_never">هیچ‌وقت</string>
+    
+    <string name="bento_dock_autohide">پنهان هنگام پیمایش</string>
+    
+    <string name="bento_dock_autohide_sum">با پیمایش به پایین کنار می‌رود و با پیمایش به بالا برمی‌گردد</string>
+    
+    <string name="bento_group_home">صفحه اصلی</string>
+    
+    <string name="bento_connect_title">کنترل اتصال</string>
+    
+    <string name="bento_connect_slide">کشیدن</string>
+    
+    <string name="bento_connect_button">دکمه</string>
+    
+    <string name="bento_wave">موج روی نوار</string>
+    
+    <string name="bento_wave_sum">فقط هنگام اتصال حرکت می‌کند</string>
+    
+    <string name="bento_home_speed">کاشی‌های سرعت</string>
+    
+    <string name="bento_home_session">کاشی‌های اتصال</string>
+    
+    <string name="bento_home_quick">سریع‌ترین سرورها</string>
+    
+    <string name="bento_home_chips">میانبرها</string>
+    
+    <string name="bento_reset_look">بازنشانی ظاهر بنتو</string>
+    
+    <string name="home_design_bento">بنتو</string>
+    
+    <string name="bento_search_servers">جستجوی سرورها</string>
+    
+    <string name="bento_live_mode_vpn">حالت VPN</string>
+    
+    <string name="bento_live_mode_proxy">فقط پروکسی</string>
+    
+    <string name="bento_live_mode_system">پروکسی سیستم</string>
+    
+    <string name="bento_live_vpn">MTU %1$d · %2$s</string>
+    
+    <string name="bento_live_kill">کیل‌سوییچ روشن</string>
+    
+    <string name="bento_live_rules">%1$d قانون</string>
+    
+    <string name="bento_detect_location_title">نمایش موقعیت سرورها</string>
+    
+    <string name="bento_detect_location_sum">هنگام تست، کشور هر سرور پیدا می‌شود و پرچمش در فهرست سرورها نشان داده می‌شود. آدرس سرورها به یک سرویس جستجو فرستاده می‌شود.</string>
+    
+    <string name="bento_net_change_title">ساخت دوباره هنگام تغییر شبکه</string>
+    
+    <string name="bento_net_change_sum">با جابه‌جایی بین وای‌فای و دیتا، تونل هم جابه‌جا می‌شود تا WireGuard و Hysteria قطع نشوند.</string>
+    
+    <string name="bento_proxy_auth_title">رمز روی پروکسی محلی</string>
+    
+    <string name="bento_proxy_auth_sum">برنامه‌های دیگر گوشی نمی‌توانند از پورت SOCKS تونل استفاده کنند و با آن VPN را لو بدهند. حالت فقط پروکسی تغییری نمی‌کند.</string>
+    
+    <string name="sb_snell_psk">کلید PSK</string>
+    
+    <string name="sb_snell_version">نسخهٔ Snell</string>
+    
+    <string name="sb_snell_obfs">مبهم‌سازی (obfs)</string>
+    
+    <string name="sb_snell_obfs_host">میزبان obfs</string>
+    
+    <string name="sb_snell_userkey">کلید کاربر (اختیاری)</string>
+    
+    <string name="sb_snell_reuse">استفادهٔ دوباره از اتصال‌ها</string>
+    
+    <string name="sb_network">شبکه</string>
+    
+    <string name="settings_group_notification">نوتیفیکیشن</string>
+    
+    <string name="nav_subs">سابسکریپشن</string>
+    
+    <string name="nav_speed">تست سرعت</string>
+    
+    <string name="nav_map">نقشه</string>
+    
+    <string name="nav_logs">لاگ‌ها</string>
+    
+    <string name="nav_routing">مسیریابی</string>
+    
+    <string name="nav_apps">برنامه‌ها</string>
+    
+    <string name="navbar_page_sub">تب‌ها، ترتیبشان و شکل نوار را انتخاب کنید</string>
+    
+    <string name="navbar_tabs">تب‌های نوار</string>
+    
+    <string name="navbar_count">%1$d از %2$d تب. برای جابه‌جایی، دستگیره را بکشید.</string>
+    
+    <string name="navbar_add">افزودن تب</string>
+    
+    <string name="navbar_style">شکل نوار</string>
+    
+    <string name="navbar_fixed">همیشه در نوار</string>
+    
+    <string name="navbar_remove">برداشتن %1$s</string>
+    
+    <string name="nav_style_dock">داک بنتو</string>
+    
+    <string name="font_title">فونت</string>
+    
+    <string name="font_auto">خودکار</string>
+    
+    <string name="font_vazirmatn">وزیرمتن</string>
+    
+    <string name="font_estedad">استعداد</string>
+    
+    <string name="font_system">فونت سیستم</string>
+    
+    <string name="scale_title">مقیاس همه‌چیز</string>
+    
+    <string name="scale_custom">اندازهٔ دلخواه</string>
+    
+    <string name="scale_apply">اعمال</string>
+    
+    <string name="scale_note">کارت‌ها، دکمه‌ها، آیکون‌ها و متن با هم بزرگ یا کوچک می‌شوند. هر عددی از %1$s تا %2$s. «اندازهٔ متن» بالا هم جداگانه اعمال می‌شود.</string>
+    
+    <string name="bento_connect_morph">شکل‌دار</string>
+    
+    <string name="bento_connect_rail">کلید</string>
+    
+    <string name="bento_connect_hold">نگه‌داشتن</string>
+    
+    <string name="bento_connect_tile">کاشی بزرگ</string>
+    
+    <string name="bento_tap_connect">بزنید تا وصل شود</string>
+    
+    <string name="bento_tap_disconnect">بزنید تا قطع شود</string>
+    
+    <string name="bento_hold_connect">نگه دارید تا وصل شود</string>
+    
+    <string name="bento_hold_disconnect">نگه دارید تا قطع شود</string>
+    
+    <string name="bento_hold_note">زودتر رها کنید، لغو می‌شود</string>
+    
+    <string name="notif_style_title">ظاهر نوتیفیکیشن</string>
+    
+    <string name="notif_style_bento">کارت بنتو</string>
+    
+    <string name="notif_style_system">سیستمی</string>
+    
+    <string name="notif_style_note">اندروید نوتیفیکیشن Live Update را خودش می‌کشد؛ کارت بنتو وقتی Live Update خاموش باشد نمایش داده می‌شود.</string>
+    
+    <string name="map_ip">آی‌پی</string>
+    
+    <string name="map_network">اپراتور / شبکه</string>
+    
+    <string name="map_refresh">دوباره بگیر</string>
+    
+    <string name="map_route">مسیر ترافیک</string>
+    
+    <string name="speedtest_loaded_down">پینگ هنگام دانلود</string>
+    
+    <string name="speedtest_loaded_up">پینگ هنگام آپلود</string>
+    
+    <string name="speedtest_quality">مناسب برای (امتیاز Cloudflare)</string>
+    
+    <string name="speedtest_streaming">استریم ویدیو</string>
+    
+    <string name="speedtest_gaming">بازی آنلاین</string>
+    
+    <string name="speedtest_rtc">تماس تصویری</string>
+    
+    <string name="speedtest_grade_bad">بد</string>
+    
+    <string name="speedtest_grade_poor">ضعیف</string>
+    
+    <string name="speedtest_grade_average">متوسط</string>
+    
+    <string name="speedtest_grade_good">خوب</string>
+    
+    <string name="speedtest_grade_great">عالی</string>
+    
+    <string name="speedtest_server">سرور Cloudflare</string>
+    
+    <string name="speedtest_steps">مراحل Cloudflare</string>
+    
+    <string name="speedtest_save_data">صرفه‌جویی در داده</string>
+    
+    <string name="speedtest_save_data_sum">وقتی مصرف به %1$s مگابایت رسید، تست تمام شود</string>
+    
+    <string name="speedtest_data_full">تست کامل Cloudflare. اتصال سریع‌تر، داده بیشتری مصرف می‌کند.</string>
+    
+    <string name="onb_finish">تمام</string>
+    
+    <string name="onb_region_title">کجا هستید؟</string>
+    
+    <string name="onb_region_body">سایت‌ها و آدرس‌های کشور خودتان می‌توانند بدون تونل باز شوند. کشوری را که از آن وصل می‌شوید انتخاب کنید.</string>
+    
+    <string name="onb_region_picked">کشور شما</string>
+    
+    <string name="onb_region_search">جست‌وجوی کشور</string>
+    
+    <string name="onb_region_change">قانون‌های کشور</string>
+    
+    <string name="onb_region_change_sum">دوباره کشورتان را انتخاب کنید و قانون‌های مسیریابی را بسازید</string>
+    
+    <string name="onb_rules_title">قانون‌های ترافیک</string>
+    
+    <string name="onb_rules_body">برای کشور شما ساخته شده. بعداً همه را در تنظیمات ← مسیریابی می‌توانید عوض کنید.</string>
+    
+    <string name="onb_rules_apply">جایگزین قانون‌های فعلی</string>
+    
+    <string name="onb_rules_apply_sum">خاموش باشد، قانون‌های فعلی‌تان دست نمی‌خورد</string>
+    
+    <string name="onb_rules_proxy_all">همه‌چیز از تونل</string>
+    
+    <string name="onb_rules_proxy_all_sum">قانون کشور نادیده گرفته می‌شود؛ فقط شبکهٔ محلی مستقیم می‌ماند</string>
+    
+    <string name="onb_rules_local">%1$s مستقیم</string>
+    
+    <string name="onb_rules_local_sum">سایت‌ها و آدرس‌های داخلی بدون تونل باز می‌شوند</string>
+    
+    <string name="onb_rules_ads">مسدود کردن تبلیغات</string>
+    
+    <string name="onb_rules_ads_sum">از فهرست دامنه‌های تبلیغاتی دادهٔ مسیریابی استفاده می‌کند</string>
+    
+    <string name="onb_rules_quic">مسدود کردن QUIC (UDP 443)</string>
+    
+    <string name="onb_rules_quic_sum">برنامه‌ها به TCP برمی‌گردند که بیشتر تونل‌ها بهتر حملش می‌کنند</string>
+    
+    <string name="onb_rules_torrent">بیت‌تورنت مستقیم</string>
+    
+    <string name="onb_rules_torrent_sum">ترافیک تورنت از سرور شما رد نمی‌شود</string>
+    
+    <string name="onb_rules_preview">%1$d قانون</string>
+    
+    <string name="onb_look_title">مال خودتان</string>
+    
+    <string name="onb_look_body">تم، رنگ‌ها و دکمهٔ اتصال. همه را بعداً هم می‌شود عوض کرد.</string>
+    
+    <string name="onb_ready_title">همه‌چیز آماده است</string>
+    
+    <string name="onb_ready_rules">%1$d قانون مسیریابی آماده شد</string>
+    
+    <string name="onb_ready_kept">قانون‌های مسیریابی شما همان‌طور ماند</string>
+    
+    <string name="onb_replay_title">راه‌اندازی دوباره</string>
+    
+    <string name="onb_replay_sub">زبان، قانون‌های کشور و ظاهر، قدم به قدم</string>
+    
+    <string name="onb_region_needed">برای ادامه، کشورتان را از فهرست انتخاب کنید.</string>
+    
+    <string name="onb_region_detected">تشخیص از روی %1$s</string>
+    
+    <string name="onb_region_change_hint">درست نیست؟ کشورتان را از پایین انتخاب کنید.</string>
+    
+    <string name="onb_region_from_sim">سیم‌کارت</string>
+    
+    <string name="onb_region_from_mobile">شبکهٔ موبایل</string>
+    
+    <string name="onb_region_from_network">اتصال فعلی (وای‌فای یا دیتا)</string>
+    
+    <string name="onb_region_from_language">زبان و منطقهٔ گوشی</string>
+    
+    <string name="sb_snell_psk_short">سرور Snell نسخهٔ ۶ کلیدی بین ۱۲ تا ۲۵۵ بایت می‌خواهد.</string>
+    
+    <string name="dns_region_title">DNS داخلی برای سایت‌های مستقیم</string>
+    
+    <string name="dns_region_sum">سایت‌های داخلی از %1$s جواب می‌گیرند تا سرورهای داخلی برگردد</string>
+    
+    <string name="ipd_title">IP و اتصال</string>
+    
+    <string name="ipd_subtitle">آنچه سایت‌ها از این اتصال می‌بینند</string>
+    
+    <string name="ipd_open">جزئیات کامل IP</string>
+    
+    <string name="ipd_open_sum">اپراتور، ASN، شهرت IP، اطلاعات ثبت و بررسی نشت DNS</string>
+    
+    <string name="ipd_failed">سرویس‌های جست‌وجو جواب ندادند. اتصال را بررسی کنید و دوباره امتحان کنید.</string>
+    
+    <string name="ipd_sources">منبع: %1$s</string>
+    
+    <string name="ipd_sources_tunnel">منبع: %1$s · از داخل تونل</string>
+    
+    <string name="ipd_public_ip">آی‌پی عمومی</string>
+    
+    <string name="ipd_via_tunnel">از تونل</string>
+    
+    <string name="ipd_direct">بدون VPN</string>
+    
+    <string name="ipd_hostname">نام میزبان (PTR)</string>
+    
+    <string name="ipd_country">کشور</string>
+    
+    <string name="ipd_timezone">منطقهٔ زمانی</string>
+    
+    <string name="ipd_local_time">ساعت آنجا: %1$s</string>
+    
+    <string name="ipd_tz_mismatch">منطقهٔ زمانی دستگاه شما (%1$s) با محل این IP فرق دارد. بعضی سایت‌ها از همین می‌فهمند VPN روشن است.</string>
+    
+    <string name="ipd_network">شبکه</string>
+    
+    <string name="ipd_isp">اپراتور (ISP)</string>
+    
+    <string name="ipd_org">سازمان</string>
+    
+    <string name="ipd_asn">ASN</string>
+    
+    <string name="ipd_range">بازهٔ شبکه</string>
+    
+    <string name="ipd_usage">نوع اتصال</string>
+    
+    <string name="ipd_coords">مختصات</string>
+    
+    <string name="ipd_usage_hosting">دیتاسنتر</string>
+    
+    <string name="ipd_usage_isp">اینترنت خانگی یا اداری</string>
+    
+    <string name="ipd_usage_mobile">اینترنت همراه</string>
+    
+    <string name="ipd_usage_business">شرکتی</string>
+    
+    <string name="ipd_usage_education">آموزشی</string>
+    
+    <string name="ipd_usage_government">دولتی</string>
+    
+    <string name="ipd_reputation">شهرت IP</string>
+    
+    <string name="ipd_reputation_note">سایت‌ها و برنامه‌ها با فهرست‌هایی مثل این، VPN را می‌بندند یا بررسی بیشتری می‌خواهند.</string>
+    
+    <string name="ipd_vpn_yes">VPN شناخته شد</string>
+    
+    <string name="ipd_vpn_named">VPN: %1$s</string>
+    
+    <string name="ipd_vpn_no">VPN شناخته نشد</string>
+    
+    <string name="ipd_proxy_yes">پراکسی شناخته شد</string>
+    
+    <string name="ipd_proxy_no">پراکسی نیست</string>
+    
+    <string name="ipd_tor_yes">خروجی Tor</string>
+    
+    <string name="ipd_tor_no">Tor نیست</string>
+    
+    <string name="ipd_dc_yes">دیتاسنتر</string>
+    
+    <string name="ipd_dc_no">دیتاسنتر نیست</string>
+    
+    <string name="ipd_abuse_yes">سوءاستفاده گزارش شده</string>
+    
+    <string name="ipd_abuse_no">سوءاستفاده گزارش نشده</string>
+    
+    <string name="ipd_registry">اطلاعات ثبت (RDAP)</string>
+    
+    <string name="ipd_reg_name">نام شبکه</string>
+    
+    <string name="ipd_reg_owner">ثبت‌شده به نام</string>
+    
+    <string name="ipd_reg_date">تاریخ ثبت</string>
+    
+    <string name="ipd_reg_rir">مرجع ثبت</string>
+    
+    <string name="ipd_dns">DNS و نشت</string>
+    
+    <string name="ipd_dns_offline">اول وصل شوید. این بررسی یک درخواست DNS را مثل بقیهٔ برنامه‌ها از تونل می‌فرستد.</string>
+    
+    <string name="ipd_dns_failed">بررسی DNS جوابی نگرفت.</string>
+    
+    <string name="ipd_dns_resolver">DNS که جواب داد</string>
+    
+    <string name="ipd_dns_answer">جواب</string>
+    
+    <string name="ipd_dns_country">کشور DNS</string>
+    
+    <string name="ipd_dns_ok">بدون نشت</string>
+    
+    <string name="ipd_dns_leak">نشت: DNS از %1$s بیرون می‌رود</string>
+    
+    <string name="ipd_dns_elsewhere">DNS در کشور دیگری است</string>
+    
+    <string name="ipd_dns_fake_chip">FakeDNS</string>
+    
+    <string name="ipd_dns_fake">FakeDNS روشن است: برنامه‌ها آدرس جایگزین می‌گیرند و هسته آدرس واقعی را از داخل تونل پیدا می‌کند.</string>
+    
+    <string name="ipd_ipv6">IPv6</string>
+    
+    <string name="ipd_ipv6_on">فعال</string>
+    
+    <string name="ipd_ipv6_off">ندارد</string>
+    
+    <string name="manual_edit_title">ویرایش سرور</string>
+    
+    <string name="bento_palette_citrus">سیتروس</string>
+    
+    <string name="bento_palette_matcha">ماچا</string>
+    
+    <string name="bento_palette_neon">نئون</string>
+    
+    <string name="bento_palette_pistachio">پسته‌ای</string>
+    
+    <string name="bento_palette_ocean">اقیانوس</string>
+    
+    <string name="bento_palette_sunset">غروب</string>
+    
+    <string name="bento_palette_berry">توت</string>
+
 </resources>

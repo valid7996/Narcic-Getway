@@ -246,6 +246,29 @@ data class VpnProfile(
 
     val isEditable: Boolean get() = !isLocked
 
+    val engineLabel: String
+        get() = engineLabelOf(source)
+
+    val standardLink: String?
+        get() = when (val src = source) {
+            is ProfileSource.Link -> src.link
+            is ProfileSource.SingBox -> src.link
+            else -> null
+        }?.takeUnless { SingBoxLinks.handles(it) }
+
+    val linkServer: ServerConfig?
+        get() = standardLink?.let { runCatching { ConfigParser.parse(it) }.getOrNull() }
+
+    fun unsealed(): VpnProfile {
+        val src = source as? ProfileSource.Sealed ?: return this
+        val payload = runCatching {
+            dev.valid7996.narcicgeteway.crypto.ZsxCrypto.open(Base64.decode(src.zsxBase64), password = null)
+        }.getOrNull() ?: return this
+        val inner = sourceOfPayload(payload) ?: return this
+        return copy(source = inner)
+    }
+
+
     fun resolveUnsealed(): VpnProfile? {
         val sealed = source as? ProfileSource.Sealed ?: return null
         val payload = runCatching {
@@ -535,6 +558,107 @@ data class VpnProfile(
     }
 
     companion object {
+
+        fun engineLabelOf(source: ProfileSource): String = when (val src = source) {
+            is ProfileSource.SingBox, is ProfileSource.SingBoxConfig -> ENGINE_SINGBOX
+            is ProfileSource.Link -> if (SingBoxLinks.handles(src.link)) ENGINE_SINGBOX else ENGINE_XRAY
+            is ProfileSource.Tor -> "Tor"
+            is ProfileSource.Psiphon -> "Psiphon"
+            is ProfileSource.DnsTunnel -> if (src.settings.isVaydns) "VayDNS" else "DNSTT"
+            is ProfileSource.MasterDns -> "MasterDNS"
+            is ProfileSource.Ssh -> "SSH"
+            is ProfileSource.OpenConnect -> "OpenConnect"
+            is ProfileSource.Ikev2 -> "IKEv2"
+            is ProfileSource.SniSpoof -> "Xray · SNI"
+            is ProfileSource.Aether -> "Aether"
+            is ProfileSource.Sstp -> "SSTP"
+            is ProfileSource.MhrvRelay -> "MHRV"
+            is ProfileSource.CrossChain -> ENGINE_CHAIN
+            is ProfileSource.AutoSelect -> ENGINE_AUTO
+            is ProfileSource.Sealed -> sealedEngineLabel(src.zsxBase64)
+            is ProfileSource.RawJson, is ProfileSource.ProxyChain -> ENGINE_XRAY
+        }
+
+        private val sealedLabels = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+        private fun sealedEngineLabel(zsx: String): String = sealedLabels.getOrPut(zsx) {
+            val payload = runCatching {
+                dev.valid7996.narcicgeteway.crypto.ZsxCrypto.open(Base64.decode(zsx), password = null)
+            }.getOrNull()
+            payload?.let { sourceOfPayload(it) }?.takeIf { it !is ProfileSource.Sealed }?.let { engineLabelOf(it) } ?: ENGINE_XRAY
+        }
+
+        fun sourceOfPayload(payload: String): ProfileSource? {
+            val text = payload.trim()
+            if (text.isEmpty()) return null
+            if (NrgLink.isNrgLink(text)) {
+                return NrgLink.parse(text)?.source?.takeIf { NrgLink.handles(it) && it !is ProfileSource.ProxyChain && it !is ProfileSource.CrossChain }
+            }
+            if (SniSpoofLink.isSniSpoofLink(text)) {
+                return SniSpoofLink.parse(text)?.second?.let { ProfileSource.SniSpoof(it) }
+            }
+            if (AetherLink.isAetherLink(text)) {
+                return AetherLink.parse(text)?.second?.let { ProfileSource.Aether(it) }
+            }
+            if (text.startsWith("sstp://", ignoreCase = true)) {
+                return SstpProfile.fromLink(text)?.second?.let { ProfileSource.Sstp(it) }
+            }
+            if (text.startsWith(MhrvRelayProfile.SHARE_PREFIX, ignoreCase = true)) {
+                return MhrvRelayProfile.fromText(text)?.let { ProfileSource.MhrvRelay(it) }
+            }
+            when (SingBoxJson.shapeOf(text)) {
+                SingBoxJson.Shape.FullConfig -> return ProfileSource.SingBoxConfig(text)
+                SingBoxJson.Shape.None -> Unit
+                else -> {
+                    val server = SingBoxJson.servers(text).firstOrNull() ?: return null
+                    return ProfileSource.SingBox(json = server.fragment, carrier = server.tag)
+                }
+            }
+            if (CustomConfig.looksLikeCustomJson(text)) return ProfileSource.RawJson(text)
+            return runCatching { fromAnyLink(text, id = "sealed", addedAt = 0).source }.getOrNull()
+        }
+
+        fun fromAnyLink(
+            link: String,
+            id: String,
+            addedAt: Long,
+            locked: Boolean = false,
+            subscriptionId: String = "",
+            name: String? = null,
+        ): VpnProfile {
+            if (SingBoxLinks.handles(link)) {
+                val parsed = SingBoxLinks.parse(link)
+                val server = SingBoxJson.servers(parsed.fragment).firstOrNull()
+                    ?: throw ConfigParseException("Invalid sing-box link")
+                return fromSingBox(server, id, addedAt, subscriptionId, name ?: parsed.name, link)
+                    .copy(isLocked = locked)
+            }
+            val parsed = ConfigParser.parse(link)
+            val profile = if (parsed.runOnSingBox && SingBoxConvert.canRun(parsed)) {
+                val tag = SingBoxConvert.tagOf(parsed)
+                VpnProfile(
+                    id = id,
+                    name = parsed.remark.ifBlank { "${parsed.address}:${parsed.port}" },
+                    protocol = parsed.protocol.name,
+                    address = parsed.address,
+                    port = parsed.port,
+                    transportLabel = parsed.transportLabel,
+                    source = ProfileSource.SingBox(json = SingBoxConvert.fragment(parsed, tag), carrier = tag, link = link),
+                    addedAt = addedAt,
+                    isLocked = locked,
+                    subscriptionId = subscriptionId,
+                )
+            } else {
+                fromLink(link, id, addedAt, locked, subscriptionId)
+            }
+            return if (name.isNullOrBlank()) profile else profile.copy(name = name)
+        }
+
+        const val ENGINE_XRAY = "Xray"
+        const val ENGINE_SINGBOX = "sing-box"
+        const val ENGINE_CHAIN = "Chain"
+        const val ENGINE_AUTO = "Auto"
+
         fun fromPsiphon(
             settings: PsiphonProfile,
             id: String,

@@ -15,6 +15,9 @@ import dev.valid7996.narcicgeteway.domain.config.UnsupportedTransportException
 import dev.valid7996.narcicgeteway.domain.config.VpnProfile
 import dev.valid7996.narcicgeteway.domain.config.XrayJsonBuilder
 import dev.valid7996.narcicgeteway.domain.config.autoSelectTuning
+import dev.valid7996.narcicgeteway.data.assets.GeoCodeReader
+import dev.valid7996.narcicgeteway.domain.config.effectiveLocalProxyPort
+import dev.valid7996.narcicgeteway.domain.config.engineRemoteDns
 import dev.valid7996.narcicgeteway.domain.config.singBoxDeviceOptions
 import dev.valid7996.narcicgeteway.domain.config.toBuildOptions
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
@@ -40,6 +43,7 @@ class StartPlanner(context: Context) {
             val kind: String,
             val socksPort: Int,
             val proxyOnly: Boolean,
+            val engine: String,
         ) : Plan
 
         data class Ikev2(val remark: String, val profile: Ikev2Profile) : Plan
@@ -70,13 +74,15 @@ class StartPlanner(context: Context) {
         }
         val settings = settingsRepository.settings.value
 
-        val proxyOnly = allowProxyOnly && settings.runMode == RunMode.ProxyOnly && kind == VpnManager.KIND_XRAY
+        val proxyOnly = allowProxyOnly && settings.runMode == RunMode.ProxyOnly &&
+            (kind == VpnManager.KIND_XRAY || kind in PROXY_ENGINES)
         return Plan.Start(
             configJson = configJson,
             remark = if (profile.isAutoSelect) autoSelectRemark(profile) else profile.name,
             kind = kind,
-            socksPort = LocalProxy.SOCKS_PORT,
+            socksPort = settings.effectiveLocalProxyPort,
             proxyOnly = proxyOnly,
+            engine = profile.engineLabel,
         )
     }
 
@@ -262,6 +268,10 @@ class StartPlanner(context: Context) {
         }
     }
 
+    private val reserved = mutableSetOf<Int>()
+
+    private fun freePort(preferred: Int): Int = LocalPortPicker.pick(preferred, reserved).also { reserved += it }
+
     private fun buildCrossChainWrapper(profile: VpnProfile): String {
         val (inner, outer) = configRepository.crossChainMembers(profile)
 
@@ -283,6 +293,16 @@ class StartPlanner(context: Context) {
         }.toString()
     }
 
+    fun engineFront(enginePort: Int, onion: Boolean = false): String {
+        val settings = settingsRepository.settings.value
+        return XrayJsonBuilder.buildEngineFront(
+            XrayJsonBuilder.EngineFront(enginePort, onion),
+            LocalProxy.SOCKS_PORT,
+            settings.buildOptions(GeoAssetsRepository(appContext).allPresent()),
+            settings.engineRemoteDns(),
+        )
+    }
+
     private fun AppSettings.buildOptions(
         geoReady: Boolean,
         carrier: Boolean = false,
@@ -302,15 +322,13 @@ class StartPlanner(context: Context) {
     }
 
     private fun physicalServersOf(profile: VpnProfile): List<ServerConfig> {
-        val link = when (val src = profile.source) {
-            is ProfileSource.Link -> src.link
-            is ProfileSource.ProxyChain -> src.memberIds.firstOrNull()
+        val server = when (profile.source) {
+            is ProfileSource.ProxyChain -> profile.proxyChainSettings()?.firstOrNull()
                 ?.let { configRepository.profile(it) }
-                ?.takeIf { it.source is ProfileSource.Link }
-                ?.rawPayload()
-            else -> null
-        } ?: return emptyList()
-        return listOfNotNull(runCatching { ConfigParser.parse(link) }.getOrNull())
+                ?.linkServer
+            else -> profile.linkServer
+        }
+        return listOfNotNull(server)
     }
 
     private fun resolveServerHosts(servers: Collection<ServerConfig>, preferIpv6: Boolean): Map<String, List<String>> {
@@ -321,7 +339,7 @@ class StartPlanner(context: Context) {
         val pool = Executors.newFixedThreadPool(hosts.size.coerceAtMost(4))
         return try {
             val pending = hosts.associateWith { host ->
-                pool.submit(Callable { InetAddress.getAllByName(host).toList() })
+                pool.submit(Callable { guardedLookup(host) })
             }
             val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RESOLVE_BUDGET_MS)
             pending.mapNotNull { (host, future) ->
@@ -335,6 +353,23 @@ class StartPlanner(context: Context) {
         }
     }
 
+    
+    private fun guardedLookup(host: String): List<InetAddress> {
+        val found = InetAddress.getAllByName(host).toList()
+        val clean = found.filterNot { dev.valid7996.narcicgeteway.domain.config.DnsGuard.isPoisoned(it.hostAddress.orEmpty()) }
+        if (clean.isNotEmpty() || found.isEmpty()) return clean
+        dev.valid7996.narcicgeteway.core.LogBus.append(
+            "W/DNS: $host resolved to ${found.joinToString { it.hostAddress.orEmpty() }}, a filtering block page; asking DNS over HTTPS instead",
+        )
+        val real = kotlinx.coroutines.runBlocking { dev.valid7996.narcicgeteway.domain.config.DnsGuard.lookup(host) }
+        if (real == null) {
+            dev.valid7996.narcicgeteway.core.LogBus.append("W/DNS: no clean address for $host; the core resolves it on its own")
+            return emptyList()
+        }
+        dev.valid7996.narcicgeteway.core.LogBus.append("I/DNS: $host is $real by DNS over HTTPS")
+        return listOf(InetAddress.getByName(real))
+    }
+
     private fun orderAddresses(addresses: List<InetAddress>, preferIpv6: Boolean): List<String> {
         val v4 = addresses.filterIsInstance<Inet4Address>().mapNotNull { it.hostAddress }
         if (!preferIpv6) return v4.distinct()
@@ -342,7 +377,15 @@ class StartPlanner(context: Context) {
         return (v6 + v4).distinct()
     }
 
-    private companion object {
-        const val RESOLVE_BUDGET_MS = 2_500L
+    companion object {
+        private const val RESOLVE_BUDGET_MS = 2_500L
+
+        val PROXY_ENGINES = setOf(
+            VpnManager.KIND_PSIPHON,
+            VpnManager.KIND_DNS_TUNNEL,
+            VpnManager.KIND_MASTERDNS,
+            VpnManager.KIND_TOR,
+            VpnManager.KIND_SSH,
+        )
     }
 }

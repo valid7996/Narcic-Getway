@@ -210,7 +210,7 @@ private fun CountryRow(
     }
 }
 
-private fun countryName(code: String): String {
+internal fun countryName(code: String): String {
     val name = Locale("", code).getDisplayCountry(Locale.getDefault())
     return name.ifBlank { code }
 }

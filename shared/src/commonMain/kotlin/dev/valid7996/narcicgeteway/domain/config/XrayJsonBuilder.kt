@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -45,6 +46,10 @@ object XrayJsonBuilder {
 
     private val ALLOWED_VLESS_FLOWS = setOf("xtls-rprx-vision", "xtls-rprx-vision-udp443")
 
+    const val WARP_MASQUE_SNI = "consumer-masque.cloudflareclient.com"
+
+    private val MASQUE_TYPED_KEYS = setOf("host", "path", "user", "pass", "headers", "warp")
+
     private val BUILTIN_OUTBOUND_TAGS = setOf("proxy", "direct", "block")
 
     const val CHAIN_OUT_TAG = "chain-out"
@@ -69,7 +74,29 @@ object XrayJsonBuilder {
 
     private const val TAG_DNS_OUT = "dns-out"
 
+    private const val ONION_DOMAIN = "domain:onion"
+
+    private const val ENGINE_HANDSHAKE_SEC = 60
+
     private const val FAKEDNS_POOL = "198.18.0.0/15"
+    private val KNOWN_DNS_HOSTS = mapOf(
+        "cloudflare-dns.com" to listOf("104.16.248.249", "104.16.249.249"),
+        "dns.cloudflare.com" to listOf("162.159.61.8", "172.64.41.8"),
+        "one.one.one.one" to listOf("1.1.1.1", "1.0.0.1"),
+        "1dot1dot1dot1.cloudflare-dns.com" to listOf("1.1.1.1", "1.0.0.1"),
+        "dns.google" to listOf("8.8.8.8", "8.8.4.4"),
+        "dns.quad9.net" to listOf("9.9.9.9", "149.112.112.112"),
+        "doh.opendns.com" to listOf("146.112.41.2"),
+        "dns.adguard-dns.com" to listOf("94.140.14.14", "94.140.15.15"),
+        "common.dot.dns.yandex.net" to listOf("77.88.8.8", "77.88.8.1"),
+        "dns.alidns.com" to listOf("223.5.5.5", "223.6.6.6"),
+        "doh.pub" to listOf("1.12.12.12", "120.53.53.53"),
+        "dot.pub" to listOf("1.12.12.12", "120.53.53.53"),
+        "dns.sb" to listOf("45.11.45.11", "185.222.222.222"),
+    )
+    private const val TUN_NOISE_PORTS = "135,137-139,5353"
+    private val TUN_NOISE_IPS = listOf("224.0.0.0/3", "ff00::/8")
+    private val REAL_ANSWER_DOMAINS = listOf("domain:msftconnecttest.com", "domain:msftncsi.com")
     private const val FAKEDNS_POOL_SIZE = 65535
 
     private data class EffectiveRule(
@@ -84,17 +111,20 @@ object XrayJsonBuilder {
     private fun effectiveRules(
         rulesets: List<dev.valid7996.narcicgeteway.domain.model.RulesetItem>,
         geo: Boolean,
-    ): List<EffectiveRule> = rulesets.filter { it.enabled }.mapNotNull { r ->
-        val domains = RuleValidation.usableDomains(r.domain, geo)
-        val ips = RuleValidation.usableIps(r.ip, geo)
+        networkType: String?,
+        codes: GeoCodes?,
+    ): List<EffectiveRule> = rulesets.filter { it.enabled && it.appliesOn(networkType) }.mapNotNull { r ->
+        val domains = RuleValidation.usableDomains(r.domain, geo, codes)
+        val ips = RuleValidation.usableIps(r.ip, geo, codes)
 
         if (r.domain.isNotEmpty() && domains.isEmpty()) return@mapNotNull null
         if (r.ip.isNotEmpty() && ips.isEmpty()) return@mapNotNull null
-        if (domains.isEmpty() && ips.isEmpty() && r.port.isBlank() &&
+        val onlyNetworkType = domains.isEmpty() && ips.isEmpty() && r.port.isBlank() &&
             r.network.isBlank() && r.protocol.isEmpty()
-        ) return@mapNotNull null
+        if (onlyNetworkType && r.networkType.isEmpty()) return@mapNotNull null
         if (!RuleValidation.isValidPort(r.port)) return@mapNotNull null
-        EffectiveRule(domains, ips, r.port, r.network, r.protocol, r.outboundTag)
+        val network = if (onlyNetworkType) "tcp,udp" else r.network
+        EffectiveRule(domains, ips, r.port, network, r.protocol, r.outboundTag)
     }
 
     private fun emittedTagFor(ruleTag: String): String =
@@ -109,9 +139,176 @@ object XrayJsonBuilder {
         val net = server.transport.network.lowercase()
         if (net in REMOVED_NETWORKS) throw UnsupportedTransportException(net)
 
-        val withDns = if (server.dnsServers.isEmpty()) options else options.copy(serverDns = server.dnsServers)
+        val configDns = server.dnsServers.mapNotNull(::dnsServerAddress)
+        val withDns = if (configDns.isEmpty()) options else options.copy(serverDns = configDns)
         return assemble(socksPort, withDns, forSpeedtest) { add(proxyOutbound(server, withDns)) }
     }
+
+    data class EngineFront(
+        val port: Int,
+        val onion: Boolean = false,
+    )
+
+    fun buildEngineFront(
+        front: EngineFront,
+        socksPort: Int = LocalProxy.SOCKS_PORT,
+        options: BuildOptions = BuildOptions(),
+        remoteDns: String = ENGINE_REMOTE_DNS,
+    ): String {
+        val frontOptions = options.copy(
+            carrier = false,
+            localDns = true,
+            dialerSocksPort = null,
+            serverDns = emptyList(),
+            remoteDns = streamDns(remoteDns),
+            engineFront = front,
+        )
+        return assemble(socksPort, frontOptions, forSpeedtest = false) { add(engineOutbound(front.port)) }
+    }
+
+    const val ENGINE_REMOTE_DNS = "8.8.8.8"
+
+    fun streamDns(address: String): String {
+        val value = address.trim().ifEmpty { ENGINE_REMOTE_DNS }
+        val scheme = value.substringBefore("://", "").lowercase()
+        if (scheme.isNotEmpty() && scheme != "udp") return value
+        val hostPort = value.substringAfter("://")
+        if (hostPort.equals("localhost", ignoreCase = true)) return value
+        val bracketed = hostPort.startsWith("[")
+        val host = when {
+            bracketed -> hostPort.substringAfter('[').substringBefore(']')
+            hostPort.count { it == ':' } == 1 -> hostPort.substringBefore(':')
+            else -> hostPort
+        }
+        val port = when {
+            bracketed -> hostPort.substringAfter("]:", "").toIntOrNull()
+            hostPort.count { it == ':' } == 1 -> hostPort.substringAfter(':').toIntOrNull()
+            else -> null
+        } ?: 53
+        if (host.isEmpty()) return "tcp://$ENGINE_REMOTE_DNS:53"
+        return if (':' in host) "tcp://[$host]:$port" else "tcp://$host:$port"
+    }
+
+
+    fun rewriteToLoopbackSpoof(rawJson: String): String {
+        val root = leanJson.parseToJsonElement(Jsonc.strip(rawJson)) as? JsonObject ?: return rawJson
+        val outbounds = (root["outbounds"] as? JsonArray)?.mapNotNull { it as? JsonObject } ?: return rawJson
+        if (outbounds.isEmpty()) return rawJson
+
+        val patchedOutbounds = outbounds.mapIndexed { index, ob ->
+            if (index == 0) {
+                buildJsonObject {
+                    ob.forEach { (k, v) ->
+                        when (k) {
+                            "settings" -> {
+                                val settingsObj = v as? JsonObject
+                                if (settingsObj != null) {
+                                    putJsonObject("settings") {
+                                        settingsObj.forEach { (sk, sv) ->
+                                            when (sk) {
+                                                "vnext" -> {
+                                                    val vnextArr = sv as? JsonArray
+                                                    if (vnextArr != null && vnextArr.isNotEmpty()) {
+                                                        putJsonArray("vnext") {
+                                                            vnextArr.forEachIndexed { vi, ve ->
+                                                                val node = ve as? JsonObject
+                                                                if (vi == 0 && node != null) {
+                                                                    addJsonObject {
+                                                                        node.forEach { (nk, nv) ->
+                                                                            when (nk) {
+                                                                                "address" -> put("address", "127.0.0.1")
+                                                                                "port" -> put("port", SniSpoofConfig.RSTA_LOCAL_PORT)
+                                                                                else -> put(nk, nv)
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    add(ve)
+                                                                }
+                                                            }
+                                                        }
+                                                    } else put(sk, sv)
+                                                }
+                                                "servers" -> {
+                                                    val serversArr = sv as? JsonArray
+                                                    if (serversArr != null && serversArr.isNotEmpty()) {
+                                                        putJsonArray("servers") {
+                                                            serversArr.forEachIndexed { si, se ->
+                                                                val node = se as? JsonObject
+                                                                if (si == 0 && node != null) {
+                                                                    addJsonObject {
+                                                                        node.forEach { (nk, nv) ->
+                                                                            when (nk) {
+                                                                                "address" -> put("address", "127.0.0.1")
+                                                                                "port" -> put("port", SniSpoofConfig.RSTA_LOCAL_PORT)
+                                                                                else -> put(nk, nv)
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    add(se)
+                                                                }
+                                                            }
+                                                        }
+                                                    } else put(sk, sv)
+                                                }
+                                                else -> put(sk, sv)
+                                            }
+                                        }
+                                    }
+                                } else put(k, v)
+                            }
+                            else -> put(k, v)
+                        }
+                    }
+                }
+            } else ob
+        }
+        val patchedRoot = buildJsonObject {
+            root.forEach { (k, v) ->
+                if (k == "outbounds") {
+                    putJsonArray("outbounds") { patchedOutbounds.forEach { add(it) } }
+                } else put(k, v)
+            }
+        }
+        return leanJson.encodeToString(JsonObject.serializer(), patchedRoot)
+    }
+
+    fun withSocksPort(config: String, from: Int, to: Int): String {
+        if (from == to) return config
+        val root = runCatching { leanJson.parseToJsonElement(Jsonc.strip(config)) as? JsonObject }.getOrNull() ?: return config
+        val inbounds = root["inbounds"] as? JsonArray ?: return config
+        val moved = JsonArray(
+            inbounds.map { element ->
+                val inbound = element as? JsonObject ?: return@map element
+                if ((inbound["port"] as? JsonPrimitive)?.content?.toIntOrNull() == from) {
+                    JsonObject(inbound + ("port" to JsonPrimitive(to)))
+                } else {
+                    inbound
+                }
+            },
+        )
+        return JsonObject(root + ("inbounds" to moved)).toString()
+    }
+
+    fun withLocalPorts(config: String, from: Int, to: Int): String =
+        if (from == to) config else withSocksPort(withSocksPort(config, from + 1, to + 1), from, to)
+
+    private fun engineOutbound(port: Int) = buildJsonObject {
+        put("tag", "proxy")
+        put("protocol", "socks")
+        putJsonObject("settings") {
+            putJsonArray("servers") {
+                addJsonObject {
+                    put("address", "127.0.0.1")
+                    put("port", port)
+                }
+            }
+        }
+    }
+
+    private fun onionFakeDns(options: BuildOptions): Boolean =
+        options.engineFront?.onion == true && !fakeDnsActive(options)
 
     fun buildSingBox(
         fragment: String,
@@ -130,7 +327,7 @@ object XrayJsonBuilder {
         dialerProxy: String?,
         tuning: SingBoxTuning = SingBoxTuning(),
     ): JsonObject {
-        val parsed = leanJson.parseToJsonElement(Jsonc.strip(SingBoxTuning.apply(fragment, tuning))) as? JsonObject
+        val parsed = leanJson.parseToJsonElement(Jsonc.strip(SingBoxTuning.apply(SingBoxTuning.dropRejectedTls(fragment), tuning))) as? JsonObject
             ?: throw IllegalArgumentException("sing-box fragment is not a JSON object")
         return buildJsonObject {
             put("tag", tag)
@@ -163,7 +360,7 @@ object XrayJsonBuilder {
         data class Xray(val server: ServerConfig) : ChainHop {
             override val label: String get() = server.protocol.label
             override val needsUdp: Boolean
-                get() = server.protocol.isWireguardFamily || server.protocol == Protocol.HYSTERIA
+                get() = server.protocol.isUdpBased
             override val carriesUdp: Boolean get() = server.protocol.carriesUdp
         }
 
@@ -229,11 +426,28 @@ object XrayJsonBuilder {
         tuning: AutoSelectTuning,
         options: BuildOptions = BuildOptions(),
     ): AutoSelectBuild {
+        val group = autoSelectGroup(AutoSelectTags.GROUP, AutoSelectTags::member, members, tuning, options)
+        if (group.tags.isEmpty()) throw AutoSelectNoMembersException(group.skipped.size)
+        val json = assemble(LocalProxy.SOCKS_PORT, options, forSpeedtest = false) {
+            group.outbounds.forEach { add(it) }
+        }
+        return AutoSelectBuild(json = json, memberProfiles = group.tags, skipped = group.skipped)
+    }
+
+    private class GroupBuild(val outbounds: List<JsonObject>, val tags: Map<String, String>, val skipped: List<String>)
+
+    private fun autoSelectGroup(
+        groupTag: String,
+        memberTag: (Int) -> String,
+        members: List<AutoMember>,
+        tuning: AutoSelectTuning,
+        options: BuildOptions,
+    ): GroupBuild {
         val memberOutbounds = mutableListOf<JsonObject>()
         val tags = LinkedHashMap<String, String>()
         val skipped = mutableListOf<String>()
         for (m in members) {
-            val tag = AutoSelectTags.member(tags.size)
+            val tag = memberTag(tags.size)
             val lifted = runCatching {
                 when (m) {
                     is AutoMember.Server ->
@@ -253,11 +467,11 @@ object XrayJsonBuilder {
                 tags[tag] = m.profileId
             }
         }
-        if (tags.isEmpty()) throw AutoSelectNoMembersException(skipped.size)
+        if (tags.isEmpty()) return GroupBuild(emptyList(), tags, skipped)
         val initialTag = tuning.initialProfileId
             ?.let { id -> tags.entries.firstOrNull { it.value == id }?.key }
         val group = buildJsonObject {
-            put("tag", AutoSelectTags.GROUP)
+            put("tag", groupTag)
             put("protocol", "autoselect")
             putJsonObject("settings") {
                 putJsonArray("outbounds") { tags.keys.forEach { add(it) } }
@@ -273,11 +487,7 @@ object XrayJsonBuilder {
                 if (initialTag != null) put("initial", initialTag)
             }
         }
-        val json = assemble(LocalProxy.SOCKS_PORT, options, forSpeedtest = false) {
-            add(group)
-            memberOutbounds.forEach { add(it) }
-        }
-        return AutoSelectBuild(json = json, memberProfiles = tags, skipped = skipped)
+        return GroupBuild(listOf(group) + memberOutbounds, tags, skipped)
     }
 
     private const val AUTO_PROBE_URL = "https://www.gstatic.com/generate_204"
@@ -378,11 +588,29 @@ object XrayJsonBuilder {
                 }
                 .toMap()
         }
+        val groupOutbounds: Map<String, List<JsonObject>> = if (forSpeedtest) emptyMap() else {
+            options.ruleGroups.mapNotNull { (ruleTag, group) ->
+                val tag = emittedTagFor(ruleTag)
+                val built = autoSelectGroup(
+                    groupTag = tag,
+                    memberTag = { i -> "$tag@$i" },
+                    members = group.members,
+                    tuning = options.ruleGroupTuning.copy(initialProfileId = group.initialProfileId),
+                    options = options,
+                )
+                built.outbounds.takeIf { it.isNotEmpty() }?.let { tag to it }
+            }.toMap()
+        }
         fun resolveOutboundTag(ruleTag: String): String = when {
             ruleTag in BUILTIN_OUTBOUND_TAGS -> ruleTag
             emittedTagFor(ruleTag) in namedOutbounds -> emittedTagFor(ruleTag)
+            emittedTagFor(ruleTag) in groupOutbounds -> emittedTagFor(ruleTag)
             else -> "proxy"
         }
+        val serverOutbounds: List<JsonElement> = buildJsonArray { proxyOutbounds() } +
+            namedOutbounds.map { (tag, server) -> serverOutbound(server, options, tag) } +
+            groupOutbounds.values.flatten()
+        val endpointHosts = wireguardEndpointHosts(serverOutbounds)
         val config = buildJsonObject {
             putJsonObject("log") {
                 put("loglevel", options.logLevel)
@@ -391,25 +619,6 @@ object XrayJsonBuilder {
             }
             if (!forSpeedtest) {
                 putJsonArray("inbounds") {
-                    if (options.useXrayTun) {
-                        addJsonObject {
-                            put("tag", "tun")
-                            put("protocol", "tun")
-                            putJsonObject("settings") {
-                                put("name", "xray0")
-                                put("MTU", options.vpnMtu)
-                            }
-                            putJsonObject("sniffing") {
-                                put("enabled", options.sniffing)
-                                putJsonArray("destOverride") {
-                                    add("http")
-                                    add("tls")
-                                    add("quic")
-                                    if (fakeDnsActive(options)) add("fakedns")
-                                }
-                            }
-                        }
-                    }
                     add(socksInbound(socksPort, options))
                     if (options.appendHttpProxy) add(httpInbound(socksPort + 1, options))
 
@@ -422,7 +631,7 @@ object XrayJsonBuilder {
                 putJsonArray("inbounds") {}
             }
 
-            if (!forSpeedtest && fakeDnsActive(options)) {
+            if (!forSpeedtest && (fakeDnsActive(options) || onionFakeDns(options))) {
                 putJsonArray("fakedns") {
                     addJsonObject {
                         put("ipPool", FAKEDNS_POOL)
@@ -431,13 +640,11 @@ object XrayJsonBuilder {
                 }
             }
             putJsonArray("outbounds") {
-                proxyOutbounds()
-
-                namedOutbounds.forEach { (tag, server) -> add(proxyOutbound(server, options, tag = tag)) }
+                serverOutbounds.forEach { add(it) }
                 add(directOutbound())
                 add(blockOutbound())
 
-                if (!forSpeedtest && (localDnsActive(options) || options.useXrayTun)) add(dnsOutbound())
+                if (!forSpeedtest && localDnsActive(options)) add(dnsOutbound())
 
                 if (options.fragmentEnabled && options.dialerSocksPort == null) {
                     add(fragmentOutbound(options))
@@ -447,14 +654,16 @@ object XrayJsonBuilder {
             }
             val geo = options.geoAssetsAvailable
 
-            val rules = if (forSpeedtest) emptyList() else effectiveRules(options.rulesets, geo)
+            val rules = if (forSpeedtest) emptyList() else effectiveRules(options.rulesets, geo, options.networkType, options.geoCodes)
 
-            val dnsSplit = if (forSpeedtest) DnsSplit() else dnsSplit(rules, options)
+            val dnsSplit = if (forSpeedtest) DnsSplit() else dnsSplit(rules, options, endpointHosts)
             if (!forSpeedtest) put("dns", dns(options, dnsSplit))
             putJsonObject("routing") {
                 put("domainStrategy", options.domainStrategy)
                 putJsonArray("rules") {
                     if (forSpeedtest) return@putJsonArray
+
+                    if (options.tunTraffic && !options.carrier) tunNoiseRules(TAG_SOCKS_IN).forEach { add(it) }
 
                     if (localDnsActive(options)) {
                         addJsonObject {
@@ -465,16 +674,15 @@ object XrayJsonBuilder {
                         }
                     }
 
-                    if (options.useXrayTun) {
+                    dnsRoutingRules(dnsSplit).forEach { add(it) }
+
+                    if (options.engineFront?.onion == true) {
                         addJsonObject {
                             put("type", "field")
-                            putJsonArray("inboundTag") { add("tun") }
-                            put("port", "53")
-                            put("outboundTag", TAG_DNS_OUT)
+                            put("outboundTag", "proxy")
+                            putJsonArray("domain") { add(ONION_DOMAIN) }
                         }
                     }
-
-                    dnsRoutingRules(dnsSplit).forEach { add(it) }
 
                     if (options.rulesets.isNotEmpty()) {
                         rules.forEach { r ->
@@ -489,11 +697,11 @@ object XrayJsonBuilder {
                             }
                         }
                     } else {
-                        customRule(options.customBlockRules, "block", geo).forEach { add(it) }
-                        customRule(options.customDirectRules, "direct", geo).forEach { add(it) }
-                        customRule(options.customProxyRules, "proxy", geo).forEach { add(it) }
+                        customRule(options.customBlockRules, "block", geo, options.geoCodes).forEach { add(it) }
+                        customRule(options.customDirectRules, "direct", geo, options.geoCodes).forEach { add(it) }
+                        customRule(options.customProxyRules, "proxy", geo, options.geoCodes).forEach { add(it) }
                     }
-                    if (options.blockAds && options.geoAssetsAvailable) {
+                    if (options.blockAds && geoSite(options, "category-ads-all")) {
                         addJsonObject {
                             put("type", "field")
                             put("outboundTag", "block")
@@ -505,31 +713,46 @@ object XrayJsonBuilder {
                             put("type", "field")
                             put("outboundTag", "direct")
                             putJsonArray("ip") {
-                                if (options.geoAssetsAvailable) {
+                                if (geoIp(options, "private")) {
                                     add("geoip:private")
                                 } else {
                                     PRIVATE_RANGES.forEach { add(it) }
                                 }
                             }
                         }
+                        addJsonObject {
+                            put("type", "field")
+                            put("outboundTag", "direct")
+                            putJsonArray("domain") { lanDomains(options).forEach { add(it) } }
+                        }
                     }
 
-                    if (options.bypassIran && options.geoAssetsAvailable) {
+                    if (options.bypassIran && geoIp(options, "ir")) {
                         addJsonObject {
                             put("type", "field")
                             put("outboundTag", "direct")
                             putJsonArray("ip") { add("geoip:ir") }
                         }
+                    }
+                    if (options.bypassIran && geoSite(options, "category-ir")) {
                         addJsonObject {
                             put("type", "field")
                             put("outboundTag", "direct")
                             putJsonArray("domain") { add("geosite:category-ir") }
                         }
                     }
+
+                    if (options.engineFront != null) {
+                        addJsonObject {
+                            put("type", "field")
+                            put("network", "udp")
+                            put("outboundTag", "block")
+                        }
+                    }
                 }
             }
             if (!forSpeedtest) {
-                put("policy", statsPolicy())
+                put("policy", statsPolicy(slowUpstream = options.engineFront != null))
                 putJsonObject("stats") {}
             }
         }
@@ -545,23 +768,33 @@ object XrayJsonBuilder {
 
         val singBox: SingBoxTuning = SingBoxTuning(),
         val logLevel: String = "warning",
-        val domainStrategy: String = "IPIfNonMatch",
+        val domainStrategy: String = "AsIs",
         val sniffing: Boolean = true,
         val routeOnly: Boolean = false,
 
         val carrier: Boolean = false,
+
+        val tunTraffic: Boolean = false,
         val bypassLan: Boolean = true,
         val bypassIran: Boolean = false,
         val blockAds: Boolean = false,
 
         val geoAssetsAvailable: Boolean = false,
+
+        val geoCodes: GeoCodes? = null,
         val customProxyRules: List<String> = emptyList(),
         val customDirectRules: List<String> = emptyList(),
         val customBlockRules: List<String> = emptyList(),
 
         val rulesets: List<dev.valid7996.narcicgeteway.domain.model.RulesetItem> = emptyList(),
 
+        val networkType: String? = null,
+
         val ruleOutbounds: Map<String, ServerConfig> = emptyMap(),
+
+        val ruleGroups: Map<String, RuleGroup> = emptyMap(),
+
+        val ruleGroupTuning: AutoSelectTuning = AutoSelectTuning(),
         val remoteDns: String = "https://1.1.1.1/dns-query",
 
         val serverDns: List<String> = emptyList(),
@@ -594,11 +827,11 @@ object XrayJsonBuilder {
         val muxXudpConcurrency: Int = 16,
         val muxXudpQuic: String = "reject",
 
-        val useXrayTun: Boolean = false,
-        val vpnMtu: Int = 1500,
-        val enableLocalProxy: Boolean = true,
-
         val dialerSocksPort: Int? = null,
+
+        val engineFront: EngineFront? = null,
+
+        val useSystemCa: Boolean = false,
     )
 
     data class LanShare(
@@ -606,12 +839,48 @@ object XrayJsonBuilder {
         val username: String,
         val password: String,
         val udp: Boolean,
+        val auth: Boolean = true,
     )
 
     private fun usableLanShare(options: BuildOptions): LanShare? = options.lan?.takeIf {
-        it.username.isNotBlank() && it.password.isNotBlank() &&
+        (!it.auth || it.username.isNotBlank() && it.password.isNotBlank()) &&
             it.port in 1..65534 && !LocalPorts.isInternal(it.port) && !LocalPorts.isInternal(it.port + 1)
     }
+
+    fun tunNoiseRules(inboundTag: String): List<JsonObject> = listOf(
+        buildJsonObject {
+            put("type", "field")
+            putJsonArray("inboundTag") { add(inboundTag) }
+            put("network", "udp")
+            put("port", TUN_NOISE_PORTS)
+            put("outboundTag", "block")
+        },
+        buildJsonObject {
+            put("type", "field")
+            putJsonArray("inboundTag") { add(inboundTag) }
+            putJsonArray("ip") { TUN_NOISE_IPS.forEach { add(it) } }
+            put("outboundTag", "block")
+        },
+    )
+
+    private fun dnsServerHost(address: String): String? {
+        val rest = address.trim().substringAfter("://", "")
+        if (rest.isEmpty()) return null
+        val hostPort = rest.substringBefore('/').substringBefore('?')
+        if (hostPort.startsWith("[")) return null
+        val host = hostPort.substringBefore(':').lowercase()
+        return host.takeIf { it.isNotEmpty() && !isIpLiteral(it) }
+    }
+
+    private fun lanDomains(options: BuildOptions): List<String> =
+        if (geoSite(options, "private")) listOf("geosite:private")
+        else listOf("domain:localhost", "domain:local", "domain:lan")
+
+    private fun geoSite(options: BuildOptions, code: String): Boolean =
+        options.geoAssetsAvailable && options.geoCodes?.hasSite(code) != false
+
+    private fun geoIp(options: BuildOptions, code: String): Boolean =
+        options.geoAssetsAvailable && options.geoCodes?.hasIp(code) != false
 
     private fun localDnsActive(options: BuildOptions): Boolean = options.localDns && !options.carrier
 
@@ -640,7 +909,7 @@ object XrayJsonBuilder {
         val hostHeader = s.transport.host?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
         val sni = s.tls.sni?.trim()?.takeIf { it.isNotEmpty() }
         val nameIsExplicit = when {
-            s.protocol == Protocol.HYSTERIA -> sni != null
+            s.protocol == Protocol.HYSTERIA || s.protocol == Protocol.MASQUE -> sni != null || s.isWarp
             s.protocol.isWireguardFamily -> true
             else -> when (s.tls.security.lowercase()) {
                 "tls" -> sni != null || hostHeader != null
@@ -652,6 +921,18 @@ object XrayJsonBuilder {
     }
 
     private val HOST_HEADER_TRANSPORTS = setOf("ws", "websocket", "httpupgrade", "xhttp", "splithttp")
+
+    fun dnsServerAddress(entry: String): String? {
+        val v = entry.trim()
+        if (v.isEmpty() || v.contains('$')) return null
+        if (v.contains("://")) return v
+        val host = when {
+            v.startsWith("[") -> v.substringAfter('[').substringBefore(']')
+            v.count { it == ':' } == 1 -> v.substringBefore(':')
+            else -> v
+        }
+        return host.takeIf { isIpLiteral(it) }
+    }
 
     fun isIpLiteral(value: String): Boolean {
         val v = value.trim().removePrefix("[").removeSuffix("]")
@@ -686,6 +967,7 @@ object XrayJsonBuilder {
         entries: List<String>,
         outboundTag: String,
         geoAssetsAvailable: Boolean = true,
+        codes: GeoCodes? = null,
     ): List<JsonObject> {
         val clean = entries
             .map { it.trim() }
@@ -695,8 +977,8 @@ object XrayJsonBuilder {
         val rawIps = clean.filter { RoutingMigration.looksLikeAddress(it) }
         val rawDomains = clean - rawIps.toSet()
 
-        val ips = RuleValidation.usableIps(rawIps, geoAssetsAvailable)
-        val domains = RuleValidation.usableDomains(rawDomains, geoAssetsAvailable)
+        val ips = RuleValidation.usableIps(rawIps, geoAssetsAvailable, codes)
+        val domains = RuleValidation.usableDomains(rawDomains, geoAssetsAvailable, codes)
 
         return buildList {
             if (domains.isNotEmpty()) add(
@@ -729,14 +1011,25 @@ object XrayJsonBuilder {
         val enabled: Boolean = false,
     )
 
-    private fun dnsSplit(rules: List<EffectiveRule>, options: BuildOptions): DnsSplit {
+    private fun wireguardEndpointHosts(outbounds: List<JsonElement>): List<String> = outbounds
+        .mapNotNull { it as? JsonObject }
+        .filter { (it["protocol"] as? JsonPrimitive)?.content == "wireguard" }
+        .flatMap { outbound ->
+            val peers = ((outbound["settings"] as? JsonObject)?.get("peers") as? JsonArray).orEmpty()
+            peers.mapNotNull { peer -> ((peer as? JsonObject)?.get("endpoint") as? JsonPrimitive)?.content }
+        }
+        .mapNotNull { endpoint ->
+            val host = if (endpoint.startsWith("[")) "" else endpoint.substringBeforeLast(':', endpoint).trim()
+            host.takeIf { it.isNotEmpty() && !isIpLiteral(it) }?.let { "full:$it" }
+        }
+        .distinct()
+
+    private fun dnsSplit(rules: List<EffectiveRule>, options: BuildOptions, endpointHosts: List<String> = emptyList()): DnsSplit {
         val domestic = mutableListOf<Pair<String, List<String>>>()
         val proxied = mutableListOf<String>()
         val blocked = mutableListOf<String>()
 
-        val localDomains = if (options.geoAssetsAvailable) listOf("geosite:private")
-        else listOf("domain:localhost", "domain:local", "domain:lan")
-        domestic += "${TAG_DOMESTIC_DNS}-base" to localDomains
+        domestic += "${TAG_DOMESTIC_DNS}-base" to (lanDomains(options) + endpointHosts).distinct()
 
         rules.forEachIndexed { index, r ->
             if (r.domains.isEmpty()) return@forEachIndexed
@@ -784,15 +1077,23 @@ object XrayJsonBuilder {
             if (i > 0) e.substring(0, i).trim() to e.substring(i + 1).trim() else null
         }.filter { it.first.isNotEmpty() && it.second.isNotEmpty() }
 
+        val dnsServerHosts = (listOf(options.remoteDns, options.directDns) + options.serverDns)
+            .mapNotNull { dnsServerHost(it) }
+            .distinct()
+            .mapNotNull { host -> KNOWN_DNS_HOSTS[host]?.let { host to it } }
+            .filter { (host, _) -> hosts.none { it.first.equals(host, ignoreCase = true) } }
+
         val pinnedServers = if (options.outboundDomainResolve == "1") {
             options.resolvedServerHosts.keys.mapNotNull { host ->
                 resolvedIps(host, options)?.let { host to it }
             }
         } else emptyList()
-        if (hosts.isNotEmpty() || split.blockedDomains.isNotEmpty() || pinnedServers.isNotEmpty()) putJsonObject("hosts") {
+        if (hosts.isNotEmpty() || split.blockedDomains.isNotEmpty() || pinnedServers.isNotEmpty() || dnsServerHosts.isNotEmpty()) putJsonObject("hosts") {
             pinnedServers.forEach { (host, ips) ->
                 if (ips.size == 1) put(host, ips[0]) else putJsonArray(host) { ips.forEach { add(it) } }
             }
+
+            dnsServerHosts.forEach { (host, ips) -> putJsonArray(host) { ips.forEach { add(it) } } }
 
             split.blockedDomains.forEach { put(it, "127.0.0.1") }
 
@@ -800,8 +1101,18 @@ object XrayJsonBuilder {
         }
         putJsonArray("servers") {
             if (fakeDnsActive(options)) add("fakedns")
+            if (onionFakeDns(options)) addJsonObject {
+                put("address", "fakedns")
+                putJsonArray("domains") { add(ONION_DOMAIN) }
+                put("skipFallback", true)
+            }
             options.serverDns.forEach { add(it) }
             add(options.remoteDns)
+            if (fakeDnsActive(options)) addJsonObject {
+                put("address", options.remoteDns)
+                putJsonArray("domains") { REAL_ANSWER_DOMAINS.forEach { add(it) } }
+                put("skipFallback", true)
+            }
             if (split.proxyDomains.isNotEmpty()) addJsonObject {
                 put("address", options.remoteDns)
                 putJsonArray("domains") { split.proxyDomains.forEach { add(it) } }
@@ -890,90 +1201,6 @@ object XrayJsonBuilder {
 
         return if (forSpeedtest) leanJson.encodeToString(JsonObject.serializer(), patched)
         else prettyJson.encodeToString(JsonObject.serializer(), patched)
-    }
-
-    fun rewriteToLoopbackSpoof(rawJson: String): String {
-        val root = leanJson.parseToJsonElement(Jsonc.strip(rawJson)) as? JsonObject ?: return rawJson
-        val outbounds = (root["outbounds"] as? JsonArray)?.mapNotNull { it as? JsonObject } ?: return rawJson
-        if (outbounds.isEmpty()) return rawJson
-
-        val patchedOutbounds = outbounds.mapIndexed { index, ob ->
-            if (index == 0) {
-                buildJsonObject {
-                    ob.forEach { (k, v) ->
-                        when (k) {
-                            "settings" -> {
-                                val settingsObj = v as? JsonObject
-                                if (settingsObj != null) {
-                                    putJsonObject("settings") {
-                                        settingsObj.forEach { (sk, sv) ->
-                                            when (sk) {
-                                                "vnext" -> {
-                                                    val vnextArr = sv as? JsonArray
-                                                    if (vnextArr != null && vnextArr.isNotEmpty()) {
-                                                        putJsonArray("vnext") {
-                                                            vnextArr.forEachIndexed { vi, ve ->
-                                                                val node = ve as? JsonObject
-                                                                if (vi == 0 && node != null) {
-                                                                    addJsonObject {
-                                                                        node.forEach { (nk, nv) ->
-                                                                            when (nk) {
-                                                                                "address" -> put("address", "127.0.0.1")
-                                                                                "port" -> put("port", SniSpoofConfig.RSTA_LOCAL_PORT)
-                                                                                else -> put(nk, nv)
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                } else {
-                                                                    add(ve)
-                                                                }
-                                                            }
-                                                        }
-                                                    } else put(sk, sv)
-                                                }
-                                                "servers" -> {
-                                                    val serversArr = sv as? JsonArray
-                                                    if (serversArr != null && serversArr.isNotEmpty()) {
-                                                        putJsonArray("servers") {
-                                                            serversArr.forEachIndexed { si, se ->
-                                                                val node = se as? JsonObject
-                                                                if (si == 0 && node != null) {
-                                                                    addJsonObject {
-                                                                        node.forEach { (nk, nv) ->
-                                                                            when (nk) {
-                                                                                "address" -> put("address", "127.0.0.1")
-                                                                                "port" -> put("port", SniSpoofConfig.RSTA_LOCAL_PORT)
-                                                                                else -> put(nk, nv)
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                } else {
-                                                                    add(se)
-                                                                }
-                                                            }
-                                                        }
-                                                    } else put(sk, sv)
-                                                }
-                                                else -> put(sk, sv)
-                                            }
-                                        }
-                                    }
-                                } else put(k, v)
-                            }
-                            else -> put(k, v)
-                        }
-                    }
-                }
-            } else ob
-        }
-        val patchedRoot = buildJsonObject {
-            root.forEach { (k, v) ->
-                if (k == "outbounds") {
-                    putJsonArray("outbounds") { patchedOutbounds.forEach { add(it) } }
-                } else put(k, v)
-            }
-        }
-        return leanJson.encodeToString(JsonObject.serializer(), patchedRoot)
     }
 
     private fun withStatsPolicy(policy: JsonObject?): JsonObject {
@@ -1177,10 +1404,10 @@ object XrayJsonBuilder {
     }
 
     private fun sniffingBlock(options: BuildOptions): JsonObject = buildJsonObject {
-        val fake = fakeDnsActive(options)
+        val fake = fakeDnsActive(options) || onionFakeDns(options)
         put("enabled", (options.sniffing || fake) && !options.carrier)
         putJsonArray("destOverride") {
-            if (options.sniffing) { add("http"); add("tls") }
+            if (options.sniffing) { add("http"); add("tls"); add("quic") }
             if (fake) add("fakedns")
         }
         put("routeOnly", options.routeOnly)
@@ -1200,12 +1427,16 @@ object XrayJsonBuilder {
         put("protocol", "socks")
         put("listen", "0.0.0.0")
         putJsonObject("settings") {
-            put("auth", "password")
-            putJsonArray("accounts") {
-                addJsonObject {
-                    put("user", lan.username)
-                    put("pass", lan.password)
+            if (lan.auth) {
+                put("auth", "password")
+                putJsonArray("accounts") {
+                    addJsonObject {
+                        put("user", lan.username)
+                        put("pass", lan.password)
+                    }
                 }
+            } else {
+                put("auth", "noauth")
             }
             put("udp", lan.udp)
             put("userLevel", 8)
@@ -1219,10 +1450,12 @@ object XrayJsonBuilder {
         put("protocol", "http")
         put("listen", "0.0.0.0")
         putJsonObject("settings") {
-            putJsonArray("accounts") {
-                addJsonObject {
-                    put("user", lan.username)
-                    put("pass", lan.password)
+            if (lan.auth) {
+                putJsonArray("accounts") {
+                    addJsonObject {
+                        put("user", lan.username)
+                        put("pass", lan.password)
+                    }
                 }
             }
             put("userLevel", 8)
@@ -1252,8 +1485,9 @@ private fun quietAccessLog(value: JsonElement): JsonElement {
     return JsonObject(log + ("access" to JsonPrimitive("none")))
 }
 
-private fun statsPolicy() = buildJsonObject {
+private fun statsPolicy(slowUpstream: Boolean = false) = buildJsonObject {
         putJsonObject("levels") {
+            if (slowUpstream) putJsonObject("0") { put("handshake", ENGINE_HANDSHAKE_SEC) }
             putJsonObject("8") {
                 put("connIdle", 300)
                 put("downlinkOnly", 1)
@@ -1268,6 +1502,14 @@ private fun statsPolicy() = buildJsonObject {
             put("statsOutboundDownlink", true)
         }
     }
+
+    private fun serverOutbound(s: ServerConfig, options: BuildOptions, tag: String): JsonObject =
+        if (s.runOnSingBox && SingBoxConvert.canRun(s)) {
+            val carrier = SingBoxConvert.tagOf(s)
+            singBoxOutbound(SingBoxConvert.fragment(s, carrier), carrier, tag, entryDialer(options), options.singBox)
+        } else {
+            proxyOutbound(s, options, tag = tag)
+        }
 
     private fun proxyOutbound(
         s: ServerConfig,
@@ -1330,20 +1572,23 @@ private fun statsPolicy() = buildJsonObject {
                     }
                 }
 
-                Protocol.SOCKS, Protocol.HTTP -> putJsonArray("servers") {
-                    addJsonObject {
-                        put("address", address)
-                        put("port", s.port)
-                        if (s.username.isNotBlank() || s.userId.isNotBlank()) {
-                            putJsonArray("users") {
-                                addJsonObject {
-                                    put("user", s.username)
-                                    put("pass", s.userId)
-                                    put("level", 8)
+                Protocol.SOCKS, Protocol.HTTP -> {
+                    putJsonArray("servers") {
+                        addJsonObject {
+                            put("address", address)
+                            put("port", s.port)
+                            if (s.username.isNotBlank() || s.userId.isNotBlank()) {
+                                putJsonArray("users") {
+                                    addJsonObject {
+                                        put("user", s.username)
+                                        put("pass", s.userId)
+                                        put("level", 8)
+                                    }
                                 }
                             }
                         }
                     }
+                    if (s.protocol == Protocol.HTTP) masqueHeaders(s.transport.headers)?.let { put("headers", it) }
                 }
                 Protocol.WIREGUARD, Protocol.AMNEZIAWG -> {
                     put("secretKey", s.secretKey)
@@ -1351,12 +1596,12 @@ private fun statsPolicy() = buildJsonObject {
                         val addresses = s.localAddresses.ifEmpty { listOf("172.16.0.2/32") }
                         addresses.forEach { add(it) }
                     }
-                    s.wireguardMtu?.let { put("mtu", it) }
+                    put("mtu", s.wireguardMtu ?: DEFAULT_WIREGUARD_MTU)
 
                     s.reserved
-                        ?.split(",")
-                        ?.mapNotNull { it.trim().toIntOrNull() }
-                        ?.takeIf { it.size == 3 && it.any { b -> b != 0 } }
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { SingBoxConvert.reservedOf(it) }
+                        ?.takeIf { it.any { b -> b != 0 } }
                         ?.let { bytes -> putJsonArray("reserved") { bytes.forEach { add(it) } } }
                     putJsonArray("peers") {
                         addJsonObject {
@@ -1374,23 +1619,13 @@ private fun statsPolicy() = buildJsonObject {
                         }
                     }
 
+                    val wgDns = s.dnsServers.mapNotNull(::dnsServerAddress).filter { !it.contains("://") }
+                    if (wgDns.isNotEmpty()) putJsonArray("remoteDNS") { wgDns.forEach { add(it) } }
+
                     val awgEntries = s.awg.entries
                     if (awgEntries.isNotEmpty()) {
                         putJsonObject("awg") {
-                            awgEntries.forEach { (k, v) ->
-                                val key = AwgConfig.CONF_NAME[k] ?: k
-                                val num = if (v.startsWith("0x", ignoreCase = true)) {
-                                    v.drop(2).toLongOrNull(16)
-                                } else {
-                                    v.toLongOrNull()
-                                }
-                                val bool = v.toBooleanStrictOrNull()
-                                when {
-                                    num != null -> put(key, num)
-                                    bool != null -> put(key, bool)
-                                    else -> put(key, v)
-                                }
-                            }
+                            awgEntries.forEach { (k, v) -> put(AwgConfig.CONF_NAME[k] ?: k, v) }
                         }
                     }
                 }
@@ -1400,24 +1635,35 @@ private fun statsPolicy() = buildJsonObject {
                     put("port", s.port)
                     put("version", 2)
                 }
+
+                Protocol.MASQUE -> {
+                    put("address", address)
+                    put("port", s.port)
+                    val dns = s.dnsServers.mapNotNull(::dnsServerAddress).filter { !it.contains("://") }
+                    if (dns.isNotEmpty()) putJsonArray("remoteDNS") { dns.forEach { add(it) } }
+                }
             }
         }
 
         if (s.protocol.supportsTransport || s.protocol == Protocol.SOCKS || s.protocol == Protocol.HTTP) {
             put("streamSettings", streamSettings(s, options, dialerProxy))
 
-            if (tag == "proxy") {
+            val xdrive = s.transport.network.equals("xdrive", ignoreCase = true)
+            if (tag == "proxy" || xdrive) {
                 putJsonObject("mux") {
-                    put("enabled", options.muxEnabled && s.protocol.supportsMux)
-                    put("concurrency", options.muxConcurrency)
-                    put("xudpConcurrency", options.muxXudpConcurrency)
-                    put("xudpProxyUDP443", options.muxXudpQuic)
+                    put("enabled", xdrive || options.muxEnabled && s.protocol.supportsMux)
+                    put("concurrency", if (xdrive) options.muxConcurrency.coerceAtLeast(1) else options.muxConcurrency)
+                    put("xudpConcurrency", if (xdrive) options.muxXudpConcurrency.coerceAtLeast(1) else options.muxXudpConcurrency)
+                    put("xudpProxyUDP443", if (xdrive && options.muxXudpQuic == "skip") "reject" else options.muxXudpQuic)
                 }
             }
         } else if (s.protocol == Protocol.HYSTERIA) {
-            put("streamSettings", hysteriaStreamSettings(s, options, dialerProxy))
-        } else if (s.protocol.isWireguardFamily && (dialerProxy != null || pinsServerHost(s, options))) {
-            putJsonObject("streamSettings") { putSockopt(s, options, dialerProxy) }
+            put("streamSettings", applyFinalMask(hysteriaStreamSettings(s, options, dialerProxy), s.transport.finalMask))
+        } else if (s.protocol == Protocol.MASQUE) {
+            put("streamSettings", applyFinalMask(masqueStreamSettings(s, options, dialerProxy), s.transport.finalMask))
+        } else if (s.protocol.isWireguardFamily) {
+            val stream = applyFinalMask(buildJsonObject { putSockopt(s, options, dialerProxy) }, s.transport.finalMask)
+            if (stream.isNotEmpty()) put("streamSettings", stream)
         }
     }
 
@@ -1428,16 +1674,8 @@ private fun statsPolicy() = buildJsonObject {
     ) = buildJsonObject {
         put("network", "hysteria")
         put("security", "tls")
-        putJsonObject("tlsSettings") {
-            val sni = s.tls.sni?.takeIf { it.isNotBlank() }
-            if (sni != null) put("serverName", sni)
-
-            putJsonArray("alpn") { add("h3") }
-
-            val pinned = s.pinnedCertSha256?.takeIf { it.isNotBlank() }
-            if (pinned != null) put("pinnedPeerCertSha256", pinned)
-            else if (s.tls.allowInsecure && sni != null) put("verifyPeerCertByName", sni)
-        }
+        val alpn = s.tls.alpn?.split(",")?.map(String::trim)?.filter(String::isNotEmpty)?.takeIf { it.isNotEmpty() }
+        put("tlsSettings", tlsSettingsOf(s, s.tls.sni?.takeIf { it.isNotBlank() }, options, alpnOverride = alpn ?: listOf("h3"), fingerprint = false))
         putJsonObject("hysteriaSettings") {
             put("version", 2)
             val auth = s.secretKey.ifBlank { s.userId }
@@ -1449,28 +1687,112 @@ private fun statsPolicy() = buildJsonObject {
         val down = s.bandwidthDown?.takeIf { it.isNotBlank() }
         if (obfs != null || hop != null || up != null || down != null) {
             putJsonObject("finalmask") {
-                if (obfs != null) putJsonArray("udp") {
-                    addJsonObject {
+                if (obfs != null || hop != null) putJsonArray("udp") {
+                    if (obfs != null) addJsonObject {
                         put("type", "salamander")
                         putJsonObject("settings") { put("password", obfs) }
                     }
+                    if (hop != null) addJsonObject {
+                        put("type", "udphop")
+                        putJsonObject("settings") {
+                            put("mode", "intervalLocal,intervalRemote")
+                            put("interval", hopIntervalOf(s.hopInterval))
+                            put("remotePorts", hop.replace(':', '-').replace(" ", ""))
+                        }
+                    }
                 }
-                if (hop != null || up != null || down != null) putJsonObject("quicParams") {
-                    if (up != null || down != null) {
-                        put("congestion", "brutal")
+                if (up != null || down != null) putJsonObject("quicParams") {
+                    put("congestion", "brutal")
 
-                        up?.let { put("brutalUp", if (it.all(Char::isDigit)) "${it}mbps" else it) }
-                        down?.let { put("brutalDown", if (it.all(Char::isDigit)) "${it}mbps" else it) }
-                    }
-                    if (hop != null) putJsonObject("udpHop") {
-                        put("ports", hop)
-                        put("interval", "30")
-                    }
+                    up?.let { put("brutalUp", if (it.all(Char::isDigit)) "${it}mbps" else it) }
+                    down?.let { put("brutalDown", if (it.all(Char::isDigit)) "${it}mbps" else it) }
                 }
             }
         }
 
         putSockopt(s, options, dialerProxy)
+    }
+
+    fun hopIntervalOf(raw: String?): String {
+        val text = raw?.trim()?.removeSuffix("s")?.takeIf { it.isNotEmpty() } ?: return "30"
+        text.toIntOrNull()?.let { return if (it < 5) "30" else it.toString() }
+        val parts = text.split('-').map { it.trim().toIntOrNull() }
+        if (parts.size == 2 && parts[0] != null && parts[1] != null) {
+            val from = maxOf(5, parts[0]!!)
+            return "$from-${maxOf(from, parts[1]!!)}"
+        }
+        return "30"
+    }
+
+    private fun masqueStreamSettings(
+        s: ServerConfig,
+        options: BuildOptions,
+        dialerProxy: String?,
+    ) = buildJsonObject {
+        put("network", "masque")
+        put("security", "tls")
+        val alpn = s.tls.alpn?.split(",")?.map(String::trim)?.filter(String::isNotEmpty)
+            ?.firstOrNull { it == "h3" || it == "h2" } ?: "h3"
+        val sni = s.tls.sni?.takeIf { it.isNotBlank() }
+            ?: if (s.isWarp) WARP_MASQUE_SNI else s.transport.host?.takeIf { it.isNotBlank() }
+        put("tlsSettings", tlsSettingsOf(s, sni, options, alpnOverride = listOf(alpn), fingerprint = alpn == "h2"))
+        putJsonObject("masqueSettings") {
+            (runCatching { Json.parseToJsonElement(s.transport.xhttpExtra.orEmpty()) }.getOrNull() as? JsonObject)
+                ?.forEach { (k, v) -> if (k !in MASQUE_TYPED_KEYS) put(k, v) }
+            s.transport.host?.takeIf { it.isNotBlank() }?.let { put("host", it) }
+            s.transport.path?.takeIf { it.isNotBlank() }?.let { put("path", it) }
+            masqueHeaders(s.transport.headers)?.let { put("headers", it) }
+            if (s.isWarp) {
+                putJsonObject("warp") {
+                    put("privateKey", s.secretKey.trim())
+                    if (s.peerPublicKey.isNotBlank()) put("publicKey", s.peerPublicKey.trim())
+                    putJsonArray("address") { s.localAddresses.forEach { add(it.trim()) } }
+                }
+            } else {
+                if (s.username.isNotBlank()) put("user", s.username)
+                if (s.userId.isNotBlank()) put("pass", s.userId)
+            }
+        }
+        putSockopt(s, options, dialerProxy)
+    }
+
+    fun masqueHeaders(raw: String?): JsonObject? {
+        val text = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        (runCatching { Json.parseToJsonElement(text) }.getOrNull() as? JsonObject)?.let { obj ->
+            return JsonObject(obj.filterValues { it is JsonPrimitive })
+        }
+        val pairs = text.split('\n', ';').mapNotNull { line ->
+            val name = line.substringBefore(':', "").trim()
+            val value = line.substringAfter(':', "").trim()
+            if (name.isEmpty() || name.equals("host", ignoreCase = true)) null else name to value
+        }
+        if (pairs.isEmpty()) return null
+        return buildJsonObject { pairs.forEach { (k, v) -> put(k, v) } }
+    }
+
+    private fun tlsSettingsOf(
+        s: ServerConfig,
+        serverName: String?,
+        options: BuildOptions,
+        alpnOverride: List<String>? = null,
+        fingerprint: Boolean = true,
+    ) = buildJsonObject {
+        if (serverName != null) put("serverName", serverName)
+        if (fingerprint) {
+            s.tls.fingerprint?.lowercase()?.takeIf { fp -> fp == "unsafe" || fp in PRESET_FINGERPRINTS || fp.startsWith("hello") }
+                ?.let { put("fingerprint", it) }
+        }
+        val pinned = s.pinnedCertSha256?.takeIf { it.isNotBlank() }
+        if (pinned != null) put("pinnedPeerCertSha256", pinned)
+        val vcn = s.tls.verifyPeerCertByName?.takeIf { it.isNotBlank() }
+        if (vcn != null) put("verifyPeerCertByName", vcn)
+        else if (pinned == null && s.tls.allowInsecure && serverName != null) put("verifyPeerCertByName", serverName)
+        s.tls.cipherSuites?.takeIf { it.isNotBlank() }?.let { put("cipherSuites", it) }
+        val alpn = alpnOverride ?: s.tls.alpn?.split(",")?.map(String::trim)?.filter(String::isNotEmpty)
+        if (!alpn.isNullOrEmpty()) putJsonArray("alpn") { alpn.forEach { add(it) } }
+        s.tls.echConfigList?.takeIf { it.isNotBlank() }?.let { put("echConfigList", it) }
+        s.tls.echOutbound?.takeIf { it.isNotBlank() }?.let { put("echOutbound", it) }
+        if (options.useSystemCa) put("useSystemCA", true)
     }
 
     private fun streamSettings(
@@ -1480,17 +1802,44 @@ private fun statsPolicy() = buildJsonObject {
     ): JsonObject = applyFinalMask(streamSettingsBase(s, options, dialerProxy), s.transport.finalMask)
 
     private fun applyFinalMask(stream: JsonObject, raw: String?): JsonObject {
-        val text = raw?.takeIf { it.isNotBlank() } ?: return stream
-        val parsed = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull()
-            ?: return stream
-        val existing = stream["finalmask"] as? JsonObject
-        val merged = if (existing == null) parsed else buildJsonObject {
-            existing.forEach { (k, v) -> put(k, v) }
-            parsed.forEach { (k, v) -> put(k, v) }
-        }
+        val user = finalMaskOf(raw) ?: return stream
+        val merged = mergeFinalMask(stream["finalmask"] as? JsonObject, user)
         return buildJsonObject {
             stream.forEach { (k, v) -> if (k != "finalmask") put(k, v) }
             put("finalmask", merged)
+        }
+    }
+
+    fun finalMaskOf(raw: String?): JsonObject? {
+        val text = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        return runCatching { Json.parseToJsonElement(Jsonc.strip(text)) as? JsonObject }.getOrNull()
+    }
+
+    private val DIAL_MASKS = setOf("udphop", "xicmp")
+
+    private fun maskType(mask: JsonElement): String? =
+        ((mask as? JsonObject)?.get("type") as? JsonPrimitive)?.content?.lowercase()
+
+    fun mergeFinalMask(base: JsonObject?, user: JsonObject): JsonObject {
+        fun masks(value: JsonElement?): List<JsonElement> = (value as? JsonArray)?.toList().orEmpty()
+        fun dialLast(list: List<JsonElement>): List<JsonElement> =
+            list.filterNot { maskType(it) in DIAL_MASKS } + list.filter { maskType(it) in DIAL_MASKS }
+        val userUdp = masks(user["udp"])
+        val userTypes = userUdp.mapNotNull { maskType(it) }.toSet()
+        val baseUdp = masks(base?.get("udp")).filterNot { mask ->
+            val type = maskType(mask)
+            type in userTypes && type == "salamander" || type in DIAL_MASKS && userTypes.any { it in DIAL_MASKS }
+        }
+        val tcp = masks(base?.get("tcp")) + masks(user["tcp"])
+        val udp = dialLast(baseUdp + userUdp)
+        val baseQuic = base?.get("quicParams") as? JsonObject
+        val userQuic = user["quicParams"] as? JsonObject
+        return buildJsonObject {
+            base?.forEach { (k, v) -> if (k !in setOf("tcp", "udp", "quicParams")) put(k, v) }
+            user.forEach { (k, v) -> if (k !in setOf("tcp", "udp", "quicParams")) put(k, v) }
+            if (tcp.isNotEmpty()) put("tcp", JsonArray(tcp))
+            if (udp.isNotEmpty()) put("udp", JsonArray(udp))
+            if (baseQuic != null || userQuic != null) put("quicParams", JsonObject(baseQuic.orEmpty() + userQuic.orEmpty()))
         }
     }
 
@@ -1557,6 +1906,11 @@ private fun statsPolicy() = buildJsonObject {
                 put("multiMode", t.mode == "multi")
                 (t.authority ?: hostHeader)?.let { put("authority", it) }
             }
+            "xdrive" -> put(
+                "xdriveSettings",
+                runCatching { Json.parseToJsonElement(t.xdriveSettings.orEmpty()) }.getOrNull() as? JsonObject
+                    ?: buildJsonObject {},
+            )
         }
 
         if (net == "kcp" || net == "mkcp") {
@@ -1582,10 +1936,8 @@ private fun statsPolicy() = buildJsonObject {
         val sec = s.tls.security.lowercase()
         if (sec == "tls" || sec == "reality") {
             put("security", sec)
-            val isSpoof = SniSpoofConfig.isSpoofTarget(s.address, s.port)
-            val serverName = s.tls.sni?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
-                ?: hostHeader?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() && !SniSpoofConfig.isLoopback(it) }
-                ?: if (isSpoof) SniSpoofConfig.defaultFakeSni else null
+            val serverName = s.tls.sni?.takeIf { it.isNotBlank() }
+                ?: hostHeader?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
 
             val fingerprint = s.tls.fingerprint?.lowercase()?.takeIf { fp ->
                 if (sec == "reality") {
@@ -1604,7 +1956,7 @@ private fun statsPolicy() = buildJsonObject {
 
                     val vcn = s.tls.verifyPeerCertByName?.takeIf { it.isNotBlank() }
                     if (vcn != null) put("verifyPeerCertByName", vcn)
-                    else if (pinned == null && (s.tls.allowInsecure || isSpoof) && serverName != null) {
+                    else if (pinned == null && s.tls.allowInsecure && serverName != null) {
                         put("verifyPeerCertByName", serverName)
                     }
 
@@ -1617,7 +1969,8 @@ private fun statsPolicy() = buildJsonObject {
                     }
 
                     s.tls.echConfigList?.takeIf { it.isNotBlank() }?.let { put("echConfigList", it) }
-                    s.tls.echOutbound?.takeIf { it.isNotBlank() }?.let { put("echOutbound", it) }
+        s.tls.echOutbound?.takeIf { it.isNotBlank() }?.let { put("echOutbound", it) }
+                    if (options.useSystemCa) put("useSystemCA", true)
                 } else {
                     s.tls.publicKey?.takeIf { it.isNotBlank() }?.let { put("publicKey", it) }
                     s.tls.shortId?.takeIf { it.isNotBlank() }?.let { put("shortId", it) }

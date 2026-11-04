@@ -16,7 +16,7 @@ permissions:
 env:
   HEV_RELEASE: "2.18.0"
   TOR_BUNDLE: "14.5.1"
-  ZEPTUN_RELEASE: "v1.1.1"
+  ZEPTUN_RELEASE: "v1.1.3"
 
 jobs:
   xray:

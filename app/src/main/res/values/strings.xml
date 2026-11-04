@@ -987,4 +987,11 @@
 
     <string name="tg_proxies_fetched">Received %1$d live proxies from @%2$s</string>
     <string name="tg_test_ping_btn">Test Ping</string>
+<string name="auto_all_excluded">Every server in this group is in a country excluded from Auto. Pick a server yourself or change Excluded countries.</string>
+    <string name="widget_download">Download</string>
+    <string name="widget_upload">Upload</string>
+    <string name="widget_toggle_label">Narcic Getway toggle</string>
+    <string name="widget_toggle_description">One tap to connect or disconnect.</string>
+    <string name="widget_preview_down_rate">12.4 MB/s</string>
+    <string name="widget_preview_up_rate">1.8 MB/s</string>
 </resources>

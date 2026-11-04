@@ -7,12 +7,17 @@ import dev.valid7996.narcicgeteway.domain.model.VpnBypassLan
 fun AppSettings.toBuildOptions(
     geoAssetsAvailable: Boolean = false,
 
+    geoCodes: GeoCodes? = null,
+
     ruleOutbounds: Map<String, ServerConfig> = emptyMap(),
+
+    ruleGroups: Map<String, RuleGroup> = emptyMap(),
 
     carrier: Boolean = false,
 
     resolvedServerHosts: Map<String, List<String>> = emptyMap(),
-    useXrayTun: Boolean = false,
+
+    networkType: String? = null,
 ): XrayJsonBuilder.BuildOptions = XrayJsonBuilder.BuildOptions(
     singBox = singBoxTuning(),
     logLevel = logLevel.value,
@@ -24,12 +29,16 @@ fun AppSettings.toBuildOptions(
     bypassIran = routingMode == RoutingMode.BypassIran || routingMode == RoutingMode.BypassLanAndIran,
     blockAds = blockAds,
     geoAssetsAvailable = geoAssetsAvailable,
+    geoCodes = geoCodes,
     customProxyRules = customProxyRules.toRuleList(),
     customDirectRules = customDirectRules.toRuleList(),
     customBlockRules = customBlockRules.toRuleList(),
 
     rulesets = RoutingMigration.effectiveRulesets(this),
+    networkType = networkType,
     ruleOutbounds = ruleOutbounds,
+    ruleGroups = ruleGroups,
+    ruleGroupTuning = autoSelectTuning(),
     remoteDns = remoteDns,
     directDns = directDns,
     muxEnabled = muxEnabled,
@@ -47,14 +56,19 @@ fun AppSettings.toBuildOptions(
     muxXudpQuic = muxXudpQuic.value,
     localDns = localDnsEnabled,
     fakeDns = localDnsEnabled && fakeDnsEnabled,
-    useXrayTun = useXrayTun,
-    vpnMtu = vpnMtu,
-    enableLocalProxy = effectiveLocalProxy,
     outboundDomainResolve = outboundDomainResolve.value,
     resolvedServerHosts = resolvedServerHosts,
+    useSystemCa = useSystemCa,
 )
 
 val AppSettings.effectiveLanSocksPort: Int get() = LocalPorts.lanSocksPort(socksPort)
+
+val AppSettings.effectiveLocalProxyPort: Int
+    get() = LocalPorts.localProxyPort(localProxyPort).takeIf { it != effectiveLanSocksPort && it + 1 != effectiveLanSocksPort }
+        ?: LocalPorts.XRAY_SOCKS
+
+fun AppSettings.engineRemoteDns(): String =
+    remoteDnsPrimary.trim().takeIf { remoteDnsMode == "custom" && it.isNotEmpty() } ?: XrayJsonBuilder.ENGINE_REMOTE_DNS
 
 private fun AppSettings.lanShare(): XrayJsonBuilder.LanShare? =
     if (!proxySharing) null
@@ -63,6 +77,7 @@ private fun AppSettings.lanShare(): XrayJsonBuilder.LanShare? =
         username = socksUsername.trim(),
         password = socksPassword,
         udp = socksEnableUdp,
+        auth = lanShareAuth,
     )
 
 private fun String.toRuleList(): List<String> =
@@ -76,6 +91,7 @@ fun AppSettings.autoSelectTuning(): AutoSelectTuning = AutoSelectTuning(
     sweepIntervalMin = autoSelectSweepMinutes,
     switchMarginPercent = autoSelectSwitchMargin,
     retry = autoSelectRetry,
+    excludedCountries = autoSelectExcludedCountries.toSet(),
 )
 
 fun AppSettings.singBoxTuning(): SingBoxTuning = SingBoxTuning(

@@ -55,6 +55,11 @@ internal actual suspend fun httpGetViaSocks(
     readTimeoutMs: Int,
     closeConnection: Boolean,
 ): String = withContext(Dispatchers.IO) {
+    if (socksPort != null && JvmRuntime.resolvesThroughProxy) {
+        val response = rawHttpViaSocks("GET", url, mapOf("User-Agent" to userAgent), null, socksPort, connectTimeoutMs, readTimeoutMs)
+        if (response.code !in 200..299) throw IllegalStateException("HTTP ${response.code}")
+        return@withContext response.body
+    }
     val connection = if (socksPort != null) {
         val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved("127.0.0.1", socksPort))
         URL(url).openConnection(proxy) as HttpURLConnection
@@ -257,3 +262,38 @@ internal actual suspend fun httpStreamTransfer(
 }
 
 private const val CHUNK = 64 * 1024
+
+internal actual suspend fun dnsOverTcp(
+    server: String,
+    port: Int,
+    query: ByteArray,
+    socksPort: Int?,
+    timeoutMs: Int,
+): ByteArray = withContext(Dispatchers.IO) {
+    val socket = if (socksPort != null) {
+        Socket(Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", socksPort)))
+    } else {
+        Socket()
+    }
+    socket.use { s ->
+        s.soTimeout = timeoutMs
+        s.connect(InetSocketAddress(server, port), timeoutMs)
+        val out = s.getOutputStream()
+        out.write(byteArrayOf(((query.size shr 8) and 0xff).toByte(), (query.size and 0xff).toByte()) + query)
+        out.flush()
+        val inp = s.getInputStream()
+        fun readFully(count: Int): ByteArray {
+            val buf = ByteArray(count)
+            var read = 0
+            while (read < count) {
+                val n = inp.read(buf, read, count - read)
+                if (n < 0) throw java.io.EOFException("the DNS server closed the connection")
+                read += n
+            }
+            return buf
+        }
+        val head = readFully(2)
+        val length = ((head[0].toInt() and 0xff) shl 8) or (head[1].toInt() and 0xff)
+        readFully(length)
+    }
+}
