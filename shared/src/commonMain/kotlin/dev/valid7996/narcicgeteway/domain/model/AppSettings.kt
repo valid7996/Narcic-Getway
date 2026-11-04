@@ -334,7 +334,7 @@ data class AppSettings(
     val vpnInterfaceAddress: VpnInterfaceAddress = VpnInterfaceAddress.Option2,
     val vpnMtu: Int = 1500,
 
-    val useHevTun: Boolean = false,
+    val useHevTun: Boolean = true,
     val useZepTun: Boolean = false,
     val hevTunLogLevel: HevLogLevel = HevLogLevel.Warn,
 
@@ -447,7 +447,7 @@ data class AppSettings(
     val subscriptionUpdateIntervalHours: Int = 12,
     val autoTestAfterUpdate: Boolean = false,
     val autoRemoveInvalidAfterTest: Boolean = false,
-    val autoSortAfterTest: Boolean = false,
+    val autoSortAfterTest: Boolean = true,
 
     val dnsGlobalResolverEnabled: Boolean = false,
     val dnsGlobalResolvers: String = "",

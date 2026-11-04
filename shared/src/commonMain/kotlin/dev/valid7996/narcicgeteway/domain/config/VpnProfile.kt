@@ -140,6 +140,11 @@ data class VpnProfile(
 
     val isIkev2: Boolean get() = source is ProfileSource.Ikev2
 
+    val isOpenVpn: Boolean
+        get() = protocol.equals("OPENVPN", ignoreCase = true) ||
+                transportLabel.contains("openvpn", ignoreCase = true) ||
+                (source as? ProfileSource.SingBox)?.json?.contains("\"openvpn\"") == true
+
     val isSstp: Boolean get() = ((resolveUnsealed() ?: this).source is ProfileSource.Sstp)
 
     val isProxyChain: Boolean get() = source is ProfileSource.ProxyChain

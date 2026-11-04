@@ -187,6 +187,46 @@ internal actual suspend fun tcpConnectMillis(host: String, port: Int, timeoutMs:
         }
     }
 
+internal actual suspend fun udpProbeMillis(host: String, port: Int, payload: ByteArray, timeoutMs: Int): Long =
+    withContext(Dispatchers.IO) {
+        var socket: java.net.DatagramSocket? = null
+        val start = System.currentTimeMillis()
+        try {
+            socket = java.net.DatagramSocket()
+            socket.soTimeout = timeoutMs
+            val address = java.net.InetAddress.getByName(host)
+            val packet = java.net.DatagramPacket(payload, payload.size, address, port)
+            socket.send(packet)
+            val buffer = ByteArray(2048)
+            val response = java.net.DatagramPacket(buffer, buffer.size)
+            socket.receive(response)
+            (System.currentTimeMillis() - start).coerceAtLeast(1L)
+        } catch (e: Exception) {
+            -1L
+        } finally {
+            runCatching { socket?.close() }
+        }
+    }
+
+internal actual suspend fun tlsConnectMillis(host: String, port: Int, timeoutMs: Int): Long =
+    withContext(Dispatchers.IO) {
+        var socket: Socket? = null
+        val start = System.currentTimeMillis()
+        try {
+            val plain = Socket()
+            plain.connect(InetSocketAddress(host, port), timeoutMs)
+            val ssl = permissiveSslSocketFactory.createSocket(plain, host, port, true) as javax.net.ssl.SSLSocket
+            socket = ssl
+            ssl.soTimeout = timeoutMs
+            ssl.startHandshake()
+            (System.currentTimeMillis() - start).coerceAtLeast(1L)
+        } catch (e: Exception) {
+            -1L
+        } finally {
+            runCatching { socket?.takeIf { !it.isClosed }?.close() }
+        }
+    }
+
 internal actual suspend fun httpStreamTransfer(
     url: String,
     socksPort: Int?,

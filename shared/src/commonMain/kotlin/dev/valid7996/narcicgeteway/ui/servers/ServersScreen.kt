@@ -1188,7 +1188,8 @@ fun ServersScreen(
                                 val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                                 val isMhrv = profile.isMhrvRelay
-                                val ms = if (isSpoof || isSealed || isMhrv) {
+                                val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn
+                                val ms = if (isSpecial) {
                                     PingService.realDelay(
                                         profile,
                                         url = delayTestUrl.ifBlank { dev.valid7996.narcicgeteway.data.net.NetworkInfoRepository.DELAY_TEST_URL },
@@ -1196,7 +1197,12 @@ fun ServersScreen(
                                 } else {
                                     PingService.tcpPing(profile.address, profile.port)
                                 }
-                                val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(profile.address) else null
+                                val addressForGeo = when {
+                                    profile.isIkev2 -> profile.ikev2Settings()?.server?.substringBefore(':') ?: profile.address
+                                    profile.isOpenConnect -> profile.openConnectSettings()?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':') ?: profile.address
+                                    else -> profile.address
+                                }
+                                val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(addressForGeo) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },
@@ -1209,7 +1215,12 @@ fun ServersScreen(
                                     profile,
                                     url = delayTestUrl.ifBlank { dev.valid7996.narcicgeteway.data.net.NetworkInfoRepository.DELAY_TEST_URL },
                                 )
-                                val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(profile.address) else null
+                                val addressForGeo = when {
+                                    profile.isIkev2 -> profile.ikev2Settings()?.server?.substringBefore(':') ?: profile.address
+                                    profile.isOpenConnect -> profile.openConnectSettings()?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':') ?: profile.address
+                                    else -> profile.address
+                                }
+                                val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(addressForGeo) else null
                                 repository.setPing(profile.id, if (ms > 0) ms.toInt() else PingService.FAILED_PING, cc)
                             }
                         },

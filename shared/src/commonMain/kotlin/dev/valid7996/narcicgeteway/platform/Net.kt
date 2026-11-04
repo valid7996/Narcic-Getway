@@ -29,6 +29,10 @@ internal expect suspend fun resolveHostAddress(host: String): String?
 
 internal expect suspend fun tcpConnectMillis(host: String, port: Int, timeoutMs: Int): Long
 
+internal expect suspend fun udpProbeMillis(host: String, port: Int, payload: ByteArray, timeoutMs: Int): Long
+
+internal expect suspend fun tlsConnectMillis(host: String, port: Int, timeoutMs: Int): Long
+
 internal expect suspend fun httpStreamTransfer(
     url: String,
     socksPort: Int?,

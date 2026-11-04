@@ -9,6 +9,8 @@ import dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig
 import dev.valid7996.narcicgeteway.domain.config.VpnProfile
 import dev.valid7996.narcicgeteway.platform.httpTimedTransfer
 import dev.valid7996.narcicgeteway.platform.tcpConnectMillis
+import dev.valid7996.narcicgeteway.platform.udpProbeMillis
+import dev.valid7996.narcicgeteway.platform.tlsConnectMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -219,6 +221,76 @@ object PingService {
         } ?: -1L
     }
 
+    private suspend fun ikev2Delay(profile: VpnProfile): Long {
+        val ike = profile.ikev2Settings()
+        var host = ike?.server?.trim()?.ifBlank { profile.address.trim() } ?: profile.address.trim()
+        if (host.isBlank() || host == "-") return -1L
+        var targetPort = 500
+        if (host.contains(':') && !host.startsWith("[")) {
+            val parts = host.split(':')
+            host = parts[0]
+            targetPort = parts.getOrNull(1)?.toIntOrNull() ?: 500
+        }
+
+        val spi = ByteArray(8)
+        kotlin.random.Random.nextBytes(spi)
+        val ikePkt = spi + ByteArray(8) + byteArrayOf(33, 0x20, 34, 0x08, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 4)
+        val udp500 = udpProbeMillis(host, targetPort, ikePkt, 2_200)
+        if (udp500 > 0) return udp500
+
+        if (targetPort == 500) {
+            val nonEspPkt = byteArrayOf(0, 0, 0, 0) + ikePkt
+            val udp4500 = udpProbeMillis(host, 4500, nonEspPkt, 2_200)
+            if (udp4500 > 0) return udp4500
+        }
+
+        val tcp = tcpPing(host, if (targetPort in 1..65535 && targetPort != 500) targetPort else 443, 2_200)
+        if (tcp > 0) return tcp
+
+        return -1L
+    }
+
+    private suspend fun openVpnDelay(profile: VpnProfile): Long {
+        var host = profile.address.trim()
+        if (host.isBlank() || host == "-") return -1L
+        var port = if (profile.port in 1..65535) profile.port else 1194
+        if (host.contains(':') && !host.startsWith("[")) {
+            val parts = host.split(':')
+            host = parts[0]
+            port = parts.getOrNull(1)?.toIntOrNull() ?: port
+        }
+
+        val sessionId = ByteArray(8)
+        kotlin.random.Random.nextBytes(sessionId)
+        val ovpnPkt = byteArrayOf((7 shl 3).toByte()) + sessionId + byteArrayOf(0, 0, 0, 0, 1)
+        val udpDelay = udpProbeMillis(host, port, ovpnPkt, 2_200)
+        if (udpDelay > 0) return udpDelay
+
+        val tls = tlsConnectMillis(host, port, 2_200)
+        if (tls > 0) return tls
+
+        val tcp = tcpPing(host, port, 2_200)
+        if (tcp > 0) return tcp
+
+        return -1L
+    }
+
+    private suspend fun openConnectDelay(profile: VpnProfile): Long {
+        val oc = profile.openConnectSettings()
+        var host = oc?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':')?.trim()
+            ?: profile.address.trim()
+        if (host.isBlank() || host == "-") return -1L
+        val port = oc?.serverPort() ?: if (profile.port in 1..65535) profile.port else 443
+
+        val tls = tlsConnectMillis(host, port, 2_500)
+        if (tls > 0) return tls
+
+        val tcp = tcpPing(host, port, 2_500)
+        if (tcp > 0) return tcp
+
+        return -1L
+    }
+
     private suspend fun measureProfile(
         profile: VpnProfile,
         url: String,
@@ -226,6 +298,9 @@ object PingService {
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isAether) return aetherDelay(effective, url)
+        if (effective.isIkev2) return ikev2Delay(effective)
+        if (effective.isOpenConnect) return openConnectDelay(effective)
+        if (effective.isOpenVpn) return openVpnDelay(effective)
         if (effective.isSstp) {
             val sni = effective.address
             val probe = sniProbe?.invoke(effective.address, sni)
@@ -261,6 +336,9 @@ object PingService {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isMhrvRelay) return false
         if (effective.isAether) return false
+        if (effective.isIkev2) return false
+        if (effective.isOpenConnect) return false
+        if (effective.isOpenVpn) return false
         if (effective.isSstp) return false
         if (effective.isProxyChain) return false
         if (effective.isSniSpoof || effective.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(effective.address, effective.port)) return false
