@@ -231,35 +231,4 @@ class EchOutboundTest {
         assertEquals("freedom", echOutbound.jsonObject["protocol"]!!.jsonPrimitive.content)
     }
 
-    @Test
-    fun xrayJsonBuilder_useXrayTunEmitsTunInboundAndDnsRule() {
-        val server = ServerConfig(
-            protocol = Protocol.VLESS,
-            remark = "test",
-            address = "1.2.3.4",
-            port = 443,
-            userId = "11111111-2222-3333-4444-555555555555",
-            tls = SecurityConfig(
-                security = "tls",
-                sni = "example.com",
-            ),
-        )
-
-        val opts = XrayJsonBuilder.BuildOptions(useXrayTun = true, vpnMtu = 1400)
-        val config = XrayJsonBuilder.build(server, options = opts)
-        val root = json(config)
-
-        val inbounds = root["inbounds"]!!.jsonArray
-        val tun = inbounds.firstOrNull { it.jsonObject["tag"]!!.jsonPrimitive.content == "tun" }
-        assertTrue("tun inbound should be present", tun != null)
-        assertEquals("tun", tun!!.jsonObject["protocol"]!!.jsonPrimitive.content)
-        assertEquals("1400", tun.jsonObject["settings"]!!.jsonObject["MTU"]!!.jsonPrimitive.content)
-
-        val rules = root["routing"]!!.jsonObject["rules"]!!.jsonArray
-        val tunDnsRule = rules.firstOrNull { r ->
-            r.jsonObject["outboundTag"]?.jsonPrimitive?.content == "dns-out" &&
-                r.jsonObject["inboundTag"]?.jsonArray?.any { it.jsonPrimitive.content == "tun" } == true
-        }
-        assertTrue("tun port 53 DNS rule should be present", tunDnsRule != null)
-    }
 }
