@@ -98,7 +98,7 @@ object ConfigParser {
 
         return ServerConfig(
             protocol = Protocol.VMESS,
-            remark = str("ps")?.takeIf { it.isNotBlank() } ?: decodeRemark(fragment),
+            remark = decodeRemark(fragment).ifBlank { str("ps").orEmpty() },
             address = str("add").orEmpty(),
             port = str("port")?.toIntOrNull() ?: 443,
             userId = str("id").orEmpty(),
@@ -556,6 +556,7 @@ object ConfigParser {
         spiderX = q["spx"],
 
         echConfigList = (q["ech"] ?: q["echConfigList"])?.takeIf { it.isNotBlank() },
+        echOutbound = (q["echOutbound"] ?: q["ech_outbound"])?.takeIf { it.isNotBlank() },
 
         cipherSuites = q["cs"]?.takeIf { it.isNotBlank() },
 
