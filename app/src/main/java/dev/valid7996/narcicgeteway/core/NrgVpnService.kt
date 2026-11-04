@@ -597,18 +597,7 @@ private var bentoCard: Boolean = false
             port
         }
 
-        val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
-        val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", upstreamPort, dnsHost = dns)
-        socksShim = shim
-        if (!shim.start() || !bridge(descriptor, SHIM_PORT, tunMtu, udpOverTcp = true)) {
-            stopEverything(); return
-        }
-
-        val ready = TunnelReadiness.verify(SHIM_PORT, timeoutMs = 8_000, attempts = 1)
-        if (!ready) {
-            Log.w(TAG, "DNS tunnel: HTTP probe timed out (likely port 80 filtered or high latency), proceeding with connection")
-        }
-        finishConnected()
+        bridgeEngine(descriptor, upstreamPort, tunMtu, unreachable = R.string.dns_tunnel_unreachable)
     }
 
     private fun startMasterDns(
@@ -654,14 +643,7 @@ private var bentoCard: Boolean = false
             VpnManager.onError(masterDnsError(controller))
             stopEverything(); return
         }
-        val dns = if (appSettings.remoteDnsMode == "custom") appSettings.remoteDnsPrimary.ifBlank { "8.8.8.8" } else "8.8.8.8"
-        val shim = SocksTunBridge("127.0.0.1", SHIM_PORT, "127.0.0.1", port, dnsHost = dns)
-        socksShim = shim
-        if (shim.start() && bridge(descriptor, SHIM_PORT, tunMtu, udpOverTcp = true)) {
-            finishConnected()
-        } else {
-            stopEverything()
-        }
+        bridgeEngine(descriptor, port, tunMtu)
     }
 
     private fun startMhrv(
