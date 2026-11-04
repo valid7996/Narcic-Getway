@@ -55,6 +55,15 @@ mkdir -p "$ROOT/app/libs"
 
 echo ">>> gomobile bind (Xray + sing-box + Psiphon + DNSTT + VayDNS + MasterDNS) with $(go version)"
 cd "$ROOT/vendor/AndroidLibXrayLite"
+
+# The newest AndroidLibXrayLite go.mod no longer lists golang.org/x/mobile, and gomobile bind
+# refuses to run without it ("missing golang.org/x/mobile dependency"). Add it only when missing.
+# Deliberately not "go mod tidy": the go.mod keeps modules that only gomobile imports.
+if ! go list -m golang.org/x/mobile >/dev/null 2>&1; then
+  go get -tool golang.org/x/mobile/cmd/gobind
+  go get golang.org/x/mobile/bind
+fi
+
 gomobile bind -v -x -trimpath -androidapi "$ANDROID_API" -target="$TARGETS" -tags="$SINGBOX_TAGS" -ldflags="$LDFLAGS" -o "$RAW" \
   github.com/2dust/AndroidLibXrayLite \
   github.com/sagernet/sing-box/experimental/libbox \
