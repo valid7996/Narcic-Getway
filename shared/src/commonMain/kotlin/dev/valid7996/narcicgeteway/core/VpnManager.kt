@@ -47,6 +47,7 @@ object VpnManager {
     const val EXTRA_KIND = "nrg.kind"
 
     const val EXTRA_PROXY_ONLY = "nrg.proxyOnly"
+    const val EXTRA_ENGINE = "nrg.engine"
     const val CMD_START = "start"
     const val CMD_STOP = "stop"
 

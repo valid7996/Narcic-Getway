@@ -308,17 +308,21 @@ class StartPlanner(context: Context) {
         carrier: Boolean = false,
         resolveFor: VpnProfile? = null,
     ): XrayJsonBuilder.BuildOptions {
-        val ruleOutbounds = configRepository.resolveRuleOutbounds(RoutingMigration.effectiveRulesets(this))
+        val rulesets = RoutingMigration.effectiveRulesets(this)
+        val ruleOutbounds = configRepository.resolveRuleOutbounds(rulesets)
+        val ruleGroups = if (carrier) emptyMap() else configRepository.resolveRuleGroups(rulesets, autoSelectExcludedCountries.toSet())
         val hosts = if (resolveFor != null && outboundDomainResolve != OutboundDomainResolve.DoNotResolve) {
             resolveServerHosts(physicalServersOf(resolveFor) + ruleOutbounds.values, preferIpv6)
         } else emptyMap()
         return toBuildOptions(
             geoAssetsAvailable = geoReady,
+            geoCodes = GeoCodeReader.read(appContext),
             carrier = carrier,
             ruleOutbounds = ruleOutbounds,
+            ruleGroups = ruleGroups,
             resolvedServerHosts = hosts,
-            useXrayTun = !useHevTun && !carrier && runMode == dev.valid7996.narcicgeteway.domain.model.RunMode.Vpn,
-        )
+            networkType = NetworkKind.current(appContext),
+        ).let { if (carrier) it.copy(lan = null, appendHttpProxy = false) else it }
     }
 
     private fun physicalServersOf(profile: VpnProfile): List<ServerConfig> {

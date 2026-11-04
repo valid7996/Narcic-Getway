@@ -528,7 +528,7 @@ private var bentoCard: Boolean = false
 
     private fun startDnsTunnel(
         configJson: String,
-        descriptor: ParcelFileDescriptor,
+        descriptor: ParcelFileDescriptor?,
         tunMtu: Int,
         appSettings: AppSettings,
     ) {
@@ -613,7 +613,7 @@ private var bentoCard: Boolean = false
 
     private fun startMasterDns(
         configJson: String,
-        descriptor: ParcelFileDescriptor,
+        descriptor: ParcelFileDescriptor?,
         tunMtu: Int,
         appSettings: AppSettings,
     ) {
@@ -818,8 +818,8 @@ private var bentoCard: Boolean = false
             ?.let { getString(R.string.engine_failed_with_reason, getString(res), it.take(240)) }
             ?: getString(res)
 
-    private fun coreStartError(): String {
-        val raw = XrayController.lastError ?: return getString(R.string.core_start_failed)
+    private fun coreStartError(error: String? = XrayController.lastError): String {
+        val raw = error ?: return getString(R.string.core_start_failed)
 
         Regex("failed to (?:check|load) code ([^ ]+) from ([^ :]+)").find(raw)?.let { m ->
             return getString(R.string.core_geo_code_missing, m.groupValues[1], m.groupValues[2])

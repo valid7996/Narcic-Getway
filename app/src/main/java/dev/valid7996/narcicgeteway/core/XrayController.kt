@@ -82,9 +82,11 @@ object XrayController {
             .onFailure { Log.e(TAG, "stopLoop failed", it) }
     }
 
-    fun readTrafficDelta(): Pair<Long, Long> {
-        val raw = runCatching { controller?.queryAllOutboundTrafficStats() }.getOrNull()
-            ?: return 0L to 0L
+fun readTrafficDelta(): Pair<Long, Long> =
+        trafficDeltaOf(runCatching { controller?.queryAllOutboundTrafficStats() }.getOrNull())
+
+    fun trafficDeltaOf(raw: String?): Pair<Long, Long> {
+        raw ?: return 0L to 0L
         var down = 0L
         var up = 0L
 
