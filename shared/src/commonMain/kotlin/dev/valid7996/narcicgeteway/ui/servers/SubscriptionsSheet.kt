@@ -2,6 +2,9 @@
 
 package dev.valid7996.narcicgeteway.ui.servers
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -304,6 +307,8 @@ fun SubscriptionsSheet(
         var newName by remember(target.id) { mutableStateOf(target.name) }
         var newUrl by remember(target.id) { mutableStateOf(target.url) }
         var newUa by remember(target.id) { mutableStateOf(target.userAgent.orEmpty()) }
+        var preset by remember(target.id) { mutableStateOf(target.preset) }
+        var presetOpen by remember(target.id) { mutableStateOf(!target.preset.isEmpty) }
         AlertDialog(
             onDismissRequest = { renameTarget = null },
             shape = RoundedCornerShape(14.dp),
@@ -316,7 +321,10 @@ fun SubscriptionsSheet(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     OutlinedTextField(
                         value = newName,
                         onValueChange = { newName = it },
@@ -335,13 +343,49 @@ fun SubscriptionsSheet(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     UserAgentPicker(newUa) { newUa = it }
+                    TextButton(onClick = { presetOpen = !presetOpen }) {
+                        Text(stringResource(Res.string.subs_preset_title))
+                    }
+                    if (presetOpen) {
+                        Text(
+                            stringResource(Res.string.subs_preset_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        PresetField(Res.string.subs_preset_address, preset.address) { preset = preset.copy(address = it) }
+                        PresetField(Res.string.subs_preset_fingerprint, preset.fingerprint) { preset = preset.copy(fingerprint = it) }
+                        PresetField(Res.string.subs_preset_alpn, preset.alpn) { preset = preset.copy(alpn = it) }
+                        PresetField(Res.string.subs_preset_finalmask, preset.finalMask, singleLine = false) {
+                            preset = preset.copy(finalMask = it)
+                        }
+                        PresetField(Res.string.subs_preset_ciphers, preset.cipherSuites) { preset = preset.copy(cipherSuites = it) }
+                        PresetField(Res.string.subs_preset_ech, preset.echConfigList) { preset = preset.copy(echConfigList = it) }
+                        dev.valid7996.narcicgeteway.ui.components.PickerField(
+                            label = stringResource(Res.string.subs_preset_core),
+                            options = listOf(
+                                "" to stringResource(Res.string.subs_preset_core_link),
+                                dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset.CORE_XRAY to "Xray",
+                                dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset.CORE_SINGBOX to stringResource(Res.string.subs_preset_core_singbox),
+                            ),
+                            selected = preset.core,
+                            onSelect = { preset = preset.copy(core = it) },
+                        )
+                    }
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        repository.editSubscription(target.id, newName, newUa, newUrl)
+                        val changed = preset != target.preset
+                        repository.editSubscription(target.id, newName, newUa, newUrl, preset)
                         renameTarget = null
+                        if (changed) {
+                            busyId = target.id
+                            scope.launch {
+                                repository.updateSubscription(target.id)
+                                busyId = null
+                            }
+                        }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
                 ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
@@ -398,12 +442,26 @@ fun SubscriptionsSheet(
 }
 
 @Composable
+private fun PresetField(label: org.jetbrains.compose.resources.StringResource, value: String, singleLine: Boolean = true, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(stringResource(label)) },
+        singleLine = singleLine,
+        minLines = if (singleLine) 1 else 2,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
 private fun UserAgentPicker(value: String, onChange: (String) -> Unit) {
     val default = ConfigRepository.DEFAULT_UA
     val alt = ConfigRepository.ALT_UA
+    val singBox = ConfigRepository.SING_BOX_UA
     val isDefault = value.isBlank() || value == default
     val isAlt = value == alt
-    var custom by remember(value) { mutableStateOf(!isDefault && !isAlt) }
+    val isSingBox = value == singBox
+    var custom by remember(value) { mutableStateOf(!isDefault && !isAlt && !isSingBox) }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
@@ -425,6 +483,11 @@ private fun UserAgentPicker(value: String, onChange: (String) -> Unit) {
                 selected = isAlt && !custom,
                 onClick = { custom = false; onChange(alt) },
                 label = { Text(stringResource(Res.string.subs_ua_narcicgeteway), maxLines = 1) },
+            )
+            FilterChip(
+                selected = isSingBox && !custom,
+                onClick = { custom = false; onChange(singBox) },
+                label = { Text("sing-box", maxLines = 1) },
             )
             FilterChip(
                 selected = custom,

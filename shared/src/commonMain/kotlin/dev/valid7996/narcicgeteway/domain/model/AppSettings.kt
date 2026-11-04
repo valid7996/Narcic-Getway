@@ -282,7 +282,7 @@ data class AppSettings(
     val connectButtonStyle: ConnectButtonStyle = ConnectButtonStyle.Slide,
 
     val navBarStyle: NavBarStyle = NavBarStyle.IosInteractive,
-    val settingsTileLayout: SettingsTileLayout = SettingsTileLayout.MasonryGrid,
+    val settingsTileLayout: SettingsTileLayout = SettingsTileLayout.SingleColumn,
     val alwaysShowDashboard: Boolean = false,
 
     val themeProfileId: String? = "noir",

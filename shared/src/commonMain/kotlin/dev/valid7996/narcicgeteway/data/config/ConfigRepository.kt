@@ -1432,7 +1432,13 @@ class ConfigRepository(private val store: KeyValueStore) {
         persistSubscriptions()
     }
 
-    fun editSubscription(id: String, newName: String, userAgent: String?, newUrl: String? = null) {
+    fun editSubscription(
+        id: String,
+        newName: String,
+        userAgent: String?,
+        newUrl: String? = null,
+        preset: dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset? = null,
+    ) {
         val trimmedName = newName.trim()
         val trimmedUa = userAgent?.trim()?.takeIf { it.isNotBlank() }
         val trimmedUrl = newUrl?.trim()?.takeIf { it.isNotBlank() }
@@ -1442,6 +1448,7 @@ class ConfigRepository(private val store: KeyValueStore) {
                 name = trimmedName.ifEmpty { it.name },
                 url = trimmedUrl ?: it.url,
                 userAgent = trimmedUa,
+                preset = preset ?: it.preset,
             )
         }
         persistSubscriptions()
@@ -1988,7 +1995,7 @@ class ConfigRepository(private val store: KeyValueStore) {
 
         val ALT_UA = "NarcicGeteway/${AppInfo.versionName}"
 
-        const val SING_BOX_UA = "SFA/1.14.0"
+        const val SING_BOX_UA = "SFA/1.14.4 (sing-box 1.14.4)"
 
         const val V2RAYNG_UA_PREFIX = "v2rayNG/"
 

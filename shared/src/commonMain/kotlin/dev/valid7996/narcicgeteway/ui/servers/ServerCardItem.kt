@@ -301,6 +301,14 @@ internal fun ServerCard(
                                     leadingIcon = { Icon(painterResource(Res.drawable.ic_ios_share), null, Modifier.size(18.dp)) },
                                     onClick = { menuOpen = false; onShare() },
                                 )
+                                onShareLocked?.let { shareLocked ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.server_card_lock_and_share)) },
+                                        leadingIcon = { Icon(painterResource(Res.drawable.ic_lock), null, tint = Color(0xFFFF9500), modifier = Modifier.size(18.dp)) },
+                                        enabled = shareLink != null,
+                                        onClick = { menuOpen = false; shareLocked() },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text(stringResource(Res.string.action_share_qr)) },
                                     leadingIcon = { Icon(painterResource(Res.drawable.ic_qr_code_2), null, Modifier.size(18.dp)) },

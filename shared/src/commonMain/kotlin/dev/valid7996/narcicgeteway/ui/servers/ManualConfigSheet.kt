@@ -12,18 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -34,9 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,18 +37,25 @@ import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.domain.config.AwgConfig
 import dev.valid7996.narcicgeteway.domain.config.EchOutbound
+
 import dev.valid7996.narcicgeteway.domain.config.Protocol
 import dev.valid7996.narcicgeteway.domain.config.SecurityConfig
 import dev.valid7996.narcicgeteway.domain.config.ServerConfig
 import dev.valid7996.narcicgeteway.domain.config.ShareLink
+import dev.valid7996.narcicgeteway.domain.config.SingBoxConvert
 import dev.valid7996.narcicgeteway.domain.config.TransportConfig
 import dev.valid7996.narcicgeteway.ui.components.PickerField
 import dev.valid7996.narcicgeteway.ui.components.SectionTitle
+import dev.valid7996.narcicgeteway.ui.platform.appVerticalScroll
 
-private val NETWORKS = listOf("tcp", "ws", "grpc", "httpupgrade", "xhttp", "kcp")
+private val NETWORKS = listOf("tcp", "ws", "grpc", "httpupgrade", "xhttp", "kcp", "xdrive")
+
 private val MASQUE_ALPNS = listOf("h3" to "HTTP/3", "h2" to "HTTP/2")
-
 private val SECURITIES = listOf("" to "None", "tls" to "TLS", "reality" to "REALITY")
+
+private val PROXY_SECURITIES = listOf("" to "None", "tls" to "TLS")
+
+private val CORES = listOf(false to "Xray", true to "sing-box")
 
 private val FLOWS = listOf(
     "" to "None",
@@ -98,10 +97,14 @@ private val ALPN_OPTIONS = listOf(
 @Composable
 fun ManualConfigSheet(
     initial: ServerConfig? = null,
+    initialSingBoxLink: String? = null,
+    onEditJson: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     onSave: (link: String) -> Unit,
 ) {
     var protocol by remember { mutableStateOf(initial?.protocol ?: Protocol.VLESS) }
+    val singBoxDraft = remember { SingBoxDraft(initialSingBoxLink) }
+    var singBoxOnly by remember { mutableStateOf(initialSingBoxLink != null) }
     var remark by remember { mutableStateOf(initial?.remark ?: "") }
     var address by remember { mutableStateOf(initial?.address ?: "") }
     var port by remember { mutableStateOf(initial?.port?.toString() ?: "443") }
@@ -155,20 +158,101 @@ fun ManualConfigSheet(
     var publicKey by remember { mutableStateOf(initial?.tls?.publicKey ?: "") }
     var shortId by remember { mutableStateOf(initial?.tls?.shortId ?: "") }
     var spiderX by remember { mutableStateOf(initial?.tls?.spiderX ?: "") }
-    var echConfigList by remember { mutableStateOf(initial?.tls?.echConfigList ?: "") }
     var echOutbound by remember { mutableStateOf(initial?.tls?.echOutbound ?: "") }
     var echError by remember { mutableStateOf<String?>(null) }
-    var warp by remember { mutableStateOf(initial?.isWarp == true) }
-    var transportHeaders by remember { mutableStateOf(initial?.transport?.headers.orEmpty()) }
+    var echConfigList by remember { mutableStateOf(initial?.tls?.echConfigList ?: "") }
     var cipherSuites by remember { mutableStateOf(initial?.tls?.cipherSuites ?: "") }
 
     var finalMask by remember { mutableStateOf(initial?.transport?.finalMask ?: "") }
+    var headers by remember { mutableStateOf(initial?.transport?.headers ?: "") }
+    var xdriveSettings by remember { mutableStateOf(initial?.transport?.xdriveSettings ?: "") }
+    var hopInterval by remember { mutableStateOf(initial?.hopInterval ?: "") }
+    var warp by remember { mutableStateOf(initial?.isWarp ?: false) }
     var allowInsecure by remember { mutableStateOf(initial?.tls?.allowInsecure ?: false) }
     var verifyCertName by remember { mutableStateOf(initial?.tls?.verifyPeerCertByName ?: "") }
     var mldsa65Verify by remember { mutableStateOf(initial?.tls?.mldsa65Verify ?: "") }
     var flow by remember { mutableStateOf(initial?.flow ?: "") }
     var bandwidthUp by remember { mutableStateOf(initial?.bandwidthUp ?: "") }
     var bandwidthDown by remember { mutableStateOf(initial?.bandwidthDown ?: "") }
+    var runOnSingBox by remember { mutableStateOf(initial?.runOnSingBox ?: false) }
+
+    val proxyProtocol = protocol == Protocol.SOCKS || protocol == Protocol.HTTP
+    val tlsCapable = protocol.supportsTransport || proxyProtocol
+    val singBoxChosen = runOnSingBox && protocol.sharedWithSingBox
+
+    fun buildConfig(): ServerConfig {
+        val masque = protocol == Protocol.MASQUE
+        return ServerConfig(
+            protocol = protocol,
+            remark = remark.ifBlank { address },
+            address = address.trim(),
+            port = port.toIntOrNull() ?: 443,
+            userId = userId.trim(),
+            alterId = alterId.toIntOrNull(),
+            encryption = encryption.ifBlank { "none" },
+            vmessSecurity = vmessSecurity.ifBlank { "auto" },
+            flow = flow.ifBlank { null },
+            shadowsocksMethod = ssMethod.ifBlank { null },
+            username = if (masque && warp) "" else username.trim(),
+            secretKey = if (masque && !warp) "" else secretKey.trim(),
+            peerPublicKey = if (masque && !warp) "" else peerPublicKey.trim(),
+            localAddresses = localAddress.split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() },
+            preSharedKey = wgPsk.trim().ifBlank { null },
+            allowedIps = wgAllowedIps.split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() },
+            dnsServers = wgDns.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+            reserved = reserved.ifBlank { null },
+            wireguardMtu = wgMtu.toIntOrNull(),
+            wireguardKeepalive = wgKeepalive.toIntOrNull()?.takeIf { it > 0 },
+            awg = if (protocol == Protocol.AMNEZIAWG) awg else AwgConfig(),
+            obfsPassword = obfsPassword.ifBlank { null },
+            portHopping = portHopping.ifBlank { null },
+            hopInterval = hopInterval.takeIf { portHopping.isNotBlank() }?.ifBlank { null },
+            pinnedCertSha256 = pinnedCert.ifBlank { null },
+            bandwidthUp = bandwidthUp.ifBlank { null },
+            bandwidthDown = bandwidthDown.ifBlank { null },
+            runOnSingBox = singBoxChosen,
+            transport = TransportConfig(
+                network = if (masque) "masque" else network,
+
+                headerType = headerType.takeIf { it.isNotBlank() && it != "none" },
+                host = host.ifBlank { null },
+                path = path.ifBlank { null },
+                seed = seed.ifBlank { null },
+                mode = streamMode.ifBlank { null },
+                serviceName = serviceName.ifBlank { null },
+                authority = authority.ifBlank { null },
+                xhttpExtra = xhttpExtra.ifBlank { null },
+                kcpMtu = kcpMtu.toIntOrNull(),
+                finalMask = finalMask.ifBlank { null },
+                kcpTti = kcpTti.toIntOrNull(),
+                headers = headers.takeIf { masque || protocol == Protocol.HTTP }?.ifBlank { null },
+                xdriveSettings = xdriveSettings.takeIf { !masque && network == "xdrive" }?.ifBlank { null },
+            ),
+            tls = SecurityConfig(
+                security = when {
+                    masque || protocol == Protocol.HYSTERIA -> "tls"
+                    proxyProtocol && security == "reality" -> ""
+                    else -> security
+                },
+                sni = sni.ifBlank { null },
+                alpn = alpn.ifBlank { null },
+                fingerprint = fingerprint.ifBlank { null },
+                publicKey = publicKey.ifBlank { null },
+                shortId = shortId.ifBlank { null },
+                spiderX = spiderX.ifBlank { null },
+                echConfigList = echConfigList.ifBlank { null },
+                echOutbound = echOutbound.ifBlank { null },
+                cipherSuites = cipherSuites.ifBlank { null },
+                verifyPeerCertByName = verifyCertName.ifBlank { null },
+                mldsa65Verify = mldsa65Verify.ifBlank { null },
+                allowInsecure = allowInsecure,
+            ),
+        )
+    }
 
     androidx.compose.runtime.LaunchedEffect(protocol) {
         if (initial == null) {
@@ -183,44 +267,67 @@ fun ManualConfigSheet(
         }
     }
 
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        dragHandle = {
-            Box(
-                Modifier
-                    .padding(top = 12.dp, bottom = 4.dp)
-                    .size(width = 38.dp, height = 4.dp)
-                    .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.3f) else Color(0xFF3C3C43).copy(alpha = 0.3f)),
-            )
-        },
+
+        sheetState = rememberBottomSheetState(SheetValue.Hidden, setOf(SheetValue.Hidden, SheetValue.Expanded)),
     ) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .appVerticalScroll(rememberScrollState())
                 .imePadding()
                 .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                stringResource(Res.string.servers_add_manual),
-                style = MaterialTheme.typography.headlineSmall,
+                stringResource(if (initial != null || initialSingBoxLink != null) Res.string.manual_edit_title else Res.string.servers_add_manual),
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isDark) Color.White else Color(0xFF000000),
-                modifier = Modifier.padding(vertical = 4.dp),
             )
 
             PickerField(
                 label = stringResource(Res.string.manual_protocol),
-                options = Protocol.entries.map { it to it.label },
-                selected = protocol,
-                onSelect = { protocol = it },
+                options = Protocol.entries.map { "x:" + it.name to it.label } +
+                    SingBoxKind.entries.map { "s:" + it.name to it.label + " · sing-box" },
+                selected = if (singBoxOnly) "s:" + singBoxDraft.kind.name else "x:" + protocol.name,
+                onSelect = { key ->
+                    if (key.startsWith("s:")) {
+                        singBoxOnly = true
+                        singBoxDraft.select(SingBoxKind.valueOf(key.removePrefix("s:")))
+                    } else {
+                        singBoxOnly = false
+                        protocol = Protocol.valueOf(key.removePrefix("x:"))
+                    }
+                },
             )
+
+            if (singBoxOnly) {
+                SingBoxFields(singBoxDraft)
+                if (onEditJson != null) {
+                    androidx.compose.material3.TextButton(onClick = onEditJson) {
+                        Text(stringResource(Res.string.sb_edit_json))
+                    }
+                }
+                Button(
+                    onClick = { onSave(singBoxDraft.toLink()) },
+                    enabled = singBoxDraft.valid(),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                ) {
+                    Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
+                }
+                return@Column
+            }
+
+            if (protocol.sharedWithSingBox) {
+                PickerField(
+                    label = stringResource(Res.string.manual_core),
+                    options = CORES,
+                    selected = runOnSingBox,
+                    onSelect = { runOnSingBox = it },
+                )
+            }
 
             Field(remark, { remark = it }, Res.string.manual_remark)
             Field(address, { address = it }, Res.string.manual_address)
@@ -229,6 +336,7 @@ fun ManualConfigSheet(
             when (protocol) {
                 Protocol.VLESS -> {
                     Field(userId, { userId = it }, Res.string.manual_uuid)
+                    Field(encryption, { encryption = it }, Res.string.manual_vless_encryption)
 
                     PickerField(
                         label = stringResource(Res.string.manual_flow),
@@ -260,12 +368,15 @@ fun ManualConfigSheet(
                 Protocol.SOCKS, Protocol.HTTP -> {
                     Field(username, { username = it }, Res.string.manual_username)
                     Field(userId, { userId = it }, Res.string.manual_password)
+                    if (protocol == Protocol.HTTP) Field(headers, { headers = it }, Res.string.manual_masque_headers)
                 }
                 Protocol.HYSTERIA -> {
                     Field(secretKey, { secretKey = it }, Res.string.manual_auth)
                     Field(obfsPassword, { obfsPassword = it }, Res.string.manual_obfs_password)
                     Field(portHopping, { portHopping = it }, Res.string.manual_port_hopping)
-                    Field(pinnedCert, { pinnedCert = it }, Res.string.manual_pinned_cert)
+                    if (portHopping.isNotBlank()) {
+                        Field(hopInterval, { hopInterval = it.filter { c -> c.isDigit() || c == '-' }.take(9) }, Res.string.manual_hop_interval)
+                    }
                     Field(bandwidthUp, { bandwidthUp = it.filter(Char::isDigit).take(6) }, Res.string.manual_bandwidth_up, number = true)
                     Field(bandwidthDown, { bandwidthDown = it.filter(Char::isDigit).take(6) }, Res.string.manual_bandwidth_down, number = true)
                     Field(sni, { sni = it }, Res.string.manual_sni)
@@ -275,6 +386,25 @@ fun ManualConfigSheet(
                         selected = alpn,
                         onSelect = { alpn = it },
                     )
+                    Field(echConfigList, { echConfigList = it; echError = null }, Res.string.manual_ech)
+                    OutlinedTextField(
+                        value = echOutbound,
+                        onValueChange = { echOutbound = it; echError = null },
+                        label = { Text(stringResource(Res.string.server_lab_ech_outbound)) },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    echError?.let { err ->
+                        Text(
+                            err,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        )
+                    }
+                    Field(pinnedCert, { pinnedCert = it }, Res.string.manual_pinned_cert)
+                    Field(verifyCertName, { verifyCertName = it }, Res.string.manual_verify_cert_name)
+                    InsecureSwitch(allowInsecure, { allowInsecure = it }, sni.isBlank() && pinnedCert.isBlank() && !singBoxChosen)
                 }
                 Protocol.MASQUE -> {
                     LabeledSwitch(
@@ -310,7 +440,15 @@ fun ManualConfigSheet(
                             onSelect = { fingerprint = it },
                         )
                     }
-                    Field(transportHeaders, { transportHeaders = it }, Res.string.manual_masque_headers)
+                    Field(path, { path = it }, Res.string.manual_masque_path)
+                    Field(host, { host = it }, Res.string.manual_masque_authority)
+                    Field(headers, { headers = it }, Res.string.manual_masque_headers)
+                    Field(wgDns, { wgDns = it }, Res.string.manual_masque_dns)
+                    Field(xhttpExtra, { xhttpExtra = it }, Res.string.manual_masque_extra)
+                    Field(echConfigList, { echConfigList = it }, Res.string.manual_ech)
+                    Field(pinnedCert, { pinnedCert = it }, Res.string.manual_pinned_cert)
+                    Field(verifyCertName, { verifyCertName = it }, Res.string.manual_verify_cert_name)
+                    InsecureSwitch(allowInsecure, { allowInsecure = it }, sni.isBlank() && pinnedCert.isBlank())
                 }
                 Protocol.WIREGUARD, Protocol.AMNEZIAWG -> {
                     Field(secretKey, { secretKey = it }, Res.string.manual_private_key)
@@ -347,17 +485,7 @@ fun ManualConfigSheet(
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
-                            Switch(
-                                checked = awgAdvanced,
-                                onCheckedChange = { awgAdvanced = it },
-                                colors = androidx.compose.material3.SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Color(0xFF34C759),
-                                    uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EB),
-                                    uncheckedBorderColor = Color.Transparent,
-                                ),
-                            )
+                            Switch(checked = awgAdvanced, onCheckedChange = { awgAdvanced = it })
                         }
                         if (awgAdvanced) {
                             AwgConfig.KEYS.filterNot { it in AwgConfig.CLASSIC_KEYS }.forEach { key ->
@@ -376,7 +504,7 @@ fun ManualConfigSheet(
                     selected = network,
                     onSelect = { network = it },
                 )
-                if (network != "tcp" && network != "kcp") {
+                if (network != "tcp" && network != "kcp" && network != "xdrive") {
                     Field(host, { host = it }, Res.string.manual_host)
                 }
 
@@ -419,6 +547,20 @@ fun ManualConfigSheet(
                         )
                         Field(xhttpExtra, { xhttpExtra = it }, Res.string.manual_xhttp_extra)
                     }
+                    "xdrive" -> {
+                        Text(
+                            stringResource(Res.string.manual_xdrive_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedTextField(
+                            value = xdriveSettings,
+                            onValueChange = { xdriveSettings = it },
+                            label = { Text(stringResource(Res.string.manual_xdrive_settings)) },
+                            minLines = 3,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     "grpc" -> {
                         Field(serviceName, { serviceName = it }, Res.string.manual_service_name)
                         Field(authority, { authority = it }, Res.string.manual_authority)
@@ -431,15 +573,17 @@ fun ManualConfigSheet(
                     }
                 }
 
+            }
+            if (tlsCapable) {
                 SectionTitle(stringResource(Res.string.manual_security))
                 PickerField(
                     label = stringResource(Res.string.manual_security),
-                    options = SECURITIES,
-                    selected = security,
+                    options = if (proxyProtocol) PROXY_SECURITIES else SECURITIES,
+                    selected = if (proxyProtocol && security == "reality") "" else security,
                     onSelect = { security = it },
                 )
             }
-            if (protocol.supportsTransport && security.isNotEmpty()) {
+            if (tlsCapable && security.isNotEmpty() && !(proxyProtocol && security == "reality")) {
                 Field(sni, { sni = it }, Res.string.manual_sni)
 
                 PickerField(
@@ -455,47 +599,44 @@ fun ManualConfigSheet(
                         selected = alpn,
                         onSelect = { alpn = it },
                     )
-                    Field(echConfigList, { echConfigList = it; echError = null }, Res.string.manual_ech)
-                    Field(
-                        value = echOutbound,
-                        onValueChange = { echOutbound = it; echError = null },
-                        labelRes = Res.string.server_lab_ech_outbound,
-                        singleLine = false,
-                    )
-                    echError?.let { err ->
-                        Text(
-                            err,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                        )
-                    }
+                    Field(echConfigList, { echConfigList = it }, Res.string.manual_ech)
 
                     Field(cipherSuites, { cipherSuites = it }, Res.string.manual_cipher_suites)
 
-                    Field(finalMask, { finalMask = it }, Res.string.manual_final_mask)
-
                     Field(pinnedCert, { pinnedCert = it }, Res.string.manual_pinned_cert)
                     Field(verifyCertName, { verifyCertName = it }, Res.string.manual_verify_cert_name)
-                    LabeledSwitch(
-                        label = stringResource(Res.string.manual_allow_insecure),
-                        checked = allowInsecure,
-                        onChange = { allowInsecure = it },
-                    )
-
-                    if (allowInsecure && sni.isBlank() && pinnedCert.isBlank()) {
-                        Text(
-                            stringResource(Res.string.manual_allow_insecure_needs_sni),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
+                    InsecureSwitch(allowInsecure, { allowInsecure = it }, sni.isBlank() && pinnedCert.isBlank() && !singBoxChosen)
                 } else {
                     Field(publicKey, { publicKey = it }, Res.string.manual_public_key)
                     Field(shortId, { shortId = it }, Res.string.manual_short_id)
                     Field(spiderX, { spiderX = it }, Res.string.manual_spider_x)
 
                     Field(mldsa65Verify, { mldsa65Verify = it }, Res.string.manual_mldsa65_verify)
+                }
+            }
+
+            OutlinedTextField(
+                value = finalMask,
+                onValueChange = { finalMask = it },
+                label = { Text(stringResource(Res.string.manual_final_mask)) },
+                minLines = 2,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            val problems = if (singBoxChosen) SingBoxConvert.problems(buildConfig()) else emptyList()
+            if (problems.isNotEmpty()) {
+                Text(
+                    stringResource(Res.string.singbox_blocked_title),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                problems.forEach { problem ->
+                    Text(
+                        "• " + problemText(problem),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
 
@@ -512,127 +653,81 @@ fun ManualConfigSheet(
                             return@Button
                         }
                     }
-                    val config = ServerConfig(
-                        protocol = protocol,
-                        remark = remark.ifBlank { address },
-                        address = address.trim(),
-                        port = port.toIntOrNull() ?: 443,
-                        userId = userId.trim(),
-                        alterId = alterId.toIntOrNull(),
-                        encryption = encryption.ifBlank { "none" },
-                        vmessSecurity = vmessSecurity.ifBlank { "auto" },
-                        flow = flow.ifBlank { null },
-                        shadowsocksMethod = ssMethod.ifBlank { null },
-                        username = username.trim(),
-                        secretKey = secretKey.trim(),
-                        peerPublicKey = peerPublicKey.trim(),
-                        localAddresses = localAddress.split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() },
-                        preSharedKey = wgPsk.trim().ifBlank { null },
-                        allowedIps = wgAllowedIps.split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() },
-                        dnsServers = wgDns.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                        reserved = reserved.ifBlank { null },
-                        wireguardMtu = wgMtu.toIntOrNull(),
-                        wireguardKeepalive = wgKeepalive.toIntOrNull()?.takeIf { it > 0 },
-                        awg = if (protocol == Protocol.AMNEZIAWG) awg else AwgConfig(),
-                        obfsPassword = obfsPassword.ifBlank { null },
-                        portHopping = portHopping.ifBlank { null },
-                        pinnedCertSha256 = pinnedCert.ifBlank { null },
-                        bandwidthUp = bandwidthUp.ifBlank { null },
-                        bandwidthDown = bandwidthDown.ifBlank { null },
-                        transport = TransportConfig(
-                            network = network,
-
-                            headerType = headerType.takeIf { it.isNotBlank() && it != "none" },
-                            host = host.ifBlank { null },
-                            path = path.ifBlank { null },
-                            seed = seed.ifBlank { null },
-                            mode = streamMode.ifBlank { null },
-                            serviceName = serviceName.ifBlank { null },
-                            authority = authority.ifBlank { null },
-                            xhttpExtra = xhttpExtra.ifBlank { null },
-                            kcpMtu = kcpMtu.toIntOrNull(),
-                            finalMask = finalMask.ifBlank { null },
-                            kcpTti = kcpTti.toIntOrNull(),
-                        ),
-                        tls = SecurityConfig(
-                            security = security,
-                            sni = sni.ifBlank { null },
-                            alpn = alpn.ifBlank { null },
-                            fingerprint = fingerprint.ifBlank { null },
-                            publicKey = publicKey.ifBlank { null },
-                            shortId = shortId.ifBlank { null },
-                            spiderX = spiderX.ifBlank { null },
-                            echConfigList = echConfigList.ifBlank { null },
-                            echOutbound = echOutbound.ifBlank { null },
-                            cipherSuites = cipherSuites.ifBlank { null },
-                            verifyPeerCertByName = verifyCertName.ifBlank { null },
-                            mldsa65Verify = mldsa65Verify.ifBlank { null },
-                            allowInsecure = allowInsecure,
-                        ),
-                    )
+                    val config = buildConfig()
                     onSave(ShareLink.build(config))
                 },
-                enabled = address.isNotBlank() && when (protocol) {
+                enabled = problems.isEmpty() && address.isNotBlank() && when (protocol) {
                     Protocol.SOCKS, Protocol.HTTP -> true
                     Protocol.WIREGUARD, Protocol.AMNEZIAWG ->
                         secretKey.isNotBlank() && peerPublicKey.isNotBlank()
                     Protocol.HYSTERIA -> secretKey.isNotBlank()
-                    Protocol.MASQUE -> if (warp) secretKey.isNotBlank() else true
+                    Protocol.MASQUE -> !warp || secretKey.isNotBlank() && localAddress.isNotBlank()
                     else -> userId.isNotBlank()
                 },
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF007AFF),
-                    contentColor = Color.White,
-                    disabledContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFE5E5EA),
-                    disabledContentColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF8E8E93),
-                ),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.fillMaxWidth().height(54.dp),
             ) {
-                Text(
-                    stringResource(Res.string.action_save),
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold)
             }
         }
     }
 }
 
 @Composable
-private fun LabeledSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+private fun InsecureSwitch(checked: Boolean, onChange: (Boolean) -> Unit, warnNoName: Boolean) {
+    LabeledSwitch(
+        label = stringResource(Res.string.manual_allow_insecure),
+        checked = checked,
+        onChange = onChange,
+    )
+    if (checked && warnNoName) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (isDark) Color.White else Color.Black,
-            modifier = Modifier.weight(1f),
-        )
-        Switch(
-            checked = checked,
-            onCheckedChange = onChange,
-            colors = androidx.compose.material3.SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF34C759),
-                uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = if (isDark) Color(0xFF39393D) else Color(0xFFE9E9EB),
-                uncheckedBorderColor = Color.Transparent,
-            ),
+            stringResource(Res.string.manual_allow_insecure_needs_sni),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
         )
     }
 }
 
 @Composable
+private fun problemText(problem: SingBoxConvert.Problem): String = when (problem.blocker) {
+    SingBoxConvert.Blocker.Protocol -> stringResource(Res.string.singbox_blocker_protocol, problem.detail)
+    SingBoxConvert.Blocker.Transport -> stringResource(Res.string.singbox_blocker_transport, problem.detail)
+    SingBoxConvert.Blocker.TcpHeader -> stringResource(Res.string.singbox_blocker_tcp_header)
+    SingBoxConvert.Blocker.VlessEncryption -> stringResource(Res.string.singbox_blocker_vless_encryption)
+    SingBoxConvert.Blocker.Flow -> stringResource(Res.string.singbox_blocker_flow, problem.detail)
+    SingBoxConvert.Blocker.FinalMask -> stringResource(Res.string.singbox_blocker_finalmask)
+    SingBoxConvert.Blocker.PinnedCert -> stringResource(Res.string.singbox_blocker_pinned_cert)
+    SingBoxConvert.Blocker.VerifyName -> stringResource(Res.string.singbox_blocker_verify_name)
+    SingBoxConvert.Blocker.Reality -> stringResource(Res.string.singbox_blocker_reality)
+    SingBoxConvert.Blocker.Fingerprint -> stringResource(Res.string.singbox_blocker_fingerprint, problem.detail)
+    SingBoxConvert.Blocker.Cipher -> stringResource(Res.string.singbox_blocker_cipher, problem.detail)
+    SingBoxConvert.Blocker.SocksTls -> stringResource(Res.string.singbox_blocker_socks_tls)
+    SingBoxConvert.Blocker.GrpcMode -> stringResource(Res.string.singbox_blocker_grpc_mode)
+    SingBoxConvert.Blocker.GrpcAuthority -> stringResource(Res.string.singbox_blocker_grpc_authority)
+    SingBoxConvert.Blocker.ShadowsocksTransport -> stringResource(Res.string.singbox_blocker_ss_transport)
+    SingBoxConvert.Blocker.Bandwidth -> stringResource(Res.string.singbox_blocker_bandwidth, problem.detail)
+    SingBoxConvert.Blocker.Address -> stringResource(Res.string.singbox_blocker_address, problem.detail)
+    SingBoxConvert.Blocker.Reserved -> stringResource(Res.string.singbox_blocker_reserved, problem.detail)
+}
+
+@Composable
+private fun LabeledSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
 private fun AwgField(key: String, value: String, onValueChange: (String) -> Unit) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val name = AwgConfig.CONF_NAME[key] ?: key
     val desc = AwgConfig.DESCRIPTION[key]
     OutlinedTextField(
@@ -640,15 +735,6 @@ private fun AwgField(key: String, value: String, onValueChange: (String) -> Unit
         onValueChange = onValueChange,
         label = { Text(if (desc == null) name else "$name — $desc") },
         singleLine = true,
-        shape = RoundedCornerShape(12.dp),
-        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFF007AFF),
-            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
-            focusedLabelColor = Color(0xFF007AFF),
-            unfocusedLabelColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
-            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
-            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
-        ),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -659,23 +745,12 @@ private fun Field(
     onValueChange: (String) -> Unit,
     labelRes: StringResource,
     number: Boolean = false,
-    singleLine: Boolean = true,
 ) {
-    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(stringResource(labelRes)) },
-        singleLine = singleLine,
-        shape = RoundedCornerShape(12.dp),
-        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFF007AFF),
-            unfocusedBorderColor = if (isDark) Color(0xFF3A3A3C) else Color(0xFFE5E5EA),
-            focusedLabelColor = Color(0xFF007AFF),
-            unfocusedLabelColor = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
-            focusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
-            unfocusedContainerColor = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7),
-        ),
+        singleLine = true,
         keyboardOptions = if (number) KeyboardOptions(keyboardType = KeyboardType.Number)
         else KeyboardOptions.Default,
         modifier = Modifier.fillMaxWidth(),

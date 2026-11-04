@@ -335,7 +335,7 @@ private fun RootPage(
 
             when (settings.settingsTileLayout) {
                 SettingsTileLayout.HorizontalCards -> {
-                    // Horizontal Scrollable Cards
+                    // Horizontal Scrollable Cards (Categorized & Complete)
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -346,6 +346,7 @@ private fun RootPage(
                             MasonrySettingTile(title = "اسکنر آی‌پی تمیز", subtitle = "یافتن آی‌پی‌های بدون فیلتر", icon = Res.drawable.ic_speed, accentColor = Color(0xFF0284C7), gradientColors = listOf(Color(0xFF0B2945), Color(0xFF051626)), borderColor = Color(0x600EA5E9), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.IpScanner) })
                             MasonrySettingTile(title = "ابزارهای Patt", subtitle = "تست SNI و Cloudflare Fix", icon = Res.drawable.ic_tune, accentColor = Color(0xFFF59E0B), gradientColors = listOf(Color(0xFF331C08), Color(0xFF1E1004)), borderColor = Color(0x60F59E0B), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftTop, onClick = { onOpen(SettingsPage.Patt) })
                             MasonrySettingTile(title = "پروکسی تلگرام", subtitle = "اتصال مستقیم MTProto", icon = Res.drawable.ic_public, accentColor = Color(0xFF0F766E), gradientColors = listOf(Color(0xFF0A2E26), Color(0xFF051B16)), borderColor = Color(0x6014B8A6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.TelegramProxy) })
+                            MasonrySettingTile(title = "رصدخانه کیفیت", subtitle = "پایش مستمر پینگ و سلامت نود", icon = Res.drawable.ic_schedule, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2E20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Observatory) })
                         }
 
                         Text("شخصی‌سازی و پیکربندی شبکه", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
@@ -353,24 +354,45 @@ private fun RootPage(
                             MasonrySettingTile(title = "ظاهر و زبان برنامه", subtitle = "۳۲ رنگ اختصاصی و قالب‌ها", icon = Res.drawable.ic_palette, accentColor = Color(0xFF7C3AED), gradientColors = listOf(Color(0xFF261144), Color(0xFF140824)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Ui) })
                             MasonrySettingTile(title = "حالت اتصال", subtitle = "VPN یا پروکسی محلی", icon = Res.drawable.ic_tune, accentColor = Color(0xFF2563EB), gradientColors = listOf(Color(0xFF0E2254), Color(0xFF071434)), borderColor = Color(0x603B82F6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Mode) })
                             MasonrySettingTile(title = "تنظیمات VPN", subtitle = "کیل‌سوییچ و MTU اختصاصی", icon = Res.drawable.ic_key, accentColor = Color(0xFFEF4444), gradientColors = listOf(Color(0xFF381010), Color(0xFF1E0808)), borderColor = Color(0x60EF4444), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftTop, onClick = { onOpen(SettingsPage.Vpn) })
+                            MasonrySettingTile(title = "پروتکل‌های DNS", subtitle = "پروتکل‌های امن DoH, DoT, DoQ", icon = Res.drawable.ic_public, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF082F3B), Color(0xFF041920)), borderColor = Color(0x6006B6D4), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.DnsProtocols) })
+                            MasonrySettingTile(title = "تفکیک برنامه‌ها", subtitle = "Per-App Proxy اختصاصی", icon = Res.drawable.ic_menu, accentColor = Color(0xFF8B5CF6), gradientColors = listOf(Color(0xFF28114E), Color(0xFF16082C)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.PerApp) })
+                            MasonrySettingTile(title = "پورت‌های محلی", subtitle = "پورت ورودی Socks و HTTP", icon = Res.drawable.ic_tune, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Core) })
+                        }
+
+                        Text("مسیریابی و بهینه‌سازی پیشرفته", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             MasonrySettingTile(title = "مسیریابی هوشمند", subtitle = "تفکیک سایت‌های ایرانی و بانکی", icon = Res.drawable.ic_map, accentColor = Color(0xFFEC4899), gradientColors = listOf(Color(0xFF380E23), Color(0xFF1F0713)), borderColor = Color(0x60EC4899), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.Routing) })
+                            MasonrySettingTile(title = "تکه تکه‌سازی", subtitle = "Fragment برای دور زدن فیلتر", icon = Res.drawable.ic_bolt, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF072930), Color(0xFF03161A)), borderColor = Color(0x6006B6D4), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Fragment) })
+                            MasonrySettingTile(title = "هسته Sing-Box", subtitle = "استک شبکه gVisor و Multiplex", icon = Res.drawable.ic_bolt, accentColor = Color(0xFFD946EF), gradientColors = listOf(Color(0xFF340B3B), Color(0xFF1C0520)), borderColor = Color(0x60D946EF), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.SingBox) })
+                            MasonrySettingTile(title = "شبکه Tor", subtitle = "مسیریابی امن پیاز و پل‌ها", icon = Res.drawable.ic_encrypted, accentColor = Color(0xFFA855F7), gradientColors = listOf(Color(0xFF2B1044), Color(0xFF170825)), borderColor = Color(0x60A855F7), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Tor) })
+                            MasonrySettingTile(title = "مالتی‌پلکسینگ", subtitle = "Mux TCP برای کاهش پینگ", icon = Res.drawable.ic_sync, accentColor = Color(0xFFEAB308), gradientColors = listOf(Color(0xFF332607), Color(0xFF1A1303)), borderColor = Color(0x60EAB308), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Mux) })
+                            MasonrySettingTile(title = "تنظیمات پیشرفته", subtitle = "بافرهای شبکه و هسته", icon = Res.drawable.ic_settings, accentColor = Color(0xFF64748B), gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)), borderColor = Color(0x6064748B), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Advanced) })
                         }
                     }
                 }
                 SettingsTileLayout.SingleColumn -> {
-                    // Single Column Wide Cards
+                    // Single Column Wide Cards (All 17 options complete)
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        MasonryWideTile(title = "ظاهر و زبان برنامه", subtitle = "۳۲ رنگ اختصاصی، ۶ تم هماهنگ، فونت و استایل", icon = Res.drawable.ic_palette, accentColor = Color(0xFF7C3AED), gradientColors = listOf(Color(0xFF261144), Color(0xFF140824)), borderColor = Color(0x608B5CF6), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.Ui) })
-                        MasonryWideTile(title = "مانیتور زنده", subtitle = "پایش لحظه‌ای مصرف ترافیک و پردازنده گوشی", icon = Res.drawable.ic_speedometer, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.Monitor) })
-                        MasonryWideTile(title = "حالت اتصال", subtitle = "شبکه سراسری VPN یا حالت فقط پروکسی محلی", icon = Res.drawable.ic_tune, accentColor = Color(0xFF2563EB), gradientColors = listOf(Color(0xFF0E2254), Color(0xFF071434)), borderColor = Color(0x603B82F6), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.Mode) })
-                        MasonryWideTile(title = "اسکنر آی‌پی تمیز (CDN Scanner)", subtitle = "یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور", icon = Res.drawable.ic_speed, accentColor = Color(0xFF0284C7), gradientColors = listOf(Color(0xFF0B2945), Color(0xFF051626)), borderColor = Color(0x600EA5E9), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.IpScanner) })
-                        MasonryWideTile(title = "پروکسی‌های تلگرام (Telegram Proxies)", subtitle = "دریافت خودکار، تست پینگ زنده و اتصال مستقیم", icon = Res.drawable.ic_public, accentColor = Color(0xFF0F766E), gradientColors = listOf(Color(0xFF0A2E26), Color(0xFF051B16)), borderColor = Color(0x6014B8A6), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.TelegramProxy) })
-                        MasonryWideTile(title = "ابزارهای Patt (Patt's Tools)", subtitle = "تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH", icon = Res.drawable.ic_tune, accentColor = Color(0xFFF59E0B), gradientColors = listOf(Color(0xFF331C08), Color(0xFF1E1004)), borderColor = Color(0x60F59E0B), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.Patt) })
-                        MasonryWideTile(title = "مسیریابی هوشمند (Routing)", subtitle = "دور زدن سایت‌های ایرانی، بانکی و تفکیک مسیرها", icon = Res.drawable.ic_map, accentColor = Color(0xFFEC4899), gradientColors = listOf(Color(0xFF380E23), Color(0xFF1F0713)), borderColor = Color(0x60EC4899), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.Routing) })
-                        MasonryWideTile(title = "تنظیمات تونل VPN", subtitle = "کیل‌سوییچ، پشتیبانی کامل IPv6 و MTU اختصاصی", icon = Res.drawable.ic_key, accentColor = Color(0xFFEF4444), gradientColors = listOf(Color(0xFF381010), Color(0xFF1E0808)), borderColor = Color(0x60EF4444), shape = RoundedCornerShape(22.dp), onClick = { onOpen(SettingsPage.Vpn) })
+                        MasonryWideTile(title = "ظاهر و زبان برنامه", subtitle = "۳۲ رنگ اختصاصی، ۶ تم هماهنگ، فونت و استایل", icon = Res.drawable.ic_palette, accentColor = Color(0xFF7C3AED), gradientColors = listOf(Color(0xFF261144), Color(0xFF140824)), borderColor = Color(0x608B5CF6), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Ui) })
+                        MasonryWideTile(title = "مانیتور زنده", subtitle = "پایش لحظه‌ای مصرف ترافیک و پردازنده گوشی", icon = Res.drawable.ic_speedometer, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Monitor) })
+                        MasonryWideTile(title = "حالت اتصال", subtitle = "شبکه سراسری VPN یا حالت فقط پروکسی محلی", icon = Res.drawable.ic_tune, accentColor = Color(0xFF2563EB), gradientColors = listOf(Color(0xFF0E2254), Color(0xFF071434)), borderColor = Color(0x603B82F6), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Mode) })
+                        MasonryWideTile(title = "اسکنر آی‌پی تمیز (CDN Scanner)", subtitle = "یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور", icon = Res.drawable.ic_speed, accentColor = Color(0xFF0284C7), gradientColors = listOf(Color(0xFF0B2945), Color(0xFF051626)), borderColor = Color(0x600EA5E9), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.IpScanner) })
+                        MasonryWideTile(title = "پروکسی‌های تلگرام (Telegram Proxies)", subtitle = "دریافت خودکار، تست پینگ زنده و اتصال مستقیم", icon = Res.drawable.ic_public, accentColor = Color(0xFF0F766E), gradientColors = listOf(Color(0xFF0A2E26), Color(0xFF051B16)), borderColor = Color(0x6014B8A6), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.TelegramProxy) })
+                        MasonryWideTile(title = "ابزارهای Patt (Patt's Tools)", subtitle = "تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH", icon = Res.drawable.ic_tune, accentColor = Color(0xFFF59E0B), gradientColors = listOf(Color(0xFF331C08), Color(0xFF1E1004)), borderColor = Color(0x60F59E0B), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Patt) })
+                        MasonryWideTile(title = "مسیریابی هوشمند (Routing)", subtitle = "دور زدن سایت‌های ایرانی، بانکی و تفکیک مسیرها", icon = Res.drawable.ic_map, accentColor = Color(0xFFEC4899), gradientColors = listOf(Color(0xFF380E23), Color(0xFF1F0713)), borderColor = Color(0x60EC4899), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Routing) })
+                        MasonryWideTile(title = "تنظیمات تونل VPN", subtitle = "کیل‌سوییچ، پشتیبانی کامل IPv6 و MTU اختصاصی", icon = Res.drawable.ic_key, accentColor = Color(0xFFEF4444), gradientColors = listOf(Color(0xFF381010), Color(0xFF1E0808)), borderColor = Color(0x60EF4444), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Vpn) })
+                        MasonryWideTile(title = "پروتکل‌های امن DNS", subtitle = "پروتکل‌های رمزنگاری‌شده DoH, DoT, DoQ و سرورهای ضد تحریم", icon = Res.drawable.ic_public, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF082F3B), Color(0xFF041920)), borderColor = Color(0x6006B6D4), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.DnsProtocols) })
+                        MasonryWideTile(title = "تفکیک برنامه‌ها (Per-App Proxy)", subtitle = "انتخاب برنامه‌های عبوری از تونل فیلترشکن", icon = Res.drawable.ic_menu, accentColor = Color(0xFF8B5CF6), gradientColors = listOf(Color(0xFF28114E), Color(0xFF16082C)), borderColor = Color(0x608B5CF6), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.PerApp) })
+                        MasonryWideTile(title = "تکه تکه‌سازی پکت‌ها (Fragment)", subtitle = "تکه تکه‌سازی پکت‌های TLS برای دور زدن فیلترینگ شدید", icon = Res.drawable.ic_bolt, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF072930), Color(0xFF03161A)), borderColor = Color(0x6006B6D4), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Fragment) })
+                        MasonryWideTile(title = "هسته Sing-Box", subtitle = "تنظیمات استک شبکه gVisor/System و Multiplex", icon = Res.drawable.ic_bolt, accentColor = Color(0xFFD946EF), gradientColors = listOf(Color(0xFF340B3B), Color(0xFF1C0520)), borderColor = Color(0x60D946EF), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.SingBox) })
+                        MasonryWideTile(title = "شبکه ناشناس Tor", subtitle = "مسیریابی امن از لایه‌های پیاز و پل‌های ضد فیلتر", icon = Res.drawable.ic_encrypted, accentColor = Color(0xFFA855F7), gradientColors = listOf(Color(0xFF2B1044), Color(0xFF170825)), borderColor = Color(0x60A855F7), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Tor) })
+                        MasonryWideTile(title = "پورت‌های محلی", subtitle = "پورت‌های ورودی Socks5, HTTP و Mixed روی دستگاه", icon = Res.drawable.ic_tune, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Core) })
+                        MasonryWideTile(title = "مالتی‌پلکسینگ (Mux TCP)", subtitle = "تجمیع اتصالات TCP/H2 برای کاهش محسوس پینگ", icon = Res.drawable.ic_sync, accentColor = Color(0xFFEAB308), gradientColors = listOf(Color(0xFF332607), Color(0xFF1A1303)), borderColor = Color(0x60EAB308), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Mux) })
+                        MasonryWideTile(title = "رصدخانه کیفیت", subtitle = "پایش مستمر پینگ و انتخاب هوشمند بهترین نود", icon = Res.drawable.ic_schedule, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2E20), Color(0xFF061811)), borderColor = Color(0x6010B981), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Observatory) })
+                        MasonryWideTile(title = "تنظیمات پیشرفته", subtitle = "بافرهای شبکه، سوکت‌ها و پیکربندی تخصصی هسته", icon = Res.drawable.ic_settings, accentColor = Color(0xFF64748B), gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)), borderColor = Color(0x6064748B), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Advanced) })
                     }
                 }
                 SettingsTileLayout.MasonryGrid -> {
@@ -598,18 +620,7 @@ private fun RootPage(
                                 onClick = { onOpen(SettingsPage.Core) },
                             )
 
-                            // 8. دستیار AI
-                            MasonrySettingTile(
-                                title = "دستیار هوشمند AI",
-                                subtitle = "عیب‌یابی خودکار شبکه و پیشنهاد بهینه‌ترین سرور",
-                                icon = Res.drawable.ic_star,
-                                accentColor = Color(0xFFD946EF),
-                                gradientColors = listOf(Color(0xFF3B1044), Color(0xFF1E0824)),
-                                borderColor = Color(0x60D946EF),
-                                minHeight = 175.dp,
-                                shape = shapeLeftMid,
-                                onClick = { onOpen(SettingsPage.Ai) },
-                            )
+
 
                             // 9. رصدخانه کیفیت
                             MasonrySettingTile(
@@ -667,7 +678,7 @@ private fun RootPage(
             // درباره و پشتیبانی
             MasonryWideTile(
                 title = "درباره نارسیس و پشتیبانی",
-                subtitle = "نسخه 4.2.6 • ارتباط با کانال و توسعه‌دهندگان",
+                subtitle = "نسخه 4.1.8 • ارتباط با کانال و توسعه‌دهندگان",
                 icon = Res.drawable.ic_info,
                 accentColor = NeonTheme.PrimaryPink,
                 gradientColors = listOf(Color(0xFF2C0B1E), Color(0xFF180510)),
