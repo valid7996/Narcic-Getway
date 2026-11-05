@@ -519,6 +519,7 @@ fun HomeScreen(
                             activeConfigName = activeConfigName,
                             activeConfigDetail = activeConfigDetail,
                             activeLocked = activeLocked,
+                            activeExpiresAt = activeExpiresAt,
                             personalization = personalization,
                             onClick = onBrowseConfigs,
                         )
@@ -2666,10 +2667,12 @@ private fun ActiveConfigDetailTile(
     activeConfigName: String?,
     activeConfigDetail: String?,
     activeLocked: Boolean,
+    activeExpiresAt: Long? = null,
     personalization: Personalization,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
     val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
     val textColor = personalization.dashboardTextColor ?: Color.White
@@ -2734,6 +2737,21 @@ private fun ActiveConfigDetailTile(
                                 tint = Color(0xFFF59E0B),
                                 modifier = Modifier.size(14.dp),
                             )
+                            if (activeExpiresAt != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0x30F59E0B))
+                                        .border(0.6.dp, Color(0x60F59E0B), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                                ) {
+                                    dev.valid7996.narcicgeteway.ui.servers.ExpiryCountdownBadge(
+                                        expiresAt = activeExpiresAt,
+                                        isDark = isDark,
+                                        fontSize = 9.5.sp,
+                                    )
+                                }
+                            }
                         }
                     }
                     Spacer(Modifier.height(2.dp))

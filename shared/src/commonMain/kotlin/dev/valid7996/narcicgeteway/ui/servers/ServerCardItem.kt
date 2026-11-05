@@ -204,7 +204,7 @@ internal fun ServerCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (isDefaultConfig) {
+                    if (isDefaultConfig || profile.isLocked) {
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             painter = painterResource(Res.drawable.ic_lock),
@@ -217,11 +217,37 @@ internal fun ServerCard(
 
                 Spacer(Modifier.width(8.dp))
 
-                // Left in RTL: Checkmark or Ping + More Menu
+                // Left in RTL: Checkmark or Ping + Expiry Badge + More Menu
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
+                    profile.expiresAt?.let { exp ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0x22F59E0B))
+                                .border(0.8.dp, Color(0x60F59E0B), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_schedule),
+                                    contentDescription = null,
+                                    tint = Color(0xFFF59E0B),
+                                    modifier = Modifier.size(11.dp),
+                                )
+                                ExpiryCountdownBadge(
+                                    expiresAt = exp,
+                                    isDark = isDark,
+                                    fontSize = 10.sp,
+                                )
+                            }
+                        }
+                    }
                     if (active) {
                         val checkTint = if (activeDotColor.luminance() > 0.6f) Color.Black else Color.White
                         Box(
