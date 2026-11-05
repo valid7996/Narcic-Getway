@@ -2911,4 +2911,75 @@
 
     <!-- Protocols -->
     <string name="ms_sstp_desc">پروتکل امن مایکروسافت / میکروتیک (SSL)</string>
+
+    <string name="whitedns_add_title">افزودن وایت دی‌ان‌اس / CottenDNS</string>
+    <string name="whitedns_engine_label">موتور اجرایی</string>
+    <string name="whitedns_domain_label">دامنه تونل (Domains)</string>
+    <string name="whitedns_domain_hint">ns1.example.com یا sub.domain.com</string>
+    <string name="whitedns_key_label">کلید رمزنگاری (Encryption Key)</string>
+    <string name="whitedns_method_label">روش رمزنگاری</string>
+    <string name="whitedns_tunnel_mode_label">حالت تونل (Tunnel Mode)</string>
+    <string name="whitedns_transport_mode_label">پروتکل انتقال (Transport)</string>
+    <string name="whitedns_mode_normal">عادی (Normal)</string>
+    <string name="whitedns_mode_max">حداکثر (CottenMax: بازیابی پاکت + اتصال سریع)</string>
+    <string name="whitedns_mode_legacy">سنتی (Legacy MasterDNS)</string>
+    <string name="whitedns_transport_auto">خودکار (انطباقی)</string>
+    <string name="whitedns_transport_udp">فقط UDP</string>
+    <string name="whitedns_transport_tcp">فقط TCP</string>
+    <string name="whitedns_bundled_resolvers_label">مخزن جامع ریزالورها (۴,۷۸۵ سرور فعال)</string>
+    <string name="whitedns_bundled_resolvers_sub">سرورهای بازآزموده‌شده ضد فیلتر برای جلوگیری از تایم‌اوت</string>
+    <string name="whitedns_resolvers_label">ریزالورهای سفارشی (در هر خط یک IP)</string>
+    <string name="whitedns_resolvers_hint">8.8.8.8
+1.1.1.1</string>
+    <string name="add_whitedns_server">WhiteDNS / CottenDNS</string>
+    <string name="add_whitedns_server_sub">تونل دی‌ان‌اس پرسرعت با موتور CottenMax</string>
+    <string name="no_active_server">سرور فعال انتخاب نشده</string>
+    <string name="protected_server_desc">پروتکل امن • سرور محافظت‌شده</string>
+    <string name="protected_live_enc">محافظت‌شده • رمزنگاری زنده</string>
+    <string name="wave_chart_layout">طرح نمودار موجی</string>
+    <string name="connected_status">متصل شد</string>
+    <string name="disconnected_status">قطع است</string>
+    <string name="server_locked_notice">قفل شده است</string>
+    <string name="address_copied">آدرس کپی شد</string>
+    <string name="live_route_title">مسیر اتصال زنده</string>
+    <string name="route_iran_to_dest">اتصال از %1$s به %2$s با مسیر بهینه</string>
+    <string name="sstp_add_title">افزودن کانفیگ MS-SSTP</string>
+    <string name="sstp_edit_title">ویرایش کانفیگ MS-SSTP</string>
+    <string name="sstp_subtitle">پروتکل امن مایکروسافت / میکروتیک (پورت 443)</string>
+    <string name="sstp_name_label">نام نمایشی (اختیاری)</string>
+    <string name="sstp_name_hint">مثال: MikroTik SSTP</string>
+    <string name="sstp_server_label">آدرس سرور *</string>
+    <string name="sstp_server_hint">vpn.example.com یا IP</string>
+    <string name="sstp_port_label">پورت</string>
+    <string name="sstp_username_label">نام کاربری (Username) *</string>
+    <string name="sstp_username_hint">نام کاربری اشتراک VPN</string>
+    <string name="sstp_password_label">کلمه عبور (Password) *</string>
+    <string name="sstp_password_hint">رمز عبور اشتراک VPN</string>
+    <string name="sstp_insecure_label">پذیرش گواهینامه نامعتبر / Self-Signed</string>
+    <string name="sstp_insecure_sub">برای سرورهای میکروتیک با گواهینامه Self-Signed فعال باشد</string>
+    <string name="sstp_sni_label">نام دامنه SNI / Host سفارشی</string>
+    <string name="sstp_sni_hint">در صورت خالی بودن، آدرس سرور درج می‌شود</string>
+    <string name="sstp_save">ذخیره کانفیگ SSTP</string>
+    <string name="widget_toggle_label">نارسیس اتصال سریع ۱×۱</string>
+    <string name="widget_medium_label">نارسیس وضعیت سرور ۲×۱</string>
+
+    <!-- SSTP and Home Localized Strings -->
+    <string name="sstp_hide_advanced">بستن تنظیمات پیشرفته</string>
+    <string name="sstp_show_advanced">نمایش تنظیمات پیشرفته (SNI / MTU)</string>
+    <string name="sstp_auth_algo">الگوریتم احراز هویت (Auth Protocol)</string>
+    <string name="sstp_auth_default">MS-CHAP v2 (پیش‌فرض)</string>
+    <string name="sstp_mtu_label">سایز فریم MTU</string>
+    <string name="status_connected_toast">متصل شد</string>
+    <string name="status_disconnected_label">قطع است</string>
+    <string name="server_not_selected">سرور فعال انتخاب نشده</string>
+    <string name="server_protected_sub">پروتکل امن • سرور محافظت‌شده</string>
+    <string name="server_locked_live">محافظت‌شده • رمزنگاری زنده</string>
+    <string name="wave_chart_layout">طرح نمودار موجی</string>
+    <string name="color_reset_harmonious">بازنشانی همه رنگ‌ها به پیش‌فرض قالب هماهنگ</string>
+
+
+    <string name="group_tools_monitoring">ابزارها و مانیتورینگ</string>
+    <string name="group_customization_network">شخصی‌سازی و پیکربندی شبکه</string>
+    <string name="group_routing_advanced">مسیریابی و بهینه‌سازی پیشرفته</string>
+
 </resources>

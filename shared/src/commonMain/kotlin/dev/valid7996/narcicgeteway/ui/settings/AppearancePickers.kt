@@ -581,7 +581,7 @@ fun Color32PickerSection(
                             .clickable { onColorSelected(null) }
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
-                        Text("پیش‌فرض", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                        Text(stringResource(Res.string.personalize_default), style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                     }
                 }
 
@@ -755,7 +755,7 @@ fun CompactColorPickerRow(
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "بازنشانی",
+                            text = stringResource(Res.string.personalize_reset),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = Color(0xFFFCA5A5),
                         )

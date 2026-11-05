@@ -145,7 +145,10 @@ object Ikev2Controller {
                     fail(context, context.getString(R.string.ikev2_ike_error), null); return
                 }
                 VpnProfileState.STATE_DISCONNECTED -> {
-                    if (System.currentTimeMillis() > deadline - CONNECT_TIMEOUT_MS + 5_000L) Unit
+                    if (System.currentTimeMillis() > deadline - CONNECT_TIMEOUT_MS + 4_000L) {
+                        fail(context, context.getString(R.string.ikev2_ike_error), null)
+                        return
+                    }
                 }
                 else -> Unit
             }

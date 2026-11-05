@@ -336,7 +336,7 @@ internal fun ServerCard(
                     horizontalArrangement = Arrangement.End,
                 ) {
                     Text(
-                        text = "${profile.protocol} • سرور محافظت‌شده",
+                        text = stringResource(Res.string.server_protected_sub),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Medium,
@@ -358,7 +358,8 @@ internal fun ServerCard(
                         .fillMaxWidth()
                         .clickable {
                             platform.copyToClipboard("${profile.address}:${profile.port}")
-                            scope.launch { platform.toast("آدرس کپی شد") }
+                            val copyMsg = stringResource(Res.string.address_copied)
+                scope.launch { platform.toast(copyMsg) }
                         },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End,

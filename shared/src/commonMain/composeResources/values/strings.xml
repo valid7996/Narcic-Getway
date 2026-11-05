@@ -2917,4 +2917,75 @@
 
     <!-- Protocols -->
     <string name="ms_sstp_desc">Microsoft / MikroTik Secure Tunnel Protocol (SSL)</string>
+
+    <string name="whitedns_add_title">Add WhiteDNS / CottenDNS</string>
+    <string name="whitedns_engine_label">Engine</string>
+    <string name="whitedns_domain_label">Tunnel Domain(s)</string>
+    <string name="whitedns_domain_hint">ns1.example.com or sub.domain.com</string>
+    <string name="whitedns_key_label">Encryption Key</string>
+    <string name="whitedns_method_label">Encryption Method</string>
+    <string name="whitedns_tunnel_mode_label">Tunnel Mode</string>
+    <string name="whitedns_transport_mode_label">Transport Mode</string>
+    <string name="whitedns_mode_normal">Normal</string>
+    <string name="whitedns_mode_max">Max (CottenMax: Loss Recovery + Fast Resume)</string>
+    <string name="whitedns_mode_legacy">Legacy MasterDNS</string>
+    <string name="whitedns_transport_auto">Auto (Adaptive)</string>
+    <string name="whitedns_transport_udp">UDP Only</string>
+    <string name="whitedns_transport_tcp">TCP Only</string>
+    <string name="whitedns_bundled_resolvers_label">Bundled Resolvers (4,785 working servers)</string>
+    <string name="whitedns_bundled_resolvers_sub">Pre-tested recursive resolvers optimized to bypass filtering</string>
+    <string name="whitedns_resolvers_label">Custom Resolvers (one IP per line)</string>
+    <string name="whitedns_resolvers_hint">8.8.8.8
+1.1.1.1</string>
+    <string name="add_whitedns_server">WhiteDNS / CottenDNS</string>
+    <string name="add_whitedns_server_sub">High-speed DNS tunnel with CottenMax loss recovery</string>
+    <string name="no_active_server">No active server selected</string>
+    <string name="protected_server_desc">Secure Protocol • Protected Server</string>
+    <string name="protected_live_enc">Protected • Live encryption</string>
+    <string name="wave_chart_layout">Wave Chart Layout</string>
+    <string name="connected_status">Connected</string>
+    <string name="disconnected_status">Disconnected</string>
+    <string name="server_locked_notice">Server is locked</string>
+    <string name="address_copied">Address copied to clipboard</string>
+    <string name="live_route_title">Live Connection Route</string>
+    <string name="route_iran_to_dest">Connection from %1$s to %2$s via optimal route</string>
+    <string name="sstp_add_title">Add MS-SSTP Config</string>
+    <string name="sstp_edit_title">Edit MS-SSTP Config</string>
+    <string name="sstp_subtitle">Secure Microsoft / MikroTik SSL Tunnel (Port 443)</string>
+    <string name="sstp_name_label">Display Name (Optional)</string>
+    <string name="sstp_name_hint">e.g. MikroTik SSTP</string>
+    <string name="sstp_server_label">Server Address *</string>
+    <string name="sstp_server_hint">vpn.example.com or IP</string>
+    <string name="sstp_port_label">Port</string>
+    <string name="sstp_username_label">Username *</string>
+    <string name="sstp_username_hint">Your VPN username</string>
+    <string name="sstp_password_label">Password *</string>
+    <string name="sstp_password_hint">Your VPN password</string>
+    <string name="sstp_insecure_label">Allow Insecure / Self-Signed Certificate</string>
+    <string name="sstp_insecure_sub">Enable for MikroTik servers using self-signed certificates</string>
+    <string name="sstp_sni_label">Custom SNI / Hostname</string>
+    <string name="sstp_sni_hint">Defaults to server address if empty</string>
+    <string name="sstp_save">Save MS-SSTP</string>
+    <string name="widget_toggle_label">Narcic Quick Connect 1x1</string>
+    <string name="widget_medium_label">Narcic Server Status 2x1</string>
+
+    <!-- SSTP and Home Localized Strings -->
+    <string name="sstp_hide_advanced">Close Advanced Settings</string>
+    <string name="sstp_show_advanced">Show Advanced Settings (SNI / MTU)</string>
+    <string name="sstp_auth_algo">Authentication Algorithm (Auth Protocol)</string>
+    <string name="sstp_auth_default">MS-CHAP v2 (Default)</string>
+    <string name="sstp_mtu_label">MTU Frame Size</string>
+    <string name="status_connected_toast">Connected</string>
+    <string name="status_disconnected_label">Disconnected</string>
+    <string name="server_not_selected">No active server selected</string>
+    <string name="server_protected_sub">Secure Protocol • Protected Server</string>
+    <string name="server_locked_live">Protected • Live Encryption</string>
+    <string name="wave_chart_layout">Wave Chart Layout</string>
+    <string name="color_reset_harmonious">Reset all colors to harmonious theme default</string>
+
+
+    <string name="group_tools_monitoring">Tools &amp; Monitoring</string>
+    <string name="group_customization_network">Customization &amp; Network</string>
+    <string name="group_routing_advanced">Routing &amp; Advanced</string>
+
 </resources>

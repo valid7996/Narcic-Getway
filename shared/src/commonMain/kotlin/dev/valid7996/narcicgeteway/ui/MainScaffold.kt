@@ -159,7 +159,14 @@ fun MainScaffold(
         dev.valid7996.narcicgeteway.domain.model.AnimationMode.Normal -> if (settings.reduceMotion) dev.valid7996.narcicgeteway.ui.theme.MotionBudget.Paused else dev.valid7996.narcicgeteway.ui.theme.MotionBudget.Full
     }
 
+    val layoutDirection = if (settings.language == dev.valid7996.narcicgeteway.domain.model.AppLanguage.Persian || settings.language == dev.valid7996.narcicgeteway.domain.model.AppLanguage.Arabic) {
+        androidx.compose.ui.unit.LayoutDirection.Rtl
+    } else {
+        androidx.compose.ui.unit.LayoutDirection.Ltr
+    }
+
     CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection,
         dev.valid7996.narcicgeteway.ui.theme.LocalMotionBudget provides motionBudget,
     ) {
         Scaffold(

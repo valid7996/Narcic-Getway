@@ -46,6 +46,10 @@ sealed interface ProfileSource {
     data class MasterDns(val settings: MasterDnsProfile) : ProfileSource
 
     @Serializable
+    @SerialName("whitedns")
+    data class WhiteDns(val settings: WhiteDnsProfile) : ProfileSource
+
+    @Serializable
     @SerialName("mhrv_relay")
     data class MhrvRelay(val settings: MhrvRelayProfile) : ProfileSource
 
@@ -134,6 +138,8 @@ data class VpnProfile(
         get() = (source as? ProfileSource.SniSpoof)?.settings?.noRoot == true ||
             (isLoopbackOrRstaPort && source !is ProfileSource.CrossChain && source !is ProfileSource.AutoSelect)
 
+    val isWhiteDns: Boolean get() = source is ProfileSource.WhiteDns
+
     val isOpenConnect: Boolean get() = source is ProfileSource.OpenConnect
 
     val isAether: Boolean get() = ((resolveUnsealed() ?: this).source is ProfileSource.Aether)
@@ -198,16 +204,28 @@ data class VpnProfile(
     }
 
     val isManagedTunnel: Boolean
-        get() = isPsiphon || isDnsTunnel || isMasterDns || isMhrvRelay || isTor || isSsh || isSniSpoof ||
+        get() = isPsiphon || isDnsTunnel || isMasterDns || isWhiteDns || isMhrvRelay || isTor || isSsh || isSniSpoof ||
             isOpenConnect || isIkev2 || isAether || isCrossChain || isSingBoxConfig || isSstp
 
-    val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns
+    val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns || isWhiteDns
 
     fun psiphonSettings(): PsiphonProfile? = (source as? ProfileSource.Psiphon)?.settings
 
     fun dnsTunnelSettings(): DnsTunnelProfile? = (source as? ProfileSource.DnsTunnel)?.settings
 
     fun masterDnsSettings(): MasterDnsProfile? = (source as? ProfileSource.MasterDns)?.settings
+
+    fun whiteDnsSettings(): WhiteDnsProfile? = (source as? ProfileSource.WhiteDns)?.settings
+        ?: (source as? ProfileSource.MasterDns)?.settings?.let {
+            WhiteDnsProfile(
+                domain = it.domains,
+                encryptionKey = it.encryptionKey,
+                encryptionMethod = it.encryptionMethod,
+                resolvers = it.resolvers,
+                listenPort = it.listenPort,
+                engine = WhiteDnsProfile.ENGINE_MASTERDNS,
+            )
+        }
 
     fun mhrvRelaySettings(): MhrvRelayProfile? = (source as? ProfileSource.MhrvRelay)?.settings
 
@@ -352,6 +370,27 @@ data class VpnProfile(
             }
         }
 
+        // 1.7 WhiteDNS link (cottendns, stormdns, soar, masterdns, whitedns)
+        if (WhiteDnsLink.isWhiteDnsLink(payload)) {
+            val parsed = WhiteDnsLink.parse(payload)
+            if (parsed != null) {
+                val (profName, settings) = parsed
+                return copy(
+                    source = ProfileSource.WhiteDns(settings),
+                    protocol = "WHITEDNS",
+                    address = settings.domain,
+                    port = settings.listenPort,
+                    name = profName.ifBlank { name },
+                    transportLabel = when (settings.engine) {
+                        WhiteDnsProfile.ENGINE_COTTENDNS -> "CottenDNS"
+                        WhiteDnsProfile.ENGINE_STORMDNS -> "StormDNS"
+                        WhiteDnsProfile.ENGINE_SOAR -> "Soar"
+                        else -> "WhiteDNS"
+                    },
+                )
+            }
+        }
+
         // 1.7 SniSpoof link
         if (SniSpoofLink.isSniSpoofLink(payload)) {
             val parsed = SniSpoofLink.parse(payload)
@@ -426,6 +465,7 @@ data class VpnProfile(
 
         is ProfileSource.SniSpoof -> SniSpoofLink.build(src.settings, name)
         is ProfileSource.MasterDns -> NrgLink.build(name, src)
+        is ProfileSource.WhiteDns -> WhiteDnsLink.build(name, src.settings)
         is ProfileSource.MhrvRelay -> NrgLink.build(name, src)
         is ProfileSource.OpenConnect -> NrgLink.build(name, src)
         is ProfileSource.Ikev2 -> NrgLink.build(name, src)
@@ -711,6 +751,29 @@ data class VpnProfile(
             transportLabel = "MasterDNS",
             source = ProfileSource.MasterDns(settings),
             addedAt = addedAt,
+        )
+
+        fun fromWhiteDns(
+            settings: WhiteDnsProfile,
+            id: String,
+            addedAt: Long,
+            name: String,
+            subscriptionId: String = "",
+        ): VpnProfile = VpnProfile(
+            id = id,
+            name = name.ifBlank { "WhiteDNS (${settings.engine})" },
+            protocol = "WHITEDNS",
+            address = settings.domain,
+            port = settings.listenPort,
+            transportLabel = when (settings.engine) {
+                WhiteDnsProfile.ENGINE_COTTENDNS -> "CottenDNS"
+                WhiteDnsProfile.ENGINE_STORMDNS -> "StormDNS"
+                WhiteDnsProfile.ENGINE_SOAR -> "Soar"
+                else -> "WhiteDNS"
+            },
+            source = ProfileSource.WhiteDns(settings),
+            addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromMhrvRelay(

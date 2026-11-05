@@ -1,3 +1,5 @@
+import org.jetbrains.compose.resources.stringResource
+import dev.valid7996.narcicgeteway.shared.resources.*
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package dev.valid7996.narcicgeteway.ui.servers
@@ -119,12 +121,12 @@ fun SstpSheet(
                     }
                     Column {
                         Text(
-                            text = if (initial == null) "افزودن کانفیگ MS-SSTP" else "ویرایش کانفیگ MS-SSTP",
+                            text = if (initial == null) stringResource(Res.string.sstp_add_title) else stringResource(Res.string.sstp_edit_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "پروتکل امن مایکروسافت / میکروتیک (پورت 443)",
+                            text = stringResource(Res.string.sstp_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -135,10 +137,10 @@ fun SstpSheet(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("نام نمایشی (اختیاری)") },
+                label = { Text(stringResource(Res.string.sstp_name_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("مثال: MikroTik SSTP") },
+                placeholder = { Text(stringResource(Res.string.sstp_name_hint)) },
             )
 
             Row(
@@ -148,15 +150,15 @@ fun SstpSheet(
                 OutlinedTextField(
                     value = server,
                     onValueChange = { server = it },
-                    label = { Text("آدرس سرور *") },
+                    label = { Text(stringResource(Res.string.sstp_server_label)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    placeholder = { Text("vpn.example.com یا IP") },
+                    placeholder = { Text(stringResource(Res.string.sstp_server_hint)) },
                 )
                 OutlinedTextField(
                     value = port,
                     onValueChange = { port = it.filter { c -> c.isDigit() } },
-                    label = { Text("پورت") },
+                    label = { Text(stringResource(Res.string.sstp_port_label)) },
                     modifier = Modifier.width(100.dp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -166,7 +168,7 @@ fun SstpSheet(
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("نام کاربری (Username) *") },
+                label = { Text(stringResource(Res.string.sstp_username_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -174,7 +176,7 @@ fun SstpSheet(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("رمز عبور (Password)") },
+                label = { Text(stringResource(Res.string.sstp_password_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -200,12 +202,12 @@ fun SstpSheet(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "پذیرش گواهی‌های نامعتبر / خودامضا",
+                        text = stringResource(Res.string.sstp_insecure_label),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "برای سرورهای میکروتیک با گواهینامه Self-Signed فعال باشد",
+                        text = stringResource(Res.string.sstp_insecure_sub),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -224,7 +226,7 @@ fun SstpSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (advancedOpen) "بستن تنظیمات پیشرفته" else "نمایش تنظیمات پیشرفته (SNI / MTU)",
+                        text = if (advancedOpen) stringResource(Res.string.sstp_hide_advanced) else stringResource(Res.string.sstp_show_advanced),
                         style = MaterialTheme.typography.labelLarge,
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -241,17 +243,17 @@ fun SstpSheet(
                     OutlinedTextField(
                         value = sni,
                         onValueChange = { sni = it },
-                        label = { Text("SNI دلخواه (TLS Server Name)") },
+                        label = { Text(stringResource(Res.string.sstp_sni_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        placeholder = { Text("در صورت خالی بودن، آدرس سرور درج می‌شود") },
+                        placeholder = { Text(stringResource(Res.string.sstp_sni_hint)) },
                     )
 
                     PickerField(
-                        label = "الگوریتم احراز هویت (Auth Protocol)",
+                        label = stringResource(Res.string.sstp_auth_algo),
                         selected = authProtocol,
                         options = listOf(
-                            SstpProfile.AUTH_MSCHAPV2 to "MS-CHAP v2 (پیش‌فرض)",
+                            SstpProfile.AUTH_MSCHAPV2 to stringResource(Res.string.sstp_auth_default),
                             SstpProfile.AUTH_PAP to "PAP",
                             SstpProfile.AUTH_CHAP to "CHAP",
                         ),
@@ -261,7 +263,7 @@ fun SstpSheet(
                     OutlinedTextField(
                         value = mtu,
                         onValueChange = { mtu = it.filter { c -> c.isDigit() } },
-                        label = { Text("سایز فریم MTU") },
+                        label = { Text(stringResource(Res.string.sstp_mtu_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

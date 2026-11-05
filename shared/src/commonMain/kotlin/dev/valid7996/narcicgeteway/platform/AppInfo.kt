@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 object AppInfo {
     @Volatile
-    var versionName: String = "3.0.9"
+    var versionName: String = "4.1.9"
 
     val userAgent: String get() = "NarcicGeteway/$versionName"
 }

@@ -434,6 +434,7 @@ fun ServersScreen(
     var showPsiphon by remember { mutableStateOf(false) }
     var showDnsTunnel by remember { mutableStateOf(false) }
     var showMasterDns by remember { mutableStateOf(false) }
+    var showWhiteDns by remember { mutableStateOf(false) }
     var showMhrv by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
@@ -1519,6 +1520,10 @@ fun ServersScreen(
                 showAddSheet = false
                 showMasterDns = true
             },
+            onWhiteDns = {
+                showAddSheet = false
+                showWhiteDns = true
+            },
             onMhrv = {
                 showAddSheet = false
                 showMhrv = true
@@ -1788,6 +1793,17 @@ fun ServersScreen(
             onSave = { name, settings ->
                 showMasterDns = false
                 repository.addMasterDns(settings, name)
+                onServerActivated()
+            },
+        )
+    }
+
+    if (showWhiteDns) {
+        WhiteDnsSheet(
+            onDismiss = { showWhiteDns = false },
+            onSave = { name, settings ->
+                showWhiteDns = false
+                repository.addWhiteDns(settings, name)
                 onServerActivated()
             },
         )
@@ -2349,6 +2365,7 @@ internal fun AddServerSheet(
     onPsiphon: () -> Unit,
     onDnsTunnel: () -> Unit,
     onMasterDns: () -> Unit,
+    onWhiteDns: () -> Unit = {},
     onMhrv: () -> Unit,
     onOpenConnect: () -> Unit,
     onIkev2: () -> Unit,
@@ -2525,6 +2542,16 @@ internal fun AddServerSheet(
                     gradientStart = Color(0xFF0F2B38).copy(alpha = 0.90f),
                     gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
                     onClick = onMasterDns,
+                )
+                GlassOptionCard(
+                    title = stringResource(Res.string.add_whitedns_server),
+                    subtitle = stringResource(Res.string.add_whitedns_server_sub),
+                    icon = Res.drawable.ic_public,
+                    accentColor = Color(0xFF10B981),
+                    iconTint = Color(0xFF34D399),
+                    gradientStart = Color(0xFF0F2F24).copy(alpha = 0.90f),
+                    gradientEnd = Color(0xFF091F18).copy(alpha = 0.75f),
+                    onClick = onWhiteDns,
                 )
                 GlassOptionCard(
                     title = stringResource(Res.string.mhrv_add_title),

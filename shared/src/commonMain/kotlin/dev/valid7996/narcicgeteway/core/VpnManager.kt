@@ -80,6 +80,11 @@ object VpnManager {
 
     const val KIND_SSTP = "sstp"
 
+    const val KIND_WHITEDNS = "whitedns"
+    const val KIND_COTTENDNS = "cottendns"
+    const val KIND_STORMDNS = "stormdns"
+    const val KIND_SOAR = "soar"
+
     fun onStarting(remark: String) {
         activeSocksPort = null
         _status.value = Status(

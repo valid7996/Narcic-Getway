@@ -1,3 +1,4 @@
+import dev.valid7996.narcicgeteway.domain.model.AppLanguage
 package dev.valid7996.narcicgeteway.ui.home
 
 import androidx.compose.ui.unit.sp
@@ -165,6 +166,7 @@ fun ConnectionMapTriggerButton(
     personalization: Personalization = Personalization.Default,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
+    language: AppLanguage? = null,
 ) {
     val routeAccent = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
     val routeBg = personalization.cardBgColor ?: (if (isNoir) Color(0xE6111115) else Color(0xE6100918))
@@ -253,6 +255,7 @@ fun ConnectionRouteMapCard(
     personalization: Personalization = Personalization.Default,
     isNoir: Boolean = false,
     isBlossom: Boolean = false,
+    language: AppLanguage? = null,
 ) {
     var mapData by remember { mutableStateOf(WorldMapCache.countries) }
     var smartZoom by remember { mutableStateOf(true) }
@@ -322,9 +325,9 @@ fun ConnectionRouteMapCard(
         label = "pin-pulse",
     )
 
-    val currentLocale = java.util.Locale.getDefault()
-    val isFa = currentLocale.language.equals("fa", ignoreCase = true)
-    val isAr = currentLocale.language.equals("ar", ignoreCase = true)
+    val currentLocale = if (language != null) java.util.Locale.forLanguageTag(language.tag.ifEmpty { "en" }) else java.util.Locale.getDefault()
+    val isFa = language?.let { it == AppLanguage.Persian } ?: currentLocale.language.equals("fa", ignoreCase = true)
+    val isAr = language?.let { it == AppLanguage.Arabic } ?: currentLocale.language.equals("ar", ignoreCase = true)
     val localizedDest = remember(destCode, currentLocale) {
         java.util.Locale("", destCode).getDisplayCountry(currentLocale)
             .takeIf { it.isNotBlank() && !it.equals(destCode, ignoreCase = true) }

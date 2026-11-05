@@ -299,12 +299,11 @@ private fun RootPage(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 12.dp),
         ) {
-            // Header: "تنظیمات" with neon pink accent underline
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp, bottom = 22.dp),
-                horizontalAlignment = Alignment.End,
+                horizontalAlignment = Alignment.Start,
             ) {
                 Text(
                     text = stringResource(Res.string.settings_title),
@@ -340,32 +339,32 @@ private fun RootPage(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        Text("ابزارها و مانیتورینگ", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Text(stringResource(Res.string.group_tools_monitoring), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                         Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            MasonrySettingTile(title = stringResource(Res.string.tile_monitor_title), subtitle = "پایش لحظه‌ای مصرف ترافیک", icon = Res.drawable.ic_speedometer, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Monitor) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_monitor_title), subtitle = stringResource(Res.string.tile_monitor_sub), icon = Res.drawable.ic_speedometer, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Monitor) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_scanner_title), subtitle = stringResource(Res.string.tile_scanner_sub), icon = Res.drawable.ic_speed, accentColor = Color(0xFF0284C7), gradientColors = listOf(Color(0xFF0B2945), Color(0xFF051626)), borderColor = Color(0x600EA5E9), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.IpScanner) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_patt_title), subtitle = stringResource(Res.string.tile_patt_sub), icon = Res.drawable.ic_tune, accentColor = Color(0xFFF59E0B), gradientColors = listOf(Color(0xFF331C08), Color(0xFF1E1004)), borderColor = Color(0x60F59E0B), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftTop, onClick = { onOpen(SettingsPage.Patt) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_telegram_title), subtitle = "اتصال مستقیم MTProto", icon = Res.drawable.ic_public, accentColor = Color(0xFF0F766E), gradientColors = listOf(Color(0xFF0A2E26), Color(0xFF051B16)), borderColor = Color(0x6014B8A6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.TelegramProxy) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_observatory_title), subtitle = "پایش مستمر پینگ و سلامت نود", icon = Res.drawable.ic_schedule, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2E20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Observatory) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_telegram_title), subtitle = stringResource(Res.string.tile_telegram_sub), icon = Res.drawable.ic_public, accentColor = Color(0xFF0F766E), gradientColors = listOf(Color(0xFF0A2E26), Color(0xFF051B16)), borderColor = Color(0x6014B8A6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.TelegramProxy) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_observatory_title), subtitle = stringResource(Res.string.tile_observatory_sub), icon = Res.drawable.ic_schedule, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2E20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Observatory) })
                         }
 
-                        Text("شخصی‌سازی و پیکربندی شبکه", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Text(stringResource(Res.string.group_customization_network), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                         Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            MasonrySettingTile(title = stringResource(Res.string.tile_ui_title), subtitle = "۳۲ رنگ اختصاصی و قالب‌ها", icon = Res.drawable.ic_palette, accentColor = Color(0xFF7C3AED), gradientColors = listOf(Color(0xFF261144), Color(0xFF140824)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Ui) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_ui_title), subtitle = stringResource(Res.string.tile_ui_sub), icon = Res.drawable.ic_palette, accentColor = Color(0xFF7C3AED), gradientColors = listOf(Color(0xFF261144), Color(0xFF140824)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Ui) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_mode_title), subtitle = stringResource(Res.string.tile_mode_sub), icon = Res.drawable.ic_tune, accentColor = Color(0xFF2563EB), gradientColors = listOf(Color(0xFF0E2254), Color(0xFF071434)), borderColor = Color(0x603B82F6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Mode) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_vpn_title), subtitle = stringResource(Res.string.tile_vpn_sub), icon = Res.drawable.ic_key, accentColor = Color(0xFFEF4444), gradientColors = listOf(Color(0xFF381010), Color(0xFF1E0808)), borderColor = Color(0x60EF4444), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftTop, onClick = { onOpen(SettingsPage.Vpn) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_dns_title), subtitle = stringResource(Res.string.tile_dns_sub), icon = Res.drawable.ic_public, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF082F3B), Color(0xFF041920)), borderColor = Color(0x6006B6D4), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.DnsProtocols) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_per_app_title), subtitle = "Per-App Proxy اختصاصی", icon = Res.drawable.ic_menu, accentColor = Color(0xFF8B5CF6), gradientColors = listOf(Color(0xFF28114E), Color(0xFF16082C)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.PerApp) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_ports_title), subtitle = "پورت ورودی Socks و HTTP", icon = Res.drawable.ic_tune, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Core) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_per_app_title), subtitle = stringResource(Res.string.tile_per_app_sub), icon = Res.drawable.ic_menu, accentColor = Color(0xFF8B5CF6), gradientColors = listOf(Color(0xFF28114E), Color(0xFF16082C)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.PerApp) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_ports_title), subtitle = stringResource(Res.string.tile_ports_sub), icon = Res.drawable.ic_tune, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Core) })
                         }
 
-                        Text("مسیریابی و بهینه‌سازی پیشرفته", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Text(stringResource(Res.string.group_routing_advanced), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                         Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            MasonrySettingTile(title = stringResource(Res.string.tile_routing_title), subtitle = "تفکیک سایت‌های ایرانی و بانکی", icon = Res.drawable.ic_map, accentColor = Color(0xFFEC4899), gradientColors = listOf(Color(0xFF380E23), Color(0xFF1F0713)), borderColor = Color(0x60EC4899), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.Routing) })
-                            MasonrySettingTile(title = "تکه تکه‌سازی", subtitle = "Fragment برای دور زدن فیلتر", icon = Res.drawable.ic_bolt, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF072930), Color(0xFF03161A)), borderColor = Color(0x6006B6D4), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Fragment) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_singbox_title), subtitle = "استک شبکه gVisor و Multiplex", icon = Res.drawable.ic_bolt, accentColor = Color(0xFFD946EF), gradientColors = listOf(Color(0xFF340B3B), Color(0xFF1C0520)), borderColor = Color(0x60D946EF), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.SingBox) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_tor_title), subtitle = "مسیریابی امن پیاز و پل‌ها", icon = Res.drawable.ic_encrypted, accentColor = Color(0xFFA855F7), gradientColors = listOf(Color(0xFF2B1044), Color(0xFF170825)), borderColor = Color(0x60A855F7), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Tor) })
-                            MasonrySettingTile(title = stringResource(Res.string.tile_mux_title), subtitle = "Mux TCP برای کاهش پینگ", icon = Res.drawable.ic_sync, accentColor = Color(0xFFEAB308), gradientColors = listOf(Color(0xFF332607), Color(0xFF1A1303)), borderColor = Color(0x60EAB308), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Mux) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_routing_title), subtitle = stringResource(Res.string.tile_routing_sub), icon = Res.drawable.ic_map, accentColor = Color(0xFFEC4899), gradientColors = listOf(Color(0xFF380E23), Color(0xFF1F0713)), borderColor = Color(0x60EC4899), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.Routing) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_fragment_title), subtitle = stringResource(Res.string.tile_fragment_sub), icon = Res.drawable.ic_bolt, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF072930), Color(0xFF03161A)), borderColor = Color(0x6006B6D4), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Fragment) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_singbox_title), subtitle = stringResource(Res.string.tile_singbox_sub), icon = Res.drawable.ic_bolt, accentColor = Color(0xFFD946EF), gradientColors = listOf(Color(0xFF340B3B), Color(0xFF1C0520)), borderColor = Color(0x60D946EF), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.SingBox) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_tor_title), subtitle = stringResource(Res.string.tile_tor_sub), icon = Res.drawable.ic_encrypted, accentColor = Color(0xFFA855F7), gradientColors = listOf(Color(0xFF2B1044), Color(0xFF170825)), borderColor = Color(0x60A855F7), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Tor) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_mux_title), subtitle = stringResource(Res.string.tile_mux_sub), icon = Res.drawable.ic_sync, accentColor = Color(0xFFEAB308), gradientColors = listOf(Color(0xFF332607), Color(0xFF1A1303)), borderColor = Color(0x60EAB308), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Mux) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_advanced_title), subtitle = stringResource(Res.string.tile_advanced_sub), icon = Res.drawable.ic_settings, accentColor = Color(0xFF64748B), gradientColors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)), borderColor = Color(0x6064748B), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.Advanced) })
                         }
                     }
@@ -434,7 +433,7 @@ private fun RootPage(
 
                             // 3. ابزارهای Patt
                             MasonrySettingTile(
-                                title = "ابزارهای\nPatt (Patt's Tools)",
+                                title = stringResource(Res.string.tile_patt_title),
                                 subtitle = stringResource(Res.string.tile_patt_sub),
                                 icon = Res.drawable.ic_tune,
                                 accentColor = Color(0xFFF59E0B),
@@ -447,7 +446,7 @@ private fun RootPage(
 
                             // 4. مسیریابی هوشمند
                             MasonrySettingTile(
-                                title = "مسیریابی هوشمند\n(Routing)",
+                                title = stringResource(Res.string.tile_routing_title),
                                 subtitle = stringResource(Res.string.tile_routing_sub),
                                 icon = Res.drawable.ic_map,
                                 accentColor = Color(0xFFEC4899),
@@ -460,7 +459,7 @@ private fun RootPage(
 
                             // 5. تفکیک برنامه‌ها
                             MasonrySettingTile(
-                                title = "تفکیک برنامه‌ها\n(Per-App Proxy)",
+                                title = stringResource(Res.string.tile_per_app_title),
                                 subtitle = stringResource(Res.string.tile_per_app_sub),
                                 icon = Res.drawable.ic_menu,
                                 accentColor = Color(0xFF8B5CF6),
@@ -474,7 +473,7 @@ private fun RootPage(
                             // 6. تکه تکه‌سازی پکت‌ها
                             MasonrySettingTile(
                                 title = stringResource(Res.string.tile_fragment_title),
-                                subtitle = "تکه تکه‌سازی پکت‌های TLS برای دور زدن فیلترینگ شدید",
+                                subtitle = stringResource(Res.string.tile_fragment_sub),
                                 icon = Res.drawable.ic_bolt,
                                 accentColor = Color(0xFF06B6D4),
                                 gradientColors = listOf(Color(0xFF072930), Color(0xFF03161A)),
@@ -571,7 +570,7 @@ private fun RootPage(
                             // 4. تنظیمات پروتکل DNS
                             MasonrySettingTile(
                                 title = stringResource(Res.string.tile_dns_title),
-                                subtitle = "پروتکل‌های امن DoH, DoT, DoQ و سرورهای ضد تحریم",
+                                subtitle = stringResource(Res.string.tile_dns_sub),
                                 icon = Res.drawable.ic_dns,
                                 accentColor = Color(0xFF14B8A6),
                                 gradientColors = listOf(Color(0xFF0B2E28), Color(0xFF051714)),
@@ -775,10 +774,9 @@ private fun MasonrySettingTile(
 
             Spacer(Modifier.height(10.dp))
 
-            // Title & Subtitle right-aligned
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.End,
+                horizontalAlignment = Alignment.Start,
             ) {
                 Text(
                     text = title,
@@ -787,7 +785,7 @@ private fun MasonrySettingTile(
                         fontSize = 13.5.sp,
                     ),
                     color = Color.White,
-                    textAlign = TextAlign.End,
+                    textAlign = TextAlign.Start,
                     maxLines = 2,
                     lineHeight = 18.sp,
                 )
@@ -798,7 +796,7 @@ private fun MasonrySettingTile(
                         fontSize = 10.5.sp,
                     ),
                     color = Color(0xFF9CA3AF),
-                    textAlign = TextAlign.End,
+                    textAlign = TextAlign.Start,
                     maxLines = 3,
                     lineHeight = 14.5.sp,
                 )
@@ -855,37 +853,11 @@ private fun MasonryWideTile(
             alpha = 0.18f,
         )
         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp)) {
-        // Icon on the right (first child in RTL Row), Text on the left
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = Arrangement.Start,
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.End,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.5.sp,
-                    ),
-                    color = Color.White,
-                    textAlign = TextAlign.End,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    color = Color(0xFF9CA3AF),
-                    textAlign = TextAlign.End,
-                    maxLines = 1,
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-
             Box(
                 modifier = Modifier
                     .size(42.dp)
@@ -898,6 +870,31 @@ private fun MasonryWideTile(
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(22.dp),
+                )
+            }
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.5.sp,
+                    ),
+                    color = Color.White,
+                    textAlign = TextAlign.Start,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = Color(0xFF9CA3AF),
+                    textAlign = TextAlign.Start,
+                    maxLines = 1,
                 )
             }
         }
@@ -1478,7 +1475,7 @@ private fun UiPage(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "بازنشانی همه رنگ‌ها به پیش‌فرض قالب هماهنگ",
+                            text = stringResource(Res.string.color_reset_harmonious),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFFFCA5A5),
                         )

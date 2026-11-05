@@ -656,4 +656,74 @@
     <string name="widget_medium_description">Estado del servidor, bandera y control rápido.</string>
     <string name="widget_large_label">Panel Bento Narcic</string>
     <string name="widget_large_description">Panel completo con tráfico en vivo, temporizador y detalles.</string>
+
+    <string name="whitedns_add_title">Añadir WhiteDNS / CottenDNS</string>
+    <string name="whitedns_engine_label">Motor</string>
+    <string name="whitedns_domain_label">Dominio(s) del túnel</string>
+    <string name="whitedns_domain_hint">ns1.example.com o sub.domain.com</string>
+    <string name="whitedns_key_label">Clave de cifrado</string>
+    <string name="whitedns_method_label">Método de cifrado</string>
+    <string name="whitedns_tunnel_mode_label">Modo de túnel</string>
+    <string name="whitedns_transport_mode_label">Modo de transporte</string>
+    <string name="whitedns_mode_normal">Normal</string>
+    <string name="whitedns_mode_max">Máx (CottenMax: recuperación de pérdida + reanudación rápida)</string>
+    <string name="whitedns_mode_legacy">MasterDNS heredado</string>
+    <string name="whitedns_transport_auto">Automático (Adaptativo)</string>
+    <string name="whitedns_transport_udp">Solo UDP</string>
+    <string name="whitedns_transport_tcp">Solo TCP</string>
+    <string name="whitedns_bundled_resolvers_label">Resolutores integrados (4.785 servidores activos)</string>
+    <string name="whitedns_bundled_resolvers_sub">Resolutores verificados para evitar tiempo de espera</string>
+    <string name="whitedns_resolvers_label">Resolutores personalizados (una IP por línea)</string>
+    <string name="whitedns_resolvers_hint">8.8.8.8
+1.1.1.1</string>
+    <string name="add_whitedns_server">WhiteDNS / CottenDNS</string>
+    <string name="add_whitedns_server_sub">Túnel DNS de alta velocidad con recuperación CottenMax</string>
+    <string name="no_active_server">Ningún servidor activo seleccionado</string>
+    <string name="protected_server_desc">Protocolo seguro • Servidor protegido</string>
+    <string name="protected_live_enc">Protegido • Cifrado en vivo</string>
+    <string name="wave_chart_layout">Diseño de gráfico de onda</string>
+    <string name="connected_status">Conectado</string>
+    <string name="disconnected_status">Desconectado</string>
+    <string name="server_locked_notice">El servidor está bloqueado</string>
+    <string name="address_copied">Dirección copiada al portapapeles</string>
+    <string name="change_server">Cambiar servidor</string>
+    <string name="live_route_title">Ruta de conexión en vivo</string>
+    <string name="route_iran_to_dest">Conexión de %1$s a %2$s mediante ruta óptima</string>
+    <string name="sstp_add_title">Añadir configuración MS-SSTP</string>
+    <string name="sstp_edit_title">Editar configuración MS-SSTP</string>
+    <string name="sstp_subtitle">Túnel seguro Microsoft / MikroTik SSL (Puerto 443)</string>
+    <string name="sstp_name_label">Nombre para mostrar (Opcional)</string>
+    <string name="sstp_name_hint">ej. MikroTik SSTP</string>
+    <string name="sstp_server_label">Dirección del servidor *</string>
+    <string name="sstp_server_hint">vpn.example.com o IP</string>
+    <string name="sstp_port_label">Puerto</string>
+    <string name="sstp_username_label">Nombre de usuario *</string>
+    <string name="sstp_username_hint">Tu nombre de usuario VPN</string>
+    <string name="sstp_password_label">Contraseña *</string>
+    <string name="sstp_password_hint">Tu contraseña VPN</string>
+    <string name="sstp_insecure_label">Permitir certificado no seguro / autofirmado</string>
+    <string name="sstp_insecure_sub">Activar para servidores MikroTik con certificados autofirmados</string>
+    <string name="sstp_sni_label">SNI / Host personalizado</string>
+    <string name="sstp_sni_hint">Por defecto dirección del servidor si está vacío</string>
+    <string name="sstp_save">Guardar MS-SSTP</string>
+
+    <!-- SSTP and Home Localized Strings -->
+    <string name="sstp_hide_advanced">Ocultar ajustes avanzados</string>
+    <string name="sstp_show_advanced">Mostrar ajustes avanzados (SNI / MTU)</string>
+    <string name="sstp_auth_algo">Algoritmo de autenticación (Protocolo Auth)</string>
+    <string name="sstp_auth_default">MS-CHAP v2 (Por defecto)</string>
+    <string name="sstp_mtu_label">Tamaño de trama MTU</string>
+    <string name="status_connected_toast">Conectado</string>
+    <string name="status_disconnected_label">Desconectado</string>
+    <string name="server_not_selected">Ningún servidor activo seleccionado</string>
+    <string name="server_protected_sub">Protocolo seguro • Servidor protegido</string>
+    <string name="server_locked_live">Protegido • Encriptación en vivo</string>
+    <string name="wave_chart_layout">Diseño de gráfico de onda</string>
+    <string name="color_reset_harmonious">Restablecer todos los colores por defecto del tema</string>
+
+
+    <string name="group_tools_monitoring">Herramientas y Monitoreo</string>
+    <string name="group_customization_network">Personalización y Red</string>
+    <string name="group_routing_advanced">Enrutamiento y Avanzado</string>
+
 </resources>

@@ -414,7 +414,7 @@ fun HomeScreen(
                                   }
                               }
                               Text(
-                                  text = if (s == ConnectionState.Connected) "متصل شد" else stringResource(s.labelRes()),
+                                  text = if (s == ConnectionState.Connected) stringResource(Res.string.status_connected_toast) else stringResource(s.labelRes()),
                                   style = MaterialTheme.typography.headlineMedium.copy(
                                       fontWeight = FontWeight.Bold,
                                       fontSize = if (tight) 24.sp else 30.sp,
@@ -531,6 +531,7 @@ fun HomeScreen(
                             personalization = personalization,
                             isNoir = isNoir,
                             isBlossom = isBlossom,
+                            language = settings.language,
                         )
                         AnimatedVisibility(visible = infoExpanded) {
                             ConnectionRouteMapCard(
@@ -541,6 +542,7 @@ fun HomeScreen(
                                 personalization = personalization,
                                 isNoir = isNoir,
                                 isBlossom = isBlossom,
+                                language = settings.language,
                             )
                         }
 
@@ -1172,7 +1174,7 @@ private fun StatusChip(
         ConnectionState.Connecting, ConnectionState.Reconnecting ->
             stringResource(Res.string.state_connecting)
         ConnectionState.Error -> stringResource(Res.string.state_error)
-        else -> "قطع است"
+        else -> stringResource(Res.string.status_disconnected_label)
     }
 
     val chipBg = personalization.cardBgColor ?: Color(0xE6121118)
@@ -1978,7 +1980,7 @@ private fun ServerConnectionTile(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = if (activeLocked) "محافظت‌شده • رمزنگاری زنده" else (info.ipv4 ?: "198.44.138.67"),
+                        text = if (activeLocked) stringResource(Res.string.server_locked_live) else (info.ipv4 ?: "198.44.138.67"),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.5.sp,
                         ),
@@ -2394,7 +2396,7 @@ private fun LiveTrafficWaveGraph(
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(downColor))
                     Text(stringResource(Res.string.traffic_download_rate_label), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFD1D5DB))
                 }
-                Text("طرح نمودار موجی", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                Text(stringResource(Res.string.wave_chart_layout), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
             }
 
             Row(
@@ -2719,7 +2721,7 @@ private fun ActiveConfigDetailTile(
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = activeConfigName?.takeIf { it.isNotBlank() } ?: "سرور فعال انتخاب نشده",
+                            text = activeConfigName?.takeIf { it.isNotBlank() } ?: stringResource(Res.string.server_not_selected),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
                             color = textColor,
                             maxLines = 1,
@@ -2736,7 +2738,7 @@ private fun ActiveConfigDetailTile(
                     }
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = if (activeLocked) "پروتکل امن • سرور محافظت‌شده" else (activeConfigDetail?.takeIf { it.isNotBlank() } ?: "VLESS • TCP • TLS"),
+                        text = if (activeLocked) stringResource(Res.string.server_protected_sub) else (activeConfigDetail?.takeIf { it.isNotBlank() } ?: "VLESS • TCP • TLS"),
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = Color(0xFF9CA3AF),
                         maxLines = 1,
