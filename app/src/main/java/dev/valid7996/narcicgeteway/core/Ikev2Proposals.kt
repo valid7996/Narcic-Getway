@@ -80,8 +80,6 @@ object Ikev2Proposals {
     }
 
     fun defaultIke(): IkeSaProposal = IkeSaProposal.Builder()
-        .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_GCM_16, 256)
-        .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_GCM_16, 128)
         .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_CBC, 256)
         .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_CBC, 128)
         .addIntegrityAlgorithm(SaProposal.INTEGRITY_ALGORITHM_HMAC_SHA2_512_256)
@@ -98,16 +96,11 @@ object Ikev2Proposals {
         .build()
 
     fun defaultChild(): ChildSaProposal = ChildSaProposal.Builder()
-        .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_GCM_16, 256)
-        .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_GCM_16, 128)
         .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_CBC, 256)
         .addEncryptionAlgorithm(SaProposal.ENCRYPTION_ALGORITHM_AES_CBC, 128)
         .addIntegrityAlgorithm(SaProposal.INTEGRITY_ALGORITHM_HMAC_SHA2_512_256)
         .addIntegrityAlgorithm(SaProposal.INTEGRITY_ALGORITHM_HMAC_SHA2_256_128)
         .addIntegrityAlgorithm(SaProposal.INTEGRITY_ALGORITHM_HMAC_SHA1_96)
-        .addDhGroup(SaProposal.DH_GROUP_2048_BIT_MODP)
-        .addDhGroup(SaProposal.DH_GROUP_1536_BIT_MODP)
-        .addDhGroup(SaProposal.DH_GROUP_1024_BIT_MODP)
         .build()
 
     fun parseIke(spec: String): IkeSaProposal? {

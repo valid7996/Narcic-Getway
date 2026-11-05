@@ -11,11 +11,13 @@ object DeepLinkParser {
         "narcicgeteway", "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
         "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "wg", "awg",
         "socks", "socks5", "snispoof", "aether", "sstp", "nrg", "zsx",
+        "cottendns", "stormdns", "soar", "masterdns", "whitedns",
     )
 
     private val CONFIG_SCHEMES = setOf(
         "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "wg", "awg", "socks", "socks5",
         "snispoof", "aether", "sstp", "nrg", "zsx",
+        "cottendns", "stormdns", "soar", "masterdns", "whitedns",
     )
 
     private const val MAX_LENGTH = 2 * 1024 * 1024
