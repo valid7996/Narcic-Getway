@@ -27,13 +27,30 @@ jobs:
     uses: ./.github/workflows/android-release.yml
     secrets: inherit
 
+  desktop:
+    needs: version
+    uses: ./.github/workflows/desktop-release.yml
+    secrets: inherit
+
   publish:
-    needs: [version, android]
+    needs: [version, android, desktop]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with: { name: android-apks, path: dist }
-      - name: Create draft release for mobile
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: desktop-windows, path: dist }
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: desktop-linux, path: dist }
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: desktop-macos-arm64, path: dist }
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with: { name: desktop-macos-x86_64, path: dist }
+      - name: Create release for mobile and desktop
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -51,6 +68,5 @@ jobs:
             gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
           else
             gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-              --draft \
-              --title "Narcic Getway $V" --notes ""
+              --title "Narcic Getway $V" --notes "Release $V for Android and Desktop (Windows, Linux, macOS)."
           fi

@@ -159,7 +159,7 @@ jobs:
             echo "keyPassword=$KEY_PW"; echo "keyAlias=$ALIAS"; } > keystore.properties
 
       - name: Test and build
-        run: bash gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease -Pnarcicgeteway.includeDefaultSubs=false
+        run: bash gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease
 
       - name: Name them for people
         run: |
@@ -170,7 +170,6 @@ jobs:
             src="app/build/outputs/apk/release/app-$abi-release.apk"
             [ -f "$src" ] || { echo "::error::$src was not built"; exit 1; }
             cp "$src" "dist/NarcicGetway-$V-$abi.apk"
-            cp "$src" "dist/NarcicGetway-$V-$abi-clean.apk"
           done
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           python3 tools/universal-apk.py "dist/NarcicGetway-$V-arm64-v8a.apk" /tmp/universal.apk "dist/NarcicGetway-$V-armeabi-v7a.apk"
@@ -194,8 +193,36 @@ jobs:
               --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
               --out "dist/NarcicGetway-$V-universal.apk" /tmp/universal-aligned.apk
           fi
-          cp "dist/NarcicGetway-$V-universal.apk" "dist/NarcicGetway-$V-universal-clean.apk"
           rm -f /tmp/universal.apk /tmp/universal-aligned.apk
+
+          echo "Building clean version without default subscriptions..."
+          bash gradlew --no-daemon :app:assembleRelease -Pnarcicgeteway.includeDefaultSubs=false
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            src="app/build/outputs/apk/release/app-$abi-release.apk"
+            [ -f "$src" ] || { echo "::error::$src was not built"; exit 1; }
+            cp "$src" "dist/NarcicGetway-$V-$abi-clean.apk"
+          done
+          python3 tools/universal-apk.py "app/build/outputs/apk/release/app-arm64-v8a-release.apk" /tmp/universal-clean.apk "app/build/outputs/apk/release/app-armeabi-v7a-release.apk"
+          "$BT/zipalign" -f -P 16 4 /tmp/universal-clean.apk /tmp/universal-clean-aligned.apk
+          if [ -f release.keystore ]; then
+            STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
+            KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
+            "$BT/apksigner" sign --ks release.keystore \
+              --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
+              --ks-pass env:STORE_PW --key-pass env:KEY_PW \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
+              --out "dist/NarcicGetway-$V-universal-clean.apk" /tmp/universal-clean-aligned.apk
+          else
+            KS_FILE="$(grep '^storeFile=' keystore.properties | cut -d= -f2-)"
+            STORE_PW=$(grep '^storePassword=' keystore.properties | cut -d= -f2-) \
+            KEY_PW=$(grep '^keyPassword=' keystore.properties | cut -d= -f2-) \
+            "$BT/apksigner" sign --ks "$KS_FILE" --ks-type PKCS12 \
+              --ks-key-alias "$(grep '^keyAlias=' keystore.properties | cut -d= -f2-)" \
+              --ks-pass env:STORE_PW --key-pass env:KEY_PW \
+              --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled false \
+              --out "dist/NarcicGetway-$V-universal-clean.apk" /tmp/universal-clean-aligned.apk
+          fi
+          rm -f /tmp/universal-clean.apk /tmp/universal-clean-aligned.apk
 
           for apk in dist/NarcicGetway-*.apk; do
             "$BT/apksigner" verify "$apk"

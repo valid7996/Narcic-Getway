@@ -678,7 +678,7 @@ private fun RootPage(
             // About
             MasonryWideTile(
                 title = stringResource(Res.string.tile_about_title),
-                subtitle = stringResource(Res.string.tile_about_sub, "4.1.8"),
+                subtitle = stringResource(Res.string.tile_about_sub, dev.valid7996.narcicgeteway.platform.AppInfo.versionName),
                 icon = Res.drawable.ic_info,
                 accentColor = NeonTheme.PrimaryPink,
                 gradientColors = listOf(Color(0xFF2C0B1E), Color(0xFF180510)),
