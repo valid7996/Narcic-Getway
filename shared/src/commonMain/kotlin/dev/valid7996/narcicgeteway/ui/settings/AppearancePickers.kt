@@ -419,13 +419,13 @@ fun MasterThemesRow(
 /**
  * 8 Distinct Traffic Card Styles Selector (انتخاب سبک کارت‌های ترافیک ۸ سبک مختلف).
  */
-@Composable
 private data class AppearanceOption<T>(
     val value: T,
     val title: String,
     val sub: String,
 )
 
+@Composable
 fun TrafficStyleRow(
     selected: TrafficCardStyle,
     onSelect: (TrafficCardStyle) -> Unit,

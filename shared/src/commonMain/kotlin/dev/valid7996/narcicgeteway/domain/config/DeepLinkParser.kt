@@ -208,6 +208,7 @@ data class DeepLinkPreview(
             is ProfileSource.Tor -> "Tor"
             is ProfileSource.Ssh -> "SSH"
             is ProfileSource.MasterDns -> "MasterDNS"
+            is ProfileSource.WhiteDns -> "WhiteDNS (${source.settings.engine})"
             is ProfileSource.MhrvRelay -> "MHRV Relay"
             is ProfileSource.OpenConnect -> "OpenConnect"
             is ProfileSource.Ikev2 -> "IKEv2"

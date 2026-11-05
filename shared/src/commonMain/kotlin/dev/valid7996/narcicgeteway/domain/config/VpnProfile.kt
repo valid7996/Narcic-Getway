@@ -533,6 +533,7 @@ data class VpnProfile(
         is ProfileSource.Psiphon -> throw IllegalStateException("Psiphon profiles do not build Xray config")
         is ProfileSource.DnsTunnel -> throw IllegalStateException("DNS-tunnel profiles do not build Xray config")
         is ProfileSource.MasterDns -> throw IllegalStateException("MasterDNS profiles do not build Xray config")
+        is ProfileSource.WhiteDns -> throw IllegalStateException("WhiteDNS profiles do not build Xray config")
         is ProfileSource.MhrvRelay -> throw IllegalStateException("MHRV relay profiles do not build Xray config")
         is ProfileSource.OpenConnect -> throw IllegalStateException("OpenConnect profiles do not build Xray config")
         is ProfileSource.Aether -> throw IllegalStateException("Aether profiles do not build Xray config")
@@ -611,6 +612,7 @@ data class VpnProfile(
             is ProfileSource.Psiphon -> "Psiphon"
             is ProfileSource.DnsTunnel -> if (src.settings.isVaydns) "VayDNS" else "DNSTT"
             is ProfileSource.MasterDns -> "MasterDNS"
+            is ProfileSource.WhiteDns -> "WhiteDNS (${src.settings.engine})"
             is ProfileSource.Ssh -> "SSH"
             is ProfileSource.OpenConnect -> "OpenConnect"
             is ProfileSource.Ikev2 -> "IKEv2"

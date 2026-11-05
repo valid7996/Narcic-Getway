@@ -570,13 +570,18 @@ class ConfigRepository(private val store: KeyValueStore) {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromWhiteDns(
             settings = settings,
-            id = id ?: newId(),
+            id = existing?.id ?: id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name.ifBlank { "WhiteDNS (${settings.engine})" },
             subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId.orEmpty() },
-        )
-        if (existing != null) updateProfile(profile) else addProfile(profile)
-        selectProfile(profile.id)
+        ).let { carryOver(existing, it) }
+        _profiles.value = if (existing != null) {
+            _profiles.value.map { if (it.id == profile.id) profile else it }
+        } else {
+            listOf(profile) + _profiles.value
+        }
+        persistProfiles()
+        if (_activeId.value == null) setActive(profile.id)
         return profile
     }
 
