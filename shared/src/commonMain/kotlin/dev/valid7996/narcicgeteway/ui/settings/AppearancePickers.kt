@@ -1,5 +1,9 @@
 package dev.valid7996.narcicgeteway.ui.settings
 
+import dev.valid7996.narcicgeteway.shared.resources.Res
+import dev.valid7996.narcicgeteway.shared.resources.*
+import org.jetbrains.compose.resources.stringResource
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn

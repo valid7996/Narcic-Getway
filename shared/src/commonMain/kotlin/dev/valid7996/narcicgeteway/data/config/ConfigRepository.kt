@@ -13,6 +13,8 @@ import dev.valid7996.narcicgeteway.crypto.ZsxExpiredException
 import dev.valid7996.narcicgeteway.crypto.ZsxMetadata
 import dev.valid7996.narcicgeteway.crypto.ZsxSealRequest
 import dev.valid7996.narcicgeteway.domain.config.AetherLink
+import dev.valid7996.narcicgeteway.domain.config.WhiteDnsLink
+import dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile
 import dev.valid7996.narcicgeteway.domain.config.AmneziaLink
 import dev.valid7996.narcicgeteway.domain.config.AutoMember
 import dev.valid7996.narcicgeteway.domain.config.AutoSelectBuild
