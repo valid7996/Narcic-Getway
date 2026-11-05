@@ -33,6 +33,8 @@ internal expect suspend fun udpProbeMillis(host: String, port: Int, payload: Byt
 
 internal expect suspend fun tlsConnectMillis(host: String, port: Int, timeoutMs: Int): Long
 
+internal expect suspend fun icmpPingMillis(host: String, timeoutMs: Int): Long
+
 internal expect suspend fun httpStreamTransfer(
     url: String,
     socksPort: Int?,

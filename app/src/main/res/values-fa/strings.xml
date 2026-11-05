@@ -975,4 +975,14 @@
 
     <string name="tg_proxies_fetched">تعداد %1$d پروکسی زنده از @%2$s دریافت شد</string>
     <string name="tg_test_ping_btn">تست پینگ</string>
+    <string name="widget_download">دانلود</string>
+    <string name="widget_upload">آپلود</string>
+    <string name="widget_toggle_label">سوئیچ سریع نارسیس</string>
+    <string name="widget_toggle_description">اتصال و قطع سریع با یک لمس بیرون از برنامه.</string>
+    <string name="widget_small_label">سوئیچ سریع نارسیس</string>
+    <string name="widget_small_description">اتصال و قطع سریع با یک لمس بیرون از برنامه.</string>
+    <string name="widget_medium_label">وضعیت سرور نارسیس</string>
+    <string name="widget_medium_description">مشاهده سرور، پرچم و سوئیچ سریع اتصال.</string>
+    <string name="widget_large_label">داشبورد بنتو نارسیس</string>
+    <string name="widget_large_description">داشبورد کامل با ترافیک زنده، زمان و جزئیات سرور.</string>
 </resources>

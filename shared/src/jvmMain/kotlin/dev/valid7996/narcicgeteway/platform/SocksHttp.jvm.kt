@@ -21,7 +21,7 @@ internal object JvmRuntime {
     val resolvesThroughProxy: Boolean get() = !android
 }
 
-internal class RawHttpResponse(val code: Int, val body: String, val headers: Map<String, String>)
+internal class RawHttpResponse(val code: Int, val body: String, val headers: Map<String, String>, val rawBytes: ByteArray = ByteArray(0))
 
 internal fun socks5Handshake(raw: Socket, host: String, port: Int, auth: LocalProxyAuth.Credentials?) {
     val out = raw.getOutputStream()
@@ -150,7 +150,7 @@ internal fun rawHttpViaSocks(
 
         val bodyless = method.equals("HEAD", ignoreCase = true) || code == 204 || code == 304
         val payload = if (bodyless) ByteArray(0) else readHttpBody(inp, responseHeaders)
-        return RawHttpResponse(code, payload.decodeToString(), responseHeaders)
+        return RawHttpResponse(code, payload.decodeToString(), responseHeaders, payload)
     } finally {
         runCatching { raw.close() }
     }

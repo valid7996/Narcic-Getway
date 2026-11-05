@@ -1767,4 +1767,153 @@
     <string name="bento_palette_ocean">Océano</string>
     <string name="bento_palette_sunset">Atardecer</string>
     <string name="bento_palette_berry">Bayas</string>
+
+    <!-- Settings Tiles & Pages -->
+    <string name="tile_ui_title">Apariencia e Idioma</string>
+    <string name="tile_ui_sub">32 colores personalizados, 6 temas maestros, fuentes y estilos</string>
+    <string name="tile_monitor_title">Monitor en Vivo</string>
+    <string name="tile_monitor_sub">Monitoreo en tiempo real del tráfico y uso de CPU</string>
+    <string name="tile_mode_title">Modo de Conexión</string>
+    <string name="tile_mode_sub">VPN en todo el dispositivo o solo proxy local</string>
+    <string name="tile_scanner_title">Escáner de IP Limpia (CDN)</string>
+    <string name="tile_scanner_sub">Buscar IPs sin bloqueo de Cloudflare y CDN por operador</string>
+    <string name="tile_telegram_title">Proxies de Telegram</string>
+    <string name="tile_telegram_sub">Obtención automática, prueba de ping y conexión directa</string>
+    <string name="tile_patt_title">Herramientas Patt</string>
+    <string name="tile_patt_sub">Prueba SNI Spoof, Cloudflare Fix e inyección ECH</string>
+    <string name="tile_routing_title">Enrutamiento Inteligente</string>
+    <string name="tile_routing_sub">Omitir sitios locales/bancarios y enrutamiento personalizado</string>
+    <string name="tile_vpn_title">Ajustes del Túnel VPN</string>
+    <string name="tile_vpn_sub">Kill-switch, soporte completo IPv6 y MTU personalizado</string>
+    <string name="tile_dns_title">Protocolos DNS Seguros</string>
+    <string name="tile_dns_sub">DoH, DoT, DoQ cifrados y servidores anticensura</string>
+    <string name="tile_per_app_title">Proxy por Aplicación</string>
+    <string name="tile_per_app_sub">Elegir qué apps pasan por el túnel VPN</string>
+    <string name="tile_fragment_title">Fragmentación de Paquetes</string>
+    <string name="tile_fragment_sub">Fragmentar paquetes TLS para eludir filtrado severo</string>
+    <string name="tile_singbox_title">Núcleo Sing-Box</string>
+    <string name="tile_singbox_sub">Pila de red gVisor/System y ajustes de multiplex</string>
+    <string name="tile_tor_title">Red Anónima Tor</string>
+    <string name="tile_tor_sub">Enrutamiento seguro por capas cebolla y puentes</string>
+    <string name="tile_ports_title">Puertos de Entrada Locales</string>
+    <string name="tile_ports_sub">Puertos Socks5, HTTP y Mixed en el dispositivo</string>
+    <string name="tile_mux_title">Multiplexación (Mux TCP)</string>
+    <string name="tile_mux_sub">Agregar conexiones TCP/H2 para reducir ping</string>
+    <string name="tile_observatory_title">Observatorio de Calidad</string>
+    <string name="tile_observatory_sub">Monitoreo continuo de ping y selección inteligente</string>
+    <string name="tile_advanced_title">Ajustes Avanzados</string>
+    <string name="tile_advanced_sub">Búferes de red, sockets y configuración experta</string>
+    <string name="tile_backup_title">Copia de Seguridad y Restauración</string>
+    <string name="tile_backup_sub">Respaldo total de configuración y servidores con restauración rápida</string>
+    <string name="tile_logs_title">Registros</string>
+    <string name="tile_logs_sub">Registros de la aplicación y del túnel</string>
+    <string name="tile_about_title">Acerca de Narcic y Soporte</string>
+    <string name="tile_about_sub">Versión %s • Canal y contactos de desarrolladores</string>
+
+    <!-- Appearance Switches & Colors -->
+    <string name="pref_always_show_dashboard">Mostrar siempre tarjetas del panel</string>
+    <string name="pref_always_show_dashboard_sub">Mantener visibles las tarjetas de estadísticas, tráfico y ruta incluso desconectado</string>
+    <string name="pref_traffic_above_hero">Mover tarjetas de tráfico arriba</string>
+    <string name="pref_traffic_above_hero_sub">Mostrar estadísticas de subida y bajada sobre el indicador</string>
+    <string name="pref_advanced_color_customization">🎨 Personalización Avanzada de Color</string>
+    <string name="pref_custom_tag">Personalizado</string>
+    <string name="pref_collapse_palette">Toca para contraer paleta</string>
+    <string name="pref_color_fine_tune">Ajustar color de cada componente (32 colores con filtro)</string>
+    <string name="pref_color_text_title">Color de Texto y Títulos</string>
+    <string name="pref_color_text_sub">Elegir color principal de texto entre 32 colores neón</string>
+    <string name="pref_color_connect_title">Color del Botón de Conexión</string>
+    <string name="pref_color_connect_sub">Personalizar color del botón de conexión segura</string>
+    <string name="pref_color_nav_active_title">Color de Pestaña Activa</string>
+    <string name="pref_color_nav_active_sub">Icono e indicador de pestaña activa en barra inferior</string>
+    <string name="pref_color_nav_bg_title">Fondo de Barra de Navegación</string>
+    <string name="pref_color_nav_bg_sub">Color de fondo translúcido para barra inferior</string>
+    <string name="pref_color_nav_border_title">Borde de Barra de Navegación</string>
+    <string name="pref_color_nav_border_sub">Línea brillante y borde de la barra inferior</string>
+    <string name="pref_color_server_border_title">Borde de Tarjetas de Servidor</string>
+    <string name="pref_color_server_border_sub">Personalizar color de borde de tarjetas de servidor</string>
+    <string name="pref_color_server_water_title">Ola de Agua del Servidor</string>
+    <string name="pref_color_server_water_sub">Cambiar color del diseño de ola en tarjeta de servidor</string>
+    <string name="pref_color_server_bg_title">Fondo de Tarjetas de Servidor</string>
+    <string name="pref_color_server_bg_sub">Elegir color de fondo de tarjetas de servidor</string>
+    <string name="pref_color_dash_border_title">Borde del Panel</string>
+    <string name="pref_color_dash_border_sub">Borde y brillo de tarjetas del panel principal</string>
+    <string name="pref_color_dash_bg_title">Fondo del Panel</string>
+    <string name="pref_color_dash_bg_sub">Color de fondo de tarjetas del panel principal</string>
+    <string name="pref_color_dash_text_title">Color de Texto del Panel</string>
+    <string name="pref_color_dash_text_sub">Color de textos y estadísticas de velocidad y datos</string>
+
+    <!-- Appearance Pickers -->
+    <string name="appearance_master_themes_title">Diseños Maestros Destacados</string>
+    <string name="appearance_master_themes_sub">Combinaciones de color, fuente y estilo listas para cada gusto</string>
+    <string name="appearance_traffic_styles_title">Estilos de Tarjeta de Tráfico (8 Estilos)</string>
+    <string name="appearance_traffic_styles_sub">Personalizar estilo de velocidad y consumo de datos</string>
+    <string name="traffic_style_cards_title">Tarjetas Duales</string>
+    <string name="traffic_style_cards_desc">Dos tarjetas distintas para subida y bajada con ecualizador</string>
+    <string name="traffic_style_duo_title">Cápsula Compacta</string>
+    <string name="traffic_style_duo_desc">Cápsula dual de cristal con flechas direccionales</string>
+    <string name="traffic_style_rings_title">Anillos de Neón</string>
+    <string name="traffic_style_rings_desc">Dos anillos dinámicos para consumo y velocidad</string>
+    <string name="traffic_style_minimal_title">Minimalista Transparente</string>
+    <string name="traffic_style_minimal_desc">Tarjeta cristalina ultra delgada para vista despejada</string>
+    <string name="traffic_style_graph_title">Gráfico en Vivo</string>
+    <string name="traffic_style_graph_desc">Gráfico en tiempo real de fluctuaciones de velocidad</string>
+    <string name="traffic_style_neon_pills_title">Cápsulas Neón</string>
+    <string name="traffic_style_neon_pills_desc">Cápsulas separadas con tipografía gruesa</string>
+    <string name="traffic_style_wave_title">Ecualizador de Onda</string>
+    <string name="traffic_style_wave_desc">Ecualizador animado por el flujo de tráfico</string>
+    <string name="traffic_style_gauges_title">Indicadores Cyber</string>
+    <string name="traffic_style_gauges_desc">Velocímetros futuristas estilo dial analógico</string>
+
+    <!-- Color Categories -->
+    <string name="color_cat_all">Todos</string>
+    <string name="color_cat_pink">Rosa / Magenta</string>
+    <string name="color_cat_purple">Púrpura / Violeta</string>
+    <string name="color_cat_cyan">Cian / Azul</string>
+    <string name="color_cat_green">Verde / Esmeralda</string>
+    <string name="color_cat_warm">Naranja / Ámbar</string>
+    <string name="color_cat_mono">Monocromo</string>
+    <string name="filter_label">Filtro</string>
+
+    <!-- Navigation Bar Styles -->
+    <string name="navbar_style_title">Estilo de Barra de Navegación</string>
+    <string name="navbar_style_sub">Elegir apariencia y animación de pestañas inferiores</string>
+    <string name="navbar_style_ios_title">Flotante Inteligente (iOS)</string>
+    <string name="navbar_style_ios_desc">Burbuja de cristal con moderna animación elástica</string>
+    <string name="navbar_style_pill_title">Cápsula Minimalista</string>
+    <string name="navbar_style_pill_desc">Píldora flotante de cristal en la parte inferior</string>
+    <string name="navbar_style_full_title">Barra Completa</string>
+    <string name="navbar_style_full_desc">Barra de extremo a extremo con línea de neón</string>
+    <string name="navbar_style_dock_title">Dock Compacto</string>
+    <string name="navbar_style_dock_desc">Ancho reducido ideal para teléfonos grandes</string>
+    <string name="navbar_style_underline_title">Indicador Móvil</string>
+    <string name="navbar_style_underline_desc">Línea de neón que se desliza bajo la pestaña activa</string>
+    <string name="navbar_style_minimal_title">Minimalista</string>
+    <string name="navbar_style_minimal_desc">Pestañas esenciales y limpias sin efectos extra</string>
+
+    <!-- Settings Layout Styles -->
+    <string name="settings_layout_title">Diseño de Ajustes</string>
+    <string name="settings_layout_sub">Elegir tarjetas de una sola columna o cuadrícula asimétrica</string>
+    <string name="settings_layout_masonry_title">Cuadrícula Asimétrica (2 col)</string>
+    <string name="settings_layout_masonry_desc">Diseño exclusivo Narcic con ondas dinámicas</string>
+    <string name="settings_layout_horizontal_title">Deslizador Horizontal</string>
+    <string name="settings_layout_horizontal_desc">Categorías mostradas como tarjetas deslizables</string>
+    <string name="settings_layout_single_title">Columna Única</string>
+    <string name="settings_layout_single_desc">Diseño estándar, limpio y organizado</string>
+
+    <!-- Home & Dashboard -->
+    <string name="change_server">Cambiar Servidor</string>
+    <string name="route_map_live_title">Ruta de Conexión en Vivo</string>
+    <string name="route_map_live_desc">Conexión enrutada por camino optimizado</string>
+    <string name="connection_duration_label">Tiempo Conectado</string>
+    <string name="traffic_consumed_label">Datos Consumidos</string>
+    <string name="traffic_upload_label">Subida</string>
+    <string name="traffic_download_label">Descarga</string>
+    <string name="active_duration_label">Duración Activa</string>
+    <string name="traffic_download_rate_label">Tasa de Descarga y Datos</string>
+    <string name="traffic_total_rate_label">Tasa Total de Datos</string>
+    <string name="traffic_upload_rate_label">Tasa de Subida</string>
+    <string name="traffic_download_rate_short_label">Tasa de Descarga</string>
+
+    <!-- Protocols -->
+    <string name="ms_sstp_desc">Protocolo de túnel seguro Microsoft / MikroTik (SSL)</string>
 </resources>

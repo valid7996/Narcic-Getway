@@ -55,7 +55,7 @@ internal actual suspend fun httpGetViaSocks(
     readTimeoutMs: Int,
     closeConnection: Boolean,
 ): String = withContext(Dispatchers.IO) {
-    if (socksPort != null && JvmRuntime.resolvesThroughProxy) {
+    if (socksPort != null) {
         val response = rawHttpViaSocks("GET", url, mapOf("User-Agent" to userAgent), null, socksPort, connectTimeoutMs, readTimeoutMs)
         if (response.code !in 200..299) throw IllegalStateException("HTTP ${response.code}")
         return@withContext response.body
@@ -225,6 +225,31 @@ internal actual suspend fun tlsConnectMillis(host: String, port: Int, timeoutMs:
         } finally {
             runCatching { socket?.takeIf { !it.isClosed }?.close() }
         }
+    }
+
+internal actual suspend fun icmpPingMillis(host: String, timeoutMs: Int): Long =
+    withContext(Dispatchers.IO) {
+        val start = System.currentTimeMillis()
+        val cleanHost = host.removePrefix("[").removeSuffix("]").trim()
+        try {
+            val addr = InetAddress.getByName(cleanHost)
+            if (addr.isReachable(timeoutMs)) {
+                return@withContext (System.currentTimeMillis() - start).coerceAtLeast(1L)
+            }
+        } catch (_: Exception) {}
+
+        try {
+            val timeoutSec = (timeoutMs / 1000).coerceAtLeast(1)
+            val proc = ProcessBuilder("ping", "-c", "1", "-W", timeoutSec.toString(), cleanHost)
+                .redirectErrorStream(true)
+                .start()
+            val finished = proc.waitFor(timeoutMs.toLong() + 500L, java.util.concurrent.TimeUnit.MILLISECONDS)
+            if (finished && proc.exitValue() == 0) {
+                return@withContext (System.currentTimeMillis() - start).coerceAtLeast(1L)
+            }
+        } catch (_: Exception) {}
+
+        -1L
     }
 
 internal actual suspend fun httpStreamTransfer(

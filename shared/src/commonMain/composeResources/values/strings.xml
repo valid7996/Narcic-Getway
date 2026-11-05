@@ -2768,4 +2768,153 @@
     
     <string name="bento_palette_berry">Berry</string>
 
+
+    <!-- Settings Tiles & Pages -->
+    <string name="tile_ui_title">Appearance &amp; Language</string>
+    <string name="tile_ui_sub">32 custom colors, 6 master themes, fonts &amp; styles</string>
+    <string name="tile_monitor_title">Live Monitor</string>
+    <string name="tile_monitor_sub">Real-time traffic and CPU usage monitoring</string>
+    <string name="tile_mode_title">Connection Mode</string>
+    <string name="tile_mode_sub">Full-device VPN or local proxy only</string>
+    <string name="tile_scanner_title">Clean IP Scanner (CDN)</string>
+    <string name="tile_scanner_sub">Find unblocked Cloudflare &amp; CDN IPs by carrier</string>
+    <string name="tile_telegram_title">Telegram Proxies</string>
+    <string name="tile_telegram_sub">Auto-fetch, live ping test, and direct connection</string>
+    <string name="tile_patt_title">Patt's Tools</string>
+    <string name="tile_patt_sub">SNI Spoof test, Cloudflare Fix, and ECH injection</string>
+    <string name="tile_routing_title">Smart Routing</string>
+    <string name="tile_routing_sub">Bypass local/banking sites and route management</string>
+    <string name="tile_vpn_title">VPN Tunnel Settings</string>
+    <string name="tile_vpn_sub">Kill-switch, full IPv6 support, and custom MTU</string>
+    <string name="tile_dns_title">Secure DNS Protocols</string>
+    <string name="tile_dns_sub">Encrypted DoH, DoT, DoQ &amp; anti-censorship servers</string>
+    <string name="tile_per_app_title">Per-App Proxy</string>
+    <string name="tile_per_app_sub">Choose which apps route through the VPN tunnel</string>
+    <string name="tile_fragment_title">Packet Fragmenting</string>
+    <string name="tile_fragment_sub">Fragment TLS packets to bypass heavy filtering</string>
+    <string name="tile_singbox_title">Sing-Box Core</string>
+    <string name="tile_singbox_sub">gVisor/System network stack and multiplex settings</string>
+    <string name="tile_tor_title">Tor Anonymous Network</string>
+    <string name="tile_tor_sub">Secure routing via onion layers &amp; censorship bridges</string>
+    <string name="tile_ports_title">Local Inbound Ports</string>
+    <string name="tile_ports_sub">Socks5, HTTP, and Mixed inbound ports on device</string>
+    <string name="tile_mux_title">Multiplexing (Mux TCP)</string>
+    <string name="tile_mux_sub">Aggregate TCP/H2 connections for lower ping</string>
+    <string name="tile_observatory_title">Quality Observatory</string>
+    <string name="tile_observatory_sub">Continuous ping monitoring &amp; smart node selection</string>
+    <string name="tile_advanced_title">Advanced Settings</string>
+    <string name="tile_advanced_sub">Network buffers, sockets, and expert core config</string>
+    <string name="tile_backup_title">Backup &amp; Restore</string>
+    <string name="tile_backup_sub">Full backup of settings &amp; servers with fast restore</string>
+    <string name="tile_logs_title">Logs</string>
+    <string name="tile_logs_sub">App and tunnel connection logs</string>
+    <string name="tile_about_title">About Narcic &amp; Support</string>
+    <string name="tile_about_sub">Version %s • Channel and developer contacts</string>
+
+    <!-- Appearance Switches & Colors -->
+    <string name="pref_always_show_dashboard">Always show dashboard cards</string>
+    <string name="pref_always_show_dashboard_sub">Keep stats, traffic, and route cards visible even when disconnected</string>
+    <string name="pref_traffic_above_hero">Move traffic cards above status</string>
+    <string name="pref_traffic_above_hero_sub">Show upload/download statistics above the connection indicator</string>
+    <string name="pref_advanced_color_customization">🎨 Advanced Color Personalization</string>
+    <string name="pref_custom_tag">Custom</string>
+    <string name="pref_collapse_palette">Click to collapse palette</string>
+    <string name="pref_color_fine_tune">Fine-tune each component color (32 colors with filter)</string>
+    <string name="pref_color_text_title">Text &amp; Titles Color</string>
+    <string name="pref_color_text_sub">Choose primary text color from 32 neon colors</string>
+    <string name="pref_color_connect_title">Connect Button Color</string>
+    <string name="pref_color_connect_sub">Customize secure connect button color</string>
+    <string name="pref_color_nav_active_title">Active Tab Color</string>
+    <string name="pref_color_nav_active_sub">Active tab icon and indicator color in bottom bar</string>
+    <string name="pref_color_nav_bg_title">Nav Bar Background</string>
+    <string name="pref_color_nav_bg_sub">Glass dock background color for bottom nav bar</string>
+    <string name="pref_color_nav_border_title">Nav Bar Border</string>
+    <string name="pref_color_nav_border_sub">Glow line and border of the bottom nav bar</string>
+    <string name="pref_color_server_border_title">Server Cards Border</string>
+    <string name="pref_color_server_border_sub">Customize server cards border color</string>
+    <string name="pref_color_server_water_title">Server Water Wave</string>
+    <string name="pref_color_server_water_sub">Change water wave design color in server cards</string>
+    <string name="pref_color_server_bg_title">Server Cards Background</string>
+    <string name="pref_color_server_bg_sub">Choose background color for server cards</string>
+    <string name="pref_color_dash_border_title">Dashboard Border</string>
+    <string name="pref_color_dash_border_sub">Border and glow of home dashboard cards</string>
+    <string name="pref_color_dash_bg_title">Dashboard Background</string>
+    <string name="pref_color_dash_bg_sub">Background color of home dashboard cards</string>
+    <string name="pref_color_dash_text_title">Dashboard Text Color</string>
+    <string name="pref_color_dash_text_sub">Text and speed/traffic stats color in dashboard</string>
+
+    <!-- Appearance Pickers -->
+    <string name="appearance_master_themes_title">Featured Master Designs</string>
+    <string name="appearance_master_themes_sub">Pre-tuned color, font &amp; style schemes for every vibe</string>
+    <string name="appearance_traffic_styles_title">Traffic Card Styles (8 Styles)</string>
+    <string name="appearance_traffic_styles_sub">Customize speed and traffic usage display style</string>
+    <string name="traffic_style_cards_title">Dual Cards</string>
+    <string name="traffic_style_cards_desc">Two distinct cards for upload &amp; download with equalizer</string>
+    <string name="traffic_style_duo_title">Compact Capsule</string>
+    <string name="traffic_style_duo_desc">Dual glass capsule with directional arrows</string>
+    <string name="traffic_style_rings_title">Neon Rings</string>
+    <string name="traffic_style_rings_desc">Dual dynamic rings for traffic and speed</string>
+    <string name="traffic_style_minimal_title">Transparent Minimal</string>
+    <string name="traffic_style_minimal_desc">Ultra-slim crystal card for clean look</string>
+    <string name="traffic_style_graph_title">Live Graph</string>
+    <string name="traffic_style_graph_desc">Live chart tracking data speed fluctuations</string>
+    <string name="traffic_style_neon_pills_title">Neon Capsules</string>
+    <string name="traffic_style_neon_pills_desc">Split capsules with bold typography</string>
+    <string name="traffic_style_wave_title">Wave Equalizer</string>
+    <string name="traffic_style_wave_desc">Dynamic audio-wave equalizer animated by traffic</string>
+    <string name="traffic_style_gauges_title">Cyber Gauges</string>
+    <string name="traffic_style_gauges_desc">Dual futuristic modern analog gauges</string>
+
+    <!-- Color Categories -->
+    <string name="color_cat_all">All</string>
+    <string name="color_cat_pink">Pink / Magenta</string>
+    <string name="color_cat_purple">Purple / Violet</string>
+    <string name="color_cat_cyan">Cyan / Blue</string>
+    <string name="color_cat_green">Green / Emerald</string>
+    <string name="color_cat_warm">Orange / Amber</string>
+    <string name="color_cat_mono">Monochrome</string>
+    <string name="filter_label">Filter</string>
+
+    <!-- Navigation Bar Styles -->
+    <string name="navbar_style_title">Bottom Navigation Bar Style</string>
+    <string name="navbar_style_sub">Choose how bottom tabs look and animate</string>
+    <string name="navbar_style_ios_title">Smart Floating (iOS)</string>
+    <string name="navbar_style_ios_desc">Glass bubble with modern elastic animation</string>
+    <string name="navbar_style_pill_title">Minimal Capsule</string>
+    <string name="navbar_style_pill_desc">Floating glass pill at bottom of screen</string>
+    <string name="navbar_style_full_title">Full-Width Bar</string>
+    <string name="navbar_style_full_desc">Edge-to-edge full bar with neon indicator</string>
+    <string name="navbar_style_dock_title">Compact Dock</string>
+    <string name="navbar_style_dock_desc">Narrow width ideal for large screens</string>
+    <string name="navbar_style_underline_title">Moving Indicator</string>
+    <string name="navbar_style_underline_desc">Neon line glides beneath active tab</string>
+    <string name="navbar_style_minimal_title">Minimal</string>
+    <string name="navbar_style_minimal_desc">Clean essential tabs without extra effects</string>
+
+    <!-- Settings Layout Styles -->
+    <string name="settings_layout_title">Settings Layout</string>
+    <string name="settings_layout_sub">Choose single-column wide cards or asymmetrical grid</string>
+    <string name="settings_layout_masonry_title">Asymmetrical Grid (2-col)</string>
+    <string name="settings_layout_masonry_desc">Narcic staggered design with dynamic waves</string>
+    <string name="settings_layout_horizontal_title">Horizontal Slider</string>
+    <string name="settings_layout_horizontal_desc">Categories presented as wide slider cards</string>
+    <string name="settings_layout_single_title">Single Column</string>
+    <string name="settings_layout_single_desc">Clean, standard, organized card layout</string>
+
+    <!-- Home & Dashboard -->
+    <string name="change_server">Change Server</string>
+    <string name="route_map_live_title">Live Connection Route</string>
+    <string name="route_map_live_desc">Connection routed through optimized path</string>
+    <string name="connection_duration_label">Connected For</string>
+    <string name="traffic_consumed_label">Data Consumed</string>
+    <string name="traffic_upload_label">Upload</string>
+    <string name="traffic_download_label">Download</string>
+    <string name="active_duration_label">Active Duration</string>
+    <string name="traffic_download_rate_label">Download &amp; Data Rate</string>
+    <string name="traffic_total_rate_label">Total Data Rate</string>
+    <string name="traffic_upload_rate_label">Upload Rate</string>
+    <string name="traffic_download_rate_short_label">Download Rate</string>
+
+    <!-- Protocols -->
+    <string name="ms_sstp_desc">Microsoft / MikroTik Secure Tunnel Protocol (SSL)</string>
 </resources>

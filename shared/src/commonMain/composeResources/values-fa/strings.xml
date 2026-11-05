@@ -2762,4 +2762,153 @@
     
     <string name="bento_palette_berry">توت</string>
 
+
+    <!-- Settings Tiles & Pages -->
+    <string name="tile_ui_title">ظاهر و زبان برنامه</string>
+    <string name="tile_ui_sub">۳۲ رنگ اختصاصی، ۶ تم هماهنگ، فونت و استایل</string>
+    <string name="tile_monitor_title">مانیتور زنده</string>
+    <string name="tile_monitor_sub">پایش لحظه‌ای مصرف ترافیک و پردازنده گوشی</string>
+    <string name="tile_mode_title">حالت اتصال</string>
+    <string name="tile_mode_sub">شبکه سراسری VPN یا حالت فقط پروکسی محلی</string>
+    <string name="tile_scanner_title">اسکنر آی‌پی تمیز (CDN Scanner)</string>
+    <string name="tile_scanner_sub">یافتن آی‌پی‌های بدون فیلتر کلادفلر و CDNها بر اساس اپراتور</string>
+    <string name="tile_telegram_title">پروکسی‌های تلگرام (Telegram Proxies)</string>
+    <string name="tile_telegram_sub">دریافت خودکار، تست پینگ زنده و اتصال مستقیم</string>
+    <string name="tile_patt_title">ابزارهای Patt (Patt's Tools)</string>
+    <string name="tile_patt_sub">تست SNI Spoof، بهینه‌سازی Cloudflare Fix و تزریق ECH</string>
+    <string name="tile_routing_title">مسیریابی هوشمند (Routing)</string>
+    <string name="tile_routing_sub">دور زدن سایت‌های ایرانی، بانکی و تفکیک مسیرها</string>
+    <string name="tile_vpn_title">تنظیمات تونل VPN</string>
+    <string name="tile_vpn_sub">کیل‌سوییچ، پشتیبانی کامل IPv6 و MTU اختصاصی</string>
+    <string name="tile_dns_title">پروتکل‌های امن DNS</string>
+    <string name="tile_dns_sub">پروتکل‌های رمزنگاری‌شده DoH, DoT, DoQ و سرورهای ضد تحریم</string>
+    <string name="tile_per_app_title">تفکیک برنامه‌ها (Per-App Proxy)</string>
+    <string name="tile_per_app_sub">انتخاب برنامه‌های عبوری از تونل فیلترشکن</string>
+    <string name="tile_fragment_title">تکه‌تکه‌سازی پکت‌ها (Fragment)</string>
+    <string name="tile_fragment_sub">تکه‌تکه‌سازی پکت‌های TLS برای دور زدن فیلترینگ شدید</string>
+    <string name="tile_singbox_title">هسته Sing-Box</string>
+    <string name="tile_singbox_sub">تنظیمات استک شبکه gVisor/System و Multiplex</string>
+    <string name="tile_tor_title">شبکه ناشناس Tor</string>
+    <string name="tile_tor_sub">مسیریابی امن از لایه‌های پیاز و پل‌های ضد فیلتر</string>
+    <string name="tile_ports_title">پورت‌های محلی</string>
+    <string name="tile_ports_sub">پورت‌های ورودی Socks5, HTTP و Mixed روی دستگاه</string>
+    <string name="tile_mux_title">مالتی‌پلکسینگ (Mux TCP)</string>
+    <string name="tile_mux_sub">تجمیع اتصالات TCP/H2 برای کاهش محسوس پینگ</string>
+    <string name="tile_observatory_title">رصدخانه کیفیت</string>
+    <string name="tile_observatory_sub">پایش مستمر پینگ و انتخاب هوشمند بهترین نود</string>
+    <string name="tile_advanced_title">تنظیمات پیشرفته</string>
+    <string name="tile_advanced_sub">بافرهای شبکه، سوکت‌ها و پیکربندی تخصصی هسته</string>
+    <string name="tile_backup_title">پشتیبان‌گیری و بازیابی</string>
+    <string name="tile_backup_sub">پشتیبان‌گیری کامل از تنظیمات و سرورها و بازیابی سریع اطلاعات</string>
+    <string name="tile_logs_title">لگ‌ها</string>
+    <string name="tile_logs_sub">لگ برنامه و تونل</string>
+    <string name="tile_about_title">درباره نارسیس و پشتیبانی</string>
+    <string name="tile_about_sub">نسخه %s • ارتباط با کانال و توسعه‌دهندگان</string>
+
+    <!-- Appearance Switches & Colors -->
+    <string name="pref_always_show_dashboard">نمایش دائمی کادرهای داشبورد صفحه اصلی</string>
+    <string name="pref_always_show_dashboard_sub">حتی در زمان قطع اتصال، کادرهای آمار، ترافیک و مسیر روی صفحه اصلی باز بمانند</string>
+    <string name="pref_traffic_above_hero">آوردن کادر ترافیک به بالای صفحه اصلی</string>
+    <string name="pref_traffic_above_hero_sub">نمایش آمار دانلود و آپلود بالای نشانگر وضعیت اتصال</string>
+    <string name="pref_advanced_color_customization">🎨 شخصی‌سازی پیشرفته رنگ‌ها</string>
+    <string name="pref_custom_tag">شخصی</string>
+    <string name="pref_collapse_palette">برای بستن پالت کلیک کنید</string>
+    <string name="pref_color_fine_tune">تغییر جزئی رنگ تک‌تک اجزا (۳۲ رنگ با فیلتر)</string>
+    <string name="pref_color_text_title">رنگ متن و عنوان‌ها</string>
+    <string name="pref_color_text_sub">انتخاب رنگ اصلی متون از میان ۳۲ رنگ نئونی با فیلتر</string>
+    <string name="pref_color_connect_title">رنگ دکمه اتصال</string>
+    <string name="pref_color_connect_sub">شخصی‌سازی رنگ دکمه اتصال امن</string>
+    <string name="pref_color_nav_active_title">رنگ تب فعال نوار ناوبری</string>
+    <string name="pref_color_nav_active_sub">رنگ آیکون و کپسول فعال در نوار پایین</string>
+    <string name="pref_color_nav_bg_title">رنگ پس‌زمینه نوار ناوبری</string>
+    <string name="pref_color_nav_bg_sub">رنگ شیشه‌ای داک نوار ناوبری پایین</string>
+    <string name="pref_color_nav_border_title">رنگ حاشیه نوار ناوبری</string>
+    <string name="pref_color_nav_border_sub">خط درخشان و حاشیه نوار پایین صفحه</string>
+    <string name="pref_color_server_border_title">رنگ کادر سرورها</string>
+    <string name="pref_color_server_border_sub">شخصی‌سازی حاشیه کارت‌های سرور</string>
+    <string name="pref_color_server_water_title">رنگ موج آب داخل کادر سرورها</string>
+    <string name="pref_color_server_water_sub">تغییر رنگ طرح موج آب در کارت سرور</string>
+    <string name="pref_color_server_bg_title">رنگ زمینه کارت‌های سرور</string>
+    <string name="pref_color_server_bg_sub">انتخاب رنگ پس‌زمینه کارت‌های سرور</string>
+    <string name="pref_color_dash_border_title">رنگ کادر داشبورد اتصال</string>
+    <string name="pref_color_dash_border_sub">حاشیه و درخشش کادر داشبورد صفحه اصلی</string>
+    <string name="pref_color_dash_bg_title">رنگ زمینه داشبورد اتصال</string>
+    <string name="pref_color_dash_bg_sub">رنگ پس‌زمینه کادرهای داشبورد صفحه اصلی</string>
+    <string name="pref_color_dash_text_title">رنگ متن داشبورد اتصال</string>
+    <string name="pref_color_dash_text_sub">رنگ نوشته‌ها و آمار سرعت و حجم در داشبورد</string>
+
+    <!-- Appearance Pickers -->
+    <string name="appearance_master_themes_title">طراحی‌های جامع برگزیده</string>
+    <string name="appearance_master_themes_sub">ترکیب رنگ، فونت و استایل‌های آماده متناسب با حال‌وهوای مختلف</string>
+    <string name="appearance_traffic_styles_title">سبک کارت‌های ترافیک (۸ سبک)</string>
+    <string name="appearance_traffic_styles_sub">سبک نمایش سرعت و حجم مصرفی را شخصی‌سازی کنید</string>
+    <string name="traffic_style_cards_title">کارت‌های دوگانه</string>
+    <string name="traffic_style_cards_desc">دو کارت مجزا برای بارگذاری و دانلود با اکولایزر</string>
+    <string name="traffic_style_duo_title">کپسول فشرده</string>
+    <string name="traffic_style_duo_desc">کپسول دوگانه شیشه‌ای با فلش‌های جهت‌دار</string>
+    <string name="traffic_style_rings_title">حلقه‌های نئونی</string>
+    <string name="traffic_style_rings_desc">دو حلقه داینامیک برای حجم مصرفی و سرعت</string>
+    <string name="traffic_style_minimal_title">مینیمال شفاف</string>
+    <string name="traffic_style_minimal_desc">کادر کریستالی بسیار باریک برای فضای باز</string>
+    <string name="traffic_style_graph_title">نمودار زنده</string>
+    <string name="traffic_style_graph_desc">نمودار زنده نوسان سرعت مصرف دیتا</string>
+    <string name="traffic_style_neon_pills_title">کپسول‌های نئونی</string>
+    <string name="traffic_style_neon_pills_desc">کپسول‌های تفکیک شده با فونت درشت بولد</string>
+    <string name="traffic_style_wave_title">اکولایزر موج صدا</string>
+    <string name="traffic_style_wave_desc">اکولایزر گرافیکی متحرک بر حسب ترافیک</string>
+    <string name="traffic_style_gauges_title">گیج‌های سایبری</string>
+    <string name="traffic_style_gauges_desc">دو سرعت‌سنج عقربه‌ای مدرن فیوچریستیک</string>
+
+    <!-- Color Categories -->
+    <string name="color_cat_all">همه</string>
+    <string name="color_cat_pink">صورتی/سرخابی</string>
+    <string name="color_cat_purple">بنفش/یاسی</string>
+    <string name="color_cat_cyan">فیروزه‌ای/آبی</string>
+    <string name="color_cat_green">سبز/زمردی</string>
+    <string name="color_cat_warm">نارنجی/زرد</string>
+    <string name="color_cat_mono">مونوکروم</string>
+    <string name="filter_label">فیلتر</string>
+
+    <!-- Navigation Bar Styles -->
+    <string name="navbar_style_title">سبک و فرم نوار پایین صفحه</string>
+    <string name="navbar_style_sub">انتخاب نحوه نمایش و تعامل نوار تب‌های پایین برنامه</string>
+    <string name="navbar_style_ios_title">شناور هوشمند (iOS)</string>
+    <string name="navbar_style_ios_desc">حباب شیشه‌ای همراه با انیمیشن کشسانی مدرن</string>
+    <string name="navbar_style_pill_title">کپسول مینی‌مال</string>
+    <string name="navbar_style_pill_desc">پیپ شناور شیشه‌ای در پایین صفحه</string>
+    <string name="navbar_style_full_title">نوار سرتاسری</string>
+    <string name="navbar_style_full_desc">نوار تمام‌عرض لبه‌به‌لبه با خط نئون</string>
+    <string name="navbar_style_dock_title">داک جمع‌وجور</string>
+    <string name="navbar_style_dock_desc">عرض کم برای گوشی‌های بزرگ</string>
+    <string name="navbar_style_underline_title">خط نشانگر متحرک</string>
+    <string name="navbar_style_underline_desc">خط نئون زیر تب فعال حرکت می‌کند</string>
+    <string name="navbar_style_minimal_title">مینیمال</string>
+    <string name="navbar_style_minimal_desc">حداقل المان بدون افکت اضافه</string>
+
+    <!-- Settings Layout Styles -->
+    <string name="settings_layout_title">چیدمان کاشی‌های تنظیمات</string>
+    <string name="settings_layout_sub">انتخاب تک‌ستون عریض یا شبکه نامتقارن</string>
+    <string name="settings_layout_masonry_title">شبکه نامتقارن (۲ ستونه)</string>
+    <string name="settings_layout_masonry_desc">فرم اختصاصی نارسیس همراه با موج داینامیک</string>
+    <string name="settings_layout_horizontal_title">اسلایدر افقی</string>
+    <string name="settings_layout_horizontal_desc">دسته‌بندی‌ها به صورت کارت‌های عریض</string>
+    <string name="settings_layout_single_title">تک‌ستون عریض و خوانا</string>
+    <string name="settings_layout_single_desc">طراحی استاندارد، منظم و مستقیم</string>
+
+    <!-- Home & Dashboard -->
+    <string name="change_server">تغییر سرور</string>
+    <string name="route_map_live_title">مسیر اتصال زنده</string>
+    <string name="route_map_live_desc">اتصال بهینه و هوشمند از مسیر پایدار</string>
+    <string name="connection_duration_label">مدت اتصال</string>
+    <string name="traffic_consumed_label">حجم مصرفی</string>
+    <string name="traffic_upload_label">بارگذاری</string>
+    <string name="traffic_download_label">دانلود</string>
+    <string name="active_duration_label">مدت اتصال فعال</string>
+    <string name="traffic_download_rate_label">نرخ دانلود و مصرف دیتا</string>
+    <string name="traffic_total_rate_label">نرخ مصرف کل</string>
+    <string name="traffic_upload_rate_label">نرخ بارگذاری</string>
+    <string name="traffic_download_rate_short_label">نرخ دانلود</string>
+
+    <!-- Protocols -->
+    <string name="ms_sstp_desc">پروتکل امن مایکروسافت / میکروتیک (SSL)</string>
 </resources>

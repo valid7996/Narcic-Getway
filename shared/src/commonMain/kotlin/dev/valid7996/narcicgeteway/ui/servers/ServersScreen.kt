@@ -2573,7 +2573,7 @@ internal fun AddServerSheet(
                 if (onSstp != null) {
                     GlassOptionCard(
                         title = "MS-SSTP",
-                        subtitle = "پروتکل امن مایکروسافت / میکروتیک (SSL)",
+                        subtitle = stringResource(Res.string.ms_sstp_desc),
                         icon = Res.drawable.ic_lock,
                         accentColor = Color(0xFF00A4EF),
                         iconTint = Color(0xFF38BDF8),

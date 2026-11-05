@@ -156,26 +156,42 @@
             </intent-filter>
         </receiver>
 
+        <service
+            android:name=".core.SubscriptionUpdateJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- 3 Bento Widgets with Outside Connect / Disconnect Toggle -->
         <receiver
-            android:name=".core.NrgWidgetToggleProvider"
+            android:name=".core.NrgWidgetSmallProvider"
             android:exported="true"
-            android:label="@string/widget_toggle_label">
+            android:label="@string/widget_small_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="dev.valid7996.narcicgeteway.widget.TOGGLE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/appwidget_nrg_toggle" />
         </receiver>
 
-        <service
-            android:name=".core.SubscriptionUpdateJobService"
-            android:exported="false"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <receiver
+            android:name=".core.NrgWidgetMediumProvider"
+            android:exported="true"
+            android:label="@string/widget_medium_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="dev.valid7996.narcicgeteway.widget.TOGGLE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/appwidget_nrg_medium" />
+        </receiver>
 
         <receiver
             android:name=".core.NrgWidgetProvider"
-            android:exported="false">
+            android:exported="true"
+            android:label="@string/widget_large_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="dev.valid7996.narcicgeteway.widget.TOGGLE" />
@@ -183,18 +199,6 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/appwidget_nrg" />
-        </receiver>
-
-        <receiver
-            android:name=".core.NrgWidgetToggleProvider"
-            android:exported="true"
-            android:label="@string/widget_toggle_label">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/appwidget_nrg_toggle" />
         </receiver>
 
         <service

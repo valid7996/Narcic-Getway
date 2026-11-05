@@ -313,13 +313,13 @@ fun MasterThemesRow(
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
-            text = "قالب‌های آماده هماهنگ",
+            text = stringResource(Res.string.appearance_master_themes_title),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = Color.White,
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            text = "ترکیب ۶ طرح کامل و هماهنگ رنگ کلید، داشبورد، سرورها و متن",
+            text = stringResource(Res.string.appearance_master_themes_sub),
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF9CA3AF),
         )
@@ -421,14 +421,14 @@ fun TrafficStyleRow(
     onSelect: (TrafficCardStyle) -> Unit,
 ) {
     val styles = listOf(
-        TrafficCardStyle.Cards to ("کارت‌های دوگانه" to "دو کارت مجزا برای بارگذاری و دانلود با اکولایزر"),
-        TrafficCardStyle.Duo to ("کپسول فشرده" to "کپسول دوگانه شیشه‌ای با فلش‌های جهت‌دار"),
-        TrafficCardStyle.Rings to ("حلقه‌های نئونی" to "دو حلقه پالس‌دار برای پایش آپلود و دانلود"),
-        TrafficCardStyle.Minimal to ("مینیمال باریک" to "نوار استاتوس فشرده تک‌خطی بدون اشغال فضا"),
-        TrafficCardStyle.Graph to ("نمودار زنده" to "نمودار موجی پویای ترافیک شبکه"),
-        TrafficCardStyle.NeonPills to ("کپسول‌های نئونی" to "کپسول‌های درخشان با نشانگر شناور وضعیت"),
-        TrafficCardStyle.WaveEqualizer to ("اکولایزر آب روان" to "ستون‌های فرکانسی متحرک با افکت سیال"),
-        TrafficCardStyle.CyberGauges to ("گیج‌های سایبری" to "دو نمایشگر تاکومتر دورانی سایبرپانک"),
+        TrafficCardStyle.Cards to (stringResource(Res.string.traffic_style_cards_title) to stringResource(Res.string.traffic_style_cards_desc)),
+        TrafficCardStyle.Duo to (stringResource(Res.string.traffic_style_duo_title) to stringResource(Res.string.traffic_style_duo_desc)),
+        TrafficCardStyle.Rings to (stringResource(Res.string.traffic_style_rings_title) to stringResource(Res.string.traffic_style_rings_desc)),
+        TrafficCardStyle.Minimal to (stringResource(Res.string.traffic_style_minimal_title) to stringResource(Res.string.traffic_style_minimal_desc)),
+        TrafficCardStyle.Graph to (stringResource(Res.string.traffic_style_graph_title) to stringResource(Res.string.traffic_style_graph_desc)),
+        TrafficCardStyle.NeonPills to (stringResource(Res.string.traffic_style_neon_pills_title) to stringResource(Res.string.traffic_style_neon_pills_desc)),
+        TrafficCardStyle.WaveEqualizer to (stringResource(Res.string.traffic_style_wave_title) to stringResource(Res.string.traffic_style_wave_desc)),
+        TrafficCardStyle.CyberGauges to (stringResource(Res.string.traffic_style_gauges_title) to stringResource(Res.string.traffic_style_gauges_desc)),
     )
 
     Column(
@@ -437,12 +437,12 @@ fun TrafficStyleRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         Text(
-            text = "سبک کارت‌های ترافیک (۸ سبک)",
+            text = stringResource(Res.string.appearance_traffic_styles_title),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = Color.White,
         )
         Text(
-            text = "سبک نمایش سرعت و حجم مصرفی را شخصی‌سازی کنید",
+            text = stringResource(Res.string.appearance_traffic_styles_sub),
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF9CA3AF),
         )
@@ -528,13 +528,13 @@ fun Color32PickerSection(
     var selectedCategory by remember { mutableStateOf("all") }
 
     val categories = listOf(
-        "all" to "همه",
-        "pink" to "صورتی/سرخابی",
-        "purple" to "بنفش/نیلی",
-        "cyan" to "فیروزه‌ای/آبی",
-        "green" to "سبز/فسفری",
-        "warm" to "طلایی/گرم",
-        "mono" to "مونوکروم",
+        "all" to stringResource(Res.string.color_cat_all),
+        "pink" to stringResource(Res.string.color_cat_pink),
+        "purple" to stringResource(Res.string.color_cat_purple),
+        "cyan" to stringResource(Res.string.color_cat_cyan),
+        "green" to stringResource(Res.string.color_cat_green),
+        "warm" to stringResource(Res.string.color_cat_warm),
+        "mono" to stringResource(Res.string.color_cat_mono),
     )
 
     val filteredSwatches = if (selectedCategory == "all") {
@@ -695,13 +695,13 @@ fun CompactColorPickerRow(
     var selectedCategory by remember { mutableStateOf("all") }
 
     val categories = listOf(
-        "all" to "همه",
-        "pink" to "صورتی/سرخابی",
-        "purple" to "بنفش/نیلی",
-        "cyan" to "فیروزه‌ای/آبی",
-        "green" to "سبز/فسفری",
-        "warm" to "طلایی/گرم",
-        "mono" to "مونوکروم",
+        "all" to stringResource(Res.string.color_cat_all),
+        "pink" to stringResource(Res.string.color_cat_pink),
+        "purple" to stringResource(Res.string.color_cat_purple),
+        "cyan" to stringResource(Res.string.color_cat_cyan),
+        "green" to stringResource(Res.string.color_cat_green),
+        "warm" to stringResource(Res.string.color_cat_warm),
+        "mono" to stringResource(Res.string.color_cat_mono),
     )
 
     val filteredSwatches = if (selectedCategory == "all") {
@@ -886,12 +886,12 @@ fun NavBarStyleRow(
     onSelect: (NavBarStyle) -> Unit,
 ) {
     val styles = listOf(
-        NavBarStyle.IosInteractive to ("شناور تعاملی (iOS)" to "داک شیشه‌ای شناور با کپسول لغزان فنری"),
-        NavBarStyle.FloatingPill to ("کپسول جزیره‌ای" to "نوار گوشه‌گرد شناور با پدینگ متوازن"),
-        NavBarStyle.FullBar to ("داک سرتاسری" to "نوار چسبیده به پایین با عرض کامل"),
-        NavBarStyle.CompactDock to ("داک مینی" to "کپسول جمع‌وجور با ابعاد فشرده"),
-        NavBarStyle.Underline to ("خط نئون زیرین" to "نوار مدرن با خط نئونی متحرک"),
-        NavBarStyle.Minimal to ("مینیمال" to "باریک‌ترین طرح نوار ناوبری"),
+        NavBarStyle.IosInteractive to (stringResource(Res.string.navbar_style_ios_title) to stringResource(Res.string.navbar_style_ios_desc)),
+        NavBarStyle.FloatingPill to (stringResource(Res.string.navbar_style_pill_title) to stringResource(Res.string.navbar_style_pill_desc)),
+        NavBarStyle.FullBar to (stringResource(Res.string.navbar_style_full_title) to stringResource(Res.string.navbar_style_full_desc)),
+        NavBarStyle.CompactDock to (stringResource(Res.string.navbar_style_dock_title) to stringResource(Res.string.navbar_style_dock_desc)),
+        NavBarStyle.Underline to (stringResource(Res.string.navbar_style_underline_title) to stringResource(Res.string.navbar_style_underline_desc)),
+        NavBarStyle.Minimal to (stringResource(Res.string.navbar_style_minimal_title) to stringResource(Res.string.navbar_style_minimal_desc)),
     )
 
     Column(
@@ -900,12 +900,12 @@ fun NavBarStyleRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         Text(
-            text = "شکل و سبک نوار ناوبری پایین",
+            text = stringResource(Res.string.navbar_style_title),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = Color.White,
         )
         Text(
-            text = "تغییر شکل، ابعاد و ظاهر نوار پایین صفحه",
+            text = stringResource(Res.string.navbar_style_sub),
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF9CA3AF),
         )
@@ -985,9 +985,9 @@ fun SettingsTileLayoutRow(
     onSelect: (SettingsTileLayout) -> Unit,
 ) {
     val layouts = listOf(
-        SettingsTileLayout.MasonryGrid to ("شبکه ارگانیک (۲ ستونه)" to "طرح کاشی‌های مدرن مایع با فرم نامتقارن"),
-        SettingsTileLayout.HorizontalCards to ("کارت‌های افقی" to "ردیف‌های اسکرول‌شونده برای دسترسی سریع"),
-        SettingsTileLayout.SingleColumn to ("لیست عمودی یکپارچه" to "چیدمان تک‌ستونه کلاسیک و خوانا"),
+        SettingsTileLayout.MasonryGrid to (stringResource(Res.string.settings_layout_masonry_title) to stringResource(Res.string.settings_layout_masonry_desc)),
+        SettingsTileLayout.HorizontalCards to (stringResource(Res.string.settings_layout_horizontal_title) to stringResource(Res.string.settings_layout_horizontal_desc)),
+        SettingsTileLayout.SingleColumn to (stringResource(Res.string.settings_layout_single_title) to stringResource(Res.string.settings_layout_single_desc)),
     )
 
     Column(
@@ -996,12 +996,12 @@ fun SettingsTileLayoutRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         Text(
-            text = "چیدمان کاشی‌های تنظیمات",
+            text = stringResource(Res.string.settings_layout_title),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = Color.White,
         )
         Text(
-            text = "تغییر نحوه چینش و فرم کاشی‌های صفحه تنظیمات (عمودی، افقی یا شبکه ارگانیک)",
+            text = stringResource(Res.string.settings_layout_sub),
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF9CA3AF),
         )

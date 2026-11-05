@@ -1850,7 +1850,7 @@ private fun SessionStatsTilesRow(
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
-                        text = "مدت اتصال",
+                        text = stringResource(Res.string.connection_duration_label),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         color = Color(0xFF9CA3AF),
                     )
@@ -1899,7 +1899,7 @@ private fun SessionStatsTilesRow(
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
-                        text = "حجم مصرفی",
+                        text = stringResource(Res.string.traffic_consumed_label),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                         color = Color(0xFF9CA3AF),
                     )
@@ -2143,7 +2143,7 @@ private fun TrafficStylesDisplay(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                            Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                             MiniSoundBars(color = personalization.connectColor ?: Color(0xFFF72585))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2172,7 +2172,7 @@ private fun TrafficStylesDisplay(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                            Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                             MiniSoundBars(color = Color(0xFF06B6D4))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2235,7 +2235,7 @@ private fun TrafficStylesDisplay(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("↑", fontWeight = FontWeight.Bold, color = personalization.connectColor ?: Color(0xFFF72585), fontSize = 18.sp)
                         Column {
-                            Text("بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
+                            Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
                             Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
                         }
                     }
@@ -2254,7 +2254,7 @@ private fun TrafficStylesDisplay(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 18.sp)
                         Column {
-                            Text("دانلود", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
+                            Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
                             Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
                         }
                     }
@@ -2278,7 +2278,7 @@ private fun TrafficStylesDisplay(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("↑ $upVal $upUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = personalization.connectColor ?: Color(0xFFF72585))
-                    Text("آمار ترافیک زنده", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_total_rate_label), style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                     Text("↓ $downVal $downUnit", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFF06B6D4))
                 }
             }
@@ -2392,7 +2392,7 @@ private fun LiveTrafficWaveGraph(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(downColor))
-                    Text("نرخ زنده ترافیک شبکه", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFD1D5DB))
+                    Text(stringResource(Res.string.traffic_download_rate_label), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFD1D5DB))
                 }
                 Text("طرح نمودار موجی", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
             }
@@ -2479,7 +2479,7 @@ private fun CyberDualGauges(
                     Text("↑", fontWeight = FontWeight.Bold, color = upColor, fontSize = 16.sp)
                 }
                 Column {
-                    Text("بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
                     Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                 }
             }
@@ -2511,7 +2511,7 @@ private fun CyberDualGauges(
                     Text("↓", fontWeight = FontWeight.Bold, color = downColor, fontSize = 16.sp)
                 }
                 Column {
-                    Text("دانلود", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
                     Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                 }
             }
@@ -2561,14 +2561,14 @@ private fun WaveEqualizerCard(
                 MiniSoundBars(color = upColor, barCount = 6)
                 Column {
                     Text("↑ $upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
-                    Text("سرعت بارگذاری", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_upload_rate_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
                 }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text("↓ $downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.5.sp)
-                    Text("سرعت دریافت", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_download_rate_short_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
                 }
                 MiniSoundBars(color = downColor, barCount = 6)
             }
@@ -2630,7 +2630,7 @@ private fun ConcentricRingsCard(
                     Text("↑", fontWeight = FontWeight.ExtraBold, color = upColor, fontSize = 16.sp)
                 }
                 Column {
-                    Text("بارگذاری", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                     Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                 }
             }
@@ -2648,7 +2648,7 @@ private fun ConcentricRingsCard(
                     Text("↓", fontWeight = FontWeight.ExtraBold, color = downColor, fontSize = 16.sp)
                 }
                 Column {
-                    Text("دانلود", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                     Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                 }
             }
@@ -2754,7 +2754,7 @@ private fun ActiveConfigDetailTile(
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Text(
-                    text = "تغییر سرور",
+                    text = stringResource(Res.string.change_server),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.5.sp),
                     color = Color.White,
                 )
@@ -2946,7 +2946,7 @@ private fun MergedDashboardCard(
                             )
                         }
                         Text(
-                            text = "بارگذاری",
+                            text = stringResource(Res.string.traffic_upload_label),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = Color(0xFF9CA3AF),
                         )
@@ -2986,7 +2986,7 @@ private fun MergedDashboardCard(
                             )
                         }
                         Text(
-                            text = "دانلود",
+                            text = stringResource(Res.string.traffic_download_label),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             color = Color(0xFF9CA3AF),
                         )

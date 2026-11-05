@@ -208,7 +208,7 @@ fun ConnectionMapTriggerButton(
                 }
                 Column {
                     Text(
-                        text = if (expanded) stringResource(Res.string.route_map_close) else "مسیر اتصال زنده",
+                        text = if (expanded) stringResource(Res.string.route_map_close) else stringResource(Res.string.route_map_live_title),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.5.sp,
@@ -217,7 +217,7 @@ fun ConnectionMapTriggerButton(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "اتصال از ایران به آمریکا با مسیر بهینه",
+                        text = stringResource(Res.string.route_map_live_desc),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 11.sp,
                         ),

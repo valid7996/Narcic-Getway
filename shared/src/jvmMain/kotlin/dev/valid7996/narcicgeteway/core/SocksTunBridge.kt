@@ -96,6 +96,12 @@ class SocksTunBridge(
                 when (request.command) {
                     CMD_CONNECT -> {
                         socket.soTimeout = 0
+                        if (request.portNumber == 853) {
+                            // Reject DoT immediately: force Android / clients to fallback to UDP 53
+                            // Apps Script and HTTP relays do not support raw DoT TLS stream
+                            to.writeFlush(refusal(REPLY_REFUSED))
+                            return
+                        }
                         proxyStream(request, socket, from, to)
                     }
                     CMD_HEV_DATAGRAM -> {
@@ -327,28 +333,24 @@ class SocksTunBridge(
                 return answer
             }
 
-            val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved(upstreamHost, upstreamPort))
             for (dohUrl in dohUrls) {
                 try {
-                    val url = URL(dohUrl)
-                    val connection = url.openConnection(proxy) as HttpURLConnection
-                    applySocksSslIfNeeded(connection, upstreamPort)
-                    connection.apply {
-                        requestMethod = "POST"
-                        connectTimeout = 3_500
-                        readTimeout = 3_500
-                        doOutput = true
-                        setRequestProperty("Content-Type", "application/dns-message")
-                        setRequestProperty("Accept", "application/dns-message")
-                        setRequestProperty("User-Agent", "NarcicGeteway-DNS")
-                    }
-                    connection.outputStream.use { it.write(query) }
-                    if (connection.responseCode in 200..299) {
-                        val answer = connection.inputStream.use { it.readBytes() }
-                        if (answer.size >= 12 && !isPoisoned(answer)) {
-                            dnsCache[key] = now to answer
-                            return answer
-                        }
+                    val resp = dev.valid7996.narcicgeteway.platform.rawHttpViaSocks(
+                        method = "POST",
+                        url = dohUrl,
+                        headers = mapOf(
+                            "Content-Type" to "application/dns-message",
+                            "Accept" to "application/dns-message",
+                            "User-Agent" to "NarcicGeteway-DNS",
+                        ),
+                        body = query,
+                        socksPort = upstreamPort,
+                        connectTimeoutMs = 3_500,
+                        readTimeoutMs = 3_500,
+                    )
+                    if (resp.code in 200..299 && resp.rawBytes.size >= 12 && !isPoisoned(resp.rawBytes)) {
+                        dnsCache[key] = now to resp.rawBytes
+                        return resp.rawBytes
                     }
                 } catch (_: Exception) {
                     // Try next DoH endpoint

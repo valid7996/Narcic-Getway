@@ -990,8 +990,14 @@
 <string name="auto_all_excluded">Every server in this group is in a country excluded from Auto. Pick a server yourself or change Excluded countries.</string>
     <string name="widget_download">Download</string>
     <string name="widget_upload">Upload</string>
-    <string name="widget_toggle_label">Narcic Getway toggle</string>
+    <string name="widget_toggle_label">Narcic Quick Toggle</string>
     <string name="widget_toggle_description">One tap to connect or disconnect.</string>
+    <string name="widget_small_label">Narcic Quick Toggle</string>
+    <string name="widget_small_description">One tap to connect or disconnect Narcic Getway.</string>
+    <string name="widget_medium_label">Narcic Server Status</string>
+    <string name="widget_medium_description">Server status, country flag, and quick toggle.</string>
+    <string name="widget_large_label">Narcic Bento Dashboard</string>
+    <string name="widget_large_description">Full dashboard with live traffic, timer, and server details.</string>
     <string name="widget_preview_down_rate">12.4 MB/s</string>
     <string name="widget_preview_up_rate">1.8 MB/s</string>
 </resources>

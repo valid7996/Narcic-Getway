@@ -234,6 +234,7 @@ object PingService {
 
         val spi = ByteArray(8)
         kotlin.random.Random.nextBytes(spi)
+        // Standard IKE_SA_INIT probe header
         val ikePkt = spi + ByteArray(8) + byteArrayOf(33, 0x20, 34, 0x08, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 4)
         val udp500 = udpProbeMillis(host, targetPort, ikePkt, 2_200)
         if (udp500 > 0) return udp500
@@ -244,8 +245,16 @@ object PingService {
             if (udp4500 > 0) return udp4500
         }
 
-        val tcp = tcpPing(host, if (targetPort in 1..65535 && targetPort != 500) targetPort else 443, 2_200)
+        // Check RFC 8229 TCP encapsulation port 4500
+        val tcp4500 = tcpPing(host, 4500, 1_800)
+        if (tcp4500 > 0) return tcp4500
+
+        val tcp = tcpPing(host, if (targetPort in 1..65535 && targetPort != 500) targetPort else 443, 2_000)
         if (tcp > 0) return tcp
+
+        // ICMP / system ping reachability fallback
+        val icmp = dev.valid7996.narcicgeteway.platform.icmpPingMillis(host, 2_200)
+        if (icmp > 0) return icmp
 
         return -1L
     }
@@ -266,11 +275,21 @@ object PingService {
         val udpDelay = udpProbeMillis(host, port, ovpnPkt, 2_200)
         if (udpDelay > 0) return udpDelay
 
-        val tls = tlsConnectMillis(host, port, 2_200)
+        val tls = tlsConnectMillis(host, port, 2_000)
         if (tls > 0) return tls
 
-        val tcp = tcpPing(host, port, 2_200)
+        val tcp = tcpPing(host, port, 2_000)
         if (tcp > 0) return tcp
+
+        if (port != 1194) {
+            val tcp1194 = tcpPing(host, 1194, 1_500)
+            if (tcp1194 > 0) return tcp1194
+        }
+        val tcp443 = tcpPing(host, 443, 1_500)
+        if (tcp443 > 0) return tcp443
+
+        val icmp = dev.valid7996.narcicgeteway.platform.icmpPingMillis(host, 2_200)
+        if (icmp > 0) return icmp
 
         return -1L
     }
@@ -300,7 +319,14 @@ object PingService {
         if (effective.isAether) return aetherDelay(effective, url)
         if (effective.isIkev2) return ikev2Delay(effective)
         if (effective.isOpenConnect) return openConnectDelay(effective)
-        if (effective.isOpenVpn) return openVpnDelay(effective)
+        if (effective.isOpenVpn) {
+            val config = runCatching { effective.toXrayConfigJson(forSpeedtest = true) }.getOrNull()
+            if (config != null) {
+                val delay = probeWithTimeout(effective, config, url)
+                if (delay > 0) return delay
+            }
+            return openVpnDelay(effective)
+        }
         if (effective.isSstp) {
             val sni = effective.address
             val probe = sniProbe?.invoke(effective.address, sni)

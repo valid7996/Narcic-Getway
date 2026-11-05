@@ -648,6 +648,12 @@
     <string name="auto_group_manual_short">Manual</string>
     <string name="widget_download">Descarga</string>
     <string name="widget_upload">Subida</string>
-    <string name="widget_toggle_label">Interruptor de ZedSecure</string>
+    <string name="widget_toggle_label">Interruptor Rápido Narcic</string>
     <string name="widget_toggle_description">Conecta o desconecta con un toque.</string>
+    <string name="widget_small_label">Interruptor Rápido Narcic</string>
+    <string name="widget_small_description">Conecta o desconecta con un solo toque.</string>
+    <string name="widget_medium_label">Estado del Servidor Narcic</string>
+    <string name="widget_medium_description">Estado del servidor, bandera y control rápido.</string>
+    <string name="widget_large_label">Panel Bento Narcic</string>
+    <string name="widget_large_description">Panel completo con tráfico en vivo, temporizador y detalles.</string>
 </resources>
