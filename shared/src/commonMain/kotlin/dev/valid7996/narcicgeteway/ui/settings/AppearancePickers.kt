@@ -1013,7 +1013,8 @@ fun SettingsTileLayoutRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             layouts.forEach { (layout, meta) ->
-                val (title, sub) = meta
+                val title = meta.first
+                val sub = meta.second
                 val isSelected = selected == layout
                 Box(
                     modifier = Modifier
