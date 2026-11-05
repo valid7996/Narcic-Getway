@@ -39,8 +39,7 @@ class WhiteDnsController(
             val resolversFile = File(runtimeDir, "resolvers_${profile.engine}.txt")
             prepareResolvers(resolversFile)
 
-            Log.i(TAG, "Starting WhiteDNS engine ${profile.engine} on SOCKS5 127.0.0.1:$socksPort")
-            LogBus.append("I/$TAG starting ${profile.engine} (SOCKS port $socksPort)...")
+            Log.i("WhiteDNS", "Starting WhiteDNS engine ${profile.engine} on SOCKS5 127.0.0.1:$socksPort")
 
             val pb = ProcessBuilder(
                 executable.absolutePath,
@@ -61,8 +60,14 @@ class WhiteDnsController(
                             val line = br.readLine() ?: break
                             val trimmed = line.trim()
                             if (trimmed.isNotBlank()) {
-                                Log.d(TAG, trimmed)
-                                LogBus.append("I/WhiteDNS $trimmed")
+                                if (trimmed.contains("error", ignoreCase = true) ||
+                                    trimmed.contains("failed", ignoreCase = true) ||
+                                    trimmed.contains("fatal", ignoreCase = true) ||
+                                    trimmed.contains("panic", ignoreCase = true)) {
+                                    Log.e("WhiteDNS", trimmed)
+                                } else {
+                                    Log.i("WhiteDNS", trimmed)
+                                }
                             }
                         }
                     }
@@ -74,8 +79,7 @@ class WhiteDnsController(
             drainThread = reader
             true
         } catch (t: Throwable) {
-            Log.e(TAG, "Failed to launch WhiteDNS process", t)
-            LogBus.append("E/$TAG launch error: ${t.message}")
+            Log.e("WhiteDNS", "Failed to launch WhiteDNS process", t)
             stop()
             false
         }
@@ -88,12 +92,11 @@ class WhiteDnsController(
             val p = process
             if (p != null && !p.isAlive) {
                 val code = runCatching { p.exitValue() }.getOrNull()
-                LogBus.append("E/$TAG process died with exit code $code")
+                Log.e("WhiteDNS", "WhiteDNS process died with exit code $code")
                 return false
             }
             if (portAccepts("127.0.0.1", socksPort, 350)) {
-                Log.i(TAG, "WhiteDNS SOCKS listener on 127.0.0.1:$socksPort is ready!")
-                LogBus.append("I/$TAG tunnel established on 127.0.0.1:$socksPort")
+                Log.i("WhiteDNS", "WhiteDNS SOCKS listener on 127.0.0.1:$socksPort is ready!")
                 return true
             }
             try {
@@ -102,7 +105,7 @@ class WhiteDnsController(
                 return false
             }
         }
-        LogBus.append("E/$TAG SOCKS port $socksPort did not open within ${timeoutMs}ms")
+        Log.e("WhiteDNS", "WhiteDNS SOCKS port $socksPort did not open within ${timeoutMs}ms")
         return false
     }
 

@@ -58,40 +58,137 @@ data class WhiteDnsProfile(
         appendLine("ENCRYPTION_KEY = \"${escape(encryptionKey)}\"")
         appendLine("PROTOCOL_TYPE = \"SOCKS5\"")
 
-        // CottenDNS specific settings
+        // CottenDNS specific settings (StormDNS rejects these keys)
         if (engine.equals(ENGINE_COTTENDNS, ignoreCase = true)) {
-            appendLine("CONFIG_PRESET = \"${escape(configPreset)}\"")
-            appendLine("TUNNEL_MODE = \"${escape(tunnelMode)}\"")
-            if (transportMode != "auto") appendLine("TRANSPORT_MODE = \"${escape(transportMode)}\"")
-            if (deliveryMode != "auto") appendLine("DELIVERY_MODE = \"${escape(deliveryMode)}\"")
-            if (qnameMode != "auto") appendLine("QNAME_MODE = \"${escape(qnameMode)}\"")
-            if (tunnelMode == "max") {
-                appendLine("ENABLE_ADAPTIVE_MTU = true")
-                appendLine("ENABLE_LOSS_RECOVERY = true")
-                appendLine("ENABLE_QUERY_SHAPING = true")
-                appendLine("FAST_SESSION_RESUME = true")
+            val isCompatibility = (configPreset == "master-storm")
+            val preset = when (configPreset) {
+                "speed", "survival", "tcp-survival" -> configPreset
+                else -> "default"
+            }
+            appendLine("CONFIG_PRESET = \"${if (isCompatibility) "default" else preset}\"")
+            appendLine("LEGACY_SESSION_ID = $isCompatibility")
+            if (!isCompatibility) {
+                appendLine("TUNNEL_MODE = \"${escape(tunnelMode)}\"")
+            }
+            appendLine("TERMINAL_UI = \"plain\"")
+            appendLine("RESOLVER_IP_MODE = \"auto\"")
+            appendLine("QUERY_RATE_LIMIT_PER_SECOND = 0")
+            appendLine("QUERY_RATE_LIMIT_PER_RESOLVER_PER_SECOND = 0")
+            appendLine("QUERY_RATE_LIMIT_PER_DOMAIN_PER_SECOND = 0")
+            appendLine("QUERY_TIMING_JITTER = 0.0")
+
+            val transport = when {
+                isCompatibility -> "udp"
+                transportMode in setOf("udp", "tcp", "dot", "doh", "doh3", "doq") -> transportMode
+                preset == "tcp-survival" -> "tcp"
+                else -> "auto"
+            }
+            appendLine("RESOLVER_TRANSPORT = \"$transport\"")
+
+            val queryTypes = when {
+                isCompatibility -> "[\"TXT\"]"
+                deliveryMode == "txt" -> "[\"TXT\"]"
+                deliveryMode == "txt-cname" -> "[\"TXT\", \"CNAME\"]"
+                deliveryMode == "txt-https" -> "[\"TXT\", \"HTTPS\"]"
+                deliveryMode == "txt-aaaa" -> "[\"TXT\", \"AAAA\"]"
+                deliveryMode == "all" -> "[\"TXT\", \"CNAME\", \"NULL\", \"HTTPS\", \"AAAA\"]"
+                preset == "speed" -> "[\"TXT\", \"HTTPS\"]"
+                preset == "survival" -> "[\"TXT\", \"CNAME\", \"HTTPS\", \"A\"]"
+                preset == "tcp-survival" -> "[\"TXT\", \"HTTPS\"]"
+                else -> "[\"TXT\"]"
+            }
+            appendLine("QUERY_TYPES = $queryTypes")
+
+            val qnameLen = when {
+                isCompatibility -> 63
+                qnameMode == "off" -> 63
+                qnameMode == "moderate" -> 42
+                qnameMode == "aggressive" -> 32
+                preset == "survival" -> 42
+                else -> 63
+            }
+            appendLine("QNAME_LABEL_LENGTH = $qnameLen")
+            appendLine("FAST_CONNECT = true")
+            appendLine("MTU_BACKGROUND_PARALLELISM = 8")
+            appendLine("RESOLVER_RATE_LIMIT_ENABLED = true")
+            appendLine("DNS_RANDOMIZE_QUERY_ID = true")
+            appendLine("DNS_QNAME_CASE_RANDOMIZATION = false")
+            appendLine("RESOLVER_IGNORE_INJECTED_NXDOMAIN = true")
+
+            if (!isCompatibility) {
+                appendLine("ADAPTIVE_DUPLICATION = true")
+                appendLine("DUPLICATION_PREFER_DISTINCT_DOMAINS = true")
+                appendLine("ADAPTIVE_DUPLICATION_TARGET_DELIVERY = ${if (preset == "survival") "0.97" else "0.95"}")
+                appendLine("DNS_EDNS_COOKIE = true")
+                appendLine("EDNS_UDP_SIZE = ${if (preset == "survival") 1232 else 4096}")
+                appendLine("MTU_PROBE_SAMPLES = ${if (preset == "survival") 5 else 1}")
+                appendLine("MTU_MAX_LOSS = ${if (preset == "survival") "0.5" else "0.0"}")
+                appendLine("MTU_ADAPTIVE_GROUPING = true")
+                appendLine("MTU_GROUP_GAP_RATIO = 0.25")
+            } else {
+                appendLine("ADAPTIVE_DUPLICATION = false")
+                appendLine("DUPLICATION_PREFER_DISTINCT_DOMAINS = false")
+                appendLine("DNS_EDNS_COOKIE = false")
+                appendLine("MTU_ADAPTIVE_GROUPING = false")
+                appendLine("MTU_PROBE_SAMPLES = 1")
+                appendLine("MTU_MAX_LOSS = 0.0")
             }
         }
 
-        // Common client settings
-        appendLine("LISTEN_IP = \"$listenIp\"")
+        // Common client settings (StormDNS & CottenDNS)
+        appendLine("LISTEN_IP = \"${escape(listenIp)}\"")
         appendLine("LISTEN_PORT = $port")
         appendLine("SOCKS5_AUTH = false")
+        appendLine("SOCKS5_USER = \"\"")
+        appendLine("SOCKS5_PASS = \"\"")
+        appendLine("LOCAL_DNS_ENABLED = false")
+        appendLine("LOCAL_DNS_IP = \"127.0.0.1\"")
+        appendLine("LOCAL_DNS_PORT = 0")
         appendLine("RESOLVER_BALANCING_STRATEGY = $balancingStrategy")
         appendLine("UPLOAD_PACKET_DUPLICATION_COUNT = ${packetDuplication.coerceIn(1, 10)}")
         appendLine("DOWNLOAD_PACKET_DUPLICATION_COUNT = ${packetDuplication.coerceIn(1, 10)}")
         appendLine("UPLOAD_COMPRESSION_TYPE = $compression")
         appendLine("DOWNLOAD_COMPRESSION_TYPE = $compression")
-        appendLine("AUTO_DISABLE_TIMEOUT_SERVERS = $autoDisableDeadResolvers")
-        appendLine("BASE_ENCODE_DATA = 1")
+        appendLine("BASE_ENCODE_DATA = false")
         appendLine("MIN_UPLOAD_MTU = 100")
-        appendLine("MAX_UPLOAD_MTU = 220")
         appendLine("MIN_DOWNLOAD_MTU = 100")
+        appendLine("MAX_UPLOAD_MTU = 220")
         appendLine("MAX_DOWNLOAD_MTU = 1200")
         appendLine("MTU_TEST_RETRIES_RESOLVERS = 2")
         appendLine("MTU_TEST_TIMEOUT_RESOLVERS = 3")
         appendLine("MTU_TEST_PARALLELISM_RESOLVERS = 16")
+        appendLine("MTU_TEST_RETRIES_LOGS = 2")
+        appendLine("MTU_TEST_TIMEOUT_LOGS = 3")
+        appendLine("MTU_TEST_PARALLELISM_LOGS = 16")
+        appendLine("RX_TX_WORKERS = 4")
+        appendLine("TUNNEL_PROCESS_WORKERS = 4")
+        appendLine("TUNNEL_PACKET_TIMEOUT_SECONDS = 30")
+        appendLine("DISPATCHER_IDLE_POLL_INTERVAL_SECONDS = 1")
+        appendLine("TX_CHANNEL_SIZE = 1024")
+        appendLine("RX_CHANNEL_SIZE = 1024")
+        appendLine("RESOLVER_UDP_CONNECTION_POOL_SIZE = 256")
+        appendLine("STREAM_QUEUE_INITIAL_CAPACITY = 256")
+        appendLine("ORPHAN_QUEUE_INITIAL_CAPACITY = 256")
+        appendLine("DNS_RESPONSE_FRAGMENT_STORE_CAPACITY = 256")
+        appendLine("MAX_ACTIVE_STREAMS = 1024")
+        appendLine("LOCAL_HANDSHAKE_TIMEOUT_SECONDS = 10")
+        appendLine("SOCKS_UDP_ASSOCIATE_READ_TIMEOUT_SECONDS = 30")
+        appendLine("CLIENT_TERMINAL_STREAM_RETENTION_SECONDS = 30")
+        appendLine("CLIENT_CANCELLED_SETUP_RETENTION_SECONDS = 30")
+        appendLine("SESSION_INIT_RETRY_BASE_SECONDS = 1")
+        appendLine("SESSION_INIT_RETRY_STEP_SECONDS = 1")
+        appendLine("SESSION_INIT_RETRY_LINEAR_AFTER = 5")
+        appendLine("SESSION_INIT_RETRY_MAX_SECONDS = 15")
+        appendLine("SESSION_INIT_BUSY_RETRY_INTERVAL_SECONDS = 1")
+        appendLine("STARTUP_MODE = \"resolvers\"")
+        appendLine("LOG_SCAN_MAX_DAYS = 14")
+        appendLine("LOG_SCAN_MAX_RESOLVERS = 128")
+        appendLine("LOG_BASED_MTU_VERIFY = true")
+        appendLine("STATS_REPORT_INTERVAL_SECONDS = 1.0")
+        appendLine("PING_WATCHDOG_TIMEOUT_SECONDS = 0")
         appendLine("LOG_LEVEL = \"${if (logLevel.equals("DEBUG", ignoreCase = true)) "DEBUG" else "INFO"}\"")
+        appendLine("LOG_TO_FILE = false")
+        appendLine("LOG_DIR = \"logs\"")
     }
 
     fun toSoarJson(listenIp: String = "127.0.0.1", port: Int = listenPort): String {

@@ -72,10 +72,15 @@ private enum class LogCategory(val tags: Set<String>) {
     MasterDns(setOf("MasterDns", "MasterDnsController", "masterdns")),
     Mhrv(setOf("mhrv_rs", "MhrvRelay", "MhrvRelayController", "mhrv")),
     Psiphon(setOf("Psiphon")),
+    WhiteDns(setOf("WhiteDNS", "WhiteDns", "WhiteDnsController", "cottendns", "stormdns", "soar", "whitedns")),
     Ssh(setOf("Ssh", "SshController", "JSch")),
 }
 
 private fun categoriesFor(kind: String?): Set<LogCategory> = when (kind) {
+    VpnManager.KIND_WHITEDNS,
+    VpnManager.KIND_COTTENDNS,
+    VpnManager.KIND_STORMDNS,
+    VpnManager.KIND_SOAR -> setOf(LogCategory.WhiteDns)
     VpnManager.KIND_XRAY, VpnManager.KIND_SNISPOOF -> setOf(LogCategory.Xray)
     VpnManager.KIND_PSIPHON -> setOf(LogCategory.Psiphon)
     VpnManager.KIND_TOR -> setOf(LogCategory.Tor)
@@ -88,7 +93,7 @@ private fun categoriesFor(kind: String?): Set<LogCategory> = when (kind) {
     else -> emptySet()
 }
 
-private val TAG_RE = Regex("""\s([VDIWEF])/([A-Za-z0-9_.$-]+)""")
+private val TAG_RE = Regex("""(?:^|\s)([VDIWEF])/([A-Za-z0-9_.$-]+)""")
 
 private data class LogLine(val raw: String, val level: Char, val tag: String?)
 
@@ -115,6 +120,7 @@ private fun levelLabel(level: LogLevel): String = when (level) {
 @Composable
 private fun categoryLabel(category: LogCategory): String = when (category) {
     LogCategory.App -> stringResource(Res.string.logs_source_app)
+    LogCategory.WhiteDns -> "WhiteDNS"
     LogCategory.Xray -> "Xray"
     LogCategory.Tor -> "Tor"
     LogCategory.Dns -> "DNS"
