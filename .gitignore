@@ -60,6 +60,7 @@ ref*.png
 !/app/src/main/jniLibs/*/libmhrv_rs.so
 !/app/src/main/jniLibs/*/libcottendns_client.so
 !/app/src/main/jniLibs/*/libstormdns_client.so
+!/app/src/main/jniLibs/*/libsoar_client.so
 !/app/src/main/jniLibs/*/libtun2proxy.so
 
 __pycache__/

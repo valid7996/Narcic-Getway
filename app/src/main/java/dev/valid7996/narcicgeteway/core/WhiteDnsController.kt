@@ -32,8 +32,9 @@ class WhiteDnsController(
             val runtimeDir = File(context.filesDir, "whitedns").apply { mkdirs() }
             val executable = prepareExecutable(profile.engine)
 
-            val configFile = File(runtimeDir, "config_${profile.engine}.toml")
-            configFile.writeText(profile.toToml(port = socksPort))
+            val isSoar = profile.engine.equals(WhiteDnsProfile.ENGINE_SOAR, ignoreCase = true)
+            val configFile = File(runtimeDir, if (isSoar) "config_soar.json" else "config_${profile.engine}.toml")
+            configFile.writeText(profile.toConfigFile(port = socksPort))
 
             val resolversFile = File(runtimeDir, "resolvers_${profile.engine}.txt")
             prepareResolvers(resolversFile)
@@ -123,7 +124,7 @@ class WhiteDnsController(
     }
 
     private fun prepareExecutable(engine: String): File {
-        val libraryName = when (engine) {
+        val libraryName = when (engine.trim().lowercase()) {
             WhiteDnsProfile.ENGINE_STORMDNS -> "libstormdns_client.so"
             WhiteDnsProfile.ENGINE_SOAR -> "libsoar_client.so"
             else -> "libcottendns_client.so"
@@ -131,7 +132,8 @@ class WhiteDnsController(
 
         val nativeDir = File(context.applicationInfo.nativeLibraryDir)
         val inNativeDir = File(nativeDir, libraryName)
-        if (inNativeDir.exists() && inNativeDir.canExecute()) {
+        if (inNativeDir.exists()) {
+            inNativeDir.setExecutable(true, false)
             return inNativeDir
         }
 
@@ -152,6 +154,10 @@ class WhiteDnsController(
                     }
                 }
             }
+        }
+
+        if (!target.exists()) {
+            throw java.io.FileNotFoundException("WhiteDNS binary $libraryName not found in ${nativeDir.absolutePath} or assets")
         }
 
         target.setReadable(true, false)

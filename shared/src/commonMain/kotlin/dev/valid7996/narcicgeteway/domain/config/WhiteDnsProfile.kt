@@ -94,6 +94,50 @@ data class WhiteDnsProfile(
         appendLine("LOG_LEVEL = \"${if (logLevel.equals("DEBUG", ignoreCase = true)) "DEBUG" else "INFO"}\"")
     }
 
+    fun toSoarJson(listenIp: String = "127.0.0.1", port: Int = listenPort): String {
+        val zone = domain.split(',', '\n', ' ')
+            .map { it.trim().trimEnd('.').lowercase() }
+            .firstOrNull { it.isNotBlank() } ?: domain.trim().trimEnd('.').lowercase()
+        val pubKey = encryptionKey.trim()
+
+        val root = buildJsonObject {
+            put("zone", zone)
+            put("server_public_key", pubKey)
+            put("system_resolvers", buildJsonArray { })
+            put("listen", "$listenIp:$port")
+            put("username", "")
+            put("password", "")
+            put("soar", buildJsonObject {
+                put("transport", if (transportMode in listOf("auto", "on", "only", "off")) transportMode else "auto")
+                put("discovery", true)
+                put("country", "IR")
+                put("discoveryWant", 2)
+                put("discoveryConcurrency", 2)
+                put("discoveryPaceMs", 1000)
+                put("safeQName", 101)
+                put("maxQName", 253)
+                put("maxAnswer", 1232)
+                put("holdMs", 500)
+                put("maxInflight", 128)
+                put("maxPathWindow", 32)
+                put("maxStreams", 128)
+                put("streamWindowKiB", 256)
+                put("sendBufferKiB", 64)
+                put("sessionIdleSeconds", 90)
+                put("dialTimeoutSeconds", 90)
+            })
+        }
+        return root.toString()
+    }
+
+    fun toConfigFile(listenIp: String = "127.0.0.1", port: Int = listenPort): String {
+        return if (engine.equals(ENGINE_SOAR, ignoreCase = true)) {
+            toSoarJson(listenIp, port)
+        } else {
+            toToml(listenIp, port)
+        }
+    }
+
     private fun escape(value: String): String =
         value.replace("\\", "\\\\").replace("\"", "\\\"")
 
