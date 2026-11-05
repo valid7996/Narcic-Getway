@@ -326,7 +326,7 @@ fun ConnectionRouteMapCard(
         label = "pin-pulse",
     )
 
-    val currentLocale = if (language != null) java.util.Locale.forLanguageTag(language.tag.ifEmpty { "en" }) else java.util.Locale.getDefault()
+    val currentLocale = if (language != null && !language.tag.isNullOrBlank()) java.util.Locale.forLanguageTag(language.tag) else java.util.Locale.getDefault()
     val isFa = language?.let { it == AppLanguage.Persian } ?: currentLocale.language.equals("fa", ignoreCase = true)
     val isAr = language?.let { it == AppLanguage.Arabic } ?: currentLocale.language.equals("ar", ignoreCase = true)
     val localizedDest = remember(destCode, currentLocale) {

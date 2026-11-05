@@ -531,7 +531,7 @@ fun HomeScreen(
                             personalization = personalization,
                             isNoir = isNoir,
                             isBlossom = isBlossom,
-                            language = settings.language,
+                            language = settings?.language,
                         )
                         AnimatedVisibility(visible = infoExpanded) {
                             ConnectionRouteMapCard(
@@ -542,7 +542,7 @@ fun HomeScreen(
                                 personalization = personalization,
                                 isNoir = isNoir,
                                 isBlossom = isBlossom,
-                                language = settings.language,
+                                language = settings?.language,
                             )
                         }
 

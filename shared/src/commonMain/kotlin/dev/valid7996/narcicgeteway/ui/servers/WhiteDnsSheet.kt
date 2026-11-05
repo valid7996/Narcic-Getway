@@ -133,21 +133,14 @@ fun WhiteDnsSheet(
             if (engine != WhiteDnsProfile.ENGINE_SOAR) {
                 PickerField(
                     label = stringResource(Res.string.whitedns_method_label),
-                    selected = when (method) {
-                        WhiteDnsProfile.ENC_NONE -> "0: None"
-                        WhiteDnsProfile.ENC_XOR -> "1: XOR (Fastest)"
-                        WhiteDnsProfile.ENC_CHACHA20 -> "2: ChaCha20"
-                        WhiteDnsProfile.ENC_AES_GCM -> "3: AES-GCM"
-                        WhiteDnsProfile.ENC_RC4 -> "4: RC4"
-                        else -> "1: XOR"
-                    },
                     options = listOf(
-                        "1: XOR (Fastest)" to WhiteDnsProfile.ENC_XOR,
-                        "2: ChaCha20" to WhiteDnsProfile.ENC_CHACHA20,
-                        "3: AES-GCM" to WhiteDnsProfile.ENC_AES_GCM,
-                        "4: RC4" to WhiteDnsProfile.ENC_RC4,
-                        "0: None" to WhiteDnsProfile.ENC_NONE,
+                        WhiteDnsProfile.ENC_XOR to "1: XOR (Fastest)",
+                        WhiteDnsProfile.ENC_CHACHA20 to "2: ChaCha20",
+                        WhiteDnsProfile.ENC_AES_GCM to "3: AES-GCM",
+                        WhiteDnsProfile.ENC_RC4 to "4: RC4",
+                        WhiteDnsProfile.ENC_NONE to "0: None",
                     ),
+                    selected = method,
                     onSelect = { method = it },
                 )
             }

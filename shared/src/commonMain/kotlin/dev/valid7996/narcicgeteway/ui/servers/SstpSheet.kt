@@ -1,8 +1,9 @@
-import org.jetbrains.compose.resources.stringResource
-import dev.valid7996.narcicgeteway.shared.resources.*
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package dev.valid7996.narcicgeteway.ui.servers
+
+import org.jetbrains.compose.resources.stringResource
+import dev.valid7996.narcicgeteway.shared.resources.*
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background

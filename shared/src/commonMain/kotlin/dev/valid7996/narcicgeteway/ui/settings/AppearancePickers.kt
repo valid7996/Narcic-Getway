@@ -51,7 +51,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Brush
-import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.ic_check
 import dev.valid7996.narcicgeteway.ui.theme.ColorPalette32
 import dev.valid7996.narcicgeteway.ui.theme.MasterNeonThemes

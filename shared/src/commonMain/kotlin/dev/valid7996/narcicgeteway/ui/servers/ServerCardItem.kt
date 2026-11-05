@@ -129,6 +129,7 @@ internal fun ServerCard(
     val isSelectedCard = selecting && isSelected
     val platform = dev.valid7996.narcicgeteway.ui.platform.LocalPlatform.current
     val scope = rememberCoroutineScope()
+    val copiedToastText = stringResource(Res.string.address_copied)
 
     val shape = RoundedCornerShape(26.dp)
     val isNoir = personalization.themeProfileId == "noir"
@@ -358,8 +359,7 @@ internal fun ServerCard(
                         .fillMaxWidth()
                         .clickable {
                             platform.copyToClipboard("${profile.address}:${profile.port}")
-                            val copyMsg = stringResource(Res.string.address_copied)
-                scope.launch { platform.toast(copyMsg) }
+                            scope.launch { platform.toast(copiedToastText) }
                         },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End,
