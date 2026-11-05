@@ -245,7 +245,7 @@ open class NrgWidgetProvider : AppWidgetProvider() {
                 ctx.getString(R.string.widget_no_server)
             }
 
-            val kind = VpnManager.activeKind.value ?: activeProfile?.engine?.name ?: "VPN"
+            val kind = VpnManager.activeKind.value ?: activeProfile?.protocol?.ifBlank { null } ?: activeProfile?.let { dev.valid7996.narcicgeteway.domain.config.VpnProfile.engineLabelOf(it.source) } ?: "VPN"
             val meta = if (on) {
                 "$kind • ${ctx.getString(R.string.state_connected)}"
             } else {

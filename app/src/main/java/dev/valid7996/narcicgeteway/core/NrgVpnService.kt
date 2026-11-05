@@ -635,7 +635,6 @@ private var bentoCard: Boolean = false
             stopEverything(); return
         }
 
-        activeSocksPort = controller.socksPort
         bridgeEngine(descriptor, controller.socksPort, tunMtu)
     }
 
