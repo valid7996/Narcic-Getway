@@ -416,19 +416,25 @@ fun MasterThemesRow(
  * 8 Distinct Traffic Card Styles Selector (انتخاب سبک کارت‌های ترافیک ۸ سبک مختلف).
  */
 @Composable
+private data class AppearanceOption<T>(
+    val value: T,
+    val title: String,
+    val sub: String,
+)
+
 fun TrafficStyleRow(
     selected: TrafficCardStyle,
     onSelect: (TrafficCardStyle) -> Unit,
 ) {
     val styles = listOf(
-        TrafficCardStyle.Cards to (stringResource(Res.string.traffic_style_cards_title) to stringResource(Res.string.traffic_style_cards_desc)),
-        TrafficCardStyle.Duo to (stringResource(Res.string.traffic_style_duo_title) to stringResource(Res.string.traffic_style_duo_desc)),
-        TrafficCardStyle.Rings to (stringResource(Res.string.traffic_style_rings_title) to stringResource(Res.string.traffic_style_rings_desc)),
-        TrafficCardStyle.Minimal to (stringResource(Res.string.traffic_style_minimal_title) to stringResource(Res.string.traffic_style_minimal_desc)),
-        TrafficCardStyle.Graph to (stringResource(Res.string.traffic_style_graph_title) to stringResource(Res.string.traffic_style_graph_desc)),
-        TrafficCardStyle.NeonPills to (stringResource(Res.string.traffic_style_neon_pills_title) to stringResource(Res.string.traffic_style_neon_pills_desc)),
-        TrafficCardStyle.WaveEqualizer to (stringResource(Res.string.traffic_style_wave_title) to stringResource(Res.string.traffic_style_wave_desc)),
-        TrafficCardStyle.CyberGauges to (stringResource(Res.string.traffic_style_gauges_title) to stringResource(Res.string.traffic_style_gauges_desc)),
+        AppearanceOption(TrafficCardStyle.Cards, stringResource(Res.string.traffic_style_cards_title), stringResource(Res.string.traffic_style_cards_desc)),
+        AppearanceOption(TrafficCardStyle.Duo, stringResource(Res.string.traffic_style_duo_title), stringResource(Res.string.traffic_style_duo_desc)),
+        AppearanceOption(TrafficCardStyle.Rings, stringResource(Res.string.traffic_style_rings_title), stringResource(Res.string.traffic_style_rings_desc)),
+        AppearanceOption(TrafficCardStyle.Minimal, stringResource(Res.string.traffic_style_minimal_title), stringResource(Res.string.traffic_style_minimal_desc)),
+        AppearanceOption(TrafficCardStyle.Graph, stringResource(Res.string.traffic_style_graph_title), stringResource(Res.string.traffic_style_graph_desc)),
+        AppearanceOption(TrafficCardStyle.NeonPills, stringResource(Res.string.traffic_style_neon_pills_title), stringResource(Res.string.traffic_style_neon_pills_desc)),
+        AppearanceOption(TrafficCardStyle.WaveEqualizer, stringResource(Res.string.traffic_style_wave_title), stringResource(Res.string.traffic_style_wave_desc)),
+        AppearanceOption(TrafficCardStyle.CyberGauges, stringResource(Res.string.traffic_style_gauges_title), stringResource(Res.string.traffic_style_gauges_desc)),
     )
 
     Column(
@@ -453,8 +459,10 @@ fun TrafficStyleRow(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            styles.forEach { (style, meta) ->
-                val (title, sub) = meta
+            styles.forEach { item ->
+                val style = item.value
+                val title = item.title
+                val sub = item.sub
                 val isSelected = selected == style
                 Box(
                     modifier = Modifier
@@ -886,12 +894,12 @@ fun NavBarStyleRow(
     onSelect: (NavBarStyle) -> Unit,
 ) {
     val styles = listOf(
-        NavBarStyle.IosInteractive to (stringResource(Res.string.navbar_style_ios_title) to stringResource(Res.string.navbar_style_ios_desc)),
-        NavBarStyle.FloatingPill to (stringResource(Res.string.navbar_style_pill_title) to stringResource(Res.string.navbar_style_pill_desc)),
-        NavBarStyle.FullBar to (stringResource(Res.string.navbar_style_full_title) to stringResource(Res.string.navbar_style_full_desc)),
-        NavBarStyle.CompactDock to (stringResource(Res.string.navbar_style_dock_title) to stringResource(Res.string.navbar_style_dock_desc)),
-        NavBarStyle.Underline to (stringResource(Res.string.navbar_style_underline_title) to stringResource(Res.string.navbar_style_underline_desc)),
-        NavBarStyle.Minimal to (stringResource(Res.string.navbar_style_minimal_title) to stringResource(Res.string.navbar_style_minimal_desc)),
+        AppearanceOption(NavBarStyle.IosInteractive, stringResource(Res.string.navbar_style_ios_title), stringResource(Res.string.navbar_style_ios_desc)),
+        AppearanceOption(NavBarStyle.FloatingPill, stringResource(Res.string.navbar_style_pill_title), stringResource(Res.string.navbar_style_pill_desc)),
+        AppearanceOption(NavBarStyle.FullBar, stringResource(Res.string.navbar_style_full_title), stringResource(Res.string.navbar_style_full_desc)),
+        AppearanceOption(NavBarStyle.CompactDock, stringResource(Res.string.navbar_style_dock_title), stringResource(Res.string.navbar_style_dock_desc)),
+        AppearanceOption(NavBarStyle.Underline, stringResource(Res.string.navbar_style_underline_title), stringResource(Res.string.navbar_style_underline_desc)),
+        AppearanceOption(NavBarStyle.Minimal, stringResource(Res.string.navbar_style_minimal_title), stringResource(Res.string.navbar_style_minimal_desc)),
     )
 
     Column(
@@ -916,8 +924,10 @@ fun NavBarStyleRow(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            styles.forEach { (style, meta) ->
-                val (title, sub) = meta
+            styles.forEach { item ->
+                val style = item.value
+                val title = item.title
+                val sub = item.sub
                 val isSelected = selected == style
                 Box(
                     modifier = Modifier
@@ -985,9 +995,9 @@ fun SettingsTileLayoutRow(
     onSelect: (SettingsTileLayout) -> Unit,
 ) {
     val layouts = listOf(
-        SettingsTileLayout.MasonryGrid to (stringResource(Res.string.settings_layout_masonry_title) to stringResource(Res.string.settings_layout_masonry_desc)),
-        SettingsTileLayout.HorizontalCards to (stringResource(Res.string.settings_layout_horizontal_title) to stringResource(Res.string.settings_layout_horizontal_desc)),
-        SettingsTileLayout.SingleColumn to (stringResource(Res.string.settings_layout_single_title) to stringResource(Res.string.settings_layout_single_desc)),
+        AppearanceOption(SettingsTileLayout.MasonryGrid, stringResource(Res.string.settings_layout_masonry_title), stringResource(Res.string.settings_layout_masonry_desc)),
+        AppearanceOption(SettingsTileLayout.HorizontalCards, stringResource(Res.string.settings_layout_horizontal_title), stringResource(Res.string.settings_layout_horizontal_desc)),
+        AppearanceOption(SettingsTileLayout.SingleColumn, stringResource(Res.string.settings_layout_single_title), stringResource(Res.string.settings_layout_single_desc)),
     )
 
     Column(
@@ -1012,9 +1022,10 @@ fun SettingsTileLayoutRow(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            layouts.forEach { (layout, meta) ->
-                val title = meta.first
-                val sub = meta.second
+            layouts.forEach { item ->
+                val layout = item.value
+                val title = item.title
+                val sub = item.sub
                 val isSelected = selected == layout
                 Box(
                     modifier = Modifier
