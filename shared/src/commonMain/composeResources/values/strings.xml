@@ -2980,7 +2980,6 @@
     <string name="server_not_selected">No active server selected</string>
     <string name="server_protected_sub">Secure Protocol • Protected Server</string>
     <string name="server_locked_live">Protected • Live Encryption</string>
-    <string name="wave_chart_layout">Wave Chart Layout</string>
     <string name="color_reset_harmonious">Reset all colors to harmonious theme default</string>
 
 

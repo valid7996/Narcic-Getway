@@ -1979,7 +1979,6 @@
     <string name="server_not_selected">Ningún servidor activo seleccionado</string>
     <string name="server_protected_sub">Protocolo seguro • Servidor protegido</string>
     <string name="server_locked_live">Protegido • Encriptación en vivo</string>
-    <string name="wave_chart_layout">Diseño de gráfico de onda</string>
     <string name="color_reset_harmonious">Restablecer todos los colores por defecto del tema</string>
 
 
