@@ -103,15 +103,11 @@ fun WhiteDnsSheet(
             // Engine picker (CottenDNS, StormDNS, Soar)
             PickerField(
                 label = stringResource(Res.string.whitedns_engine_label),
-                selected = when (engine) {
-                    WhiteDnsProfile.ENGINE_STORMDNS -> "StormDNS"
-                    WhiteDnsProfile.ENGINE_SOAR -> "Soar (Lantern)"
-                    else -> "CottenDNS (CottenMax)"
-                },
+                selected = engine,
                 options = listOf(
-                    "CottenDNS (CottenMax)" to WhiteDnsProfile.ENGINE_COTTENDNS,
-                    "StormDNS" to WhiteDnsProfile.ENGINE_STORMDNS,
-                    "Soar (Lantern)" to WhiteDnsProfile.ENGINE_SOAR,
+                    WhiteDnsProfile.ENGINE_COTTENDNS to "CottenDNS (CottenMax)",
+                    WhiteDnsProfile.ENGINE_STORMDNS to "StormDNS",
+                    WhiteDnsProfile.ENGINE_SOAR to "Soar (Lantern)",
                 ),
                 onSelect = { engine = it },
             )
@@ -199,30 +195,22 @@ fun WhiteDnsSheet(
                     if (engine == WhiteDnsProfile.ENGINE_COTTENDNS) {
                         PickerField(
                             label = stringResource(Res.string.whitedns_tunnel_mode_label),
-                            selected = when (tunnelMode) {
-                                "max" -> stringResource(Res.string.whitedns_mode_max)
-                                "legacy" -> stringResource(Res.string.whitedns_mode_legacy)
-                                else -> stringResource(Res.string.whitedns_mode_normal)
-                            },
+                            selected = tunnelMode,
                             options = listOf(
-                                stringResource(Res.string.whitedns_mode_normal) to "normal",
-                                stringResource(Res.string.whitedns_mode_max) to "max",
-                                stringResource(Res.string.whitedns_mode_legacy) to "legacy",
+                                "normal" to stringResource(Res.string.whitedns_mode_normal),
+                                "max" to stringResource(Res.string.whitedns_mode_max),
+                                "legacy" to stringResource(Res.string.whitedns_mode_legacy),
                             ),
                             onSelect = { tunnelMode = it },
                         )
 
                         PickerField(
                             label = stringResource(Res.string.whitedns_transport_mode_label),
-                            selected = when (transportMode) {
-                                "udp" -> stringResource(Res.string.whitedns_transport_udp)
-                                "tcp" -> stringResource(Res.string.whitedns_transport_tcp)
-                                else -> stringResource(Res.string.whitedns_transport_auto)
-                            },
+                            selected = transportMode,
                             options = listOf(
-                                stringResource(Res.string.whitedns_transport_auto) to "auto",
-                                stringResource(Res.string.whitedns_transport_udp) to "udp",
-                                stringResource(Res.string.whitedns_transport_tcp) to "tcp",
+                                "auto" to stringResource(Res.string.whitedns_transport_auto),
+                                "udp" to stringResource(Res.string.whitedns_transport_udp),
+                                "tcp" to stringResource(Res.string.whitedns_transport_tcp),
                             ),
                             onSelect = { transportMode = it },
                         )

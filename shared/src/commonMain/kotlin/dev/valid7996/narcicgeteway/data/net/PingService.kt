@@ -310,6 +310,56 @@ object PingService {
         return -1L
     }
 
+    private suspend fun dnsTunnelDelay(profile: VpnProfile): Long {
+        val white = profile.whiteDnsSettings()
+        val master = profile.masterDnsSettings()
+        val dnsTunnel = profile.dnsTunnelSettings()
+
+        val domain = when {
+            white != null -> white.domainsList().firstOrNull() ?: white.domain
+            master != null -> master.domains.split(',', '\n', ' ').map { it.trim().trimEnd('.') }.firstOrNull { it.isNotBlank() } ?: master.domains
+            dnsTunnel != null -> dnsTunnel.domain.split(',', '\n', ' ').map { it.trim().trimEnd('.') }.firstOrNull { it.isNotBlank() } ?: dnsTunnel.domain
+            else -> profile.address
+        }.trim().trimEnd('.')
+
+        if (domain.isBlank() || domain == "-") return -1L
+
+        val resolver = when {
+            white != null -> white.resolversList().firstOrNull()
+            master != null -> master.resolvers.split(',', '\n', ' ').map { it.trim() }.firstOrNull { it.isNotBlank() && !it.startsWith("#") }
+            dnsTunnel != null -> dnsTunnel.resolvers.split(',', '\n', ' ').map { it.trim() }.firstOrNull { it.isNotBlank() && !it.startsWith("#") }
+            else -> null
+        }?.trim() ?: "8.8.8.8"
+
+        val txId = ByteArray(2)
+        kotlin.random.Random.nextBytes(txId)
+        val flagsAndCounts = byteArrayOf(1, 0, 0, 1, 0, 0, 0, 0, 0, 0)
+        val qName = buildList {
+            domain.split('.').forEach { part ->
+                if (part.isNotBlank()) {
+                    add(part.length.toByte())
+                    addAll(part.encodeToByteArray().toList())
+                }
+            }
+            add(0.toByte())
+        }.toByteArray()
+        val qTypeAndClass = byteArrayOf(0, 1, 0, 1)
+        val dnsQuery = txId + flagsAndCounts + qName + qTypeAndClass
+
+        val delay = udpProbeMillis(resolver, 53, dnsQuery, 2_500)
+        if (delay > 0) return delay
+
+        if (resolver != "8.8.8.8") {
+            val fallbackDelay = udpProbeMillis("8.8.8.8", 53, dnsQuery, 2_500)
+            if (fallbackDelay > 0) return fallbackDelay
+        }
+
+        val directUdp = udpProbeMillis(domain, 53, dnsQuery, 2_000)
+        if (directUdp > 0) return directUdp
+
+        return -1L
+    }
+
     private suspend fun measureProfile(
         profile: VpnProfile,
         url: String,
@@ -317,6 +367,7 @@ object PingService {
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isAether) return aetherDelay(effective, url)
+        if (effective.isWhiteDns || effective.isDnsTunnel || effective.isMasterDns) return dnsTunnelDelay(effective)
         if (effective.isIkev2) return ikev2Delay(effective)
         if (effective.isOpenConnect) return openConnectDelay(effective)
         if (effective.isOpenVpn) {
@@ -362,6 +413,7 @@ object PingService {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isMhrvRelay) return false
         if (effective.isAether) return false
+        if (effective.isWhiteDns || effective.isDnsTunnel || effective.isMasterDns) return false
         if (effective.isIkev2) return false
         if (effective.isOpenConnect) return false
         if (effective.isOpenVpn) return false

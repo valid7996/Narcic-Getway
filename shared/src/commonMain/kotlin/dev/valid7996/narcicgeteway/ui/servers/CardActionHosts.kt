@@ -142,6 +142,18 @@ internal fun CardActionHosts(
                     },
                 )
             }
+            target.isWhiteDns -> {
+                WhiteDnsSheet(
+                    initial = target.whiteDnsSettings(),
+                    initialName = target.name,
+                    onDismiss = onDismissEdit,
+                    onSave = { name, settings ->
+                        repository.addWhiteDns(settings, name, id = target.id)
+                        toastSaved()
+                        onDismissEdit()
+                    },
+                )
+            }
             target.isMasterDns -> {
                 MasterDnsSheet(
                     initial = target.masterDnsSettings(),

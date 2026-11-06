@@ -41,11 +41,18 @@ class WhiteDnsController(
 
             Log.i("WhiteDNS", "Starting WhiteDNS engine ${profile.engine} on SOCKS5 127.0.0.1:$socksPort")
 
-            val pb = ProcessBuilder(
-                executable.absolutePath,
-                "-config", configFile.absolutePath,
-                "-resolvers", resolversFile.absolutePath,
-            ).apply {
+            val pb = if (isSoar) {
+                ProcessBuilder(
+                    executable.absolutePath,
+                    "-config", configFile.absolutePath,
+                )
+            } else {
+                ProcessBuilder(
+                    executable.absolutePath,
+                    "-config", configFile.absolutePath,
+                    "-resolvers", resolversFile.absolutePath,
+                )
+            }.apply {
                 directory(runtimeDir)
                 redirectErrorStream(true)
             }

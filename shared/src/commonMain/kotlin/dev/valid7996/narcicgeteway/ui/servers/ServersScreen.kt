@@ -1189,7 +1189,7 @@ fun ServersScreen(
                                 val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
                                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                                 val isMhrv = profile.isMhrvRelay
-                                val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn
+                                val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn || profile.isWhiteDns || profile.isDnsTunnel || profile.isMasterDns
                                 val ms = if (isSpecial) {
                                     PingService.realDelay(
                                         profile,
@@ -1201,6 +1201,9 @@ fun ServersScreen(
                                 val addressForGeo = when {
                                     profile.isIkev2 -> profile.ikev2Settings()?.server?.substringBefore(':') ?: profile.address
                                     profile.isOpenConnect -> profile.openConnectSettings()?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':') ?: profile.address
+                                    profile.isWhiteDns -> profile.whiteDnsSettings()?.domainsList()?.firstOrNull() ?: profile.address
+                                    profile.isDnsTunnel -> profile.dnsTunnelSettings()?.domain?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
+                                    profile.isMasterDns -> profile.masterDnsSettings()?.domains?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
                                     else -> profile.address
                                 }
                                 val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(addressForGeo) else null
@@ -1219,6 +1222,9 @@ fun ServersScreen(
                                 val addressForGeo = when {
                                     profile.isIkev2 -> profile.ikev2Settings()?.server?.substringBefore(':') ?: profile.address
                                     profile.isOpenConnect -> profile.openConnectSettings()?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':') ?: profile.address
+                                    profile.isWhiteDns -> profile.whiteDnsSettings()?.domainsList()?.firstOrNull() ?: profile.address
+                                    profile.isDnsTunnel -> profile.dnsTunnelSettings()?.domain?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
+                                    profile.isMasterDns -> profile.masterDnsSettings()?.domains?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
                                     else -> profile.address
                                 }
                                 val cc = if (ms > 0 && !isSpoof && !isSealed) GeoLookup.countryOf(addressForGeo) else null

@@ -242,6 +242,7 @@ private var bentoCard: Boolean = false
 
         if (proxyOnly) {
             if (kind == VpnManager.KIND_XRAY) { startProxyOnly(configJson, socksPort); return }
+            if (kind in StartPlanner.PROXY_ENGINES) { startEngineProxyOnly(configJson, settings); return }
             proxyOnly = false
         }
 
@@ -861,6 +862,8 @@ private var bentoCard: Boolean = false
             VpnManager.KIND_PSIPHON -> startPsiphon(configJson, null, mtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, null, mtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, null, mtu, settings)
+            VpnManager.KIND_WHITEDNS, VpnManager.KIND_COTTENDNS, VpnManager.KIND_STORMDNS, VpnManager.KIND_SOAR ->
+                startWhiteDns(configJson, null, mtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, null, mtu)
             VpnManager.KIND_SSH -> startSsh(configJson, null, mtu, settings)
         }
