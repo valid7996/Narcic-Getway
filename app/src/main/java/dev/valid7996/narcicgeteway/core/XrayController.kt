@@ -24,6 +24,13 @@ object XrayController {
     var lastError: String? = null
         private set
 
+    /**
+     * Shutdowns the app itself asked for (a restart replaces the core, a service stop) must not look
+     * like a spontaneous core death to the VPN service. Each deliberate stopLoop claims one token
+     * here, and the shutdown callback consumes it instead of reporting a failure.
+     */
+    private val deliberateStops = java.util.concurrent.atomic.AtomicInteger(0)
+
     fun runtimeReport(limit: Int = 12): String =
         runCatching { Libv2ray.runtimeReport(limit.toLong()) }.getOrElse { "unavailable: ${it.message}" }
 
@@ -41,6 +48,7 @@ object XrayController {
             override fun onEmitStatus(status: Long, message: String?): Long = 0
             override fun startup(): Long = 0
             override fun shutdown(): Long {
+                if (deliberateStops.getAndUpdate { if (it > 0) it - 1 else 0 } > 0) return 0
                 onCoreShutdown?.invoke()
                 return 0
             }
@@ -65,7 +73,10 @@ object XrayController {
 
     fun start(configJson: String, tunFd: Int = 0): Boolean {
         val c = ready() ?: return false
-        if (c.isRunning) runCatching { c.stopLoop() }
+        if (c.isRunning) {
+            deliberateStops.incrementAndGet()
+            runCatching { c.stopLoop() }
+        }
         lastError = null
         return try {
             c.startLoop(configJson, tunFd)
@@ -78,8 +89,12 @@ object XrayController {
     }
 
     fun stop() {
-        runCatching { if (controller?.isRunning == true) controller?.stopLoop() }
-            .onFailure { Log.e(TAG, "stopLoop failed", it) }
+        runCatching {
+            if (controller?.isRunning == true) {
+                deliberateStops.incrementAndGet()
+                controller?.stopLoop()
+            }
+        }.onFailure { Log.e(TAG, "stopLoop failed", it) }
     }
 
 fun readTrafficDelta(): Pair<Long, Long> =

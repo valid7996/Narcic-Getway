@@ -1333,6 +1333,7 @@ private var bentoCard: Boolean = false
             var waitMs = dev.valid7996.narcicgeteway.domain.power.PowerPolicy.cadence(screenOn = isScreenAwake).tickMs
             var lastPollSec = 0
             var lastNotifySec = 0
+            var engineDeadSince = -1L
             while (isActive) {
                 val waited = waitMs
                 delay(waited)
@@ -1355,7 +1356,26 @@ private var bentoCard: Boolean = false
                         engineAlive(crossInnerKind, outer = false) && engineAlive(crossOuterKind, outer = true)
                     else -> XrayController.isRunning
                 }
-                if (!running) { onTunnelFailed(null); break }
+                if (!running) {
+                    // A single stray reading must not tear a working tunnel down: the core probe
+                    // can briefly report not-running. Declare the engine lost only when it stays
+                    // gone, and log once what the core had last said, for diagnoses.
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    if (engineDeadSince < 0) {
+                        engineDeadSince = now
+                        val coreError = XrayController.lastError ?: FrontCore.lastError
+                        LogBus.append("W/engine $kind did not answer the alive check; confirming" +
+                            (coreError?.let { " (core said: $it)" } ?: ""))
+                        Log.w(TAG, "engine $kind not running; last core error: ${coreError ?: "none"}")
+                    }
+                    if (now - engineDeadSince >= ENGINE_LOST_AFTER_MS) {
+                        LogBus.append("E/engine $kind stayed down; stopping the tunnel")
+                        onTunnelFailed(null)
+                        break
+                    }
+                    continue
+                }
+                engineDeadSince = -1L
                 val activeProfile = container.configRepository.activeProfile()
                 val exp = activeProfile?.expiresAt
                 if (activeProfile?.isLocked == true && exp != null && System.currentTimeMillis() >= exp) {
@@ -2008,6 +2028,9 @@ private var bentoCard: Boolean = false
         private const val MASTERDNS_MAX_WAIT_MS = 300_000L
 
         private const val TOR_BOOTSTRAP_TIMEOUT_MS = 120_000L
+
+        /** How long an unresponsive engine is tolerated before the tunnel is torn down. */
+        private const val ENGINE_LOST_AFTER_MS = 5_000L
 
         private const val SNISPOOF_PORT = LocalPorts.SNI_SPOOF
         private const val MTU = 1500
