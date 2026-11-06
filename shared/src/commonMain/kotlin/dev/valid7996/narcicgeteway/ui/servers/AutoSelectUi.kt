@@ -96,20 +96,22 @@ fun AutoSelectCard(
     val activeColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else (personalization.serverActiveColor ?: NrgGreen)
     val container = if (active) {
         activeColor
+    } else if (!isDark) {
+        // Day theme: cards stay light even when the night profile still pins dark colors.
+        personalization.serverCardColor?.takeIf { it.luminance() > 0.5f } ?: Color(0xFFFFFFFF)
     } else if (personalization.amoledBlack) {
         Color(0xFF000000)
     } else if (isBlossom) {
         Color(0xFF1F0B16)
     } else if (isNoir) {
         Color(0xFF121214)
-    } else if (isDark) {
-        personalization.serverCardColor ?: Color(0xFF1C1C1E)
     } else {
-        personalization.serverCardColor ?: Color(0xFFFFFFFF)
+        personalization.serverCardColor ?: Color(0xFF1C1C1E)
     }
     val onContainer = when {
         active && personalization.serverActiveColor != null -> personalization.serverActiveColor.readableOn()
-        !active && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
+        !active && isDark && personalization.serverCardColor != null -> personalization.serverCardColor.readableOn()
+        !active && !isDark && personalization.serverCardColor?.let { it.luminance() > 0.5f } == true -> Color(0xFF000000)
         isBlossom -> Color(0xFFFFF1F5)
         isNoir -> Color(0xFFF4F4F5)
         active -> MaterialTheme.colorScheme.onPrimaryContainer

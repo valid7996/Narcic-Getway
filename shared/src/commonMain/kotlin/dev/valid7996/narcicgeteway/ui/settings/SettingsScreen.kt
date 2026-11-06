@@ -285,12 +285,15 @@ private fun RootPage(
     var showLogs by remember { mutableStateOf(false) }
     var showRstaSpoof by remember { mutableStateOf(false) }
 
+    val screenDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val personalization = settings.toPersonalization(dark = screenDark)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(settings.customBgGradientBottom?.let { Color(it) } ?: NeonTheme.Base),
+            .background(if (screenDark) NeonTheme.Base else Color(0xFFF4F7FC)),
     ) {
-        NeonAmbientBackground(personalization = settings.toPersonalization())
+        NeonAmbientBackground(personalization = personalization)
 
         Column(
             modifier = Modifier

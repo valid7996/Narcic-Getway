@@ -226,6 +226,7 @@ fun HomeScreen(
     val isNoir = personalization.themeProfileId == "noir"
     val isBlossom = personalization.themeProfileId == "blossom"
     val isModernTheme = true
+    val themeDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val showDashboard = (live || personalization.alwaysShowDashboard) && showConnectionInfo
 
     val baseBg = personalization.bgGradientBottom ?: MaterialTheme.colorScheme.surface
@@ -408,7 +409,7 @@ fun HomeScreen(
                                       Icon(
                                           painter = painterResource(Res.drawable.ic_check),
                                           contentDescription = null,
-                                          tint = Color.White,
+                                          tint = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color.White else Color(0xFF15803D),
                                           modifier = Modifier.size(18.dp),
                                       )
                                   }
@@ -423,7 +424,7 @@ fun HomeScreen(
                                   textAlign = TextAlign.Center,
                                   color = when {
                                       s == ConnectionState.Error -> MaterialTheme.colorScheme.error
-                                      s.isActive || s == ConnectionState.Disconnecting -> Color.White
+                                      (s.isActive || s == ConnectionState.Disconnecting) && themeDark -> Color.White
                                       else -> MaterialTheme.colorScheme.onSurface
                                   },
                               )
@@ -583,6 +584,7 @@ fun HomeScreen(
                     var isRevealed by remember { mutableStateOf(false) }
                     val copiedMsg = stringResource(Res.string.device_code_copied)
                     val keyBorder = (personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFF94A3B8) else Color(0xFFF72585))).copy(alpha = 0.5f)
+                    val keyIsDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
                     val keyBg = personalization.cardBgColor ?: Color(0xE6140A1C)
                     val keyTint = personalization.connectColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
 
@@ -614,7 +616,7 @@ fun HomeScreen(
                                 Icon(
                                     painter = painterResource(if (isRevealed) Res.drawable.ic_visibility else Res.drawable.ic_visibility_off),
                                     contentDescription = null,
-                                    tint = Color(0xFF9CA3AF),
+                                    tint = if (keyIsDark) Color(0xFF9CA3AF) else Color(0xFF64748B),
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -626,7 +628,7 @@ fun HomeScreen(
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 13.sp,
                                 ),
-                                color = Color(0xFF9CA3AF),
+                                color = if (keyIsDark) Color(0xFF9CA3AF) else Color(0xFF475569),
                             )
 
                             // Right in RTL: Key icon + "کلید دستگاه من"
@@ -640,7 +642,7 @@ fun HomeScreen(
                                         fontWeight = FontWeight.SemiBold,
                                         fontSize = 13.5.sp,
                                     ),
-                                    color = Color.White,
+                                    color = if (keyIsDark) Color.White else Color(0xFF0F172A),
                                 )
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_key),
@@ -753,7 +755,11 @@ private fun DecorativeBackdrop(
 ) {
     val budget = LocalMotionBudget.current
     val rotation = 0f
-    val splash = if (amoledBlack) {
+    val isDarkBg = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val splash = if (!isDarkBg) {
+        // Day theme: soft daylight blobs behind the hero instead of night-black discs.
+        listOf(Color(0xFFD7E3F4), Color(0xFFE5DBEE), Color(0xFFCBEDFB))
+    } else if (amoledBlack) {
         val accent = when {
             dynamicColor -> MaterialTheme.colorScheme.primary
             isBlossom -> Color(0xFFF472B6)
@@ -971,6 +977,7 @@ private fun BrandHeader(
     var lastTap by remember { mutableLongStateOf(0L) }
     val haptics = LocalHapticFeedback.current
     val isNoir = personalization.themeProfileId == "noir"
+    val headerDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val brandAccent = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
 
     Row(
@@ -1049,7 +1056,7 @@ private fun BrandHeader(
                             fontWeight = FontWeight.Bold,
                             fontSize = 17.sp,
                         ),
-                        color = Color.White,
+                        color = if (headerDark) Color.White else Color(0xFF0F172A),
                     )
                     Text(
                         text = "Gateway",
@@ -1178,8 +1185,9 @@ private fun StatusChip(
         else -> stringResource(Res.string.status_disconnected_label)
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val chipBg = personalization.cardBgColor ?: Color(0xE6121118)
-    val chipBorder = (personalization.serverBorderColor ?: Color(0x35FFFFFF)).copy(alpha = 0.35f)
+    val chipBorder = (personalization.serverBorderColor ?: if (isDark) Color(0x35FFFFFF) else Color(0x3394A3B8)).copy(alpha = 0.35f)
 
     Box(
         modifier = Modifier
@@ -1204,7 +1212,7 @@ private fun StatusChip(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 12.5.sp,
                 ),
-                color = Color.White,
+                color = if (isDark) Color.White else Color(0xFF0F172A),
             )
         }
     }
@@ -1553,7 +1561,19 @@ private fun ConnectingBackdrop(
         )
     }
 
-    val stops = if (amoledBlack) {
+    val isDarkBg = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val stops = if (!isDarkBg) {
+        // Day theme: the connect-stage backdrop becomes a soft daylight glow, not a night void.
+        if (state == ConnectionState.Connected) {
+            listOf(
+                Color(0x00EAF2FB),
+                Color(0x336D9EE8),
+                Color(0x558ED4F0),
+            )
+        } else {
+            listOf(Color(0x00EAF2FB), Color(0x22DBE8F6))
+        }
+    } else if (amoledBlack) {
         if (state == ConnectionState.Connected) {
             val primary = when {
                 dynamicColor -> MaterialTheme.colorScheme.primary
@@ -1855,7 +1875,7 @@ private fun SessionStatsTilesRow(
                     Text(
                         text = stringResource(Res.string.connection_duration_label),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                        color = Color(0xFF9CA3AF),
+                        color = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color(0xFF9CA3AF) else Color(0xFF64748B),
                     )
                 }
 
@@ -1904,7 +1924,7 @@ private fun SessionStatsTilesRow(
                     Text(
                         text = stringResource(Res.string.traffic_consumed_label),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                        color = Color(0xFF9CA3AF),
+                        color = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color(0xFF9CA3AF) else Color(0xFF64748B),
                     )
                 }
 
@@ -2028,7 +2048,7 @@ private fun ServerConnectionTile(
                         Icon(
                             painter = painterResource(Res.drawable.ic_sync),
                             contentDescription = "Refresh",
-                            tint = Color.White,
+                            tint = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color.White else Color(0xFF0F172A),
                             modifier = Modifier.size(16.dp),
                         )
                     }
@@ -2056,6 +2076,10 @@ private fun TrafficStylesDisplay(
     val cardBg = personalization.dashboardBgColor ?: Color(0xE612081C)
     val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
     val textColor = personalization.dashboardTextColor ?: Color.White
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    // Translucent pill ink: white on the night glass, dark ink once the card turns white.
+    val pillValueColor = if (isDark) Color.White else Color(0xFF0F172A)
+    val pillLabelColor = if (isDark) Color(0xFFD1D5DB) else Color(0xFF475569)
 
     when (style) {
         TrafficCardStyle.Graph -> {
@@ -2238,8 +2262,8 @@ private fun TrafficStylesDisplay(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("↑", fontWeight = FontWeight.Bold, color = personalization.connectColor ?: Color(0xFFF72585), fontSize = 18.sp)
                         Column {
-                            Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
-                            Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
+                            Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = pillLabelColor)
+                            Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = pillValueColor, fontSize = 13.5.sp)
                         }
                     }
                 }
@@ -2255,10 +2279,10 @@ private fun TrafficStylesDisplay(
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("↓", fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4), fontSize = 18.sp)
+                        Text("↓", fontWeight = FontWeight.Bold, color = if (isDark) Color(0xFF06B6D4) else Color(0xFF0E7490), fontSize = 18.sp)
                         Column {
-                            Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFFD1D5DB))
-                            Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.5.sp)
+                            Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = pillLabelColor)
+                            Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = pillValueColor, fontSize = 13.5.sp)
                         }
                     }
                 }
@@ -2482,7 +2506,7 @@ private fun CyberDualGauges(
                     Text("↑", fontWeight = FontWeight.Bold, color = upColor, fontSize = 16.sp)
                 }
                 Column {
-                    Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_upload_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color(0xFF9CA3AF) else Color(0xFF64748B))
                     Text("$upVal $upUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                 }
             }
@@ -2514,7 +2538,7 @@ private fun CyberDualGauges(
                     Text("↓", fontWeight = FontWeight.Bold, color = downColor, fontSize = 16.sp)
                 }
                 Column {
-                    Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = Color(0xFF9CA3AF))
+                    Text(stringResource(Res.string.traffic_download_label), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color(0xFF9CA3AF) else Color(0xFF64748B))
                     Text("$downVal $downUnit", fontWeight = FontWeight.Bold, color = textColor, fontSize = 14.sp)
                 }
             }
@@ -2672,7 +2696,7 @@ private fun ActiveConfigDetailTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val cardBg = personalization.dashboardBgColor ?: Color(0xE6140A1C)
     val cardBorder = personalization.dashboardBorderColor ?: Color(0x60F72585)
     val textColor = personalization.dashboardTextColor ?: Color.White
@@ -2758,7 +2782,7 @@ private fun ActiveConfigDetailTile(
                     Text(
                         text = if (activeLocked) stringResource(Res.string.server_protected_sub) else (activeConfigDetail?.takeIf { it.isNotBlank() } ?: "VLESS • TCP • TLS"),
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                        color = Color(0xFF9CA3AF),
+                        color = if (isDark) Color(0xFF9CA3AF) else Color(0xFF64748B),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -2769,14 +2793,14 @@ private fun ActiveConfigDetailTile(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0x25FFFFFF))
-                    .border(0.8.dp, Color(0x40FFFFFF), RoundedCornerShape(10.dp))
+                    .background(if (isDark) Color(0x25FFFFFF) else Color(0x140F172A))
+                    .border(0.8.dp, if (isDark) Color(0x40FFFFFF) else Color(0x3394A3B8), RoundedCornerShape(10.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Text(
                     text = stringResource(Res.string.change_server),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.5.sp),
-                    color = Color.White,
+                    color = if (isDark) Color.White else Color(0xFF0F172A),
                 )
             }
         }
@@ -2804,6 +2828,7 @@ private fun MergedDashboardCard(
     val dashBg = personalization.dashboardBgColor ?: personalization.cardBgColor ?: (if (isNoir) Color(0xE616161A) else Color(0xE612081C))
     val dashWave = personalization.cardWaterColor ?: personalization.serverBorderColor ?: (if (isNoir) Color(0xFF64748B) else Color(0xFFF72585))
     val upColor = personalization.connectColor ?: (if (isNoir) Color(0xFFE2E8F0) else Color(0xFFF72585))
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     Box(
         modifier = modifier
@@ -2848,7 +2873,7 @@ private fun MergedDashboardCard(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.5.sp,
                             ),
-                            color = Color.White,
+                            color = if (isDark) Color.White else Color(0xFF0F172A),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -2858,7 +2883,7 @@ private fun MergedDashboardCard(
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 11.5.sp,
                             ),
-                            color = Color(0xFF9CA3AF),
+                            color = if (isDark) Color(0xFF9CA3AF) else Color(0xFF64748B),
                             maxLines = 1,
                         )
                     }
@@ -2883,7 +2908,7 @@ private fun MergedDashboardCard(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp,
                             ),
-                            color = Color(0xFFFF80BF),
+                            color = if (isDark) Color(0xFFFF80BF) else Color(0xFFBE185D),
                         )
                     }
 
@@ -2899,7 +2924,7 @@ private fun MergedDashboardCard(
                             Icon(
                                 painter = painterResource(Res.drawable.ic_map),
                                 contentDescription = "Map",
-                                tint = Color.White,
+                                tint = if (isDark) Color.White else Color(0xFF0F172A),
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -2919,7 +2944,7 @@ private fun MergedDashboardCard(
                             Icon(
                                 painter = painterResource(Res.drawable.ic_sync),
                                 contentDescription = "Refresh",
-                                tint = Color.White,
+                                tint = if (isDark) Color.White else Color(0xFF0F172A),
                                 modifier = Modifier.size(16.dp),
                             )
                         }
@@ -2962,13 +2987,13 @@ private fun MergedDashboardCard(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.5.sp,
                                 ),
-                                color = Color.White,
+                                color = if (isDark) Color.White else Color(0xFF0F172A),
                             )
                         }
                         Text(
                             text = stringResource(Res.string.traffic_upload_label),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = Color(0xFF9CA3AF),
+                            color = if (isDark) Color(0xFF9CA3AF) else Color(0xFF64748B),
                         )
                     }
                 }
@@ -2978,7 +3003,7 @@ private fun MergedDashboardCard(
                     modifier = Modifier
                         .height(32.dp)
                         .width(1.dp)
-                        .background(Color(0x25FFFFFF)),
+                        .background(if (isDark) Color(0x25FFFFFF) else Color(0x2664748B)),
                 )
 
                 // Download side: ↓ Speed + دانلود + Cyan mini-bars
@@ -3002,13 +3027,13 @@ private fun MergedDashboardCard(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.5.sp,
                                 ),
-                                color = Color.White,
+                                color = if (isDark) Color.White else Color(0xFF0F172A),
                             )
                         }
                         Text(
                             text = stringResource(Res.string.traffic_download_label),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = Color(0xFF9CA3AF),
+                            color = if (isDark) Color(0xFF9CA3AF) else Color(0xFF64748B),
                         )
                     }
                     MiniSoundBars(color = Color(0xFF06B6D4))

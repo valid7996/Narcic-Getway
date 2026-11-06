@@ -638,8 +638,8 @@ fun ServersScreen(
         )
     }
 
-    Box(modifier.fillMaxSize().background(NeonTheme.Base)) {
-        NeonAmbientBackground()
+    Box(modifier.fillMaxSize().background(if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) NeonTheme.Base else Color(0xFFF4F7FC))) {
+        NeonAmbientBackground(personalization = personalization)
         Column(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding())) {
             Spacer(Modifier.height(8.dp))
             Row(

@@ -50,6 +50,15 @@ fun MainScaffold(
     val platform = dev.valid7996.narcicgeteway.ui.platform.LocalPlatform.current
     var current by rememberSaveable { mutableStateOf(TopDestination.Home) }
 
+    // The same dark flag the theme is built with: the personalization palette must follow it,
+    // or the night profiles stay near-black over the light scheme and text becomes unreadable.
+    val themeDark = when (settings.themeMode) {
+        dev.valid7996.narcicgeteway.domain.model.ThemeMode.Dark -> true
+        dev.valid7996.narcicgeteway.domain.model.ThemeMode.Light -> false
+        dev.valid7996.narcicgeteway.domain.model.ThemeMode.System -> androidx.compose.foundation.isSystemInDarkTheme()
+    }
+    val personalization = settings.toPersonalization(dark = themeDark)
+
     var spaceUnlocked by rememberSaveable { mutableStateOf(false) }
 
     val connectionVm: ConnectionViewModel = viewModel { ConnectionViewModel() }
@@ -175,7 +184,7 @@ fun MainScaffold(
                 style = settings.navBarStyle,
                 current = current,
                 onSelect = { current = it },
-                personalization = settings.toPersonalization(),
+                personalization = personalization,
             )
         },
     ) { innerPadding ->
@@ -231,7 +240,7 @@ fun MainScaffold(
                     ipApiUrl = settings.ipApiUrl,
                     delayTestUrl = settings.delayTestUrl,
 
-                    personalization = settings.toPersonalization(),
+                    personalization = personalization,
                     connectStyle = settings.connectButtonStyle,
                     repository = configRepository,
                     realPingConcurrency = settings.realPingConcurrency,
@@ -261,7 +270,7 @@ fun MainScaffold(
                     autoTestAfterUpdate = settings.autoTestAfterUpdate,
                     autoRemoveInvalidAfterTest = settings.autoRemoveInvalidAfterTest,
                     autoSortAfterTest = settings.autoSortAfterTest,
-                    personalization = settings.toPersonalization(),
+                    personalization = personalization,
                     settings = settings,
                     onUpdateSettings = onUpdateSettings,
                     onServerActivated = {

@@ -126,7 +126,7 @@ internal fun ServerCard(
     modifier: Modifier = Modifier,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val isSelectedCard = selecting && isSelected
     val platform = dev.valid7996.narcicgeteway.ui.platform.LocalPlatform.current
     val scope = rememberCoroutineScope()

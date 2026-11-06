@@ -1245,27 +1245,28 @@ private fun GroupTab(
     val tabShape = RoundedCornerShape(8.dp)
     val background = if (selected) {
         if (personalization.dynamicColor || personalization.serverActiveColor != null) activeColor else Color(0xFF007AFF)
+    } else if (!isDark) {
+        // Day theme: unselected tabs stay light even when the night profile pins dark chrome.
+        Color(0xFFE5E5EA)
     } else if (personalization.amoledBlack) {
         Color(0xFF000000)
     } else if (isBlossom) {
         Color(0xFF230D18)
     } else if (isNoir) {
         Color(0xFF141416)
-    } else if (isDark) {
-        Color(0xFF1C1C1E)
     } else {
-        Color(0xFFE5E5EA)
+        Color(0xFF1C1C1E)
     }
     val content = if (selected) {
         Color.White
+    } else if (!isDark) {
+        Color(0xFF3A3A3C)
     } else if (isBlossom) {
         Color(0xFFFFD1DC)
     } else if (isNoir) {
         Color(0xFFE4E4E7)
-    } else if (isDark) {
-        Color(0xFF8E8E93)
     } else {
-        Color(0xFF6E6E73)
+        Color(0xFF8E8E93)
     }
     val borderColor = if (selected) Color.Transparent else (if (isDark) Color(0xFF2C2C2E) else Color(0xFFD1D1D6))
 
