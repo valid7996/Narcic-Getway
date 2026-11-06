@@ -2549,16 +2549,17 @@ internal fun AddServerSheet(
                     gradientEnd = Color(0xFF0B1B2C).copy(alpha = 0.75f),
                     onClick = onMasterDns,
                 )
-                GlassOptionCard(
-                    title = stringResource(Res.string.add_whitedns_server),
-                    subtitle = stringResource(Res.string.add_whitedns_server_sub),
-                    icon = Res.drawable.ic_public,
-                    accentColor = Color(0xFF10B981),
-                    iconTint = Color(0xFF34D399),
-                    gradientStart = Color(0xFF0F2F24).copy(alpha = 0.90f),
-                    gradientEnd = Color(0xFF091F18).copy(alpha = 0.75f),
-                    onClick = onWhiteDns,
-                )
+                // WhiteDNS option hidden until stable
+                // GlassOptionCard(
+                //     title = stringResource(Res.string.add_whitedns_server),
+                //     subtitle = stringResource(Res.string.add_whitedns_server_sub),
+                //     icon = Res.drawable.ic_public,
+                //     accentColor = Color(0xFF10B981),
+                //     iconTint = Color(0xFF34D399),
+                //     gradientStart = Color(0xFF0F2F24).copy(alpha = 0.90f),
+                //     gradientEnd = Color(0xFF091F18).copy(alpha = 0.75f),
+                //     onClick = onWhiteDns,
+                // )
                 GlassOptionCard(
                     title = stringResource(Res.string.mhrv_add_title),
                     subtitle = stringResource(Res.string.mhrv_add_title_sub),
