@@ -195,11 +195,10 @@ fun WhiteDnsSheet(
                     if (engine == WhiteDnsProfile.ENGINE_COTTENDNS) {
                         PickerField(
                             label = stringResource(Res.string.whitedns_tunnel_mode_label),
-                            selected = tunnelMode,
+                            selected = if (tunnelMode == "cottenmax" || tunnelMode == "max") "cottenmax" else "legacy",
                             options = listOf(
-                                "normal" to stringResource(Res.string.whitedns_mode_normal),
-                                "max" to stringResource(Res.string.whitedns_mode_max),
-                                "legacy" to stringResource(Res.string.whitedns_mode_legacy),
+                                "legacy" to stringResource(Res.string.whitedns_mode_normal),
+                                "cottenmax" to stringResource(Res.string.whitedns_mode_max),
                             ),
                             onSelect = { tunnelMode = it },
                         )

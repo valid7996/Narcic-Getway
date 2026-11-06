@@ -767,7 +767,7 @@ data class VpnProfile(
             protocol = "WHITEDNS",
             address = settings.domain,
             port = settings.listenPort,
-            transportLabel = when (settings.engine) {
+            transportLabel = when (settings.normalizedEngine()) {
                 WhiteDnsProfile.ENGINE_COTTENDNS -> "CottenDNS"
                 WhiteDnsProfile.ENGINE_STORMDNS -> "StormDNS"
                 WhiteDnsProfile.ENGINE_SOAR -> "Soar"

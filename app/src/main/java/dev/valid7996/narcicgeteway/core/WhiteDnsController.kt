@@ -21,6 +21,8 @@ class WhiteDnsController(
     @Volatile private var process: Process? = null
     @Volatile private var stopped = false
     @Volatile private var drainThread: Thread? = null
+    @Volatile var failureReason: String? = null
+        private set
 
     val isRunning: Boolean
         get() = process?.isAlive == true && !stopped
@@ -32,27 +34,28 @@ class WhiteDnsController(
             val runtimeDir = File(context.filesDir, "whitedns").apply { mkdirs() }
             val executable = prepareExecutable(profile.engine)
 
-            val isSoar = profile.engine.equals(WhiteDnsProfile.ENGINE_SOAR, ignoreCase = true)
-            val configFile = File(runtimeDir, if (isSoar) "config_soar.json" else "config_${profile.engine}.toml")
-            configFile.writeText(profile.toConfigFile(port = socksPort))
+            val isSoar = profile.isSoar
+            failureReason = null
 
-            val resolversFile = File(runtimeDir, "resolvers_${profile.engine}.txt")
+            val sysDns = runCatching {
+                val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+                val net = cm.activeNetwork ?: return@runCatching emptyList<String>()
+                cm.getLinkProperties(net)?.dnsServers.orEmpty().mapNotNull { it.hostAddress }.distinct().take(8)
+            }.getOrDefault(emptyList())
+
+            val configFile = File(runtimeDir, if (isSoar) "config_soar.json" else "config_${profile.normalizedEngine()}.toml")
+            configFile.writeText(profile.toConfigFile(port = socksPort, systemResolvers = sysDns))
+
+            val resolversFile = File(runtimeDir, "resolvers_${profile.normalizedEngine()}.txt")
             prepareResolvers(resolversFile)
 
-            Log.i("WhiteDNS", "Starting WhiteDNS engine ${profile.engine} on SOCKS5 127.0.0.1:$socksPort")
+            Log.i("WhiteDNS", "Starting WhiteDNS engine ${profile.normalizedEngine()} on SOCKS5 127.0.0.1:$socksPort")
 
-            val pb = if (isSoar) {
-                ProcessBuilder(
-                    executable.absolutePath,
-                    "-config", configFile.absolutePath,
-                )
-            } else {
-                ProcessBuilder(
-                    executable.absolutePath,
-                    "-config", configFile.absolutePath,
-                    "-resolvers", resolversFile.absolutePath,
-                )
-            }.apply {
+            val pb = ProcessBuilder(
+                executable.absolutePath,
+                "-config", configFile.absolutePath,
+                "-resolvers", resolversFile.absolutePath,
+            ).apply {
                 directory(runtimeDir)
                 redirectErrorStream(true)
             }
@@ -67,6 +70,15 @@ class WhiteDnsController(
                             val line = br.readLine() ?: break
                             val trimmed = line.trim()
                             if (trimmed.isNotBlank()) {
+                                val norm = trimmed.lowercase()
+                                if (norm.contains("no valid connections found after mtu testing") ||
+                                    norm.contains("mtu tests failed") ||
+                                    trimmed.startsWith("SOAR_ERROR:") ||
+                                    norm.contains("no usable resolvers") ||
+                                    norm.contains("invalid tunnel_mode") ||
+                                    norm.contains("parse toml failed")) {
+                                    failureReason = trimmed
+                                }
                                 if (trimmed.contains("error", ignoreCase = true) ||
                                     trimmed.contains("failed", ignoreCase = true) ||
                                     trimmed.contains("fatal", ignoreCase = true) ||
@@ -96,6 +108,11 @@ class WhiteDnsController(
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             if (stopped) return false
+            val reason = failureReason
+            if (reason != null) {
+                Log.e("WhiteDNS", "WhiteDNS startup failed early: $reason")
+                return false
+            }
             val p = process
             if (p != null && !p.isAlive) {
                 val code = runCatching { p.exitValue() }.getOrNull()
@@ -134,9 +151,10 @@ class WhiteDnsController(
     }
 
     private fun prepareExecutable(engine: String): File {
-        val libraryName = when (engine.trim().lowercase()) {
-            WhiteDnsProfile.ENGINE_STORMDNS -> "libstormdns_client.so"
-            WhiteDnsProfile.ENGINE_SOAR -> "libsoar_client.so"
+        val normalized = engine.trim().lowercase()
+        val libraryName = when {
+            normalized.contains("storm") -> "libstormdns_client.so"
+            normalized.contains("soar") -> "libsoar_client.so"
             else -> "libcottendns_client.so"
         }
 
@@ -176,19 +194,33 @@ class WhiteDnsController(
     }
 
     private fun prepareResolvers(targetFile: File) {
+        val isSoar = profile.isSoar
         val custom = profile.resolversList()
+        if (isSoar) {
+            // Soar rejects list > 128 resolvers with: "runtime list is too large; scan it first and use the working resolvers"
+            val soarResolvers = if (custom.isNotEmpty()) {
+                custom.take(128)
+            } else {
+                listOf(
+                    "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4",
+                    "9.9.9.9", "149.112.112.112", "208.67.222.222", "208.67.220.220",
+                )
+            }
+            targetFile.writeText(soarResolvers.joinToString("\n"))
+            return
+        }
+
         if (!profile.useBundledResolvers && custom.isNotEmpty()) {
             targetFile.writeText(custom.joinToString("\n"))
             return
         }
 
-        // Use bundled 4,785 working resolvers
+        // Use bundled 4,785 working resolvers for StormDNS / CottenDNS
         runCatching {
             context.assets.open("whitedns_resolvers.txt").use { input ->
                 FileOutputStream(targetFile).use { output -> input.copyTo(output) }
             }
         }.onFailure {
-            // Fallback to high reputation public resolvers
             targetFile.writeText(
                 listOf(
                     "8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1",

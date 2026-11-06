@@ -631,8 +631,9 @@ private var bentoCard: Boolean = false
             stopEverything(); return
         }
 
-        if (!controller.awaitReady(25_000L)) {
-            VpnManager.onError("WhiteDNS SOCKS listener failed to open")
+        if (!controller.awaitReady(60_000L)) {
+            val err = controller.failureReason ?: "WhiteDNS SOCKS listener failed to open"
+            VpnManager.onError(err)
             stopEverything(); return
         }
 

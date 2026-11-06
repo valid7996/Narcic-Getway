@@ -36,6 +36,20 @@ data class WhiteDnsProfile(
     val logLevel: String = "INFO",
     val link: String? = null,
 ) {
+    fun normalizedEngine(): String {
+        val v = engine.trim().lowercase()
+        return when {
+            v.contains("soar") -> ENGINE_SOAR
+            v.contains("storm") -> ENGINE_STORMDNS
+            v.contains("master") -> ENGINE_MASTERDNS
+            else -> ENGINE_COTTENDNS
+        }
+    }
+
+    val isSoar: Boolean get() = normalizedEngine() == ENGINE_SOAR
+    val isStormDns: Boolean get() = normalizedEngine() == ENGINE_STORMDNS
+    val isCottenDns: Boolean get() = normalizedEngine() == ENGINE_COTTENDNS
+
     val isValid: Boolean
         get() = domain.isNotBlank() && encryptionKey.isNotBlank()
 
@@ -59,7 +73,7 @@ data class WhiteDnsProfile(
         appendLine("PROTOCOL_TYPE = \"SOCKS5\"")
 
         // CottenDNS specific settings (StormDNS rejects these keys)
-        if (engine.equals(ENGINE_COTTENDNS, ignoreCase = true)) {
+        if (isCottenDns) {
             val isCompatibility = (configPreset == "master-storm")
             val preset = when (configPreset) {
                 "speed", "survival", "tcp-survival" -> configPreset
@@ -68,7 +82,8 @@ data class WhiteDnsProfile(
             appendLine("CONFIG_PRESET = \"${if (isCompatibility) "default" else preset}\"")
             appendLine("LEGACY_SESSION_ID = $isCompatibility")
             if (!isCompatibility) {
-                appendLine("TUNNEL_MODE = \"${escape(tunnelMode)}\"")
+                val normTunnelMode = if (tunnelMode.equals("max", ignoreCase = true) || tunnelMode.equals("cottenmax", ignoreCase = true)) "cottenmax" else "legacy"
+                appendLine("TUNNEL_MODE = \"$normTunnelMode\"")
             }
             appendLine("TERMINAL_UI = \"plain\"")
             appendLine("RESOLVER_IP_MODE = \"auto\"")
@@ -150,16 +165,16 @@ data class WhiteDnsProfile(
         appendLine("UPLOAD_COMPRESSION_TYPE = $compression")
         appendLine("DOWNLOAD_COMPRESSION_TYPE = $compression")
         appendLine("BASE_ENCODE_DATA = false")
-        appendLine("MIN_UPLOAD_MTU = 100")
-        appendLine("MIN_DOWNLOAD_MTU = 100")
-        appendLine("MAX_UPLOAD_MTU = 220")
-        appendLine("MAX_DOWNLOAD_MTU = 1200")
-        appendLine("MTU_TEST_RETRIES_RESOLVERS = 2")
-        appendLine("MTU_TEST_TIMEOUT_RESOLVERS = 3")
-        appendLine("MTU_TEST_PARALLELISM_RESOLVERS = 16")
-        appendLine("MTU_TEST_RETRIES_LOGS = 2")
-        appendLine("MTU_TEST_TIMEOUT_LOGS = 3")
-        appendLine("MTU_TEST_PARALLELISM_LOGS = 16")
+        appendLine("MIN_UPLOAD_MTU = 40")
+        appendLine("MIN_DOWNLOAD_MTU = 300")
+        appendLine("MAX_UPLOAD_MTU = 140")
+        appendLine("MAX_DOWNLOAD_MTU = 3000")
+        appendLine("MTU_TEST_RETRIES_RESOLVERS = 3")
+        appendLine("MTU_TEST_TIMEOUT_RESOLVERS = 2.5")
+        appendLine("MTU_TEST_PARALLELISM_RESOLVERS = 64")
+        appendLine("MTU_TEST_RETRIES_LOGS = 5")
+        appendLine("MTU_TEST_TIMEOUT_LOGS = 2.5")
+        appendLine("MTU_TEST_PARALLELISM_LOGS = 32")
         appendLine("RX_TX_WORKERS = 4")
         appendLine("TUNNEL_PROCESS_WORKERS = 4")
         appendLine("TUNNEL_PACKET_TIMEOUT_SECONDS = 30")
@@ -191,16 +206,28 @@ data class WhiteDnsProfile(
         appendLine("LOG_DIR = \"logs\"")
     }
 
-    fun toSoarJson(listenIp: String = "127.0.0.1", port: Int = listenPort): String {
+    fun toSoarJson(
+        listenIp: String = "127.0.0.1",
+        port: Int = listenPort,
+        systemResolvers: List<String> = emptyList(),
+    ): String {
         val zone = domain.split(',', '\n', ' ')
             .map { it.trim().trimEnd('.').lowercase() }
             .firstOrNull { it.isNotBlank() } ?: domain.trim().trimEnd('.').lowercase()
         val pubKey = encryptionKey.trim()
 
+        val sysResolvers = if (systemResolvers.isNotEmpty()) {
+            systemResolvers.distinct().take(8)
+        } else {
+            listOf("8.8.8.8", "1.1.1.1", "9.9.9.9")
+        }
+
         val root = buildJsonObject {
             put("zone", zone)
             put("server_public_key", pubKey)
-            put("system_resolvers", buildJsonArray { })
+            put("system_resolvers", buildJsonArray {
+                sysResolvers.forEach { add(JsonPrimitive(it)) }
+            })
             put("listen", "$listenIp:$port")
             put("username", "")
             put("password", "")
@@ -227,9 +254,13 @@ data class WhiteDnsProfile(
         return root.toString()
     }
 
-    fun toConfigFile(listenIp: String = "127.0.0.1", port: Int = listenPort): String {
-        return if (engine.equals(ENGINE_SOAR, ignoreCase = true)) {
-            toSoarJson(listenIp, port)
+    fun toConfigFile(
+        listenIp: String = "127.0.0.1",
+        port: Int = listenPort,
+        systemResolvers: List<String> = emptyList(),
+    ): String {
+        return if (isSoar) {
+            toSoarJson(listenIp, port, systemResolvers)
         } else {
             toToml(listenIp, port)
         }
@@ -287,14 +318,34 @@ object WhiteDnsLink {
             val serverObj = profileObj["server"]?.jsonObject
             val domain = serverObj?.get("domain")?.jsonPrimitive?.content
                 ?: profileObj["domain"]?.jsonPrimitive?.content.orEmpty()
-            val encKey = serverObj?.get("encryption_key")?.jsonPrimitive?.content
-                ?: serverObj?.get("public_key")?.jsonPrimitive?.content
+            val encKey = serverObj?.get("public_key")?.jsonPrimitive?.content
+                ?: serverObj?.get("encryption_key")?.jsonPrimitive?.content
                 ?: profileObj["encryption_key"]?.jsonPrimitive?.content.orEmpty()
             val encMethod = serverObj?.get("encryption_method")?.jsonPrimitive?.intOrNull
                 ?: profileObj["encryption_method"]?.jsonPrimitive?.intOrNull ?: 1
 
+            val isSoarDetected = scheme == "soar" ||
+                profileObj.containsKey("soarSettings") ||
+                serverObj?.containsKey("public_key") == true ||
+                domain.contains(".soar.", ignoreCase = true)
+
+            val detectedEngine = when {
+                isSoarDetected -> WhiteDnsProfile.ENGINE_SOAR
+                scheme == "cottendns" || profileObj.containsKey("cottenSettings") -> WhiteDnsProfile.ENGINE_COTTENDNS
+                scheme == "stormdns" || scheme == "masterdns" -> WhiteDnsProfile.ENGINE_STORMDNS
+                profileObj.containsKey("engine") -> {
+                    val engStr = profileObj["engine"]?.jsonPrimitive?.content.orEmpty().lowercase()
+                    when {
+                        engStr.contains("soar") -> WhiteDnsProfile.ENGINE_SOAR
+                        engStr.contains("storm") -> WhiteDnsProfile.ENGINE_STORMDNS
+                        else -> WhiteDnsProfile.ENGINE_COTTENDNS
+                    }
+                }
+                else -> defaultEngine
+            }
+
             val cottenObj = profileObj["cottenSettings"]?.jsonObject
-            val tunnelMode = cottenObj?.get("tunnelMode")?.jsonPrimitive?.content ?: "normal"
+            val tunnelMode = cottenObj?.get("tunnelMode")?.jsonPrimitive?.content ?: "legacy"
             val transportMode = cottenObj?.get("transportMode")?.jsonPrimitive?.content ?: "auto"
 
             val resolversArray = profileObj["resolvers"]?.jsonArray
@@ -303,12 +354,12 @@ object WhiteDnsLink {
             val profile = WhiteDnsProfile(
                 domain = domain,
                 encryptionKey = encKey,
-                encryptionMethod = encMethod,
-                engine = defaultEngine,
-                tunnelMode = tunnelMode,
+                encryptionMethod = if (detectedEngine == WhiteDnsProfile.ENGINE_SOAR) 0 else encMethod,
+                engine = detectedEngine,
+                tunnelMode = if (tunnelMode == "max" || tunnelMode == "cottenmax") "cottenmax" else "legacy",
                 transportMode = transportMode,
                 resolvers = resolversStr,
-                useBundledResolvers = resolversStr.isBlank(),
+                useBundledResolvers = resolversStr.isBlank() && detectedEngine != WhiteDnsProfile.ENGINE_SOAR,
                 link = trimmed,
             )
             return name to profile

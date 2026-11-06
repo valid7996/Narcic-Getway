@@ -136,11 +136,11 @@ class StartPlanner(context: Context) {
         profile.psiphonSettings() != null -> VpnManager.KIND_PSIPHON
         profile.dnsTunnelSettings() != null -> VpnManager.KIND_DNS_TUNNEL
         profile.masterDnsSettings() != null -> VpnManager.KIND_MASTERDNS
-        profile.whiteDnsSettings() != null -> when (profile.whiteDnsSettings()?.engine) {
+        profile.whiteDnsSettings() != null -> when (profile.whiteDnsSettings()?.normalizedEngine()) {
             dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.ENGINE_COTTENDNS -> VpnManager.KIND_COTTENDNS
             dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.ENGINE_STORMDNS -> VpnManager.KIND_STORMDNS
             dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.ENGINE_SOAR -> VpnManager.KIND_SOAR
-            else -> VpnManager.KIND_WHITEDNS
+            else -> VpnManager.KIND_COTTENDNS
         }
         profile.mhrvRelaySettings() != null -> VpnManager.KIND_MHRV
         profile.openConnectSettings() != null -> VpnManager.KIND_OPENCONNECT
