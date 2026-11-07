@@ -149,7 +149,7 @@ object PingService {
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
         val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp) || it.isDnsBasedTunnel) || it.isAether }
-        val aetherTargets = if (aetherTunnel != null) profiles.filter { it.isAether } else emptyList()
+        val aetherTargets = profiles.filter { it.isAether }
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
         var done = 0
@@ -204,21 +204,36 @@ object PingService {
     }
 
     private suspend fun aetherDelay(profile: VpnProfile, url: String): Long {
-        val runner = aetherTunnel ?: return -1L
+        val runner = aetherTunnel
         val effective = profile.resolveUnsealed() ?: profile
         val settings = effective.aetherSettings() ?: return -1L
-        return withTimeoutOrNull(AETHER_PROBE_TIMEOUT_MS) {
-            runner(settings) { port ->
-                var best = -1L
-                repeat(2) {
-                    val ms = runCatching {
-                        httpTimedTransfer(url, port, false, 0, REQUEST_PROBE_TIMEOUT_MS, REQUEST_PROBE_TIMEOUT_MS).ttfbNanos / 1_000_000
-                    }.getOrDefault(-1L)
-                    if (ms > 0 && (best < 0 || ms < best)) best = ms.coerceAtLeast(1)
+        if (runner != null) {
+            return withTimeoutOrNull(AETHER_PROBE_TIMEOUT_MS) {
+                runner(settings) { port ->
+                    var best = -1L
+                    repeat(2) {
+                        val ms = runCatching {
+                            httpTimedTransfer(url, port, false, 0, REQUEST_PROBE_TIMEOUT_MS, REQUEST_PROBE_TIMEOUT_MS).ttfbNanos / 1_000_000
+                        }.getOrDefault(-1L)
+                        if (ms > 0 && (best < 0 || ms < best)) best = ms.coerceAtLeast(1)
+                    }
+                    best
                 }
-                best
-            }
-        } ?: -1L
+            } ?: -1L
+        }
+        val endpoint = settings.serverEndpoint.trim().ifBlank { profile.address.trim() }
+        val host = if (endpoint.contains(':') && !endpoint.startsWith("[")) endpoint.substringBefore(':') else endpoint
+        val port = if (endpoint.contains(':') && !endpoint.startsWith("[")) endpoint.substringAfter(':').toIntOrNull() ?: 2408 else profile.port.takeIf { it in 1..65535 } ?: 2408
+        if (host.isNotBlank() && host != "-") {
+            val wgInit = byteArrayOf(1, 0, 0, 0)
+            val udp = udpProbeMillis(host, port, wgInit, 2_200)
+            if (udp > 0) return udp
+            val tcp = tcpPing(host, port, 2_000)
+            if (tcp > 0) return tcp
+            val tcp443 = tcpPing(host, 443, 1_500)
+            if (tcp443 > 0) return tcp443
+        }
+        return -1L
     }
 
     private suspend fun ikev2Delay(profile: VpnProfile): Long {

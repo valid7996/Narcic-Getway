@@ -4,6 +4,8 @@ import dev.valid7996.narcicgeteway.core.LogBus
 import dev.valid7996.narcicgeteway.data.net.WarpMasque
 import dev.valid7996.narcicgeteway.domain.config.AetherCommands
 import dev.valid7996.narcicgeteway.domain.config.AetherProfile
+import dev.valid7996.narcicgeteway.platform.tcpConnectMillis
+import dev.valid7996.narcicgeteway.platform.udpProbeMillis
 import dev.valid7996.narcicgeteway.ui.servers.AetherActions
 import dev.valid7996.narcicgeteway.ui.servers.AetherCoreInfo
 import dev.valid7996.narcicgeteway.ui.servers.AetherKeyUiEntry
@@ -16,8 +18,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.io.File
-import java.net.InetSocketAddress
-import java.net.Socket
 import java.util.concurrent.atomic.AtomicBoolean
 
 object AetherActionsDesktop : AetherActions {
@@ -34,7 +34,7 @@ object AetherActionsDesktop : AetherActions {
                     "162.159.192.1", "162.159.193.1", "162.159.195.1",
                     "188.114.96.1", "188.114.97.1", "188.114.98.1", "188.114.99.1",
                     "engage.cloudflareclient.com",
-                )
+                ),
             )
         }.distinct()
 
@@ -46,23 +46,17 @@ object AetherActionsDesktop : AetherActions {
         onOutput("I/aether-scan starting scan across ${ips.size} Cloudflare edge hosts...")
         LogBus.append("I/aether-scan starting scan across ${ips.size} Cloudflare edge hosts...")
 
+        val wgPkt = byteArrayOf(1, 0, 0, 0)
         for (ip in ips) {
             if (cancel.get()) break
             for (port in ports) {
                 if (cancel.get()) break
-                val start = System.currentTimeMillis()
-                val ok = runCatching {
-                    Socket().use { s ->
-                        s.connect(InetSocketAddress(ip, port), 600)
-                        true
-                    }
-                }.getOrDefault(false)
-
-                val elapsed = System.currentTimeMillis() - start
-                if (ok && elapsed < bestPing) {
-                    bestPing = elapsed
+                val udpMs = udpProbeMillis(ip, port, wgPkt, 600)
+                val ms = if (udpMs > 0) udpMs else tcpConnectMillis(ip, port, 400)
+                if (ms > 0 && ms < bestPing) {
+                    bestPing = ms
                     bestEndpoint = "$ip:$port"
-                    val msg = "I/aether-scan found reachable endpoint: $bestEndpoint (${elapsed}ms)"
+                    val msg = "I/aether-scan found reachable endpoint: $bestEndpoint (${ms}ms)"
                     onOutput(msg)
                     LogBus.append(msg)
                 }
@@ -92,10 +86,17 @@ object AetherActionsDesktop : AetherActions {
             LogBus.append("I/aether-key contacting Cloudflare client registration API...")
             val server = WarpMasque.register(socksPort = null)
             val deviceId = server.address.ifBlank { "warp-${System.currentTimeMillis()}" }
+            val ipv4 = server.wireguard.localAddress.firstOrNull { !it.contains(':') } ?: "172.16.0.2/32"
+            val ipv6 = server.wireguard.localAddress.firstOrNull { it.contains(':') } ?: "2606:4700:110:8f86:31df:ec01:b241:1dc5/128"
             val keyObj = buildJsonObject {
                 put("device_id", deviceId)
-                put("ipv4", "172.16.0.2")
-                put("ipv6", "2606:4700:110:8f86:31df:ec01:b241:1dc5")
+                put("ipv4", ipv4)
+                put("ipv6", ipv6)
+                put("private_key", server.wireguard.privateKey)
+                put("peer_public_key", server.wireguard.peerPublicKey)
+                put("reserved", server.wireguard.reserved)
+                put("server", server.address.ifBlank { "engage.cloudflareclient.com" })
+                put("server_port", if (server.port in 1..65535) server.port else 2408)
             }
             File(work, "wireguard.json").writeText(keyObj.toString())
             File(work, "masque.json").writeText(keyObj.toString())

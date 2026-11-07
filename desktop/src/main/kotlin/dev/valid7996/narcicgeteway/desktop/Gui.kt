@@ -107,6 +107,23 @@ fun main(args: Array<String>) {
     }
 
     dev.valid7996.narcicgeteway.core.CoreProbe.measureDelay = { url -> DesktopProbe.measureDelay(url) }
+    dev.valid7996.narcicgeteway.data.net.PingService.sniProbe = { ip, sni ->
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val t0 = System.currentTimeMillis()
+            runCatching {
+                javax.net.ssl.SSLSocketFactory.getDefault().createSocket().use { raw ->
+                    raw.connect(java.net.InetSocketAddress(ip, 443), 2500)
+                    val ssl = (raw as? javax.net.ssl.SSLSocket) ?: return@use -1L
+                    ssl.sslParameters = ssl.sslParameters.apply {
+                        serverNames = listOf(javax.net.ssl.SNIHostName(sni))
+                    }
+                    ssl.soTimeout = 2500
+                    ssl.startHandshake()
+                    (System.currentTimeMillis() - t0).coerceAtLeast(1L)
+                }
+            }.getOrDefault(-1L)
+        }
+    }
 
     dev.valid7996.narcicgeteway.core.AutoSelect.readStatus = {
         dev.valid7996.narcicgeteway.desktop.platform.DesktopStats.latestAutoSelect

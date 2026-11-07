@@ -42,7 +42,7 @@ class DesktopSstp(
                 |  rasdial ${'$'}name /disconnect | Out-Null
                 |  Remove-VpnConnection -Name ${'$'}name -Force
                 |}
-                |Add-VpnConnection -Name ${'$'}name -ServerAddress ${'$'}env:ZS_SERVER -TunnelType Sstp -EncryptionLevel Required -AuthenticationMethod MsChapv2 -RememberCredential -Force
+                |Add-VpnConnection -Name ${'$'}name -ServerAddress ${'$'}env:ZS_SERVER -TunnelType Sstp -EncryptionLevel Optional -AuthenticationMethod MsChapv2,Pap,Chap -RememberCredential -Force
                 |${'$'}ErrorActionPreference = 'Continue'
                 |rasdial ${'$'}name ${'$'}env:ZS_USER ${'$'}env:ZS_PASS
                 |exit ${'$'}LASTEXITCODE

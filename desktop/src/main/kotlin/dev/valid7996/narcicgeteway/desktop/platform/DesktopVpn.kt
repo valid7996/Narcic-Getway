@@ -21,12 +21,31 @@ import dev.valid7996.narcicgeteway.domain.config.DnsTunnelProfile
 import dev.valid7996.narcicgeteway.domain.config.Ikev2Profile
 import dev.valid7996.narcicgeteway.domain.config.LocalPorts
 import dev.valid7996.narcicgeteway.domain.config.LocalProxy
+import dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile
+import dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile
+import dev.valid7996.narcicgeteway.domain.config.OvpnConfig
+import dev.valid7996.narcicgeteway.domain.config.ProfileSource
 import dev.valid7996.narcicgeteway.domain.config.PsiphonProfile
+import dev.valid7996.narcicgeteway.domain.config.SingBoxConfigs
+import dev.valid7996.narcicgeteway.domain.config.SingBoxJson
 import dev.valid7996.narcicgeteway.domain.config.SshProfile
 import dev.valid7996.narcicgeteway.domain.config.autoSelectTuning
 import dev.valid7996.narcicgeteway.domain.config.toBuildOptions
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.domain.model.RunMode
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import java.io.File
 import java.net.InetAddress
 import kotlin.concurrent.thread
@@ -39,6 +58,7 @@ object DesktopVpn {
 
     private val work = File(System.getProperty("java.io.tmpdir"), "narcicgeteway").apply { mkdirs() }
     private var xray: XrayCore? = null
+    private var innerXray: XrayCore? = null
     private var tun: DesktopTun? = null
     private var stats: DesktopStats? = null
     private var singBoxStats: DesktopSingBoxStats? = null
@@ -57,7 +77,6 @@ object DesktopVpn {
     @Volatile var settingsProvider: () -> AppSettings = { AppSettings() }
 
     @Volatile
-
     var chainConfigProvider: (dev.valid7996.narcicgeteway.domain.config.VpnProfile, dev.valid7996.narcicgeteway.domain.config.XrayJsonBuilder.BuildOptions) -> String? =
         { _, _ -> null }
 
@@ -84,18 +103,49 @@ object DesktopVpn {
             profile.ikev2Settings() != null -> startIkev2(profile.name, profile.ikev2Settings()!!)
             profile.sstpSettings() != null -> startSstp(profile.name, profile.sstpSettings()!!)
             profile.isCrossChain -> startCrossChain(profile.name, profile, config)
-            profile.aetherSettings() != null -> startXray(profile.name, profile, config)
-            profile.openConnectSettings() != null -> startXray(profile.name, profile, config)
             profile.psiphonSettings() != null -> startPsiphon(profile.name, profile.psiphonSettings()!!)
             profile.isTor -> startTor(profile.name)
+            profile.masterDnsSettings() != null -> startMasterDns(profile.name, profile.masterDnsSettings()!!)
             profile.dnsTunnelSettings() != null -> startDns(profile.name, profile.dnsTunnelSettings()!!)
+            profile.mhrvRelaySettings() != null -> startMhrv(profile.name, profile.mhrvRelaySettings()!!, config)
             profile.sshSettings() != null -> startSsh(profile.name, profile.sshSettings()!!)
-            profile.isSingBoxConfig -> startSingBoxConfig(profile.name, profile)
+            profile.isSingBoxConfig || profile.isSingBox || profile.isOpenVpn ||
+                profile.openConnectSettings() != null || profile.aetherSettings() != null ->
+                startSingBox(profile.name, profile)
             else -> startXray(profile.name, profile, config)
         }
     }
 
+    private fun startMasterDns(name: String, masterProfile: MasterDnsProfile) {
+        VpnManager.setActiveKind(VpnManager.KIND_MASTERDNS)
+        val dnsProfile = DnsTunnelProfile(
+            domain = masterProfile.domains.split(',', '\n', ' ').map { it.trim().trimEnd('.') }.firstOrNull { it.isNotBlank() } ?: masterProfile.domains,
+            publicKey = masterProfile.encryptionKey,
+            resolvers = masterProfile.resolvers,
+            engine = "masterdns",
+        )
+        startDns(name, dnsProfile)
+    }
+
+    private fun startMhrv(name: String, mhrv: MhrvRelayProfile, config: ConfigRepository) {
+        VpnManager.setActiveKind(VpnManager.KIND_MHRV)
+        val ip = mhrv.googleIp.trim().ifEmpty { MhrvRelayProfile.DEFAULT_GOOGLE_IP }
+        val sni = mhrv.sniList().firstOrNull()?.trim()?.ifEmpty { null }
+            ?: mhrv.frontDomain.trim().ifEmpty { MhrvRelayProfile.DEFAULT_FRONT_DOMAIN }
+        val fakeProfile = dev.valid7996.narcicgeteway.domain.config.VpnProfile(
+            name = name,
+            address = ip,
+            port = 443,
+            protocol = "VLESS",
+            source = ProfileSource.Link("vless://00000000-0000-0000-0000-000000000000@$ip:443?encryption=none&security=tls&sni=$sni&type=tcp#$name"),
+        )
+        startXray(name, fakeProfile, config)
+    }
+
     private fun startDns(name: String, dnsProfile: DnsTunnelProfile) {
+        if (VpnManager.activeKind.value != VpnManager.KIND_MASTERDNS) {
+            VpnManager.setActiveKind(VpnManager.KIND_DNS_TUNNEL)
+        }
         VpnManager.onStarting(name)
         thread(name = "desktop-dns") {
             val dns = DesktopDnsTunnel(dnsProfile, work, listenPort = DNS_PORT)
@@ -154,6 +204,7 @@ object DesktopVpn {
     }
 
     private fun startTor(name: String) {
+        VpnManager.setActiveKind(VpnManager.KIND_TOR)
         VpnManager.onStarting(name)
         thread(name = "desktop-tor") {
             val engine = DesktopTor(settingsProvider(), work)
@@ -181,6 +232,7 @@ object DesktopVpn {
     }
 
     private fun startPsiphon(name: String, profile: PsiphonProfile) {
+        VpnManager.setActiveKind(VpnManager.KIND_PSIPHON)
         VpnManager.onStarting(name)
         thread(name = "desktop-psiphon") {
             val socksPort = localPort(LocalPorts.PSIPHON_SOCKS)
@@ -222,6 +274,7 @@ object DesktopVpn {
     }.getOrNull()
 
     private fun startSstp(name: String, profile: dev.valid7996.narcicgeteway.domain.config.SstpProfile) {
+        VpnManager.setActiveKind(VpnManager.KIND_SSTP)
         VpnManager.onStarting(name)
         thread(name = "desktop-sstp") {
             val engine = DesktopSstp(profile, work)
@@ -255,6 +308,7 @@ object DesktopVpn {
         profile: dev.valid7996.narcicgeteway.domain.config.VpnProfile,
         config: ConfigRepository,
     ) {
+        VpnManager.setActiveKind(VpnManager.KIND_CROSS_CHAIN)
         VpnManager.onStarting(name)
         thread(name = "desktop-crosschain") {
             val members = try {
@@ -317,8 +371,9 @@ object DesktopVpn {
                 metricsPort,
             )
 
-            val innerCore = XrayCore(File(work, "inner").apply { mkdirs() })
-            if (!innerCore.start(finalJson)) {
+            val core2 = XrayCore(File(work, "inner").apply { mkdirs() })
+            innerXray = core2
+            if (!core2.start(finalJson)) {
                 VpnManager.onError("Cross-chain inner engine failed to start")
                 teardown()
                 return@thread
@@ -326,7 +381,7 @@ object DesktopVpn {
 
             val bypass = resolveHosts(DesktopXray.extractServerHosts(finalJson))
             if (!route(socksPort, bypass, udpOverTcp = false)) {
-                innerCore.stop()
+                core2.stop()
                 teardown()
                 VpnManager.onError("Could not route traffic")
                 return@thread
@@ -339,6 +394,7 @@ object DesktopVpn {
     }
 
     private fun startIkev2(name: String, profile: Ikev2Profile) {
+        VpnManager.setActiveKind(VpnManager.KIND_IKEV2)
         VpnManager.onStarting(name)
         thread(name = "desktop-ikev2") {
             val engine = DesktopIkev2(profile, work)
@@ -436,6 +492,7 @@ object DesktopVpn {
             DesktopXray.withSocksPort(baseJson, LocalProxy.SOCKS_PORT, socksPort),
             metricsPort,
         )
+        VpnManager.setActiveKind(VpnManager.KIND_XRAY)
         VpnManager.onStarting(name)
         thread(name = "desktop-xray") {
             val json = if (runMode == RunMode.Vpn && TunMode.supported() && TunMode.usesZeptun()) {
@@ -465,34 +522,232 @@ object DesktopVpn {
         }
     }
 
-    private fun startSingBoxConfig(name: String, profile: dev.valid7996.narcicgeteway.domain.config.VpnProfile) {
-        val source = profile.source as? dev.valid7996.narcicgeteway.domain.config.ProfileSource.SingBoxConfig ?: return
+    private fun buildStandaloneSingBox(
+        profile: dev.valid7996.narcicgeteway.domain.config.VpnProfile,
+        socksPort: Int,
+        clashApiPort: Int,
+    ): Pair<String, List<String>> {
+        val effective = profile.resolveUnsealed() ?: profile
+        val aether = effective.aetherSettings()
+        val oc = effective.openConnectSettings()
+        val singBoxSrc = effective.source as? ProfileSource.SingBox
+        val singBoxCfg = effective.source as? ProfileSource.SingBoxConfig
+
+        val bypassHosts = mutableListOf<String>()
+
+        val fullConfigJson: String = when {
+            singBoxCfg != null -> singBoxCfg.json
+            aether != null -> {
+                val aetherWork = File(System.getProperty("java.io.tmpdir"), "narcicgeteway/aether")
+                val wgFile = File(aetherWork, "wireguard.json")
+                val keyObj = if (wgFile.exists()) {
+                    runCatching {
+                        Json { ignoreUnknownKeys = true }
+                            .parseToJsonElement(wgFile.readText()).jsonObject
+                    }.getOrNull()
+                } else null
+
+                val endpoint = aether.endpointText() ?: "engage.cloudflareclient.com:2408"
+                val host = endpoint.substringBeforeLast(':').removeSurrounding("[", "]")
+                val port = endpoint.substringAfterLast(':').toIntOrNull() ?: 2408
+                bypassHosts += host
+
+                val privKey = keyObj?.get("private_key")?.jsonPrimitive?.contentOrNull
+                    ?: "aGVsY29tZXRveHJheWNvcmV3aXJlZ3VhcmRzZWNyZXQ="
+                val pubKey = keyObj?.get("peer_public_key")?.jsonPrimitive?.contentOrNull
+                    ?: "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+                val ipv4 = keyObj?.get("ipv4")?.jsonPrimitive?.contentOrNull ?: "172.16.0.2/32"
+                val ipv6 = keyObj?.get("ipv6")?.jsonPrimitive?.contentOrNull
+                    ?: "2606:4700:110:8f86:31df:ec01:b241:1dc5/128"
+                val reservedJson = keyObj?.get("reserved")
+
+                val outbound = buildJsonObject {
+                    put("type", "wireguard")
+                    put("tag", "proxy")
+                    put("server", host)
+                    put("server_port", port)
+                    putJsonArray("local_address") {
+                        add(JsonPrimitive(ipv4))
+                        add(JsonPrimitive(ipv6))
+                    }
+                    put("private_key", privKey)
+                    put("peer_public_key", pubKey)
+                    if (reservedJson != null) put("reserved", reservedJson)
+                }
+                wrapOutboundToFullSingBox(outbound.toString(), "proxy", socksPort, clashApiPort)
+            }
+            oc != null -> {
+                val host = oc.serverUrl().removePrefix("https://").removePrefix("http://").substringBefore('/').substringBefore(':')
+                bypassHosts += host
+                val outbound = buildJsonObject {
+                    put("type", "openconnect")
+                    put("tag", "proxy")
+                    put("server", host)
+                    put("server_port", oc.serverPort())
+                    if (oc.username.isNotBlank()) put("username", oc.username)
+                    if (oc.password.isNotBlank()) put("password", oc.password)
+                    if (oc.authgroup.isNotBlank()) put("authgroup", oc.authgroup)
+                    if (oc.disableDtls) put("disable_dtls", true)
+                }
+                wrapOutboundToFullSingBox(outbound.toString(), "proxy", socksPort, clashApiPort)
+            }
+            singBoxSrc != null -> {
+                val raw = singBoxSrc.json
+                val servers = SingBoxJson.servers(raw)
+                servers.forEach { s -> s.address?.let { bypassHosts += it } }
+                val tag = servers.firstOrNull()?.tag ?: "proxy"
+                if (SingBoxJson.shapeOf(raw) == SingBoxJson.Shape.FullConfig) {
+                    raw
+                } else {
+                    wrapOutboundToFullSingBox(raw, tag, socksPort, clashApiPort)
+                }
+            }
+            effective.isOpenVpn -> {
+                val payload = effective.rawPayload() ?: ""
+                val frag = if (OvpnConfig.looksLikeOvpn(payload)) {
+                    OvpnConfig.toSingBoxFragment(payload)
+                } else {
+                    payload
+                }
+                val retyped = SingBoxJson.retypeOpenVpn(frag) ?: frag
+                val servers = SingBoxJson.servers(retyped)
+                servers.forEach { s -> s.address?.let { bypassHosts += it } }
+                val tag = servers.firstOrNull()?.tag ?: "proxy"
+                wrapOutboundToFullSingBox(retyped, tag, socksPort, clashApiPort)
+            }
+            else -> error("Not a supported sing-box profile")
+        }
+
+        if (bypassHosts.isEmpty() && effective.address.isNotBlank() && effective.address != "-") {
+            bypassHosts += effective.address
+        }
+
+        val prepared = SingBoxConfigs.prepareForDesktop(
+            fullConfigJson,
+            socksPort = socksPort,
+            clashApiPort = clashApiPort,
+        )
+        return prepared.json to bypassHosts
+    }
+
+    private fun wrapOutboundToFullSingBox(
+        fragmentOrOutbound: String,
+        targetTag: String,
+        socksPort: Int,
+        clashApiPort: Int,
+    ): String {
+        val root = runCatching {
+            Json { ignoreUnknownKeys = true; isLenient = true }
+                .parseToJsonElement(fragmentOrOutbound)
+        }.getOrNull()
+
+        val parsedObj = root as? JsonObject
+
+        val outbounds = buildJsonArray {
+            if (parsedObj != null) {
+                if (parsedObj.containsKey("outbounds")) {
+                    val list = parsedObj["outbounds"] as? JsonArray
+                    list?.forEach { add(it) }
+                } else {
+                    add(parsedObj)
+                }
+            }
+            addJsonObject {
+                put("type", "direct")
+                put("tag", "direct")
+            }
+            addJsonObject {
+                put("type", "dns")
+                put("tag", "dns-out")
+            }
+        }
+
+        val endpoints = parsedObj?.get("endpoints") as? JsonArray
+
+        return buildJsonObject {
+            putJsonObject("log") { put("level", "warn") }
+            putJsonArray("inbounds") {
+                addJsonObject {
+                    put("type", "socks")
+                    put("tag", "socks-in")
+                    put("listen", "127.0.0.1")
+                    put("listen_port", socksPort)
+                }
+            }
+            put("outbounds", outbounds)
+            if (endpoints != null && endpoints.isNotEmpty()) {
+                put("endpoints", endpoints)
+            }
+            putJsonObject("route") {
+                putJsonArray("rules") {
+                    addJsonObject {
+                        put("protocol", "dns")
+                        put("action", "hijack-dns")
+                    }
+                    addJsonObject {
+                        put("action", "sniff")
+                    }
+                }
+                put("final", targetTag)
+            }
+            putJsonObject("dns") {
+                putJsonArray("servers") {
+                    addJsonObject {
+                        put("tag", "dns-remote")
+                        put("address", "tcp://8.8.8.8")
+                        put("detour", targetTag)
+                    }
+                    addJsonObject {
+                        put("tag", "dns-direct")
+                        put("address", "8.8.8.8")
+                        put("detour", "direct")
+                    }
+                }
+                put("strategy", "prefer_ipv4")
+            }
+            putJsonObject("experimental") {
+                putJsonObject("clash_api") {
+                    put("external_controller", "127.0.0.1:$clashApiPort")
+                }
+            }
+        }.toString()
+    }
+
+    private fun startSingBox(name: String, profile: dev.valid7996.narcicgeteway.domain.config.VpnProfile) {
         val socksPort = localPort(LocalProxy.SOCKS_PORT)
-        val prepared = runCatching {
-            dev.valid7996.narcicgeteway.domain.config.SingBoxConfigs.prepareForDesktop(
-                source.json,
-                socksPort = socksPort,
-                clashApiPort = localPort(METRICS_PORT, setOf(socksPort)),
-            )
-        }.getOrElse { VpnManager.onError(it.message ?: "Not a usable sing-box config"); return }
+        val clashApiPort = localPort(METRICS_PORT, setOf(socksPort))
+        val (finalJson, bypassHosts) = runCatching {
+            buildStandaloneSingBox(profile, socksPort, clashApiPort)
+        }.getOrElse {
+            VpnManager.onError(it.message ?: "Failed to build sing-box config")
+            return
+        }
+
+        VpnManager.setActiveKind(VpnManager.KIND_SINGBOX)
         VpnManager.onStarting(name)
         thread(name = "desktop-singbox") {
             val core = XrayCore(work)
-            if (!core.startSingBox(prepared.json)) { VpnManager.onError("sing-box failed to start"); return@thread }
+            if (!core.startSingBox(finalJson)) {
+                VpnManager.onError("sing-box failed to start")
+                return@thread
+            }
             xray = core
 
-            val hosts = dev.valid7996.narcicgeteway.domain.config.SingBoxJson.servers(source.json).mapNotNull { it.address }
-            if (!route(prepared.socksPort, resolveHosts(hosts), udpOverTcp = false)) {
-                core.stop(); xray = null
-                VpnManager.onError("Could not route traffic (TUN + system proxy failed)"); return@thread
+            val bypass = resolveHosts(bypassHosts)
+            if (!route(socksPort, bypass, udpOverTcp = false)) {
+                core.stop()
+                xray = null
+                VpnManager.onError("Could not route traffic (TUN + system proxy failed)")
+                return@thread
             }
-            VpnManager.activeSocksPort = prepared.socksPort
-            DesktopSingBoxStats(prepared.clashApi, prepared.clashSecret).also { singBoxStats = it; it.start() }
+            VpnManager.activeSocksPort = socksPort
+            DesktopSingBoxStats("127.0.0.1:$clashApiPort", null).also { singBoxStats = it; it.start() }
             VpnManager.onConnected(name)
         }
     }
 
     private fun startSsh(name: String, sshProfile: dev.valid7996.narcicgeteway.domain.config.SshProfile) {
+        VpnManager.setActiveKind(VpnManager.KIND_SSH)
         VpnManager.onStarting(name)
         thread(name = "desktop-ssh") {
             val controller = SshController(
@@ -596,6 +851,8 @@ object DesktopVpn {
         dnsTunnel?.stop(); dnsTunnel = null
         if (usedSystemProxy) { runCatching { SystemProxy.clear() }; usedSystemProxy = false }
         xray?.stop(); xray = null
+        innerXray?.stop(); innerXray = null
+        VpnManager.setActiveKind(null)
         dev.valid7996.narcicgeteway.core.AutoSelect.end()
     }
 }

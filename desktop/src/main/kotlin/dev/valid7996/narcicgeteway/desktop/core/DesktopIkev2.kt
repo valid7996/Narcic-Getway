@@ -87,6 +87,10 @@ class DesktopIkev2(
             |  Remove-VpnConnection -Name ${'$'}name -Force
             |}
             |Add-VpnConnection -Name ${'$'}name -ServerAddress ${'$'}env:ZS_SERVER -TunnelType Ikev2 -EncryptionLevel Required -AuthenticationMethod Eap -RememberCredential -Force
+            |${'$'}pbk = "${'$'}env:APPDATA\Microsoft\Network\Connections\Pbk\rasphone.pbk"
+            |if (Test-Path ${'$'}pbk) {
+            |  (Get-Content ${'$'}pbk) -replace 'CustomAuthKey=\d+', 'CustomAuthKey=26' | Set-Content ${'$'}pbk
+            |}
             |Set-VpnConnectionIPsecConfiguration -ConnectionName ${'$'}name -AuthenticationTransformConstants ${esp.windowsAuth} -CipherTransformConstants ${esp.windowsEspCipher} -EncryptionMethod ${ike.windowsCipher} -IntegrityCheckMethod ${ike.windowsIntegrity} -DHGroup ${ike.windowsDh} -PfsGroup None -Force
             |${'$'}ErrorActionPreference = 'Continue'
             |rasdial ${'$'}name ${'$'}env:ZS_USER ${'$'}env:ZS_PASS
