@@ -86,15 +86,15 @@ object AetherActionsDesktop : AetherActions {
             LogBus.append("I/aether-key contacting Cloudflare client registration API...")
             val server = WarpMasque.register(socksPort = null)
             val deviceId = server.address.ifBlank { "warp-${System.currentTimeMillis()}" }
-            val ipv4 = server.wireguard.localAddress.firstOrNull { !it.contains(':') } ?: "172.16.0.2/32"
-            val ipv6 = server.wireguard.localAddress.firstOrNull { it.contains(':') } ?: "2606:4700:110:8f86:31df:ec01:b241:1dc5/128"
+            val ipv4 = server.localAddresses.firstOrNull { !it.contains(':') } ?: "172.16.0.2/32"
+            val ipv6 = server.localAddresses.firstOrNull { it.contains(':') } ?: "2606:4700:110:8f86:31df:ec01:b241:1dc5/128"
             val keyObj = buildJsonObject {
                 put("device_id", deviceId)
                 put("ipv4", ipv4)
                 put("ipv6", ipv6)
-                put("private_key", server.wireguard.privateKey)
-                put("peer_public_key", server.wireguard.peerPublicKey)
-                put("reserved", server.wireguard.reserved)
+                put("private_key", server.secretKey ?: "aGVsY29tZXRveHJheWNvcmV3aXJlZ3VhcmRzZWNyZXQ=")
+                put("peer_public_key", server.peerPublicKey ?: "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=")
+                put("reserved", "0,0,0")
                 put("server", server.address.ifBlank { "engage.cloudflareclient.com" })
                 put("server_port", if (server.port in 1..65535) server.port else 2408)
             }

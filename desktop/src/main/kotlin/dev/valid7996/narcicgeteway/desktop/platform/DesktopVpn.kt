@@ -133,11 +133,14 @@ object DesktopVpn {
         val sni = mhrv.sniList().firstOrNull()?.trim()?.ifEmpty { null }
             ?: mhrv.frontDomain.trim().ifEmpty { MhrvRelayProfile.DEFAULT_FRONT_DOMAIN }
         val fakeProfile = dev.valid7996.narcicgeteway.domain.config.VpnProfile(
+            id = java.util.UUID.randomUUID().toString(),
             name = name,
+            protocol = "VLESS",
             address = ip,
             port = 443,
-            protocol = "VLESS",
+            transportLabel = "TCP · TLS",
             source = ProfileSource.Link("vless://00000000-0000-0000-0000-000000000000@$ip:443?encryption=none&security=tls&sni=$sni&type=tcp#$name"),
+            addedAt = System.currentTimeMillis(),
         )
         startXray(name, fakeProfile, config)
     }
