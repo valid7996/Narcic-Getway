@@ -221,7 +221,7 @@ object PingService {
                 }
             } ?: -1L
         }
-        val endpoint = settings.serverEndpoint.trim().ifBlank { profile.address.trim() }
+        val endpoint = settings.endpointText() ?: settings.server.trim().ifBlank { profile.address.trim() }
         val host = if (endpoint.contains(':') && !endpoint.startsWith("[")) endpoint.substringBefore(':') else endpoint
         val port = if (endpoint.contains(':') && !endpoint.startsWith("[")) endpoint.substringAfter(':').toIntOrNull() ?: 2408 else profile.port.takeIf { it in 1..65535 } ?: 2408
         if (host.isNotBlank() && host != "-") {
