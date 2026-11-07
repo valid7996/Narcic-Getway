@@ -8,6 +8,7 @@ import dev.valid7996.narcicgeteway.data.config.ConfigRepository
 import dev.valid7996.narcicgeteway.desktop.core.DesktopDnsTunnel
 import dev.valid7996.narcicgeteway.desktop.core.DesktopIkev2
 import dev.valid7996.narcicgeteway.desktop.core.DesktopPsiphon
+import dev.valid7996.narcicgeteway.desktop.core.DesktopSstp
 import dev.valid7996.narcicgeteway.desktop.core.DesktopTor
 import dev.valid7996.narcicgeteway.desktop.core.DesktopTun
 import dev.valid7996.narcicgeteway.desktop.core.PhysicalInterface
@@ -47,6 +48,7 @@ object DesktopVpn {
     @Volatile private var tor: DesktopTor? = null
     @Volatile private var psiphon: DesktopPsiphon? = null
     @Volatile private var ikev2: DesktopIkev2? = null
+    @Volatile private var sstp: DesktopSstp? = null
     private var meter: DesktopMeter? = null
     private var usedSystemProxy = false
 
@@ -80,7 +82,10 @@ object DesktopVpn {
 
         when {
             profile.ikev2Settings() != null -> startIkev2(profile.name, profile.ikev2Settings()!!)
-            profile.aetherSettings() != null -> { VpnManager.onError("Aether is supported on Android only"); return }
+            profile.sstpSettings() != null -> startSstp(profile.name, profile.sstpSettings()!!)
+            profile.isCrossChain -> startCrossChain(profile.name, profile, config)
+            profile.aetherSettings() != null -> startXray(profile.name, profile, config)
+            profile.openConnectSettings() != null -> startXray(profile.name, profile, config)
             profile.psiphonSettings() != null -> startPsiphon(profile.name, profile.psiphonSettings()!!)
             profile.isTor -> startTor(profile.name)
             profile.dnsTunnelSettings() != null -> startDns(profile.name, profile.dnsTunnelSettings()!!)
@@ -202,6 +207,137 @@ object DesktopVpn {
         }
     }
 
+    private fun readSystemInterfaceTotals(): Pair<Long, Long>? = runCatching {
+        if (Os.current == Os.WINDOWS) {
+            val p = Runtime.getRuntime().exec("netstat -e")
+            val text = p.inputStream.bufferedReader().use { it.readText() }
+            p.waitFor()
+            val match = Regex("""Bytes\s+(\d+)\s+(\d+)""").find(text)
+            if (match != null) {
+                val rx = match.groupValues[1].toLong()
+                val tx = match.groupValues[2].toLong()
+                rx to tx
+            } else null
+        } else null
+    }.getOrNull()
+
+    private fun startSstp(name: String, profile: dev.valid7996.narcicgeteway.domain.config.SstpProfile) {
+        VpnManager.onStarting(name)
+        thread(name = "desktop-sstp") {
+            val engine = DesktopSstp(profile, work)
+            sstp = engine
+            val connected = engine.connect()
+            if (sstp !== engine) {
+                if (connected.isSuccess) engine.disconnect()
+                return@thread
+            }
+            connected.exceptionOrNull()?.let { e ->
+                sstp = null
+                VpnManager.onError(e.message ?: "SSTP failed to connect")
+                return@thread
+            }
+            LogBus.append("I/SSTP the system VPN '${DesktopSstp.NAME}' carries all traffic")
+            VpnManager.onConnected(name)
+            meter = DesktopMeter(totals = ::readSystemInterfaceTotals).also { it.start() }
+            while (sstp === engine) {
+                Thread.sleep(15_000)
+                if (sstp === engine && !engine.isUp()) {
+                    sstp = null
+                    VpnManager.onError("SSTP disconnected")
+                    break
+                }
+            }
+        }
+    }
+
+    private fun startCrossChain(
+        name: String,
+        profile: dev.valid7996.narcicgeteway.domain.config.VpnProfile,
+        config: ConfigRepository,
+    ) {
+        VpnManager.onStarting(name)
+        thread(name = "desktop-crosschain") {
+            val members = try {
+                config.crossChainMembers(profile)
+            } catch (e: Exception) {
+                VpnManager.onError(e.message ?: "Cross-chain members invalid")
+                return@thread
+            }
+            val (inner, outer) = members
+            val carrierPort = localPort(10808)
+            LogBus.append("I/CrossChain starting outer carrier (${outer.name}) on SOCKS port $carrierPort")
+
+            var carrierOk = false
+            when {
+                outer.psiphonSettings() != null -> {
+                    val pEngine = DesktopPsiphon(outer.psiphonSettings()!!, work, carrierPort, localPort(carrierPort + 1))
+                    psiphon = pEngine
+                    carrierOk = pEngine.start().isSuccess
+                }
+                outer.isTor -> {
+                    val tEngine = DesktopTor(settingsProvider(), work)
+                    tor = tEngine
+                    carrierOk = tEngine.start().isSuccess
+                }
+                outer.dnsTunnelSettings() != null -> {
+                    val dEngine = DesktopDnsTunnel(outer.dnsTunnelSettings()!!, work, listenPort = carrierPort)
+                    dnsTunnel = dEngine
+                    carrierOk = dEngine.start() > 0
+                }
+                else -> {
+                    val settings = settingsProvider()
+                    val options = settings.toBuildOptions(geoAssetsAvailable = geoAssetsAvailable(), carrier = true)
+                    val carrierJson = outer.toXrayConfigJson(options)
+                    val ported = DesktopXray.withSocksPort(carrierJson, LocalProxy.SOCKS_PORT, carrierPort)
+                    val core = XrayCore(File(work, "carrier").apply { mkdirs() })
+                    if (core.start(ported)) {
+                        xray = core
+                        carrierOk = true
+                    }
+                }
+            }
+
+            if (!carrierOk) {
+                VpnManager.onError("Cross-chain outer engine failed to start")
+                teardown()
+                return@thread
+            }
+
+            LogBus.append("I/CrossChain carrier active; starting inner (${inner.name}) through $carrierPort")
+
+            val settings = settingsProvider()
+            val options = settings.toBuildOptions(geoAssetsAvailable = geoAssetsAvailable())
+            val baseInnerJson = inner.toXrayConfigJson(options)
+            val chainedJson = DesktopXray.withUpstreamSocks(baseInnerJson, carrierPort)
+
+            val socksPort = localPort(LocalProxy.SOCKS_PORT, setOf(carrierPort))
+            val metricsPort = localPort(METRICS_PORT, setOf(socksPort, carrierPort))
+            val finalJson = DesktopXray.augmentWithMetrics(
+                DesktopXray.withSocksPort(chainedJson, LocalProxy.SOCKS_PORT, socksPort),
+                metricsPort,
+            )
+
+            val innerCore = XrayCore(File(work, "inner").apply { mkdirs() })
+            if (!innerCore.start(finalJson)) {
+                VpnManager.onError("Cross-chain inner engine failed to start")
+                teardown()
+                return@thread
+            }
+
+            val bypass = resolveHosts(DesktopXray.extractServerHosts(finalJson))
+            if (!route(socksPort, bypass, udpOverTcp = false)) {
+                innerCore.stop()
+                teardown()
+                VpnManager.onError("Could not route traffic")
+                return@thread
+            }
+
+            VpnManager.activeSocksPort = socksPort
+            DesktopStats(metricsPort).also { stats = it; it.start() }
+            VpnManager.onConnected(name)
+        }
+    }
+
     private fun startIkev2(name: String, profile: Ikev2Profile) {
         VpnManager.onStarting(name)
         thread(name = "desktop-ikev2") {
@@ -219,7 +355,7 @@ object DesktopVpn {
             }
             LogBus.append("I/IKEv2 the system VPN '${DesktopIkev2.NAME}' carries all traffic")
             VpnManager.onConnected(name)
-            meter = DesktopMeter(totals = { null }).also { it.start() }
+            meter = DesktopMeter(totals = ::readSystemInterfaceTotals).also { it.start() }
             while (ikev2 === engine) {
                 Thread.sleep(15_000)
                 if (ikev2 === engine && !engine.isUp()) {
@@ -453,6 +589,7 @@ object DesktopVpn {
         tun?.stop(); tun = null
         tor?.let { tor = null; it.stop() }
         ikev2?.let { ikev2 = null; it.disconnect() }
+        sstp?.let { sstp = null; it.disconnect() }
         psiphon?.let { psiphon = null; it.stop() }
         shim?.stop(); shim = null
         ssh?.stop(); ssh = null

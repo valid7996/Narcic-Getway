@@ -43,7 +43,10 @@ import dev.valid7996.narcicgeteway.desktop.core.TunMode
 import dev.valid7996.narcicgeteway.desktop.platform.AdminPassword
 import dev.valid7996.narcicgeteway.desktop.platform.DesktopKeyValueStore
 import dev.valid7996.narcicgeteway.desktop.platform.DesktopProbe
+import androidx.compose.ui.input.key.*
+import dev.valid7996.narcicgeteway.desktop.platform.AetherActionsDesktop
 import dev.valid7996.narcicgeteway.desktop.platform.DesktopPlatform
+import dev.valid7996.narcicgeteway.ui.servers.LocalAetherActions
 import dev.valid7996.narcicgeteway.desktop.platform.DesktopSettings
 import dev.valid7996.narcicgeteway.desktop.platform.DesktopVpn
 import dev.valid7996.narcicgeteway.domain.model.ThemeMode
@@ -304,6 +307,25 @@ fun main(args: Array<String>) {
             icon = painterResource(Res.drawable.ic_nrg_mark),
             resizable = false,
             state = windowState,
+            onKeyEvent = { event ->
+                if (event.type == KeyEventType.KeyUp) {
+                    when {
+                        event.key == Key.F5 -> {
+                            DesktopVpn.toggle(configRepository)
+                            true
+                        }
+                        (event.isCtrlPressed || event.isMetaPressed) && (event.key == Key.Enter || event.key == Key.Spacebar) -> {
+                            DesktopVpn.toggle(configRepository)
+                            true
+                        }
+                        event.key == Key.Enter && !event.isShiftPressed && !event.isAltPressed -> {
+                            DesktopVpn.toggle(configRepository)
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            },
         ) {
             LaunchedEffect(raiseWindow) {
                 if (raiseWindow > 0) {
@@ -335,7 +357,11 @@ fun main(args: Array<String>) {
                     } else {
                         MotionBudget.Paused
                     }
-                    CompositionLocalProvider(LocalPlatform provides DesktopPlatform, LocalMotionBudget provides motion) {
+                    CompositionLocalProvider(
+                        LocalPlatform provides DesktopPlatform,
+                        LocalMotionBudget provides motion,
+                        LocalAetherActions provides AetherActionsDesktop,
+                    ) {
                         MainScaffold(
                             settings = settings,
                             configRepository = configRepository,

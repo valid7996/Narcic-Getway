@@ -2,6 +2,10 @@ package dev.valid7996.narcicgeteway.ui.servers
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +65,66 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
             onSuccess = {
                 unlock = null
                 onImported()
+            },
+        )
+    }
+
+    var ovpnPrompt by remember { mutableStateOf<Pair<String, String>?>(null) }
+    ovpnPrompt?.let { (text, name) ->
+        var username by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { ovpnPrompt = null },
+            shape = RoundedCornerShape(14.dp),
+            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+            title = { Text(stringResource(Res.string.ovpn_credentials_title), fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text(
+                        stringResource(Res.string.ovpn_credentials_body, name),
+                        color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6E6E73),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        singleLine = true,
+                        label = { Text(stringResource(Res.string.ovpn_username)) },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        singleLine = true,
+                        label = { Text(stringResource(Res.string.ovpn_password)) },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val user = username
+                    val pass = password
+                    ovpnPrompt = null
+                    scope.launch(Dispatchers.Default) {
+                        repository.addOvpn(text, name = name, username = user, password = pass)
+                            .onSuccess {
+                                platform.toast(getString(Res.string.servers_imported, 1))
+                                launch(Dispatchers.Main) { onImported() }
+                            }
+                            .onFailure { platform.toast(it.message ?: getString(Res.string.config_invalid)) }
+                    }
+                }) {
+                    Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold, color = Color(0xFF007AFF))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ovpnPrompt = null }) {
+                    Text(stringResource(Res.string.action_cancel))
+                }
             },
         )
     }
@@ -149,7 +213,16 @@ fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = {
+                val req = request
                 DeepLinkBus.clear()
+
+                if (req is DeepLinkRequest.ConfigText && dev.valid7996.narcicgeteway.domain.config.OvpnConfig.looksLikeOvpn(req.text)) {
+                    val ovpn = runCatching { dev.valid7996.narcicgeteway.domain.config.OvpnConfig.inspect(req.text) }.getOrNull()
+                    if (ovpn != null && ovpn.needsCredentials && !ovpn.hasInlineCredentials) {
+                        ovpnPrompt = req.text to ovpn.name
+                        return@TextButton
+                    }
+                }
 
                 scope.launch(Dispatchers.Default) {
                     val outcome = when (request) {

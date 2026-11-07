@@ -34,6 +34,37 @@ object DesktopXray {
         return JsonObject(root + ("inbounds" to moved)).toString()
     }
 
+    fun withUpstreamSocks(config: String, upstreamPort: Int, upstreamTag: String = "upstream-socks"): String {
+        val root = runCatching { json.parseToJsonElement(config).jsonObject }.getOrNull() ?: return config
+        val outbounds = root["outbounds"] as? JsonArray ?: return config
+        val modifiedOutbounds = JsonArray(
+            outbounds.map { element ->
+                val ob = element as? JsonObject ?: return@map element
+                val tag = (ob["tag"] as? JsonPrimitive)?.content
+                if (tag == "proxy") {
+                    val stream = ob["streamSettings"] as? JsonObject ?: JsonObject(emptyMap())
+                    val sockopt = stream["sockopt"] as? JsonObject ?: JsonObject(emptyMap())
+                    val newSockopt = JsonObject(sockopt + ("dialerProxy" to JsonPrimitive(upstreamTag)))
+                    JsonObject(ob + ("streamSettings" to JsonObject(stream + ("sockopt" to newSockopt))))
+                } else {
+                    ob
+                }
+            } + buildJsonObject {
+                put("tag", upstreamTag)
+                put("protocol", "socks")
+                putJsonObject("settings") {
+                    putJsonArray("servers") {
+                        addJsonObject {
+                            put("address", "127.0.0.1")
+                            put("port", upstreamPort)
+                        }
+                    }
+                }
+            }
+        )
+        return JsonObject(root + ("outbounds" to modifiedOutbounds)).toString()
+    }
+
     fun frontConfig(listenPort: Int, upstreamPort: Int): String = buildJsonObject {
         putJsonObject("log") { put("loglevel", "warning") }
         putJsonArray("inbounds") {

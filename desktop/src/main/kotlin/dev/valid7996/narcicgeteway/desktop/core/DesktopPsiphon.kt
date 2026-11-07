@@ -1,5 +1,6 @@
 package dev.valid7996.narcicgeteway.desktop.core
 
+import dev.valid7996.narcicgeteway.core.LogBus
 import dev.valid7996.narcicgeteway.domain.config.PsiphonConfigBuilder
 import dev.valid7996.narcicgeteway.domain.config.PsiphonProfile
 import kotlinx.serialization.json.Json
@@ -42,10 +43,18 @@ class DesktopPsiphon(
             runCatching {
                 started.inputStream.bufferedReader().forEachLine { line ->
                     val notice = Notice.parse(line) ?: run {
-                        if (line.isNotBlank()) println("[psiphon] $line")
+                        if (line.isNotBlank()) {
+                            println("[psiphon] $line")
+                            LogBus.append("I/Psiphon: $line")
+                        }
                         return@forEachLine
                     }
-                    if (notice.type in LOGGED_NOTICES) println("[psiphon] ${notice.type} ${notice.data}")
+                    if (notice.type in LOGGED_NOTICES) {
+                        val outLine = "${notice.type} ${notice.data}"
+                        println("[psiphon] $outLine")
+                        val level = if (notice.type == "Error" || notice.type == "Alert") "E" else "I"
+                        LogBus.append("$level/Psiphon: $outLine")
+                    }
                     runCatching { onNotice(notice) }
                     if (notice.tunnels > 0 && connected.compareAndSet(false, true)) settled.countDown()
                 }

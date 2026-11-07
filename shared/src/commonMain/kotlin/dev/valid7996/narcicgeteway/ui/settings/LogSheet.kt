@@ -73,6 +73,10 @@ private enum class LogCategory(val tags: Set<String>) {
     Mhrv(setOf("mhrv_rs", "MhrvRelay", "MhrvRelayController", "mhrv")),
     Psiphon(setOf("Psiphon")),
     Ssh(setOf("Ssh", "SshController", "JSch")),
+    Adb(setOf(
+        "AndroidRuntime", "FATAL", "CRASH", "DEBUG", "libc", "System.err", "CrashHandler",
+        "ActivityManager", "WindowState", "WindowManager", "Zygote", "art", "ADB"
+    )),
 }
 
 private fun categoriesFor(kind: String?): Set<LogCategory> = when (kind) {
@@ -87,6 +91,11 @@ private fun categoriesFor(kind: String?): Set<LogCategory> = when (kind) {
     VpnManager.KIND_CROSS_CHAIN -> LogCategory.entries.toSet()
     else -> emptySet()
 }
+
+private val ADB_CRASH_KEYWORDS = listOf(
+    "FATAL EXCEPTION", "AndroidRuntime", "CrashHandler", "SIGSEGV", "Fatal signal",
+    "Exception", "Error:", "backtrace:", "tombstoned", "ANR in ", "DEBUG   :"
+)
 
 private val TAG_RE = Regex("""(?:^|\s)([VDIWEF])/([A-Za-z0-9_.$-]+)""")
 
@@ -122,6 +131,7 @@ private fun categoryLabel(category: LogCategory): String = when (category) {
     LogCategory.Mhrv -> "MHRV Relay"
     LogCategory.Psiphon -> "Psiphon"
     LogCategory.Ssh -> "SSH"
+    LogCategory.Adb -> "ADB"
 }
 
 @Composable
@@ -154,7 +164,7 @@ fun LogSheet(onDismiss: () -> Unit) {
     val lines = remember(allLines, picked, showAll, level, query, sessionCategories, appTags) {
         val allowed: Set<LogCategory>? = when {
             showAll -> null
-            picked != null -> setOf(picked!!, LogCategory.App)
+            picked != null -> if (picked == LogCategory.Adb) setOf(LogCategory.Adb) else setOf(picked!!, LogCategory.App)
             sessionCategories.isNotEmpty() -> sessionCategories + LogCategory.App
             else -> null
         }
@@ -163,8 +173,12 @@ fun LogSheet(onDismiss: () -> Unit) {
             .map(::parse)
             .filter { it.level in level.min }
             .filter { line ->
-                allowed == null || line.tag != null && allowed.any { cat ->
-                    line.tag in cat.tags || cat == LogCategory.App && line.tag in appTags
+                allowed == null || allowed.any { cat ->
+                    if (cat == LogCategory.Adb) {
+                        (line.tag != null && line.tag in cat.tags) || ADB_CRASH_KEYWORDS.any { line.raw.contains(it, ignoreCase = true) }
+                    } else {
+                        line.tag != null && (line.tag in cat.tags || (cat == LogCategory.App && line.tag in appTags))
+                    }
                 }
             }
             .filter { needle.isEmpty() || it.raw.contains(needle, ignoreCase = true) }

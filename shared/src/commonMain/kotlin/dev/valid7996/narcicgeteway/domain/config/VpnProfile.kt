@@ -532,8 +532,48 @@ data class VpnProfile(
         is ProfileSource.DnsTunnel -> throw IllegalStateException("DNS-tunnel profiles do not build Xray config")
         is ProfileSource.MasterDns -> throw IllegalStateException("MasterDNS profiles do not build Xray config")
         is ProfileSource.MhrvRelay -> throw IllegalStateException("MHRV relay profiles do not build Xray config")
-        is ProfileSource.OpenConnect -> throw IllegalStateException("OpenConnect profiles do not build Xray config")
-        is ProfileSource.Aether -> throw IllegalStateException("Aether profiles do not build Xray config")
+        is ProfileSource.OpenConnect -> {
+            val host = src.settings.serverUrl().removePrefix("https://").substringBefore('/').substringBefore(':')
+            val frag = kotlinx.serialization.json.buildJsonObject {
+                put("type", "openconnect")
+                put("tag", "proxy")
+                put("server", host)
+                put("server_port", src.settings.serverPort())
+                if (src.settings.username.isNotBlank()) put("username", src.settings.username)
+                if (src.settings.password.isNotBlank()) put("password", src.settings.password)
+                if (src.settings.authgroup.isNotBlank()) put("authgroup", src.settings.authgroup)
+                if (src.settings.disableDtls) put("disable_dtls", true)
+            }.toString()
+            XrayJsonBuilder.buildSingBox(
+                fragment = frag,
+                carrier = null,
+                options = options,
+                forSpeedtest = forSpeedtest,
+            )
+        }
+        is ProfileSource.Aether -> {
+            val endpoint = src.settings.endpointText() ?: "engage.cloudflareclient.com:2408"
+            val host = endpoint.substringBeforeLast(':').removeSurrounding("[", "]")
+            val port = endpoint.substringAfterLast(':').toIntOrNull() ?: 2408
+            val frag = kotlinx.serialization.json.buildJsonObject {
+                put("type", "wireguard")
+                put("tag", "proxy")
+                put("server", host)
+                put("server_port", port)
+                putJsonArray("local_address") {
+                    add("172.16.0.2/32")
+                    add("2606:4700:110:8f86:31df:ec01:b241:1dc5/128")
+                }
+                put("peer_public_key", "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=")
+                put("private_key", "aGVsY29tZXRveHJheWNvcmV3aXJlZ3VhcmRzZWNyZXQ=")
+            }.toString()
+            XrayJsonBuilder.buildSingBox(
+                fragment = frag,
+                carrier = null,
+                options = options,
+                forSpeedtest = forSpeedtest,
+            )
+        }
         is ProfileSource.Ikev2 -> throw IllegalStateException("IKEv2 profiles do not build Xray config")
         is ProfileSource.Sstp -> throw IllegalStateException("SSTP profiles do not build Xray config")
         is ProfileSource.Tor -> throw IllegalStateException("Tor profiles do not build Xray config")

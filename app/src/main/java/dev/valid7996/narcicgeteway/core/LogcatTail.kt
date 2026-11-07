@@ -24,7 +24,7 @@ object LogcatTail {
         job = scope.launch(Dispatchers.IO) {
             runCatching {
                 val proc = ProcessBuilder(
-                    "logcat", "-v", "time", "-T", SEED_LINES.toString(), "--pid=${android.os.Process.myPid()}",
+                    "logcat", "-b", "main", "-b", "crash", "-v", "time", "-T", SEED_LINES.toString(), "--pid=${android.os.Process.myPid()}",
                 ).redirectErrorStream(true).start()
                 process = proc
                 val batch = ArrayList<String>(64)
