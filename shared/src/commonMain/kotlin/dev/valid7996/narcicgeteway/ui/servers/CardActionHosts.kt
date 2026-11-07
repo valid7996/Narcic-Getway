@@ -25,6 +25,10 @@ import dev.valid7996.narcicgeteway.data.config.ConfigRepository
 import dev.valid7996.narcicgeteway.domain.config.ConfigParser
 import dev.valid7996.narcicgeteway.domain.config.ProfileSource
 import dev.valid7996.narcicgeteway.domain.config.VpnProfile
+import dev.valid7996.narcicgeteway.domain.config.SingBoxJson
+import dev.valid7996.narcicgeteway.domain.config.SingBoxLinks
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
@@ -75,8 +79,52 @@ internal fun CardActionHosts(
         }
     }
 
+    var forceEditJson by remember { mutableStateOf(false) }
+    LaunchedEffect(editTarget?.id) { forceEditJson = false }
+
     editTarget?.let { target ->
+        val singBoxLink = (target.source as? ProfileSource.SingBox)?.link
+            ?: target.rawPayload()?.takeIf { SingBoxLinks.handles(it) }
+            ?: runCatching {
+                val json = (target.source as? ProfileSource.SingBox)?.json
+                if (json != null) {
+                    val root = SingBoxJson.parse(json) as? JsonObject
+                    val outbound = (root?.get("outbounds") as? JsonArray)?.firstOrNull() as? JsonObject
+                    if (outbound != null && SingBoxLinks.formEditable(outbound)) {
+                        SingBoxLinks.build(outbound, target.name)
+                    } else null
+                } else null
+            }.getOrNull()
+
         when {
+            singBoxLink != null && SingBoxLinks.handles(singBoxLink) && !forceEditJson -> {
+                ManualConfigSheet(
+                    initialSingBoxLink = singBoxLink,
+                    onEditJson = { forceEditJson = true },
+                    onDismiss = {
+                        forceEditJson = false
+                        onDismissEdit()
+                    },
+                    onSave = { link ->
+                        forceEditJson = false
+                        val updated = runCatching {
+                            VpnProfile.fromLink(
+                                link = link,
+                                id = target.id,
+                                addedAt = target.addedAt,
+                                subscriptionId = target.subscriptionId,
+                            )
+                        }.getOrNull()
+                        if (updated == null) {
+                            platform.toast(configInvalid)
+                        } else {
+                            repository.update(updated.copy(lastPingMs = target.lastPingMs))
+                            toastSaved()
+                        }
+                        onDismissEdit()
+                    },
+                )
+            }
             target.isSingBox || target.isSingBoxConfig -> {
                 val source = target.source
                 RawJsonSheet(
@@ -86,10 +134,14 @@ internal fun CardActionHosts(
                         is ProfileSource.SingBoxConfig -> source.json
                         else -> ""
                     },
-                    onDismiss = onDismissEdit,
+                    onDismiss = {
+                        forceEditJson = false
+                        onDismissEdit()
+                    },
                     onSave = { text ->
                         repository.updateSingBox(target.id, text).fold(
                             onSuccess = {
+                                forceEditJson = false
                                 toastSaved()
                                 onDismissEdit()
                                 null

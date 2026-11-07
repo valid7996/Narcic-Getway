@@ -144,7 +144,11 @@ data class VpnProfile(
     val isOpenVpn: Boolean
         get() = protocol.equals("OPENVPN", ignoreCase = true) ||
                 transportLabel.contains("openvpn", ignoreCase = true) ||
-                (source as? ProfileSource.SingBox)?.json?.contains("\"openvpn\"") == true
+                (source as? ProfileSource.SingBox)?.json?.contains("\"openvpn\"") == true ||
+                ((resolveUnsealed() ?: this).let { un ->
+                    un.protocol.equals("OPENVPN", ignoreCase = true) ||
+                    (un.source as? ProfileSource.SingBox)?.json?.contains("\"openvpn\"") == true
+                })
 
     val isSstp: Boolean get() = ((resolveUnsealed() ?: this).source is ProfileSource.Sstp)
 
@@ -384,12 +388,45 @@ data class VpnProfile(
         // 3. SingBox links (vless with reality, hysteria2, tuic, wireguard, etc.)
         if (SingBoxLinks.handles(payload)) {
             val parsed = SingBoxLinks.parse(payload)
-            return copy(source = ProfileSource.SingBox(parsed.fragment, parsed.name), protocol = parsed.name)
+            return copy(source = ProfileSource.SingBox(parsed.fragment, parsed.name, link = payload), protocol = parsed.name)
         }
 
-        // 4. Sing-box JSON
-        if (SingBoxJson.isSingBox(payload)) {
-            return copy(source = ProfileSource.SingBoxConfig(payload), protocol = "SingBox")
+        // 3.5 OpenVPN ovpn text
+        if (OvpnConfig.looksLikeOvpn(payload)) {
+            val fragment = runCatching { OvpnConfig.toSingBoxFragment(payload) }.getOrNull()
+            if (fragment != null) {
+                val server = SingBoxJson.servers(fragment).firstOrNull()
+                if (server != null) {
+                    return copy(
+                        source = ProfileSource.SingBox(json = server.fragment, carrier = server.tag),
+                        protocol = "OPENVPN",
+                        address = server.address ?: address,
+                        port = server.port ?: port,
+                        transportLabel = "OpenVPN · sing-box",
+                    )
+                }
+            }
+        }
+
+        // 4. Sing-box JSON (full config vs server fragment)
+        when (SingBoxJson.shapeOf(payload)) {
+            SingBoxJson.Shape.FullConfig ->
+                return copy(source = ProfileSource.SingBoxConfig(payload), protocol = "SingBox")
+            SingBoxJson.Shape.None -> Unit
+            else -> {
+                val server = SingBoxJson.servers(payload).firstOrNull()
+                if (server != null) {
+                    val isOvpn = payload.contains("\"openvpn") || server.type.contains("openvpn")
+                    val proto = if (isOvpn) "OPENVPN" else SingBoxJson.typeLabel(server.type).uppercase()
+                    return copy(
+                        source = ProfileSource.SingBox(json = server.fragment, carrier = server.tag),
+                        protocol = proto,
+                        address = server.address ?: address,
+                        port = server.port ?: port,
+                        transportLabel = if (isOvpn) "OpenVPN · sing-box" else "${server.label} · sing-box",
+                    )
+                }
+            }
         }
 
         // 5. Standard Xray link
