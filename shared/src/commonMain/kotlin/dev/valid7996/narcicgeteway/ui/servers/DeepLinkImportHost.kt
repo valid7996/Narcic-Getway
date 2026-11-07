@@ -41,6 +41,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Modifier
 
 @Composable
 fun DeepLinkImportHost(repository: ConfigRepository, onImported: () -> Unit) {

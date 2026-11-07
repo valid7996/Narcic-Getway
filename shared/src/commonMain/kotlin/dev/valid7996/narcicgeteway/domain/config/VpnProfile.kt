@@ -6,6 +6,10 @@ import dev.valid7996.narcicgeteway.crypto.ZsxCrypto
 import kotlin.io.encoding.Base64
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 @Serializable
 sealed interface ProfileSource {
