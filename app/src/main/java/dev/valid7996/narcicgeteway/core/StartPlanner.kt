@@ -80,11 +80,7 @@ class StartPlanner(context: Context) {
             configJson = configJson,
             remark = if (profile.isAutoSelect) autoSelectRemark(profile) else profile.name,
             kind = kind,
-            socksPort = if (kind in setOf(VpnManager.KIND_WHITEDNS, VpnManager.KIND_COTTENDNS, VpnManager.KIND_STORMDNS, VpnManager.KIND_SOAR)) {
-                dev.valid7996.narcicgeteway.domain.config.LocalPorts.WHITEDNS_SOCKS
-            } else {
-                settings.effectiveLocalProxyPort
-            },
+            socksPort = settings.effectiveLocalProxyPort,
             proxyOnly = proxyOnly,
             engine = profile.engineLabel,
         )
@@ -136,12 +132,6 @@ class StartPlanner(context: Context) {
         profile.psiphonSettings() != null -> VpnManager.KIND_PSIPHON
         profile.dnsTunnelSettings() != null -> VpnManager.KIND_DNS_TUNNEL
         profile.masterDnsSettings() != null -> VpnManager.KIND_MASTERDNS
-        profile.whiteDnsSettings() != null -> when (profile.whiteDnsSettings()?.normalizedEngine()) {
-            dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.ENGINE_COTTENDNS -> VpnManager.KIND_COTTENDNS
-            dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.ENGINE_STORMDNS -> VpnManager.KIND_STORMDNS
-            dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.ENGINE_SOAR -> VpnManager.KIND_SOAR
-            else -> VpnManager.KIND_COTTENDNS
-        }
         profile.mhrvRelaySettings() != null -> VpnManager.KIND_MHRV
         profile.openConnectSettings() != null -> VpnManager.KIND_OPENCONNECT
         profile.aetherSettings() != null -> VpnManager.KIND_AETHER
@@ -184,11 +174,6 @@ class StartPlanner(context: Context) {
                 ipv6 = s.enableIpv6,
                 device = s.singBoxDeviceOptions(),
             ).json
-        }
-        profile.whiteDnsSettings()?.let {
-            return kotlinx.serialization.json.Json.encodeToString(
-                dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.serializer(), it,
-            )
         }
         profile.sshSettings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
@@ -405,10 +390,6 @@ class StartPlanner(context: Context) {
             VpnManager.KIND_MASTERDNS,
             VpnManager.KIND_TOR,
             VpnManager.KIND_SSH,
-            VpnManager.KIND_WHITEDNS,
-            VpnManager.KIND_COTTENDNS,
-            VpnManager.KIND_STORMDNS,
-            VpnManager.KIND_SOAR,
         )
     }
 }

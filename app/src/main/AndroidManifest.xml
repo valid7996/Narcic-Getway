@@ -83,11 +83,7 @@
                 <data android:scheme="sstp" />
                 <data android:scheme="nrg" />
                 <data android:scheme="zsx" />
-                <data android:scheme="cottendns" />
-                <data android:scheme="stormdns" />
-                <data android:scheme="soar" />
                 <data android:scheme="masterdns" />
-                <data android:scheme="whitedns" />
             </intent-filter>
 
             <intent-filter>

@@ -11,13 +11,13 @@ object DeepLinkParser {
         "narcicgeteway", "narcicgetway", "v2rayng", "hiddify", "sing-box", "clash", "clashmeta", "v2raytun", "streisand",
         "happ", "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "wg", "awg",
         "socks", "socks5", "snispoof", "aether", "sstp", "nrg", "zsx",
-        "cottendns", "stormdns", "soar", "masterdns", "whitedns",
+        "masterdns",
     )
 
     private val CONFIG_SCHEMES = setOf(
         "vless", "vmess", "trojan", "ss", "hysteria", "hysteria2", "hy2", "wireguard", "wg", "awg", "socks", "socks5",
         "snispoof", "aether", "sstp", "nrg", "zsx",
-        "cottendns", "stormdns", "soar", "masterdns", "whitedns",
+        "masterdns",
     )
 
     private const val MAX_LENGTH = 2 * 1024 * 1024
@@ -210,7 +210,6 @@ data class DeepLinkPreview(
             is ProfileSource.Tor -> "Tor"
             is ProfileSource.Ssh -> "SSH"
             is ProfileSource.MasterDns -> "MasterDNS"
-            is ProfileSource.WhiteDns -> "WhiteDNS (${source.settings.engine})"
             is ProfileSource.MhrvRelay -> "MHRV Relay"
             is ProfileSource.OpenConnect -> "OpenConnect"
             is ProfileSource.Ikev2 -> "IKEv2"

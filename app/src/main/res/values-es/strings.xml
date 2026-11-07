@@ -656,28 +656,6 @@
     <string name="widget_medium_description">Estado del servidor, bandera y control rápido.</string>
     <string name="widget_large_label">Panel Bento Narcic</string>
     <string name="widget_large_description">Panel completo con tráfico en vivo, temporizador y detalles.</string>
-
-    <string name="whitedns_add_title">Añadir WhiteDNS / CottenDNS</string>
-    <string name="whitedns_engine_label">Motor</string>
-    <string name="whitedns_domain_label">Dominio(s) del túnel</string>
-    <string name="whitedns_domain_hint">ns1.example.com o sub.domain.com</string>
-    <string name="whitedns_key_label">Clave de cifrado</string>
-    <string name="whitedns_method_label">Método de cifrado</string>
-    <string name="whitedns_tunnel_mode_label">Modo de túnel</string>
-    <string name="whitedns_transport_mode_label">Modo de transporte</string>
-    <string name="whitedns_mode_normal">Normal</string>
-    <string name="whitedns_mode_max">Máx (CottenMax: recuperación de pérdida + reanudación rápida)</string>
-    <string name="whitedns_mode_legacy">MasterDNS heredado</string>
-    <string name="whitedns_transport_auto">Automático (Adaptativo)</string>
-    <string name="whitedns_transport_udp">Solo UDP</string>
-    <string name="whitedns_transport_tcp">Solo TCP</string>
-    <string name="whitedns_bundled_resolvers_label">Resolutores integrados (4.785 servidores activos)</string>
-    <string name="whitedns_bundled_resolvers_sub">Resolutores verificados para evitar tiempo de espera</string>
-    <string name="whitedns_resolvers_label">Resolutores personalizados (una IP por línea)</string>
-    <string name="whitedns_resolvers_hint">8.8.8.8
-1.1.1.1</string>
-    <string name="add_whitedns_server">WhiteDNS / CottenDNS</string>
-    <string name="add_whitedns_server_sub">Túnel DNS de alta velocidad con recuperación CottenMax</string>
     <string name="no_active_server">Ningún servidor activo seleccionado</string>
     <string name="protected_server_desc">Protocolo seguro • Servidor protegido</string>
     <string name="protected_live_enc">Protegido • Cifrado en vivo</string>

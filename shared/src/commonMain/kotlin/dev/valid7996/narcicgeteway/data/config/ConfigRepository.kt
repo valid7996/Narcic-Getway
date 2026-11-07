@@ -13,8 +13,6 @@ import dev.valid7996.narcicgeteway.crypto.ZsxExpiredException
 import dev.valid7996.narcicgeteway.crypto.ZsxMetadata
 import dev.valid7996.narcicgeteway.crypto.ZsxSealRequest
 import dev.valid7996.narcicgeteway.domain.config.AetherLink
-import dev.valid7996.narcicgeteway.domain.config.WhiteDnsLink
-import dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile
 import dev.valid7996.narcicgeteway.domain.config.AmneziaLink
 import dev.valid7996.narcicgeteway.domain.config.AutoMember
 import dev.valid7996.narcicgeteway.domain.config.AutoSelectBuild
@@ -125,16 +123,6 @@ class ConfigRepository(private val store: KeyValueStore) {
             }
             if (added > 0) return@runCatching added
             throw IllegalArgumentException("no usable aether:// config found")
-        }
-
-        val whiteDnsLines = trimmed.lines().map { it.trim() }.filter { WhiteDnsLink.isWhiteDnsLink(it) }
-        if (whiteDnsLines.isNotEmpty() && whiteDnsLines.size == trimmed.lines().count { it.isNotBlank() }) {
-            var added = 0
-            whiteDnsLines.forEach { line ->
-                WhiteDnsLink.parse(line)?.let { (nm, prof) -> addWhiteDns(prof, nm, subscriptionId = subscriptionId); added++ }
-            }
-            if (added > 0) return@runCatching added
-            throw IllegalArgumentException("no usable whitedns config found")
         }
 
         val sstpLines = trimmed.lines().map { it.trim() }.filter { it.startsWith("sstp://", ignoreCase = true) }
@@ -297,16 +285,6 @@ class ConfigRepository(private val store: KeyValueStore) {
                     val (nm, prof) = AetherLink.parse(link)
                         ?: throw IllegalArgumentException("invalid aether link")
                     VpnProfile.fromAether(
-                        settings = prof,
-                        id = newId(),
-                        addedAt = currentTimeMillis(),
-                        name = nm,
-                        subscriptionId = subscriptionId,
-                    )
-                } else if (WhiteDnsLink.isWhiteDnsLink(link)) {
-                    val (nm, prof) = WhiteDnsLink.parse(link)
-                        ?: throw IllegalArgumentException("invalid whitedns link")
-                    VpnProfile.fromWhiteDns(
                         settings = prof,
                         id = newId(),
                         addedAt = currentTimeMillis(),
@@ -550,30 +528,6 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
-        ).let { carryOver(existing, it) }
-        _profiles.value = if (existing != null) {
-            _profiles.value.map { if (it.id == profile.id) profile else it }
-        } else {
-            listOf(profile) + _profiles.value
-        }
-        persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
-        return profile
-    }
-
-    fun addWhiteDns(
-        settings: dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile,
-        name: String,
-        id: String? = null,
-        subscriptionId: String = "",
-    ): VpnProfile {
-        val existing = id?.let { profile(it) }
-        val profile = VpnProfile.fromWhiteDns(
-            settings = settings,
-            id = existing?.id ?: id ?: newId(),
-            addedAt = existing?.addedAt ?: currentTimeMillis(),
-            name = name.ifBlank { "WhiteDNS (${settings.engine})" },
-            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId.orEmpty() },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
@@ -970,7 +924,6 @@ class ConfigRepository(private val store: KeyValueStore) {
             is ProfileSource.Tor -> { addTor(name); 1 }
             is ProfileSource.Ssh -> { addSsh(src.settings, name); 1 }
             is ProfileSource.MasterDns -> { addMasterDns(src.settings, name); 1 }
-            is ProfileSource.WhiteDns -> { addWhiteDns(src.settings, name); 1 }
             is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name); 1 }
             is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
             is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }

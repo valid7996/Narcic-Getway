@@ -2917,28 +2917,6 @@
 
     <!-- Protocols -->
     <string name="ms_sstp_desc">Microsoft / MikroTik Secure Tunnel Protocol (SSL)</string>
-
-    <string name="whitedns_add_title">Add WhiteDNS / CottenDNS</string>
-    <string name="whitedns_engine_label">Engine</string>
-    <string name="whitedns_domain_label">Tunnel Domain(s)</string>
-    <string name="whitedns_domain_hint">ns1.example.com or sub.domain.com</string>
-    <string name="whitedns_key_label">Encryption Key</string>
-    <string name="whitedns_method_label">Encryption Method</string>
-    <string name="whitedns_tunnel_mode_label">Tunnel Mode</string>
-    <string name="whitedns_transport_mode_label">Transport Mode</string>
-    <string name="whitedns_mode_normal">Normal</string>
-    <string name="whitedns_mode_max">Max (CottenMax: Loss Recovery + Fast Resume)</string>
-    <string name="whitedns_mode_legacy">Legacy MasterDNS</string>
-    <string name="whitedns_transport_auto">Auto (Adaptive)</string>
-    <string name="whitedns_transport_udp">UDP Only</string>
-    <string name="whitedns_transport_tcp">TCP Only</string>
-    <string name="whitedns_bundled_resolvers_label">Bundled Resolvers (4,785 working servers)</string>
-    <string name="whitedns_bundled_resolvers_sub">Pre-tested recursive resolvers optimized to bypass filtering</string>
-    <string name="whitedns_resolvers_label">Custom Resolvers (one IP per line)</string>
-    <string name="whitedns_resolvers_hint">8.8.8.8
-1.1.1.1</string>
-    <string name="add_whitedns_server">WhiteDNS / CottenDNS</string>
-    <string name="add_whitedns_server_sub">High-speed DNS tunnel with CottenMax loss recovery</string>
     <string name="no_active_server">No active server selected</string>
     <string name="protected_server_desc">Secure Protocol • Protected Server</string>
     <string name="protected_live_enc">Protected • Live encryption</string>

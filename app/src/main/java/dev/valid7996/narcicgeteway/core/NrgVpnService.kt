@@ -66,7 +66,6 @@ private var bentoCard: Boolean = false
     private var aether: AetherController? = null
     private var dnsTunnel: DnsTunnelController? = null
     private var masterDns: MasterDnsController? = null
-    private var whiteDns: WhiteDnsController? = null
     private var mhrv: MhrvRelayController? = null
     private var tor: dev.valid7996.narcicgeteway.core.tor.TorController? = null
     private var ssh: SshController? = null
@@ -319,8 +318,6 @@ private var bentoCard: Boolean = false
             VpnManager.KIND_AETHER -> startAether(configJson, descriptor, tunMtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, descriptor, tunMtu, settings)
-            VpnManager.KIND_WHITEDNS, VpnManager.KIND_COTTENDNS, VpnManager.KIND_STORMDNS, VpnManager.KIND_SOAR ->
-                startWhiteDns(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_MHRV -> startMhrv(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, descriptor, tunMtu)
             VpnManager.KIND_SSH -> startSsh(configJson, descriptor, tunMtu, settings)
@@ -604,42 +601,6 @@ private var bentoCard: Boolean = false
         bridgeEngine(descriptor, upstreamPort, tunMtu, unreachable = R.string.dns_tunnel_unreachable)
     }
 
-    private fun startWhiteDns(
-        configJson: String,
-        descriptor: ParcelFileDescriptor?,
-        tunMtu: Int,
-        appSettings: AppSettings,
-    ) {
-        val profile = try {
-            kotlinx.serialization.json.Json.decodeFromString(
-                dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.serializer(), configJson,
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "bad WhiteDNS config", e)
-            VpnManager.onError(getString(R.string.config_invalid))
-            stopEverything(); return
-        }
-
-        val controller = WhiteDnsController(
-            context = this,
-            profile = profile,
-            socksPort = LocalPorts.WHITEDNS_SOCKS,
-        )
-        whiteDns = controller
-        if (!controller.start()) {
-            VpnManager.onError("Could not start WhiteDNS engine (${profile.engine})")
-            stopEverything(); return
-        }
-
-        if (!controller.awaitReady(60_000L)) {
-            val err = controller.failureReason ?: "WhiteDNS SOCKS listener failed to open"
-            VpnManager.onError(err)
-            stopEverything(); return
-        }
-
-        bridgeEngine(descriptor, controller.socksPort, tunMtu)
-    }
-
     private fun startMasterDns(
         configJson: String,
         descriptor: ParcelFileDescriptor?,
@@ -863,8 +824,6 @@ private var bentoCard: Boolean = false
             VpnManager.KIND_PSIPHON -> startPsiphon(configJson, null, mtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, null, mtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, null, mtu, settings)
-            VpnManager.KIND_WHITEDNS, VpnManager.KIND_COTTENDNS, VpnManager.KIND_STORMDNS, VpnManager.KIND_SOAR ->
-                startWhiteDns(configJson, null, mtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, null, mtu)
             VpnManager.KIND_SSH -> startSsh(configJson, null, mtu, settings)
         }
@@ -1341,7 +1300,6 @@ private var bentoCard: Boolean = false
                     VpnManager.KIND_PSIPHON -> psiphon?.isRunning == true
                     VpnManager.KIND_DNS_TUNNEL -> dnsTunnel?.isRunning == true
                     VpnManager.KIND_MASTERDNS -> masterDns?.isRunning == true
-                    VpnManager.KIND_WHITEDNS, VpnManager.KIND_COTTENDNS, VpnManager.KIND_STORMDNS, VpnManager.KIND_SOAR -> whiteDns?.isRunning == true
                     VpnManager.KIND_MHRV -> mhrv?.isRunning == true
                     VpnManager.KIND_TOR -> tor?.isRunning == true
                     VpnManager.KIND_SSH -> ssh?.isRunning == true
@@ -1605,7 +1563,6 @@ private var bentoCard: Boolean = false
         AetherSupport.releaseExit()
         dnsTunnel?.stop(); dnsTunnel = null
         masterDns?.stop(); masterDns = null
-        whiteDns?.stop(); whiteDns = null
         tor?.stop(); tor = null
         ssh?.stop(); ssh = null
         if (rstaHeld) { RstaSpoofClient.release(this); rstaHeld = false } else RstaSpoofClient.stop(this)

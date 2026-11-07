@@ -1311,7 +1311,7 @@ private suspend fun pingOne(
     val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
     val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
     val isMhrv = profile.isMhrvRelay
-    val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn || profile.isWhiteDns || profile.isDnsTunnel || profile.isMasterDns
+    val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn || profile.isDnsTunnel || profile.isMasterDns
     val ms = if (real || isSpecial) {
         PingService.realDelay(
             profile,
@@ -1323,7 +1323,6 @@ private suspend fun pingOne(
     val addressForGeo = when {
         profile.isIkev2 -> profile.ikev2Settings()?.server?.substringBefore(':') ?: profile.address
         profile.isOpenConnect -> profile.openConnectSettings()?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':') ?: profile.address
-        profile.isWhiteDns -> profile.whiteDnsSettings()?.domainsList()?.firstOrNull() ?: profile.address
         profile.isDnsTunnel -> profile.dnsTunnelSettings()?.domain?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
         profile.isMasterDns -> profile.masterDnsSettings()?.domains?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
         else -> profile.address

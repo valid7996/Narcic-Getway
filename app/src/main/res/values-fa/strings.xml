@@ -985,28 +985,6 @@
     <string name="widget_medium_description">مشاهده سرور، پرچم و سوئیچ سریع اتصال.</string>
     <string name="widget_large_label">داشبورد بنتو نارسیس</string>
     <string name="widget_large_description">داشبورد کامل با ترافیک زنده، زمان و جزئیات سرور.</string>
-
-    <string name="whitedns_add_title">افزودن وایت دی‌ان‌اس / CottenDNS</string>
-    <string name="whitedns_engine_label">موتور اجرایی</string>
-    <string name="whitedns_domain_label">دامنه تونل (Domains)</string>
-    <string name="whitedns_domain_hint">ns1.example.com یا sub.domain.com</string>
-    <string name="whitedns_key_label">کلید رمزنگاری (Encryption Key)</string>
-    <string name="whitedns_method_label">روش رمزنگاری</string>
-    <string name="whitedns_tunnel_mode_label">حالت تونل (Tunnel Mode)</string>
-    <string name="whitedns_transport_mode_label">پروتکل انتقال (Transport)</string>
-    <string name="whitedns_mode_normal">عادی (Normal)</string>
-    <string name="whitedns_mode_max">حداکثر (CottenMax: بازیابی پاکت + اتصال سریع)</string>
-    <string name="whitedns_mode_legacy">سنتی (Legacy MasterDNS)</string>
-    <string name="whitedns_transport_auto">خودکار (انطباقی)</string>
-    <string name="whitedns_transport_udp">فقط UDP</string>
-    <string name="whitedns_transport_tcp">فقط TCP</string>
-    <string name="whitedns_bundled_resolvers_label">مخزن جامع ریزالورها (۴,۷۸۵ سرور فعال)</string>
-    <string name="whitedns_bundled_resolvers_sub">سرورهای بازآزموده‌شده ضد فیلتر برای جلوگیری از تایم‌اوت</string>
-    <string name="whitedns_resolvers_label">ریزالورهای سفارشی (در هر خط یک IP)</string>
-    <string name="whitedns_resolvers_hint">8.8.8.8
-1.1.1.1</string>
-    <string name="add_whitedns_server">WhiteDNS / CottenDNS</string>
-    <string name="add_whitedns_server_sub">تونل دی‌ان‌اس پرسرعت با موتور CottenMax</string>
     <string name="no_active_server">سرور فعال انتخاب نشده</string>
     <string name="protected_server_desc">پروتکل امن • سرور محافظت‌شده</string>
     <string name="protected_live_enc">محافظت‌شده • رمزنگاری زنده</string>
