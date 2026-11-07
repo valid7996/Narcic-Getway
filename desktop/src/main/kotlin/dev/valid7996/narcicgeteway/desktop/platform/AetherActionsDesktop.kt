@@ -4,8 +4,6 @@ import dev.valid7996.narcicgeteway.core.LogBus
 import dev.valid7996.narcicgeteway.data.net.WarpMasque
 import dev.valid7996.narcicgeteway.domain.config.AetherCommands
 import dev.valid7996.narcicgeteway.domain.config.AetherProfile
-import dev.valid7996.narcicgeteway.platform.tcpConnectMillis
-import dev.valid7996.narcicgeteway.platform.udpProbeMillis
 import dev.valid7996.narcicgeteway.ui.servers.AetherActions
 import dev.valid7996.narcicgeteway.ui.servers.AetherCoreInfo
 import dev.valid7996.narcicgeteway.ui.servers.AetherKeyUiEntry
@@ -24,6 +22,26 @@ object AetherActionsDesktop : AetherActions {
     private val work = File(System.getProperty("java.io.tmpdir"), "narcicgeteway/aether").apply { mkdirs() }
     private val cancel = AtomicBoolean(false)
     private val json = Json { ignoreUnknownKeys = true }
+
+    private fun tcpPing(host: String, port: Int, timeoutMs: Int): Long = runCatching {
+        val t0 = System.currentTimeMillis()
+        java.net.Socket().use { it.connect(java.net.InetSocketAddress(host, port), timeoutMs) }
+        (System.currentTimeMillis() - t0).coerceAtLeast(1L)
+    }.getOrDefault(-1L)
+
+    private fun udpProbe(host: String, port: Int, payload: ByteArray, timeoutMs: Int): Long = runCatching {
+        val t0 = System.currentTimeMillis()
+        java.net.DatagramSocket().use { socket ->
+            socket.soTimeout = timeoutMs
+            val addr = java.net.InetAddress.getByName(host)
+            val packet = java.net.DatagramPacket(payload, payload.size, addr, port)
+            socket.send(packet)
+            val buf = ByteArray(128)
+            val resp = java.net.DatagramPacket(buf, buf.size)
+            socket.receive(resp)
+            (System.currentTimeMillis() - t0).coerceAtLeast(1L)
+        }
+    }.getOrDefault(-1L)
 
     override suspend fun scan(profile: AetherProfile, onOutput: (String) -> Unit): AetherScanUiResult? = withContext(Dispatchers.IO) {
         cancel.set(false)
@@ -51,8 +69,8 @@ object AetherActionsDesktop : AetherActions {
             if (cancel.get()) break
             for (port in ports) {
                 if (cancel.get()) break
-                val udpMs = udpProbeMillis(ip, port, wgPkt, 600)
-                val ms = if (udpMs > 0) udpMs else tcpConnectMillis(ip, port, 400)
+                val udpMs = udpProbe(ip, port, wgPkt, 600)
+                val ms = if (udpMs > 0) udpMs else tcpPing(ip, port, 400)
                 if (ms > 0 && ms < bestPing) {
                     bestPing = ms
                     bestEndpoint = "$ip:$port"
