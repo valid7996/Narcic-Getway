@@ -26,9 +26,11 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq rpm fakeroot file desktop-file-utils
-          curl -sSLo /usr/local/bin/appimagetool \
+          curl -sSL --retry 5 -o /usr/local/bin/appimagetool \
             https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x /usr/local/bin/appimagetool
+          curl -sSL --retry 5 -o /usr/local/bin/runtime-x86_64 \
+            https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
 
       - name: Fetch the bundled engines
         env:
@@ -102,7 +104,7 @@ jobs:
           exec "\$HERE/usr/bin/$(basename "$BIN")" "\$@"
           EOF
           chmod +x AppDir/AppRun
-          ARCH=x86_64 appimagetool --no-appstream AppDir "dist/NarcicGetway-$V-x86_64.AppImage"
+          ARCH=x86_64 appimagetool --runtime-file /usr/local/bin/runtime-x86_64 --no-appstream AppDir "dist/NarcicGetway-$V-x86_64.AppImage"
 
           ( cd dist && sha256sum NarcicGetway-* > SHA256SUMS-linux.txt )
           ls -lh dist
@@ -186,7 +188,15 @@ jobs:
         run: bash gradlew --no-daemon :desktop:test
 
       - name: Build the installer and the portable build
-        run: bash gradlew --no-daemon :desktop:packageMsi :desktop:createDistributable
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            ./gradlew --no-daemon :desktop:packageMsi :desktop:createDistributable && break || {
+              if [ "$i" -eq 3 ]; then exit 1; fi
+              echo "Retrying gradle build (attempt $i failed)..."
+              sleep 10
+            }
+          done
 
       - name: Assemble the release files
         shell: bash
