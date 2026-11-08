@@ -22,6 +22,7 @@ class CrossChainTest {
         Triple("ssh", LocalPorts.SSH, LocalPorts.SSH_MAX),
         Triple("dns-tunnel", LocalPorts.DNS_TUNNEL, LocalPorts.DNS_TUNNEL_MAX),
         Triple("master-dns", LocalPorts.MASTER_DNS, LocalPorts.MASTER_DNS_MAX),
+        Triple("white-dns", LocalPorts.WHITE_DNS, LocalPorts.WHITE_DNS_MAX),
         Triple("ssh-over-dns", LocalPorts.SSH_OVER_DNS, LocalPorts.SSH_OVER_DNS_MAX),
         Triple("tor", LocalPorts.TOR_SOCKS, LocalPorts.TOR_SOCKS),
     )

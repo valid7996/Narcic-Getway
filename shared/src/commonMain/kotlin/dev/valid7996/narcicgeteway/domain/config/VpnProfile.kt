@@ -50,6 +50,10 @@ sealed interface ProfileSource {
     data class MasterDns(val settings: MasterDnsProfile) : ProfileSource
 
     @Serializable
+    @SerialName("white_dns")
+    data class WhiteDns(val settings: WhiteDnsProfile) : ProfileSource
+
+    @Serializable
     @SerialName("mhrv_relay")
     data class MhrvRelay(val settings: MhrvRelayProfile) : ProfileSource
 
@@ -121,6 +125,8 @@ data class VpnProfile(
     val isDnsTunnel: Boolean get() = source is ProfileSource.DnsTunnel
 
     val isMasterDns: Boolean get() = source is ProfileSource.MasterDns
+
+    val isWhiteDns: Boolean get() = source is ProfileSource.WhiteDns
 
     val isMhrvRelay: Boolean get() = source is ProfileSource.MhrvRelay
 
@@ -207,16 +213,18 @@ data class VpnProfile(
     }
 
     val isManagedTunnel: Boolean
-        get() = isPsiphon || isDnsTunnel || isMasterDns || isMhrvRelay || isTor || isSsh || isSniSpoof ||
+        get() = isPsiphon || isDnsTunnel || isMasterDns || isWhiteDns || isMhrvRelay || isTor || isSsh || isSniSpoof ||
             isOpenConnect || isIkev2 || isAether || isCrossChain || isSingBoxConfig || isSstp
 
-    val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns
+    val isDnsBasedTunnel: Boolean get() = isDnsTunnel || isMasterDns || isWhiteDns
 
     fun psiphonSettings(): PsiphonProfile? = (source as? ProfileSource.Psiphon)?.settings
 
     fun dnsTunnelSettings(): DnsTunnelProfile? = (source as? ProfileSource.DnsTunnel)?.settings
 
     fun masterDnsSettings(): MasterDnsProfile? = (source as? ProfileSource.MasterDns)?.settings
+
+    fun whiteDnsSettings(): WhiteDnsProfile? = (source as? ProfileSource.WhiteDns)?.settings
 
     fun mhrvRelaySettings(): MhrvRelayProfile? = (source as? ProfileSource.MhrvRelay)?.settings
 
@@ -468,6 +476,7 @@ data class VpnProfile(
 
         is ProfileSource.SniSpoof -> SniSpoofLink.build(src.settings, name)
         is ProfileSource.MasterDns -> NrgLink.build(name, src)
+        is ProfileSource.WhiteDns -> NrgLink.build(name, src)
         is ProfileSource.MhrvRelay -> NrgLink.build(name, src)
         is ProfileSource.OpenConnect -> NrgLink.build(name, src)
         is ProfileSource.Ikev2 -> NrgLink.build(name, src)
@@ -535,6 +544,7 @@ data class VpnProfile(
         is ProfileSource.Psiphon -> throw IllegalStateException("Psiphon profiles do not build Xray config")
         is ProfileSource.DnsTunnel -> throw IllegalStateException("DNS-tunnel profiles do not build Xray config")
         is ProfileSource.MasterDns -> throw IllegalStateException("MasterDNS profiles do not build Xray config")
+        is ProfileSource.WhiteDns -> throw IllegalStateException("WhiteDNS profiles do not build Xray config")
         is ProfileSource.MhrvRelay -> throw IllegalStateException("MHRV relay profiles do not build Xray config")
         is ProfileSource.OpenConnect -> {
             val host = src.settings.serverUrl().removePrefix("https://").substringBefore('/').substringBefore(':')
@@ -653,6 +663,7 @@ data class VpnProfile(
             is ProfileSource.Psiphon -> "Psiphon"
             is ProfileSource.DnsTunnel -> if (src.settings.isVaydns) "VayDNS" else "DNSTT"
             is ProfileSource.MasterDns -> "MasterDNS"
+            is ProfileSource.WhiteDns -> src.settings.engineLabel
             is ProfileSource.Ssh -> "SSH"
             is ProfileSource.OpenConnect -> "OpenConnect"
             is ProfileSource.Ikev2 -> "IKEv2"
@@ -795,6 +806,22 @@ data class VpnProfile(
             addedAt = addedAt,
         )
 
+
+        fun fromWhiteDns(
+            settings: WhiteDnsProfile,
+            id: String,
+            addedAt: Long,
+            name: String,
+        ): VpnProfile = VpnProfile(
+            id = id,
+            name = name.ifBlank { settings.primaryDomain().ifBlank { settings.engineLabel } },
+            protocol = "WHITEDNS",
+            address = settings.primaryDomain(),
+            port = 0,
+            transportLabel = settings.engineLabel,
+            source = ProfileSource.WhiteDns(settings),
+            addedAt = addedAt,
+        )
 
         fun fromMhrvRelay(
             settings: MhrvRelayProfile,

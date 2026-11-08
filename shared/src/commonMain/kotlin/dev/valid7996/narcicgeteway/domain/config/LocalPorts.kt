@@ -23,6 +23,9 @@ object LocalPorts {
     const val MASTER_DNS = 10860
     const val MASTER_DNS_MAX = 10869
 
+    const val WHITE_DNS = 10910
+    const val WHITE_DNS_MAX = 10919
+
     const val MHRV_HTTP = 10900
     const val MHRV_SOCKS = 10901
 
@@ -48,7 +51,7 @@ object LocalPorts {
         port == XRAY_SOCKS || port == XRAY_HTTP || port == SNI_SPOOF || port == DESKTOP_METRICS ||
             port == SHIM || port == PSIPHON_SOCKS || port == PSIPHON_HTTP || port == TOR_SOCKS || port in AETHER_SOCKS..AETHER_EXIT ||
             port in SSH..SSH_MAX || port in DNS_TUNNEL..DNS_TUNNEL_MAX ||
-            port in MASTER_DNS..MASTER_DNS_MAX || port == MHRV_HTTP || port == MHRV_SOCKS || port in SSH_OVER_DNS..SSH_OVER_DNS_MAX
+            port in MASTER_DNS..MASTER_DNS_MAX || port in WHITE_DNS..WHITE_DNS_MAX || port == MHRV_HTTP || port == MHRV_SOCKS || port in SSH_OVER_DNS..SSH_OVER_DNS_MAX
 
 
     fun localProxyPort(requested: Int): Int =

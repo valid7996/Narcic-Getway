@@ -144,6 +144,7 @@ internal fun HomeServerSection(
     var showCustomJson by remember { mutableStateOf(false) }
     var showDnsTunnel by remember { mutableStateOf(false) }
     var showMasterDns by remember { mutableStateOf(false) }
+    var showWhiteDns by remember { mutableStateOf(false) }
     var showMhrv by remember { mutableStateOf(false) }
     var showOpenConnect by remember { mutableStateOf(false) }
     var showIkev2 by remember { mutableStateOf(false) }
@@ -777,6 +778,10 @@ internal fun HomeServerSection(
                 showAdd = false
                 showMasterDns = true
             },
+            onWhiteDns = {
+                showAdd = false
+                showWhiteDns = true
+            },
             onMhrv = {
                 showAdd = false
                 showMhrv = true
@@ -939,6 +944,16 @@ internal fun HomeServerSection(
             onSave = { name, s ->
                 showMasterDns = false
                 repository.addMasterDns(s, name)
+            },
+        )
+    }
+
+    if (showWhiteDns) {
+        dev.valid7996.narcicgeteway.ui.servers.WhiteDnsSheet(
+            onDismiss = { showWhiteDns = false },
+            onSave = { name, s ->
+                showWhiteDns = false
+                repository.addWhiteDns(s, name)
             },
         )
     }
@@ -1311,7 +1326,7 @@ private suspend fun pingOne(
     val isSpoof = profile.isAether || profile.isNoRootSniSpoof || profile.isSniSpoof || profile.isSstp
     val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
     val isMhrv = profile.isMhrvRelay
-    val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn || profile.isDnsTunnel || profile.isMasterDns
+    val isSpecial = isSpoof || isSealed || isMhrv || profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn || profile.isDnsTunnel || profile.isMasterDns || profile.isWhiteDns
     val ms = if (real || isSpecial) {
         PingService.realDelay(
             profile,

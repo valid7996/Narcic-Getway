@@ -175,3 +175,16 @@ Fonts
 -----
 Inter — SIL Open Font License 1.1 — https://github.com/rsms/inter
 Estedad — SIL Open Font License 1.1 — https://github.com/aminabedi68/Estedad
+
+
+WhiteDNS engines (StormDNS / CottenDNS)
+---------------------------------------
+Source: WhiteDNS Android — https://github.com/ (WhiteDNS project, Pedram Marandi)
+Used with the written permission of the WhiteDNS project owner (Telegram, 8 Nov 2026).
+
+The native executables `libstormdns_client.so` and `libcottendns_client.so`
+(app/src/main/jniLibs/<abi>/), the resolver list
+`app/src/main/assets/whitedns_default_resolvers.txt` and the notices in
+`app/src/main/assets/whitedns/` come from WhiteDNS. The engines are built on
+StormDNS / MasterDnsVPN and CottenDns (MIT) and Soar (Apache-2.0); their
+licence texts are in `app/src/main/assets/whitedns/`.

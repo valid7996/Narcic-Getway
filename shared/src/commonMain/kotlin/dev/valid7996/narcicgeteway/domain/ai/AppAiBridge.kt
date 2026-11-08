@@ -290,6 +290,7 @@ class AppAiBridge(
         is ProfileSource.Ssh -> "ssh"
         is ProfileSource.DnsTunnel -> "dnstunnel"
         is ProfileSource.MasterDns -> "masterdns"
+        is ProfileSource.WhiteDns -> "whitedns"
         is ProfileSource.MhrvRelay -> "mhrvrelay"
         is ProfileSource.OpenConnect -> "openconnect"
         is ProfileSource.Ikev2 -> "ikev2"

@@ -92,6 +92,7 @@ class NrgLinkTest {
             ProfileSource.Ikev2(Ikev2Profile()),
             ProfileSource.OpenConnect(OpenConnectProfile()),
             ProfileSource.MasterDns(MasterDnsProfile()),
+            ProfileSource.WhiteDns(WhiteDnsProfile()),
             ProfileSource.ProxyChain(emptyList()),
         ).forEach { assertTrue("$it should be handled", NrgLink.handles(it)) }
 
@@ -141,6 +142,7 @@ class NrgLinkTest {
             ProfileSource.Ikev2(Ikev2Profile(server = "s")),
             ProfileSource.OpenConnect(OpenConnectProfile(server = "s")),
             ProfileSource.MasterDns(MasterDnsProfile()),
+            ProfileSource.WhiteDns(WhiteDnsProfile()),
             ProfileSource.Psiphon(PsiphonProfile()),
         ).forEach {
             assertNotNull("$it had no share payload", profile(it).rawPayload())

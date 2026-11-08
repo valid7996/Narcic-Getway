@@ -109,7 +109,7 @@ import dev.valid7996.narcicgeteway.ui.theme.resetPersonalization
 
 enum class SettingsPage {
     Root, Ui, Vpn, Core, Routing, PerApp, Mux, Fragment, Observatory, Advanced, Mode, Assets, SingBox,
-    DnsProtocols, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy, Patt, Backup,
+    DnsProtocols, WhiteDns, Tor, TorBridges, Ssh, Support, Privacy, Monitor, Ai, AiChat, IpScanner, TelegramProxy, Patt, Backup,
 }
 
 @Composable
@@ -194,6 +194,7 @@ fun SettingsScreen(
             SettingsPage.PerApp -> PerAppProxyScreen(settings, contentPadding, onUpdate, modifier)
             SettingsPage.Assets -> AssetsScreen(settings, contentPadding, modifier, onUpdate)
             SettingsPage.DnsProtocols -> DnsProtocolsPage(settings, contentPadding, modifier, onUpdate)
+            SettingsPage.WhiteDns -> WhiteDnsSettingsPage(settings, contentPadding, modifier, onUpdate)
             SettingsPage.Tor -> TorPage(settings, contentPadding, modifier, onUpdate) { page = it }
             SettingsPage.TorBridges -> TorBridgesScreen(settings, contentPadding, modifier, onUpdate)
             SettingsPage.Ssh -> SshPage(settings, contentPadding, modifier, onUpdate)
@@ -357,6 +358,7 @@ private fun RootPage(
                             MasonrySettingTile(title = stringResource(Res.string.tile_mode_title), subtitle = stringResource(Res.string.tile_mode_sub), icon = Res.drawable.ic_tune, accentColor = Color(0xFF2563EB), gradientColors = listOf(Color(0xFF0E2254), Color(0xFF071434)), borderColor = Color(0x603B82F6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Mode) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_vpn_title), subtitle = stringResource(Res.string.tile_vpn_sub), icon = Res.drawable.ic_key, accentColor = Color(0xFFEF4444), gradientColors = listOf(Color(0xFF381010), Color(0xFF1E0808)), borderColor = Color(0x60EF4444), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftTop, onClick = { onOpen(SettingsPage.Vpn) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_dns_title), subtitle = stringResource(Res.string.tile_dns_sub), icon = Res.drawable.ic_public, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF082F3B), Color(0xFF041920)), borderColor = Color(0x6006B6D4), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.DnsProtocols) })
+                            MasonrySettingTile(title = stringResource(Res.string.tile_whitedns_title), subtitle = stringResource(Res.string.tile_whitedns_sub), icon = Res.drawable.ic_dns, accentColor = Color(0xFF6C8CFF), gradientColors = listOf(Color(0xFF111A3A), Color(0xFF0A1024)), borderColor = Color(0x606C8CFF), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeLeftMid, onClick = { onOpen(SettingsPage.WhiteDns) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_per_app_title), subtitle = stringResource(Res.string.tile_per_app_sub), icon = Res.drawable.ic_menu, accentColor = Color(0xFF8B5CF6), gradientColors = listOf(Color(0xFF28114E), Color(0xFF16082C)), borderColor = Color(0x608B5CF6), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightTop, onClick = { onOpen(SettingsPage.PerApp) })
                             MasonrySettingTile(title = stringResource(Res.string.tile_ports_title), subtitle = stringResource(Res.string.tile_ports_sub), icon = Res.drawable.ic_tune, accentColor = Color(0xFF10B981), gradientColors = listOf(Color(0xFF0D2D20), Color(0xFF061811)), borderColor = Color(0x6010B981), minHeight = 150.dp, modifier = Modifier.width(160.dp), shape = shapeRightMid, onClick = { onOpen(SettingsPage.Core) })
                         }
@@ -387,6 +389,7 @@ private fun RootPage(
                         MasonryWideTile(title = stringResource(Res.string.tile_routing_title), subtitle = stringResource(Res.string.tile_routing_sub), icon = Res.drawable.ic_map, accentColor = Color(0xFFEC4899), gradientColors = listOf(Color(0xFF380E23), Color(0xFF1F0713)), borderColor = Color(0x60EC4899), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Routing) })
                         MasonryWideTile(title = stringResource(Res.string.tile_vpn_title), subtitle = stringResource(Res.string.tile_vpn_sub), icon = Res.drawable.ic_key, accentColor = Color(0xFFEF4444), gradientColors = listOf(Color(0xFF381010), Color(0xFF1E0808)), borderColor = Color(0x60EF4444), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Vpn) })
                         MasonryWideTile(title = stringResource(Res.string.tile_dns_title), subtitle = stringResource(Res.string.tile_dns_sub), icon = Res.drawable.ic_public, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF082F3B), Color(0xFF041920)), borderColor = Color(0x6006B6D4), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.DnsProtocols) })
+                        MasonryWideTile(title = stringResource(Res.string.tile_whitedns_title), subtitle = stringResource(Res.string.tile_whitedns_sub), icon = Res.drawable.ic_dns, accentColor = Color(0xFF6C8CFF), gradientColors = listOf(Color(0xFF111A3A), Color(0xFF0A1024)), borderColor = Color(0x606C8CFF), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.WhiteDns) })
                         MasonryWideTile(title = stringResource(Res.string.tile_per_app_title), subtitle = stringResource(Res.string.tile_per_app_sub), icon = Res.drawable.ic_menu, accentColor = Color(0xFF8B5CF6), gradientColors = listOf(Color(0xFF28114E), Color(0xFF16082C)), borderColor = Color(0x608B5CF6), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.PerApp) })
                         MasonryWideTile(title = stringResource(Res.string.tile_fragment_title), subtitle = stringResource(Res.string.tile_fragment_sub), icon = Res.drawable.ic_bolt, accentColor = Color(0xFF06B6D4), gradientColors = listOf(Color(0xFF072930), Color(0xFF03161A)), borderColor = Color(0x6006B6D4), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.Fragment) })
                         MasonryWideTile(title = stringResource(Res.string.tile_singbox_title), subtitle = stringResource(Res.string.tile_singbox_sub), icon = Res.drawable.ic_bolt, accentColor = Color(0xFFD946EF), gradientColors = listOf(Color(0xFF340B3B), Color(0xFF1C0520)), borderColor = Color(0x60D946EF), shape = RoundedCornerShape(20.dp), onClick = { onOpen(SettingsPage.SingBox) })
@@ -635,6 +638,18 @@ private fun RootPage(
                                 minHeight = 160.dp,
                                 shape = shapeLeftTop,
                                 onClick = { onOpen(SettingsPage.Observatory) },
+                            )
+
+                            MasonrySettingTile(
+                                title = stringResource(Res.string.tile_whitedns_title),
+                                subtitle = stringResource(Res.string.tile_whitedns_sub),
+                                icon = Res.drawable.ic_dns,
+                                accentColor = Color(0xFF6C8CFF),
+                                gradientColors = listOf(Color(0xFF111A3A), Color(0xFF0A1024)),
+                                borderColor = Color(0x606C8CFF),
+                                minHeight = 160.dp,
+                                shape = shapeLeftTop,
+                                onClick = { onOpen(SettingsPage.WhiteDns) },
                             )
                         }
                     }

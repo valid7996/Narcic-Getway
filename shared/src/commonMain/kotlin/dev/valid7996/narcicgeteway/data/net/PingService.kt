@@ -327,10 +327,12 @@ object PingService {
 
     private suspend fun dnsTunnelDelay(profile: VpnProfile): Long {
         val master = profile.masterDnsSettings()
+        val white = profile.whiteDnsSettings()
         val dnsTunnel = profile.dnsTunnelSettings()
 
         val domain = when {
             master != null -> master.domains.split(',', '\n', ' ').map { it.trim().trimEnd('.') }.firstOrNull { it.isNotBlank() } ?: master.domains
+            white != null -> white.primaryDomain()
             dnsTunnel != null -> dnsTunnel.domain.split(',', '\n', ' ').map { it.trim().trimEnd('.') }.firstOrNull { it.isNotBlank() } ?: dnsTunnel.domain
             else -> profile.address
         }.trim().trimEnd('.')
@@ -339,6 +341,7 @@ object PingService {
 
         val resolver = when {
             master != null -> master.resolvers.split(',', '\n', ' ').map { it.trim() }.firstOrNull { it.isNotBlank() && !it.startsWith("#") }
+            white != null -> white.resolverList().firstOrNull { !it.contains('/') }
             dnsTunnel != null -> dnsTunnel.resolvers.split(',', '\n', ' ').map { it.trim() }.firstOrNull { it.isNotBlank() && !it.startsWith("#") }
             else -> null
         }?.trim() ?: "8.8.8.8"
@@ -379,7 +382,7 @@ object PingService {
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isAether) return aetherDelay(effective, url)
-        if (effective.isDnsTunnel || effective.isMasterDns) return dnsTunnelDelay(effective)
+        if (effective.isDnsTunnel || effective.isMasterDns || effective.isWhiteDns) return dnsTunnelDelay(effective)
         if (effective.isIkev2) return ikev2Delay(effective)
         if (effective.isOpenConnect) return openConnectDelay(effective)
         if (effective.isOpenVpn) {
@@ -425,7 +428,7 @@ object PingService {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isMhrvRelay) return false
         if (effective.isAether) return false
-        if (effective.isDnsTunnel || effective.isMasterDns) return false
+        if (effective.isDnsTunnel || effective.isMasterDns || effective.isWhiteDns) return false
         if (effective.isIkev2) return false
         if (effective.isOpenConnect) return false
         if (effective.isOpenVpn) return false

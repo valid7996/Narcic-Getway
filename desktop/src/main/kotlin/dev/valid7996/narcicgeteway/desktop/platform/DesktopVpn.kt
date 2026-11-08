@@ -106,6 +106,8 @@ object DesktopVpn {
             profile.psiphonSettings() != null -> startPsiphon(profile.name, profile.psiphonSettings()!!)
             profile.isTor -> startTor(profile.name)
             profile.masterDnsSettings() != null -> startMasterDns(profile.name, profile.masterDnsSettings()!!)
+            profile.whiteDnsSettings() != null ->
+                VpnManager.onError("WhiteDNS runs on Android only; its engines have no desktop build")
             profile.dnsTunnelSettings() != null -> startDns(profile.name, profile.dnsTunnelSettings()!!)
             profile.mhrvRelaySettings() != null -> startMhrv(profile.name, profile.mhrvRelaySettings()!!, config)
             profile.sshSettings() != null -> startSsh(profile.name, profile.sshSettings()!!)

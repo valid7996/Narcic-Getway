@@ -135,6 +135,16 @@ class ConfigRepository(private val store: KeyValueStore) {
             throw IllegalArgumentException("no usable sstp:// config found")
         }
 
+        val whiteDnsLines = trimmed.lines().map { it.trim() }.filter { dev.valid7996.narcicgeteway.domain.config.WhiteDnsConfig.isLink(it) }
+        if (whiteDnsLines.isNotEmpty() && whiteDnsLines.size == trimmed.lines().count { it.isNotBlank() }) {
+            var added = 0
+            whiteDnsLines.forEach { line ->
+                dev.valid7996.narcicgeteway.domain.config.WhiteDnsConfig.parseLink(line)?.let { (nm, prof) -> addWhiteDns(prof, nm); added++ }
+            }
+            if (added > 0) return@runCatching added
+            throw IllegalArgumentException("no usable stormdns:// or cottendns:// link found")
+        }
+
         if (NrgLink.isNrgLink(trimmed)) return@runCatching importNrgLink(trimmed, subscriptionId)
 
         val mhrvLooksLike = trimmed.startsWith(
@@ -561,6 +571,28 @@ class ConfigRepository(private val store: KeyValueStore) {
         return profile
     }
 
+    fun addWhiteDns(
+        settings: dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile,
+        name: String,
+        id: String? = null,
+    ): VpnProfile {
+        val existing = id?.let { profile(it) }
+        val profile = VpnProfile.fromWhiteDns(
+            settings = settings.normalized(),
+            id = existing?.id ?: newId(),
+            addedAt = existing?.addedAt ?: currentTimeMillis(),
+            name = name,
+        ).let { carryOver(existing, it) }
+        _profiles.value = if (existing != null) {
+            _profiles.value.map { if (it.id == profile.id) profile else it }
+        } else {
+            listOf(profile) + _profiles.value
+        }
+        persistProfiles()
+        if (_activeId.value == null) setActive(profile.id)
+        return profile
+    }
+
     fun addMhrvRelay(
         settings: dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile,
         name: String,
@@ -924,6 +956,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             is ProfileSource.Tor -> { addTor(name); 1 }
             is ProfileSource.Ssh -> { addSsh(src.settings, name); 1 }
             is ProfileSource.MasterDns -> { addMasterDns(src.settings, name); 1 }
+            is ProfileSource.WhiteDns -> { addWhiteDns(src.settings, name); 1 }
             is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name); 1 }
             is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
             is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }

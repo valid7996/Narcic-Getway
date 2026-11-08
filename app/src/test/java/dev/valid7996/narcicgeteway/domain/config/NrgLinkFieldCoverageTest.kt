@@ -69,6 +69,10 @@ class NrgLinkFieldCoverageTest {
         assertAllFieldsPresent("MasterDnsProfile.kt", "MasterDnsProfile", ProfileSource.MasterDns(MasterDnsProfile()))
 
     @Test
+    fun `whitedns carries every field`() =
+        assertAllFieldsPresent("WhiteDnsProfile.kt", "WhiteDnsProfile", ProfileSource.WhiteDns(WhiteDnsProfile()))
+
+    @Test
     fun `psiphon carries every field`() =
         assertAllFieldsPresent("PsiphonProfile.kt", "PsiphonProfile", ProfileSource.Psiphon(PsiphonProfile()))
 

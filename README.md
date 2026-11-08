@@ -47,6 +47,7 @@
 | **Tor & Bridges** | Tor circuit routing, Snowflake, obfs4, and Conjure pluggable transports |
 | **WireGuard / AWG** | WireGuard & AmneziaWG obfuscated UDP tunnels |
 | **DNS Tunnels** | DNSTT, VayDNS, MasterDNS for connectivity when all TCP/UDP traffic is blocked |
+| **WhiteDNS** | StormDNS & CottenDNS (incl. CottenMax) DNS tunnels with their own settings page, config editor and log |
 | **OpenConnect & IKEv2** | Cisco AnyConnect & native enterprise IPSec tunnels |
 
 ---

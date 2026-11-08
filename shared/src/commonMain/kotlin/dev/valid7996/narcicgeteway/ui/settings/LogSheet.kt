@@ -70,6 +70,7 @@ private enum class LogCategory(val tags: Set<String>) {
     Tor(setOf("Tor", "TorController", "Snowflake", "Obfs4", "Conjure")),
     Dns(setOf("DnsTunnel", "DnsProbe", "DnsScanner", "DnsTunnelController", "Dnstt", "VayDns")),
     MasterDns(setOf("MasterDns", "MasterDnsController", "masterdns")),
+    WhiteDns(setOf("WhiteDns", "WhiteDnsController", "StormDns", "CottenDns")),
     Mhrv(setOf("mhrv_rs", "MhrvRelay", "MhrvRelayController", "mhrv")),
     Psiphon(setOf("Psiphon")),
     Ssh(setOf("Ssh", "SshController", "JSch")),
@@ -85,6 +86,7 @@ private fun categoriesFor(kind: String?): Set<LogCategory> = when (kind) {
     VpnManager.KIND_TOR -> setOf(LogCategory.Tor)
     VpnManager.KIND_DNS_TUNNEL -> setOf(LogCategory.Dns)
     VpnManager.KIND_MASTERDNS -> setOf(LogCategory.MasterDns)
+    VpnManager.KIND_WHITEDNS -> setOf(LogCategory.WhiteDns)
     VpnManager.KIND_MHRV -> setOf(LogCategory.Mhrv)
     VpnManager.KIND_SSH -> setOf(LogCategory.Ssh, LogCategory.Xray)
 
@@ -128,6 +130,7 @@ private fun categoryLabel(category: LogCategory): String = when (category) {
     LogCategory.Tor -> "Tor"
     LogCategory.Dns -> "DNS"
     LogCategory.MasterDns -> "MasterDNS"
+    LogCategory.WhiteDns -> "WhiteDNS"
     LogCategory.Mhrv -> "MHRV Relay"
     LogCategory.Psiphon -> "Psiphon"
     LogCategory.Ssh -> "SSH"
@@ -135,7 +138,7 @@ private fun categoryLabel(category: LogCategory): String = when (category) {
 }
 
 @Composable
-fun LogSheet(onDismiss: () -> Unit) {
+fun LogSheet(onDismiss: () -> Unit, startOnWhiteDns: Boolean = false) {
     val platform = LocalPlatform.current
     val logsCopied = stringResource(Res.string.logs_copied)
     val allLines by LogBus.lines.collectAsStateWithLifecycle()
@@ -153,7 +156,15 @@ fun LogSheet(onDismiss: () -> Unit) {
     var level by remember { mutableStateOf(LogLevel.All) }
     var query by remember { mutableStateOf("") }
 
-    LaunchedEffect(activeKind) { showAll = activeKind == null; picked = null }
+    LaunchedEffect(activeKind) {
+        if (startOnWhiteDns && activeKind == null) {
+            showAll = false
+            picked = LogCategory.WhiteDns
+        } else {
+            showAll = activeKind == null
+            picked = null
+        }
+    }
 
     val sessionCategories = remember(activeKind) { categoriesFor(activeKind) }
 

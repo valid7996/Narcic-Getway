@@ -2965,4 +2965,50 @@
     <string name="group_customization_network">Customization &amp; Network</string>
     <string name="group_routing_advanced">Routing &amp; Advanced</string>
 
+    <!-- WhiteDNS -->
+    <string name="tile_whitedns_title">WhiteDNS</string>
+    <string name="tile_whitedns_sub">StormDNS &amp; CottenDNS engine settings and logs</string>
+    <string name="white_dns_about_title">WhiteDNS engines</string>
+    <string name="white_dns_about_body">These values are shared by every WhiteDNS connection (StormDNS and CottenDNS). The local port, SOCKS login and local DNS are handled by Narcic itself. Wrong values can stop the tunnel from coming up; Reset puts the defaults back.</string>
+    <string name="white_dns_add_sub">StormDNS / CottenDNS DNS tunnel</string>
+    <string name="white_dns_add_title">Add WhiteDNS</string>
+    <string name="white_dns_edit_title">Edit WhiteDNS</string>
+    <string name="white_dns_config_apply">Apply config</string>
+    <string name="white_dns_config_error">Config error: %1$s</string>
+    <string name="white_dns_config_hint">One KEY = value per line. Known keys fill the form; other keys are kept as engine overrides.</string>
+    <string name="white_dns_default_resolvers">Default resolver list</string>
+    <string name="white_dns_default_resolvers_sum">Empty = the list that ships with the app</string>
+    <string name="white_dns_domains">Tunnel domains</string>
+    <string name="white_dns_edit_config">Edit as config</string>
+    <string name="white_dns_edit_engine_config">Edit engine config</string>
+    <string name="white_dns_edit_engine_config_sum">All values on this page as engine keys</string>
+    <string name="white_dns_edit_form">Back to form</string>
+    <string name="white_dns_engine">Engine</string>
+    <string name="white_dns_extra_hint">Raw engine keys. They replace the value Narcic generates for the same key.</string>
+    <string name="white_dns_g_balance">Balancing &amp; packets</string>
+    <string name="white_dns_g_config">Config &amp; logs</string>
+    <string name="white_dns_g_mtu">MTU scan</string>
+    <string name="white_dns_g_resolvers">Resolvers</string>
+    <string name="white_dns_g_session">Session retry</string>
+    <string name="white_dns_g_startup">Startup &amp; logging</string>
+    <string name="white_dns_g_timeouts">Timeouts &amp; retention</string>
+    <string name="white_dns_g_workers">Workers &amp; queues</string>
+    <string name="white_dns_group_cotten">CottenDNS</string>
+    <string name="white_dns_group_extra">Engine overrides</string>
+    <string name="white_dns_group_max">CottenMax</string>
+    <string name="white_dns_group_rate">Rate limit &amp; timing</string>
+    <string name="white_dns_group_tls">Encrypted resolvers (DoT / DoH / DoQ)</string>
+    <string name="white_dns_group_transport">Transport &amp; records</string>
+    <string name="white_dns_ignored_keys">Not used here (set by Narcic or per connection): %1$s</string>
+    <string name="white_dns_key">Encryption key</string>
+    <string name="white_dns_method">Encryption method</string>
+    <string name="white_dns_open_logs">WhiteDNS log</string>
+    <string name="white_dns_open_logs_sum">Scan progress, session and engine output</string>
+    <string name="white_dns_reset">Reset to defaults</string>
+    <string name="white_dns_reset_sum">Puts every engine value above back (the resolver list stays)</string>
+    <string name="white_dns_resolvers">Resolvers (optional)</string>
+    <string name="white_dns_resolvers_hint">Empty = the list from WhiteDNS settings, then the built-in list</string>
+    <string name="white_dns_settings_config_hint">Engine keys, one KEY = value per line. Keys that Narcic or a connection owns are ignored.</string>
+    <string name="white_dns_settings_sub">StormDNS &amp; CottenDNS</string>
+    <string name="white_dns_settings_title">WhiteDNS</string>
 </resources>

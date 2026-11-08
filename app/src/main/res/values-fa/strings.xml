@@ -1032,4 +1032,12 @@
     <string name="group_customization_network">شخصی‌سازی و پیکربندی شبکه</string>
     <string name="group_routing_advanced">مسیریابی و بهینه‌سازی پیشرفته</string>
 
+    <!-- WhiteDNS -->
+    <string name="engine_invalid_config_whitedns">پیکربندی WhiteDNS نامعتبر است</string>
+    <string name="whitedns_failed">تونل WhiteDNS بالا نیامد</string>
+    <string name="whitedns_failed_reason">تونل WhiteDNS بالا نیامد: %1$s</string>
+    <string name="whitedns_no_resolver">هیچ‌کدام از %1$d ریزالور تست MTU را نگذراندند. در این شبکه مسدودند یا دامنه یا کلید با سرور نمی‌خواند.</string>
+    <string name="whitedns_session_refused">%1$d ریزالور کار می‌کنند ولی سرور نشست را نپذیرفت (%2$s). کلید و روش رمزنگاری را بررسی کنید — یا سرور خاموش است.</string>
+    <string name="whitedns_stalled">زمان تمام شد در حالی که ریزالورها هنوز در حال تست بودند (%1$d از %2$d بررسی شد، %3$d قابل استفاده). فهرست ریزالور کوتاه‌تری بدهید.</string>
+    <string name="whitedns_exited">موتور WhiteDNS متوقف شد (کد خروج %1$s). دلیلش را در لاگ WhiteDNS ببینید.</string>
 </resources>

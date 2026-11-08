@@ -238,6 +238,16 @@ class SettingsRepository(context: Context) {
             ai = prefs.getString("ai_settings", null)
                 ?.let { runCatching { aiJson.decodeFromString(AiSettings.serializer(), it) }.getOrNull() }
                 ?: d.ai,
+
+            whiteDns = prefs.getString("whitedns_settings", null)
+                ?.let {
+                    runCatching {
+                        aiJson.decodeFromString(
+                            dev.valid7996.narcicgeteway.domain.config.WhiteDnsSettings.serializer(), it,
+                        )
+                    }.getOrNull()
+                }
+                ?: d.whiteDns,
         ).also { s ->
             dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectIp = s.rstaSpoofConnectIp.trim().ifEmpty { dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
             dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectPort = s.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT
@@ -453,6 +463,10 @@ class SettingsRepository(context: Context) {
             putString("rsta_method", s.rstaSpoofMethod)
 
             putString("ai_settings", aiJson.encodeToString(AiSettings.serializer(), s.ai))
+            putString(
+                "whitedns_settings",
+                aiJson.encodeToString(dev.valid7996.narcicgeteway.domain.config.WhiteDnsSettings.serializer(), s.whiteDns),
+            )
         }.commit()
         dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectIp = s.rstaSpoofConnectIp.trim().ifEmpty { dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_CONNECT_IP }
         dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.defaultConnectPort = s.rstaSpoofConnectPort.takeIf { it in 1..65535 } ?: dev.valid7996.narcicgeteway.domain.config.SniSpoofConfig.DEFAULT_CONNECT_PORT

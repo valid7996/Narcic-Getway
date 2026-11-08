@@ -235,6 +235,9 @@ data class AppSettings(
 
     val ai: dev.valid7996.narcicgeteway.domain.ai.AiSettings = dev.valid7996.narcicgeteway.domain.ai.AiSettings(),
 
+    val whiteDns: dev.valid7996.narcicgeteway.domain.config.WhiteDnsSettings =
+        dev.valid7996.narcicgeteway.domain.config.WhiteDnsSettings(),
+
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = false,
 

@@ -132,6 +132,7 @@ class StartPlanner(context: Context) {
         profile.psiphonSettings() != null -> VpnManager.KIND_PSIPHON
         profile.dnsTunnelSettings() != null -> VpnManager.KIND_DNS_TUNNEL
         profile.masterDnsSettings() != null -> VpnManager.KIND_MASTERDNS
+        profile.whiteDnsSettings() != null -> VpnManager.KIND_WHITEDNS
         profile.mhrvRelaySettings() != null -> VpnManager.KIND_MHRV
         profile.openConnectSettings() != null -> VpnManager.KIND_OPENCONNECT
         profile.aetherSettings() != null -> VpnManager.KIND_AETHER
@@ -192,6 +193,11 @@ class StartPlanner(context: Context) {
         profile.masterDnsSettings()?.let {
             return kotlinx.serialization.json.Json.encodeToString(
                 dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.serializer(), it,
+            )
+        }
+        profile.whiteDnsSettings()?.let {
+            return kotlinx.serialization.json.Json.encodeToString(
+                dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.serializer(), it,
             )
         }
         profile.mhrvRelaySettings()?.let {
@@ -388,6 +394,7 @@ class StartPlanner(context: Context) {
             VpnManager.KIND_PSIPHON,
             VpnManager.KIND_DNS_TUNNEL,
             VpnManager.KIND_MASTERDNS,
+            VpnManager.KIND_WHITEDNS,
             VpnManager.KIND_TOR,
             VpnManager.KIND_SSH,
         )

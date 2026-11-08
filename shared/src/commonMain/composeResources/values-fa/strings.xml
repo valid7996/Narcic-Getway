@@ -2959,4 +2959,50 @@
     <string name="group_customization_network">شخصی‌سازی و پیکربندی شبکه</string>
     <string name="group_routing_advanced">مسیریابی و بهینه‌سازی پیشرفته</string>
 
+    <!-- WhiteDNS -->
+    <string name="tile_whitedns_title">WhiteDNS</string>
+    <string name="tile_whitedns_sub">تنظیمات و لاگ موتورهای StormDNS و CottenDNS</string>
+    <string name="white_dns_about_title">موتورهای WhiteDNS</string>
+    <string name="white_dns_about_body">این مقادیر بین همه اتصال‌های WhiteDNS (StormDNS و CottenDNS) مشترک است. پورت محلی، ورود SOCKS و DNS محلی را خود نرسیس مدیریت می‌کند. مقدار اشتباه می‌تواند مانع بالا آمدن تونل شود؛ «بازنشانی» پیش‌فرض‌ها را برمی‌گرداند.</string>
+    <string name="white_dns_add_sub">تونل DNS با StormDNS / CottenDNS</string>
+    <string name="white_dns_add_title">افزودن WhiteDNS</string>
+    <string name="white_dns_edit_title">ویرایش WhiteDNS</string>
+    <string name="white_dns_config_apply">اعمال کانفیگ</string>
+    <string name="white_dns_config_error">خطای کانفیگ: %1$s</string>
+    <string name="white_dns_config_hint">در هر خط یک KEY = value. کلیدهای شناخته‌شده فرم را پر می‌کنند و بقیه به‌عنوان بازنویسی موتور نگه داشته می‌شوند.</string>
+    <string name="white_dns_default_resolvers">فهرست پیش‌فرض ریزالورها</string>
+    <string name="white_dns_default_resolvers_sum">خالی = فهرست همراه برنامه</string>
+    <string name="white_dns_domains">دامنه‌های تونل</string>
+    <string name="white_dns_edit_config">ویرایش به‌صورت کانفیگ</string>
+    <string name="white_dns_edit_engine_config">ویرایش کانفیگ موتور</string>
+    <string name="white_dns_edit_engine_config_sum">همه مقادیر این صفحه به‌صورت کلیدهای موتور</string>
+    <string name="white_dns_edit_form">بازگشت به فرم</string>
+    <string name="white_dns_engine">موتور</string>
+    <string name="white_dns_extra_hint">کلیدهای خام موتور. مقدار تولیدشده توسط نرسیس برای همان کلید را جایگزین می‌کنند.</string>
+    <string name="white_dns_g_balance">توزیع بار و بسته‌ها</string>
+    <string name="white_dns_g_config">کانفیگ و لاگ</string>
+    <string name="white_dns_g_mtu">اسکن MTU</string>
+    <string name="white_dns_g_resolvers">ریزالورها</string>
+    <string name="white_dns_g_session">تلاش مجدد نشست</string>
+    <string name="white_dns_g_startup">شروع و لاگ</string>
+    <string name="white_dns_g_timeouts">زمان‌ها و نگهداری</string>
+    <string name="white_dns_g_workers">ورکرها و صف‌ها</string>
+    <string name="white_dns_group_cotten">CottenDNS</string>
+    <string name="white_dns_group_extra">بازنویسی موتور</string>
+    <string name="white_dns_group_max">CottenMax</string>
+    <string name="white_dns_group_rate">محدودیت نرخ و زمان‌بندی</string>
+    <string name="white_dns_group_tls">ریزالورهای رمزنگاری‌شده (DoT / DoH / DoQ)</string>
+    <string name="white_dns_group_transport">ترنسپورت و رکوردها</string>
+    <string name="white_dns_ignored_keys">اینجا استفاده نمی‌شوند (نرسیس یا هر اتصال تعیین می‌کند): %1$s</string>
+    <string name="white_dns_key">کلید رمزنگاری</string>
+    <string name="white_dns_method">روش رمزنگاری</string>
+    <string name="white_dns_open_logs">لاگ WhiteDNS</string>
+    <string name="white_dns_open_logs_sum">پیشرفت اسکن، نشست و خروجی موتور</string>
+    <string name="white_dns_reset">بازنشانی به پیش‌فرض</string>
+    <string name="white_dns_reset_sum">همه مقادیر موتور بالا برمی‌گردد (فهرست ریزالور می‌ماند)</string>
+    <string name="white_dns_resolvers">ریزالورها (اختیاری)</string>
+    <string name="white_dns_resolvers_hint">خالی = فهرست تنظیمات WhiteDNS، بعد فهرست داخلی</string>
+    <string name="white_dns_settings_config_hint">کلیدهای موتور، در هر خط یک KEY = value. کلیدهایی که نرسیس یا اتصال تعیین می‌کند نادیده گرفته می‌شوند.</string>
+    <string name="white_dns_settings_sub">StormDNS و CottenDNS</string>
+    <string name="white_dns_settings_title">WhiteDNS</string>
 </resources>

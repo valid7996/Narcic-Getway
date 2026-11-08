@@ -60,6 +60,8 @@ object VpnManager {
 
     const val KIND_MASTERDNS = "master_dns"
 
+    const val KIND_WHITEDNS = "white_dns"
+
     const val KIND_MHRV = "mhrv_relay"
 
     const val KIND_TOR = "tor"

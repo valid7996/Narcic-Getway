@@ -1047,4 +1047,12 @@
     <string name="group_customization_network">Customization &amp; Network</string>
     <string name="group_routing_advanced">Routing &amp; Advanced</string>
 
+    <!-- WhiteDNS -->
+    <string name="engine_invalid_config_whitedns">The WhiteDNS configuration is invalid</string>
+    <string name="whitedns_failed">WhiteDNS tunnel did not come up</string>
+    <string name="whitedns_failed_reason">WhiteDNS tunnel did not come up: %1$s</string>
+    <string name="whitedns_no_resolver">None of the %1$d resolvers passed the MTU test. They are blocked on this network, or the domain or key does not match the server.</string>
+    <string name="whitedns_session_refused">%1$d resolvers work, but the server did not accept a session (%2$s). Check the key and encryption method — or the server is down.</string>
+    <string name="whitedns_stalled">Time ran out while resolvers were still being tested (%1$d of %2$d checked, %3$d usable). Use a shorter resolver list.</string>
+    <string name="whitedns_exited">The WhiteDNS engine stopped (exit code %1$s). Open the WhiteDNS log for the reason.</string>
 </resources>

@@ -66,6 +66,7 @@ private var bentoCard: Boolean = false
     private var aether: AetherController? = null
     private var dnsTunnel: DnsTunnelController? = null
     private var masterDns: MasterDnsController? = null
+    private var whiteDns: WhiteDnsController? = null
     private var mhrv: MhrvRelayController? = null
     private var tor: dev.valid7996.narcicgeteway.core.tor.TorController? = null
     private var ssh: SshController? = null
@@ -252,6 +253,7 @@ private var bentoCard: Boolean = false
         if (kind == VpnManager.KIND_SINGBOX) { startSingBox(configJson, settings); return }
 
         val dnsInChain = kind == VpnManager.KIND_DNS_TUNNEL || kind == VpnManager.KIND_MASTERDNS ||
+            kind == VpnManager.KIND_WHITEDNS ||
             (kind == VpnManager.KIND_CROSS_CHAIN && crossChainHasDnsTunnel(configJson))
         val tunMtu = if (dnsInChain) 1280
         else settings.vpnMtu.coerceIn(1000, 9000)
@@ -318,6 +320,7 @@ private var bentoCard: Boolean = false
             VpnManager.KIND_AETHER -> startAether(configJson, descriptor, tunMtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, descriptor, tunMtu, settings)
+            VpnManager.KIND_WHITEDNS -> startWhiteDns(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_MHRV -> startMhrv(configJson, descriptor, tunMtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, descriptor, tunMtu)
             VpnManager.KIND_SSH -> startSsh(configJson, descriptor, tunMtu, settings)
@@ -647,6 +650,75 @@ private var bentoCard: Boolean = false
         bridgeEngine(descriptor, port, tunMtu)
     }
 
+    private fun startWhiteDns(
+        configJson: String,
+        descriptor: ParcelFileDescriptor?,
+        tunMtu: Int,
+        appSettings: AppSettings,
+    ) {
+        val profile = try {
+            kotlinx.serialization.json.Json.decodeFromString(
+                dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile.serializer(), configJson,
+            ).normalized()
+        } catch (e: Exception) {
+            Log.e(TAG, "bad WhiteDNS config", e)
+            VpnManager.onError(getString(R.string.engine_invalid_config_whitedns))
+            stopEverything(); return
+        }
+
+        // Resolver order: the app-wide DNS override, then the connection's own list, then the WhiteDNS list
+        // from its settings page, and last the list that ships with the app.
+        val entries = when {
+            appSettings.dnsGlobalResolverEnabled && appSettings.dnsGlobalResolvers.isNotBlank() ->
+                dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.splitResolvers(appSettings.dnsGlobalResolvers)
+            profile.resolverList().isNotEmpty() -> profile.resolverList()
+            else -> dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.splitResolvers(appSettings.whiteDns.resolvers)
+        }.filter { dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.isNumericResolver(it) }
+            .ifEmpty { bundledWhiteDnsResolvers() }
+
+        val controller = WhiteDnsController(
+            context = this,
+            profile = profile,
+            settings = appSettings.whiteDns,
+            resolvers = entries,
+            listenPort = LocalPorts.WHITE_DNS,
+            maxListenPort = LocalPorts.WHITE_DNS_MAX,
+        )
+        whiteDns = controller
+        val port = controller.start()
+        if (port < 0) {
+            if (controller.stopped) return
+            VpnManager.onError(whiteDnsError(controller))
+            stopEverything(); return
+        }
+        if (!controller.awaitReady(WHITEDNS_IDLE_TIMEOUT_MS, WHITEDNS_MAX_WAIT_MS)) {
+            if (controller.stopped) return
+            VpnManager.onError(whiteDnsError(controller))
+            stopEverything(); return
+        }
+        bridgeEngine(descriptor, port, tunMtu)
+    }
+
+    private fun bundledWhiteDnsResolvers(): List<String> = runCatching {
+        assets.open("whitedns_default_resolvers.txt").bufferedReader().use { r ->
+            r.readLines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
+        }
+    }.getOrDefault(emptyList())
+
+    private fun whiteDnsError(c: WhiteDnsController): String = when (val f = c.failure) {
+        is WhiteDnsController.Failure.NoUsableResolver ->
+            getString(R.string.whitedns_no_resolver, f.tried)
+        is WhiteDnsController.Failure.SessionRefused ->
+            getString(R.string.whitedns_session_refused, f.usable, f.reason.ifBlank { "—" })
+        is WhiteDnsController.Failure.Stalled ->
+            getString(R.string.whitedns_stalled, f.checked, f.total, f.usable)
+        is WhiteDnsController.Failure.Exited ->
+            getString(R.string.whitedns_exited, f.code?.toString() ?: "?")
+        is WhiteDnsController.Failure.Other ->
+            getString(R.string.whitedns_failed_reason, f.reason.take(200))
+        null -> getString(R.string.whitedns_failed)
+    }
+
     private fun startMhrv(
         configJson: String,
         descriptor: ParcelFileDescriptor,
@@ -818,12 +890,14 @@ private var bentoCard: Boolean = false
     private fun startEngineProxyOnly(configJson: String, settings: AppSettings) {
         killSwitchEnabled = false
         VpnManager.setActiveKind(kind)
-        val dns = kind == VpnManager.KIND_DNS_TUNNEL || kind == VpnManager.KIND_MASTERDNS
+        val dns = kind == VpnManager.KIND_DNS_TUNNEL || kind == VpnManager.KIND_MASTERDNS ||
+            kind == VpnManager.KIND_WHITEDNS
         val mtu = if (dns) 1280 else settings.vpnMtu.coerceIn(1000, 9000)
         when (kind) {
             VpnManager.KIND_PSIPHON -> startPsiphon(configJson, null, mtu)
             VpnManager.KIND_DNS_TUNNEL -> startDnsTunnel(configJson, null, mtu, settings)
             VpnManager.KIND_MASTERDNS -> startMasterDns(configJson, null, mtu, settings)
+            VpnManager.KIND_WHITEDNS -> startWhiteDns(configJson, null, mtu, settings)
             VpnManager.KIND_TOR -> startTor(settings, null, mtu)
             VpnManager.KIND_SSH -> startSsh(configJson, null, mtu, settings)
         }
@@ -1151,6 +1225,7 @@ private var bentoCard: Boolean = false
         VpnManager.KIND_AETHER -> "Aether"
         VpnManager.KIND_DNS_TUNNEL -> "DNS"
         VpnManager.KIND_MASTERDNS -> "MasterDNS"
+        VpnManager.KIND_WHITEDNS -> "WhiteDNS"
         VpnManager.KIND_MHRV -> "MHRV Relay"
         VpnManager.KIND_TOR -> "Tor"
         VpnManager.KIND_SSH -> "SSH"
@@ -1169,6 +1244,7 @@ private var bentoCard: Boolean = false
         VpnManager.KIND_PSIPHON -> "Psiphon"
         VpnManager.KIND_DNS_TUNNEL -> "DNS"
         VpnManager.KIND_MASTERDNS -> "MasterDNS"
+        VpnManager.KIND_WHITEDNS -> "WhiteDNS"
         VpnManager.KIND_MHRV -> "MHRV Relay"
         VpnManager.KIND_TOR -> "Tor"
         VpnManager.KIND_SSH -> "SSH"
@@ -1300,6 +1376,7 @@ private var bentoCard: Boolean = false
                     VpnManager.KIND_PSIPHON -> psiphon?.isRunning == true
                     VpnManager.KIND_DNS_TUNNEL -> dnsTunnel?.isRunning == true
                     VpnManager.KIND_MASTERDNS -> masterDns?.isRunning == true
+                    VpnManager.KIND_WHITEDNS -> whiteDns?.isRunning == true
                     VpnManager.KIND_MHRV -> mhrv?.isRunning == true
                     VpnManager.KIND_TOR -> tor?.isRunning == true
                     VpnManager.KIND_SSH -> ssh?.isRunning == true
@@ -1374,7 +1451,7 @@ private var bentoCard: Boolean = false
 
                     else -> when (crossInnerKind) {
                         VpnManager.KIND_PSIPHON -> uidTrafficDelta()
-                        VpnManager.KIND_DNS_TUNNEL, VpnManager.KIND_MASTERDNS,
+                        VpnManager.KIND_DNS_TUNNEL, VpnManager.KIND_MASTERDNS, VpnManager.KIND_WHITEDNS,
                         VpnManager.KIND_TOR, VpnManager.KIND_SSH ->
                             socksShim?.readDelta() ?: (0L to 0L)
                         else -> XrayController.readTrafficDelta()
@@ -1563,6 +1640,7 @@ private var bentoCard: Boolean = false
         AetherSupport.releaseExit()
         dnsTunnel?.stop(); dnsTunnel = null
         masterDns?.stop(); masterDns = null
+        whiteDns?.stop(); whiteDns = null
         tor?.stop(); tor = null
         ssh?.stop(); ssh = null
         if (rstaHeld) { RstaSpoofClient.release(this); rstaHeld = false } else RstaSpoofClient.stop(this)
@@ -1710,6 +1788,7 @@ private var bentoCard: Boolean = false
         VpnManager.KIND_PSIPHON -> (if (outer) outerPsiphon else psiphon)?.isRunning == true
         VpnManager.KIND_DNS_TUNNEL -> (if (outer) outerDnsTunnel else dnsTunnel)?.isRunning == true
         VpnManager.KIND_MASTERDNS -> masterDns?.isRunning == true
+        VpnManager.KIND_WHITEDNS -> whiteDns?.isRunning == true
         VpnManager.KIND_TOR -> (if (outer) outerTor else tor)?.isRunning == true
         VpnManager.KIND_SSH -> (if (outer) outerSsh else ssh)?.isRunning == true
         else -> XrayController.isRunning
@@ -1983,6 +2062,10 @@ private var bentoCard: Boolean = false
         private const val MASTERDNS_IDLE_TIMEOUT_MS = 90_000L
 
         private const val MASTERDNS_MAX_WAIT_MS = 300_000L
+
+        private const val WHITEDNS_IDLE_TIMEOUT_MS = 120_000L
+
+        private const val WHITEDNS_MAX_WAIT_MS = 600_000L
 
         private const val TOR_BOOTSTRAP_TIMEOUT_MS = 120_000L
 

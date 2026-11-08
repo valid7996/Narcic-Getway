@@ -61,6 +61,7 @@ object NrgLink {
         is ProfileSource.Tor,
         is ProfileSource.Ssh,
         is ProfileSource.MasterDns,
+        is ProfileSource.WhiteDns,
         is ProfileSource.MhrvRelay,
         is ProfileSource.OpenConnect,
         is ProfileSource.Ikev2,
