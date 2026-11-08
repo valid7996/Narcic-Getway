@@ -620,13 +620,21 @@ private var bentoCard: Boolean = false
             stopEverything(); return
         }
 
-        val effective = if (appSettings.dnsGlobalResolverEnabled && appSettings.dnsGlobalResolvers.isNotBlank()) {
-            profile.copy(resolvers = appSettings.dnsGlobalResolvers)
-        } else profile
-        val pool = if (appSettings.dnsPoolEnabled) {
-            appSettings.dnsPoolText.split('\n', ',').map { it.trim() }
-                .filter { it.isNotEmpty() && !it.startsWith("#") }
-        } else emptyList()
+        val bundled = bundledWhiteDnsResolvers()
+        val effective = when {
+            appSettings.dnsGlobalResolverEnabled && appSettings.dnsGlobalResolvers.isNotBlank() ->
+                profile.copy(resolvers = appSettings.dnsGlobalResolvers)
+            profile.resolvers.isNotBlank() -> profile
+            else -> profile.copy(resolvers = bundled.joinToString(","))
+        }
+        val pool = when {
+            appSettings.dnsPoolEnabled && appSettings.dnsPoolText.isNotBlank() ->
+                appSettings.dnsPoolText.split('\n', ',').map { it.trim() }
+                    .filter { it.isNotEmpty() && !it.startsWith("#") }
+            appSettings.dnsPoolEnabled -> bundled
+            profile.resolvers.isBlank() -> bundled
+            else -> emptyList()
+        }
         val controller = MasterDnsController(
             effective, filesDir,
             listenPort = LocalPorts.MASTER_DNS,

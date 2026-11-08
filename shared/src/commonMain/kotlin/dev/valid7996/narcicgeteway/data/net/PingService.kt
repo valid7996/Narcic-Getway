@@ -148,7 +148,7 @@ object PingService {
         val customPermits = Semaphore(minOf(realPermits, CUSTOM_PROBE_CONCURRENCY))
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
-        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp) || it.isDnsBasedTunnel) || it.isAether }
+        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp && !it.isDnsBasedTunnel)) || it.isAether }
         val aetherTargets = profiles.filter { it.isAether }
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
@@ -171,7 +171,7 @@ object PingService {
                 val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                 val isMhrv = profile.isMhrvRelay || (isSealed && profile.resolveUnsealed()?.isMhrvRelay == true)
-                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed || isMhrv
+                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed || isMhrv || profile.isDnsBasedTunnel
                 val pool = if (heavy && (profile.isCustom || isSealed || isMhrv)) customPermits else permits
                 val ms = pool.withPermit {
                     if (heavy) measureProfile(profile, url, chainConfig)
@@ -339,12 +339,14 @@ object PingService {
 
         if (domain.isBlank() || domain == "-") return -1L
 
-        val resolver = when {
-            master != null -> master.resolvers.split(',', '\n', ' ').map { it.trim() }.firstOrNull { it.isNotBlank() && !it.startsWith("#") }
-            white != null -> white.resolverList().firstOrNull { !it.contains('/') }
-            dnsTunnel != null -> dnsTunnel.resolvers.split(',', '\n', ' ').map { it.trim() }.firstOrNull { it.isNotBlank() && !it.startsWith("#") }
-            else -> null
-        }?.trim() ?: "8.8.8.8"
+        val resolverCandidates = when {
+            master != null -> master.resolvers.split(',', '\n', ' ').map { it.trim() }.filter { it.isNotBlank() && !it.startsWith("#") }
+            white != null -> white.resolverList().filter { !it.contains('/') }
+            dnsTunnel != null -> dnsTunnel.resolvers.split(',', '\n', ' ').map { it.trim() }.filter { it.isNotBlank() && !it.startsWith("#") }
+            else -> emptyList()
+        }.ifEmpty {
+            listOf("1.1.1.1:53", "8.8.8.8:53", "9.9.9.9:53", "149.112.112.112:53")
+        }
 
         val txId = ByteArray(2)
         kotlin.random.Random.nextBytes(txId)
@@ -361,16 +363,21 @@ object PingService {
         val qTypeAndClass = byteArrayOf(0, 1, 0, 1)
         val dnsQuery = txId + flagsAndCounts + qName + qTypeAndClass
 
-        val delay = udpProbeMillis(resolver, 53, dnsQuery, 2_500)
-        if (delay > 0) return delay
-
-        if (resolver != "8.8.8.8") {
-            val fallbackDelay = udpProbeMillis("8.8.8.8", 53, dnsQuery, 2_500)
-            if (fallbackDelay > 0) return fallbackDelay
+        for (candidate in resolverCandidates.take(6)) {
+            val raw = candidate.trim()
+            val host = when {
+                raw.startsWith("[") -> raw.substringAfter('[').substringBefore(']')
+                ':' in raw -> raw.substringBefore(':')
+                else -> raw
+            }
+            val port = when {
+                raw.startsWith("[") -> raw.substringAfter("]:", "").toIntOrNull() ?: 53
+                ':' in raw -> raw.substringAfter(':').toIntOrNull() ?: 53
+                else -> 53
+            }
+            val delay = udpProbeMillis(host, port, dnsQuery, 2_000)
+            if (delay > 0) return delay
         }
-
-        val directUdp = udpProbeMillis(domain, 53, dnsQuery, 2_000)
-        if (directUdp > 0) return directUdp
 
         return -1L
     }

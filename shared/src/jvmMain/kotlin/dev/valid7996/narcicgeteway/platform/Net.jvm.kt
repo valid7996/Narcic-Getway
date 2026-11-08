@@ -99,6 +99,29 @@ internal actual suspend fun httpTimedTransfer(
     connectTimeoutMs: Int,
     readTimeoutMs: Int,
 ): HttpTiming = withContext(Dispatchers.IO) {
+    if (socksPort != null && !upload) {
+        val t0 = System.nanoTime()
+        val response = runCatching {
+            rawHttpViaSocks(
+                method = "GET",
+                url = url,
+                headers = mapOf("User-Agent" to "NarcicGeteway-SpeedTest"),
+                body = null,
+                socksPort = socksPort,
+                connectTimeoutMs = connectTimeoutMs,
+                readTimeoutMs = readTimeoutMs,
+            )
+        }.getOrNull()
+        if (response != null && (response.code in 200..399)) {
+            val ttfb = (System.nanoTime() - t0).coerceAtLeast(1_000_000L)
+            return@withContext HttpTiming(
+                bytes = response.body.length.toLong(),
+                wallNanos = ttfb,
+                ttfbNanos = ttfb,
+                serverMillis = 0.0,
+            )
+        }
+    }
     val connection = if (socksPort != null) {
         val proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved("127.0.0.1", socksPort))
         URL(url).openConnection(proxy) as HttpURLConnection
