@@ -158,6 +158,8 @@ object XrayJsonBuilder {
         val frontOptions = options.copy(
             carrier = false,
             localDns = true,
+            fakeDns = true,
+            domainStrategy = "AsIs",
             dialerSocksPort = null,
             serverDns = emptyList(),
             remoteDns = streamDns(remoteDns),
@@ -674,7 +676,7 @@ object XrayJsonBuilder {
                         }
                     }
 
-                    dnsRoutingRules(dnsSplit).forEach { add(it) }
+                    dnsRoutingRules(dnsSplit, options).forEach { add(it) }
 
                     if (options.engineFront?.onion == true) {
                         addJsonObject {
@@ -1049,8 +1051,9 @@ object XrayJsonBuilder {
         )
     }
 
-    private fun dnsRoutingRules(split: DnsSplit): List<JsonObject> {
+    private fun dnsRoutingRules(split: DnsSplit, options: BuildOptions = BuildOptions()): List<JsonObject> {
         if (!split.enabled) return emptyList()
+        val outbound = if (options.engineFront != null) "direct" else "proxy"
         return buildList {
             if (split.domesticServers.isNotEmpty()) add(
                 buildJsonObject {
@@ -1063,7 +1066,7 @@ object XrayJsonBuilder {
             add(
                 buildJsonObject {
                     put("type", "field")
-                    put("outboundTag", "proxy")
+                    put("outboundTag", outbound)
                     putJsonArray("inboundTag") { add(TAG_DNS_MODULE) }
                 },
             )
@@ -1108,7 +1111,7 @@ object XrayJsonBuilder {
             }
             options.serverDns.forEach { add(it) }
             add(options.remoteDns)
-            if (fakeDnsActive(options)) addJsonObject {
+            if (fakeDnsActive(options) && options.engineFront == null) addJsonObject {
                 put("address", options.remoteDns)
                 putJsonArray("domains") { REAL_ANSWER_DOMAINS.forEach { add(it) } }
                 put("skipFallback", true)

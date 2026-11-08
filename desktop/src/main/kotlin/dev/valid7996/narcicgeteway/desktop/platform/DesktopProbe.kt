@@ -329,6 +329,7 @@ object DesktopProbe {
             }
             putJsonObject("dns") {
                 putJsonArray("servers") {
+                    add(JsonPrimitive("localhost"))
                     add(JsonPrimitive("8.8.8.8"))
                     add(JsonPrimitive("1.1.1.1"))
                 }
