@@ -84,6 +84,8 @@
                 <data android:scheme="nrg" />
                 <data android:scheme="zsx" />
                 <data android:scheme="masterdns" />
+                <data android:scheme="cottendns" />
+                <data android:scheme="stormdns" />
             </intent-filter>
 
             <intent-filter>
