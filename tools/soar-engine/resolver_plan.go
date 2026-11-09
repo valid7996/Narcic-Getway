@@ -35,10 +35,11 @@ func (c config) resolverPlan(configured []string) (initial, candidates []string)
 			all = append(all, resolver)
 		}
 	}
-	if len(all) <= 8 {
-		return all, nil // Upstream discovery supplies country/global candidates.
+	if len(all) > 8 {
+		initial = all[:8]
+	} else {
+		initial = all
 	}
-	initial = all[:8]
 	seen = make(map[string]bool)
 	for _, resolver := range initial {
 		seen[resolver] = true
@@ -49,8 +50,7 @@ func (c config) resolverPlan(configured []string) (initial, candidates []string)
 			candidates = append(candidates, resolver)
 		}
 	}
-	// Avoid placing thousands of untested extras before the targeted country
-	// and global lists, which would delay recovery on restricted networks.
+	// Always populate discovery candidates from country and global seeds
 	for _, country := range []string{strings.ToLower(c.Soar.Country), "global"} {
 		if data, err := resolverSeeds.ReadFile("data/resolvers/" + country + ".txt"); err == nil {
 			for _, line := range strings.Split(string(data), "\n") {
@@ -58,8 +58,16 @@ func (c config) resolverPlan(configured []string) (initial, candidates []string)
 			}
 		}
 	}
-	for _, resolver := range all[8:] {
-		add(resolver)
+	if len(all) > 8 {
+		for _, resolver := range all[8:] {
+			add(resolver)
+		}
+	}
+	// If initial has fewer than 8 resolvers (e.g., only the local ISP DNS or empty),
+	// seed initial with vetted candidates so startup does not stall on a filtered ISP resolver.
+	for len(initial) < 8 && len(candidates) > 0 {
+		initial = append(initial, candidates[0])
+		candidates = candidates[1:]
 	}
 	return initial, candidates
 }

@@ -325,6 +325,19 @@ object PingService {
         return -1L
     }
 
+    private val DEFAULT_FALLBACK_RESOLVERS = listOf(
+        "185.53.142.174:53",
+        "217.219.162.200:53",
+        "2.188.21.138:53",
+        "2.188.21.70:53",
+        "2.189.44.68:53",
+        "2.189.44.86:53",
+        "2.144.2.72:53",
+        "2.144.2.154:53",
+        "8.8.8.8:53",
+        "1.1.1.1:53"
+    )
+
     private suspend fun dnsTunnelDelay(profile: VpnProfile): Long {
         val master = profile.masterDnsSettings()
         val white = profile.whiteDnsSettings()
@@ -345,7 +358,7 @@ object PingService {
             dnsTunnel != null -> dnsTunnel.resolvers.split(',', '\n', ' ').map { it.trim() }.filter { it.isNotBlank() && !it.startsWith("#") }
             else -> emptyList()
         }.ifEmpty {
-            listOf("1.1.1.1:53", "8.8.8.8:53", "9.9.9.9:53", "149.112.112.112:53")
+            DEFAULT_FALLBACK_RESOLVERS
         }
 
         val txId = ByteArray(2)
