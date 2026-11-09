@@ -202,7 +202,7 @@ internal actual suspend fun tcpConnectMillis(host: String, port: Int, timeoutMs:
         try {
             socket = Socket()
             socket.connect(InetSocketAddress(host, port), timeoutMs)
-            System.currentTimeMillis() - start
+            (System.currentTimeMillis() - start).coerceAtLeast(1L)
         } catch (e: Exception) {
             -1L
         } finally {

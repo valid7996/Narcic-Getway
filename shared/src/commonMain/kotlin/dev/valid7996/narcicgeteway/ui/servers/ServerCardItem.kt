@@ -345,6 +345,12 @@ internal fun ServerCard(
                                 HorizontalDivider()
                             }
                             DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.ping_real)) },
+                                leadingIcon = { Icon(painterResource(Res.drawable.ic_bolt), null, Modifier.size(18.dp)) },
+                                onClick = { menuOpen = false; onPingReal() },
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.action_delete), color = MaterialTheme.colorScheme.error) },
                                 leadingIcon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)) },
                                 onClick = { menuOpen = false; onDelete() },
@@ -422,6 +428,9 @@ internal fun ServerCard(
             ) {
                 // Right in RTL: Signal bars + Ping + MTU
                 Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onPingReal),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {

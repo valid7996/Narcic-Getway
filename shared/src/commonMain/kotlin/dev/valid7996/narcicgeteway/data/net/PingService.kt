@@ -148,7 +148,11 @@ object PingService {
         val customPermits = Semaphore(minOf(realPermits, CUSTOM_PROBE_CONCURRENCY))
         val geoPermits = Semaphore(GEO_CONCURRENCY)
 
-        val targets = profiles.filterNot { ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof && !it.isMhrvRelay && !it.isSstp && !it.isDnsBasedTunnel)) || it.isAether }
+        val targets = profiles.filterNot {
+            ((it.isManagedTunnel && !it.isSingBoxConfig && !it.isSniSpoof && !it.isNoRootSniSpoof &&
+                !it.isMhrvRelay && !it.isSstp && !it.isDnsBasedTunnel && !it.isIkev2 &&
+                !it.isOpenConnect && !it.isOpenVpn)) || it.isAether
+        }
         val aetherTargets = profiles.filter { it.isAether }
         val aetherPermits = Semaphore(1)
         val total = targets.size + aetherTargets.size
@@ -171,7 +175,8 @@ object PingService {
                 val isSpoof = profile.isSniSpoof || profile.isNoRootSniSpoof || SniSpoofConfig.isSpoofTarget(profile.address, profile.port)
                 val isSealed = profile.isLocked || profile.source is dev.valid7996.narcicgeteway.domain.config.ProfileSource.Sealed
                 val isMhrv = profile.isMhrvRelay || (isSealed && profile.resolveUnsealed()?.isMhrvRelay == true)
-                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed || isMhrv || profile.isDnsBasedTunnel
+                val isSpecial = profile.isIkev2 || profile.isOpenConnect || profile.isOpenVpn || profile.isSstp
+                val heavy = useRealDelay || profile.isProxyChain || isSpoof || isSealed || isMhrv || profile.isDnsBasedTunnel || isSpecial
                 val pool = if (heavy && (profile.isCustom || isSealed || isMhrv)) customPermits else permits
                 val ms = pool.withPermit {
                     if (heavy) measureProfile(profile, url, chainConfig)
@@ -183,16 +188,24 @@ object PingService {
                 onResult(profile.id, latency, profile.countryCode)
                 doneLock.withPermit { onProgress(++done, total) }
 
+                val addressForGeo = when {
+                    profile.isIkev2 -> profile.ikev2Settings()?.server?.substringBefore(':') ?: profile.address
+                    profile.isOpenConnect -> profile.openConnectSettings()?.server?.removePrefix("https://")?.removePrefix("http://")?.substringBefore('/')?.substringBefore(':') ?: profile.address
+                    profile.isDnsTunnel -> profile.dnsTunnelSettings()?.domain?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
+                    profile.isMasterDns -> profile.masterDnsSettings()?.domains?.split(',', '\n')?.firstOrNull()?.trim() ?: profile.address
+                    else -> profile.address
+                }
+
                 if (detectCountry && latency > 0 && profile.countryCode == null) {
                     geoScope.launch {
-                        val country = geoPermits.withPermit { GeoLookup.countryOf(profile.address) }
+                        val country = geoPermits.withPermit { GeoLookup.countryOf(addressForGeo) }
                         if (country != null) onResult(profile.id, latency, country)
                     }
                 }
 
                 if (latency > 0 && profile.countryCode == null && !isSpoof && !isSealed) {
                     geoScope.launch {
-                        val country = geoPermits.withPermit { GeoLookup.countryOf(profile.address) }
+                        val country = geoPermits.withPermit { GeoLookup.countryOf(addressForGeo) }
                         if (country != null) onResult(profile.id, latency, country)
                     }
                 }
@@ -247,28 +260,39 @@ object PingService {
             targetPort = parts.getOrNull(1)?.toIntOrNull() ?: 500
         }
 
+        // If IKEv2 is actively connected on device, measure true end-to-end HTTP delay through tunnel
+        if (VpnManager.activeKind.value == VpnManager.KIND_IKEV2 && VpnManager.deviceVpnActive()) {
+            val activeOutcome = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL)
+            if (activeOutcome.ok && activeOutcome.ms > 0) return activeOutcome.ms
+        }
+
         val spi = ByteArray(8)
         kotlin.random.Random.nextBytes(spi)
         // Standard IKE_SA_INIT probe header
         val ikePkt = spi + ByteArray(8) + byteArrayOf(33, 0x20, 34, 0x08, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 4)
-        val udp500 = udpProbeMillis(host, targetPort, ikePkt, 2_200)
+        val udp500 = udpProbeMillis(host, targetPort, ikePkt, 1_500)
         if (udp500 > 0) return udp500
 
         if (targetPort == 500) {
             val nonEspPkt = byteArrayOf(0, 0, 0, 0) + ikePkt
-            val udp4500 = udpProbeMillis(host, 4500, nonEspPkt, 2_200)
+            val udp4500 = udpProbeMillis(host, 4500, nonEspPkt, 1_500)
             if (udp4500 > 0) return udp4500
         }
 
-        // Check RFC 8229 TCP encapsulation port 4500
-        val tcp4500 = tcpPing(host, 4500, 1_800)
+        // Fast TCP fallback: port 443 (Windscribe and public gateways listen on 443; never blocked by ISP)
+        val tcp443 = tcpPing(host, if (targetPort in 1..65535 && targetPort != 500) targetPort else 443, 1_800)
+        if (tcp443 > 0) return tcp443
+
+        // RFC 8229 TCP encapsulation port 4500
+        val tcp4500 = tcpPing(host, 4500, 1_500)
         if (tcp4500 > 0) return tcp4500
 
-        val tcp = tcpPing(host, if (targetPort in 1..65535 && targetPort != 500) targetPort else 443, 2_000)
-        if (tcp > 0) return tcp
+        // TCP port 500
+        val tcp500 = tcpPing(host, 500, 1_500)
+        if (tcp500 > 0) return tcp500
 
         // ICMP / system ping reachability fallback
-        val icmp = dev.valid7996.narcicgeteway.platform.icmpPingMillis(host, 2_200)
+        val icmp = dev.valid7996.narcicgeteway.platform.icmpPingMillis(host, 1_800)
         if (icmp > 0) return icmp
 
         return -1L
