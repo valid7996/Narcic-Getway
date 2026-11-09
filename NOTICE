@@ -188,3 +188,9 @@ The native executables `libstormdns_client.so` and `libcottendns_client.so`
 `app/src/main/assets/whitedns/` come from WhiteDNS. The engines are built on
 StormDNS / MasterDnsVPN and CottenDns (MIT) and Soar (Apache-2.0); their
 licence texts are in `app/src/main/assets/whitedns/`.
+
+Soar client (tools/soar-engine)
+-------------------------------
+Lantern Soar (Apache-2.0, https://github.com/getlantern/soar) with the WhiteDNS transport fixes, as shipped in
+WhiteDNS Android 1.6.7. The modified sources and the original attribution are in
+`tools/soar-engine/third_party/soar` (LICENSE, WHITEDNS_CHANGES.md). Used with the WhiteDNS owner's permission.

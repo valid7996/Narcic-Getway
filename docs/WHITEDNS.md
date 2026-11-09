@@ -1,7 +1,8 @@
 # WhiteDNS in Narcic Getway
 
-Android only. Two engines, both shipped as native executables (`libstormdns_client.so`,
-`libcottendns_client.so`) and run as a child process by `WhiteDnsController`.
+Android only. Three engines, each a native executable run as a child process by `WhiteDnsController`:
+`libstormdns_client.so`, `libcottendns_client.so` (shipped in `jniLibs`) and `libsoar_client.so` (built from
+`tools/soar-engine`, see below).
 
 ## Where things are
 
@@ -37,5 +38,20 @@ Only IP / IP:port / CIDR entries are used.
 
 * Desktop: the engines have no desktop build, so a WhiteDNS profile reports an error there.
 * Cross-chain: WhiteDNS cannot be a carrier or dialer in a chain.
-* Soar: WhiteDNS's Soar engine is not part of this port (its binary is not in the WhiteDNS sources).
 * WhiteDNS's own app-level warm-up / auto-tune loops.
+
+## Soar
+
+Lantern Soar needs its own server and **public key** (not a Master/Cotten server). A Soar connection is a
+WhiteDNS profile with engine "Soar": domain = the tunnel zone (one lowercase domain, max 45 characters), key =
+the base64 32-byte server public key. `soar://` links import with their resolvers and settings.
+
+* The engine is Go and is **not committed as a binary**. Build it with `tools/build-soar-engine.sh`
+  (Go 1.25+, NDK) or let the `soar` job of `.github/workflows/android-natives.yml` do it; the release workflow
+  already copies every `native-*` artifact into `jniLibs`. Without it a Soar connection reports that the
+  engine is missing; StormDNS and CottenDNS are unaffected.
+* Soar starts from the DNS servers of the phone's own network (never the tunnel's) and, with discovery on, finds
+  more from its country list. It never receives the bundled StormDNS resolver list. Ranges (CIDR) are not accepted.
+* The shared engine page (Settings -> WhiteDNS) does not apply to Soar; its options live in its connection.
+* The SOCKS port opens only after the engine has authenticated with the server and passed an HTTPS probe
+  (up to the start-up timeout, 90 s by default).

@@ -44,6 +44,7 @@ import dev.valid7996.narcicgeteway.domain.config.WhiteDnsConfig
 import dev.valid7996.narcicgeteway.domain.config.WhiteDnsConfigException
 import dev.valid7996.narcicgeteway.domain.config.WhiteDnsMaxOptions
 import dev.valid7996.narcicgeteway.domain.config.WhiteDnsProfile
+import dev.valid7996.narcicgeteway.domain.config.WhiteDnsSoarOptions
 import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.*
 import dev.valid7996.narcicgeteway.ui.components.PickerField
@@ -65,6 +66,7 @@ fun WhiteDnsSheet(
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val cotten = draft.isCottenDns
+    val soar = draft.isSoar
     val maxShown = draft.usesCottenMax
     val badResolvers = MasterDnsProfile.invalidResolvers(draft.resolvers)
 
@@ -139,22 +141,34 @@ fun WhiteDnsSheet(
             } else {
                 PickerField(
                     label = stringResource(Res.string.white_dns_engine),
-                    options = listOf(WhiteDnsProfile.ENGINE_STORM to "StormDNS", WhiteDnsProfile.ENGINE_COTTEN to "CottenDNS"),
+                    options = listOf(
+                        WhiteDnsProfile.ENGINE_STORM to "StormDNS",
+                        WhiteDnsProfile.ENGINE_COTTEN to "CottenDNS",
+                        WhiteDnsProfile.ENGINE_SOAR to "Soar",
+                    ),
                     selected = WhiteDnsProfile.normalizeEngine(draft.engine),
                     onSelect = { draft = draft.copy(engine = it) },
                 )
                 OutlinedField(draft.domains, stringResource(Res.string.white_dns_domains), placeholder = "v.example.com", minLines = 1) {
                     draft = draft.copy(domains = it)
                 }
-                OutlinedField(draft.encryptionKey, stringResource(Res.string.white_dns_key)) { draft = draft.copy(encryptionKey = it) }
-                PickerField(
-                    label = stringResource(Res.string.white_dns_method),
-                    options = listOf(
-                        0 to "None", 1 to "XOR", 2 to "ChaCha20", 3 to "AES-128-GCM", 4 to "AES-192-GCM", 5 to "AES-256-GCM",
-                    ),
-                    selected = draft.encryptionMethod,
-                    onSelect = { draft = draft.copy(encryptionMethod = it) },
-                )
+                OutlinedField(
+                    draft.encryptionKey,
+                    stringResource(if (soar) Res.string.white_dns_public_key else Res.string.white_dns_key),
+                    supporting = if (soar && draft.encryptionKey.isNotBlank() && !WhiteDnsProfile.isValidSoarServer(draft.primaryDomain(), draft.encryptionKey)) {
+                        stringResource(Res.string.white_dns_soar_invalid)
+                    } else null,
+                ) { draft = draft.copy(encryptionKey = it) }
+                if (!soar) {
+                    PickerField(
+                        label = stringResource(Res.string.white_dns_method),
+                        options = listOf(
+                            0 to "None", 1 to "XOR", 2 to "ChaCha20", 3 to "AES-128-GCM", 4 to "AES-192-GCM", 5 to "AES-256-GCM",
+                        ),
+                        selected = draft.encryptionMethod,
+                        onSelect = { draft = draft.copy(encryptionMethod = it) },
+                    )
+                }
                 OutlinedField(
                     draft.resolvers,
                     stringResource(Res.string.white_dns_resolvers),
@@ -162,7 +176,7 @@ fun WhiteDnsSheet(
                     minLines = 2,
                     supporting = if (badResolvers.isNotEmpty()) {
                         stringResource(Res.string.master_dns_resolvers_skipped, badResolvers.joinToString(", "))
-                    } else stringResource(Res.string.white_dns_resolvers_hint),
+                    } else stringResource(if (soar) Res.string.white_dns_soar_resolvers_hint else Res.string.white_dns_resolvers_hint),
                 ) { draft = draft.copy(resolvers = it) }
 
                 if (cotten) {
@@ -254,15 +268,20 @@ fun WhiteDnsSheet(
                     }
                 }
 
-                GroupTitle(stringResource(Res.string.white_dns_group_extra))
-                OutlinedField(
-                    draft.extraToml,
-                    "KEY = value",
-                    placeholder = "RESOLVER_DOH_PATH = \"/dns-query\"",
-                    minLines = 3,
-                    supporting = stringResource(Res.string.white_dns_extra_hint),
-                    mono = true,
-                ) { draft = draft.copy(extraToml = it) }
+                if (soar) {
+                    GroupTitle(stringResource(Res.string.white_dns_group_soar))
+                    SoarForm(draft.soar) { draft = draft.copy(soar = it) }
+                } else {
+                    GroupTitle(stringResource(Res.string.white_dns_group_extra))
+                    OutlinedField(
+                        draft.extraToml,
+                        "KEY = value",
+                        placeholder = "RESOLVER_DOH_PATH = \"/dns-query\"",
+                        minLines = 3,
+                        supporting = stringResource(Res.string.white_dns_extra_hint),
+                        mono = true,
+                    ) { draft = draft.copy(extraToml = it) }
+                }
 
                 OutlinedButton(
                     onClick = {
@@ -283,6 +302,45 @@ fun WhiteDnsSheet(
                 ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
             }
         }
+    }
+}
+
+@Composable
+private fun SoarForm(o: WhiteDnsSoarOptions, onChange: (WhiteDnsSoarOptions) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        PickerField(
+            label = "Preset",
+            options = listOf(
+                "balanced" to "Balanced", "conservative" to "Conservative (restricted networks)",
+                "fast" to "Fast", "custom" to "Custom",
+            ),
+            selected = o.presetName(),
+            onSelect = { if (it != "custom") onChange(o.withPreset(it)) },
+        )
+        PickerField(
+            label = "Resolver transport",
+            options = listOf("auto" to "Auto", "on" to "UDP + TCP", "only" to "TCP only", "off" to "UDP only"),
+            selected = o.transport,
+            onSelect = { onChange(o.copy(transport = it)) },
+        )
+        ToggleRow("Resolver discovery", o.discovery) { onChange(o.copy(discovery = it)) }
+        if (o.discovery) {
+            OutlinedField(o.country, "Country code (2 letters, IR / GLOBAL list)") { onChange(o.copy(country = it)) }
+            NumField("Resolvers wanted (1–32)", o.discoveryWant) { onChange(o.copy(discoveryWant = it)) }
+            NumField("Discovery concurrency (1–16)", o.discoveryConcurrency) { onChange(o.copy(discoveryConcurrency = it)) }
+            NumField("Discovery pace (ms, 100–5000)", o.discoveryPaceMs) { onChange(o.copy(discoveryPaceMs = it)) }
+        }
+        NumField("Safe QNAME length (101–253)", o.safeQName) { onChange(o.copy(safeQName = it)) }
+        NumField("Max QNAME length (101–253)", o.maxQName) { onChange(o.copy(maxQName = it)) }
+        NumField("Max answer size (512–1232)", o.maxAnswer) { onChange(o.copy(maxAnswer = it)) }
+        NumField("Hold (ms, 100–1500)", o.holdMs) { onChange(o.copy(holdMs = it)) }
+        NumField("Max in-flight (8–1024)", o.maxInflight) { onChange(o.copy(maxInflight = it)) }
+        NumField("Max path window (2–128)", o.maxPathWindow) { onChange(o.copy(maxPathWindow = it)) }
+        NumField("Max streams (8–256)", o.maxStreams) { onChange(o.copy(maxStreams = it)) }
+        NumField("Stream window (KiB, 64–1024)", o.streamWindowKiB) { onChange(o.copy(streamWindowKiB = it)) }
+        NumField("Send buffer (KiB, 32–1024)", o.sendBufferKiB) { onChange(o.copy(sendBufferKiB = it)) }
+        NumField("Session idle (s, 15–110)", o.sessionIdleSeconds) { onChange(o.copy(sessionIdleSeconds = it)) }
+        NumField("Start-up timeout (s, 5–120)", o.dialTimeoutSeconds) { onChange(o.copy(dialTimeoutSeconds = it)) }
     }
 }
 

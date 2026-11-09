@@ -86,6 +86,7 @@
                 <data android:scheme="masterdns" />
                 <data android:scheme="cottendns" />
                 <data android:scheme="stormdns" />
+                <data android:scheme="soar" />
             </intent-filter>
 
             <intent-filter>

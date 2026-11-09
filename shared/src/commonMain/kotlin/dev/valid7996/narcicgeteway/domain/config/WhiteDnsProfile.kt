@@ -1,5 +1,7 @@
 package dev.valid7996.narcicgeteway.domain.config
 
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlinx.serialization.Serializable
 
 /**
@@ -72,6 +74,78 @@ data class WhiteDnsMaxOptions(
 }
 
 /**
+ * Lantern Soar options. Soar has its own server and public key; none of the Master/Cotten transport settings
+ * apply to it.
+ */
+@Serializable
+data class WhiteDnsSoarOptions(
+    val transport: String = "auto",
+    val discovery: Boolean = true,
+    val country: String = "IR",
+    val discoveryWant: Int = 2,
+    val discoveryConcurrency: Int = 2,
+    val discoveryPaceMs: Int = 1000,
+    val safeQName: Int = 101,
+    val maxQName: Int = 253,
+    val maxAnswer: Int = 1232,
+    val holdMs: Int = 500,
+    val maxInflight: Int = 128,
+    val maxPathWindow: Int = 32,
+    val maxStreams: Int = 128,
+    val streamWindowKiB: Int = 256,
+    val sendBufferKiB: Int = 64,
+    val sessionIdleSeconds: Int = 90,
+    val dialTimeoutSeconds: Int = 90,
+) {
+    fun normalized(): WhiteDnsSoarOptions {
+        val maxQ = maxQName.coerceIn(101, 253)
+        return copy(
+            transport = if (transport in TRANSPORTS) transport else "auto",
+            country = country.trim().uppercase().takeIf { c -> c.length == 2 && c.all { it in 'A'..'Z' } }.orEmpty(),
+            discoveryWant = discoveryWant.coerceIn(1, 32),
+            discoveryConcurrency = discoveryConcurrency.coerceIn(1, 16),
+            discoveryPaceMs = discoveryPaceMs.coerceIn(100, 5000),
+            maxQName = maxQ,
+            safeQName = safeQName.coerceIn(101, maxQ),
+            maxAnswer = maxAnswer.coerceIn(512, 1232),
+            holdMs = holdMs.coerceIn(100, 1500),
+            maxInflight = maxInflight.coerceIn(8, 1024),
+            maxPathWindow = maxPathWindow.coerceIn(2, 128),
+            maxStreams = maxStreams.coerceIn(8, 256),
+            streamWindowKiB = streamWindowKiB.coerceIn(64, 1024),
+            sendBufferKiB = sendBufferKiB.coerceIn(32, 1024),
+            // Stay under the reference server's two minute idle expiry.
+            sessionIdleSeconds = sessionIdleSeconds.coerceIn(15, 110),
+            dialTimeoutSeconds = dialTimeoutSeconds.coerceIn(5, 120),
+        )
+    }
+
+    /** The preset's transport tuning, with this connection's discovery choices kept. */
+    fun withPreset(name: String): WhiteDnsSoarOptions {
+        val d = WhiteDnsSoarOptions()
+        val tuned = when (name) {
+            "conservative" -> d.copy(maxInflight = 32, maxPathWindow = 8, maxAnswer = 512, maxQName = 101, maxStreams = 16)
+            "fast" -> d.copy(maxInflight = 256, maxPathWindow = 64)
+            else -> d
+        }
+        return tuned.copy(
+            transport = transport, discovery = discovery, country = country,
+            discoveryWant = discoveryWant, discoveryConcurrency = discoveryConcurrency, discoveryPaceMs = discoveryPaceMs,
+        ).normalized()
+    }
+
+    /** "balanced", "conservative", "fast", or "custom" when the tuning matches none of them. */
+    fun presetName(): String {
+        val n = normalized()
+        return listOf("balanced", "conservative", "fast").firstOrNull { n.withPreset(it) == n } ?: "custom"
+    }
+
+    companion object {
+        val TRANSPORTS = listOf("auto", "on", "only", "off")
+    }
+}
+
+/**
  * One WhiteDNS server connection (a StormDNS or CottenDNS tunnel server). The values that are shared by
  * every connection (MTU scan, workers, timeouts, retries ...) live in [WhiteDnsSettings].
  */
@@ -116,17 +190,27 @@ data class WhiteDnsProfile(
 
     val max: WhiteDnsMaxOptions = WhiteDnsMaxOptions(),
 
+    /** Used only when [engine] is Soar. */
+    val soar: WhiteDnsSoarOptions = WhiteDnsSoarOptions(),
+
     /** Raw engine keys (`KEY = value` lines) that the form does not cover. They override the generated config. */
     val extraToml: String = "",
 ) {
     val isCottenDns: Boolean get() = normalizeEngine(engine) == ENGINE_COTTEN
+
+    val isSoar: Boolean get() = normalizeEngine(engine) == ENGINE_SOAR
 
     val isCompatibility: Boolean get() = isCottenDns && normalizePreset(configPreset) == PRESET_MASTER_STORM
 
     val usesCottenMax: Boolean
         get() = isCottenDns && !isCompatibility && normalizeTunnelMode(tunnelMode) == "cottenmax"
 
-    val engineLabel: String get() = if (isCottenDns) "CottenDNS" else "StormDNS"
+    val engineLabel: String
+        get() = when (normalizeEngine(engine)) {
+            ENGINE_COTTEN -> "CottenDNS"
+            ENGINE_SOAR -> "Soar"
+            else -> "StormDNS"
+        }
 
     fun domainList(): List<String> = splitDomains(domains)
 
@@ -135,7 +219,11 @@ data class WhiteDnsProfile(
     fun resolverList(): List<String> = MasterDnsProfile.splitResolvers(resolvers)
 
     val isValid: Boolean
-        get() = domainList().isNotEmpty() && encryptionKey.isNotBlank() && encryptionMethod in 0..5
+        get() = if (isSoar) {
+            domainList().size == 1 && isValidSoarServer(primaryDomain(), encryptionKey)
+        } else {
+            domainList().isNotEmpty() && encryptionKey.isNotBlank() && encryptionMethod in 0..5
+        }
 
     /** Clamps every value the same way the engine would, so the form and the config never disagree. */
     fun normalized(): WhiteDnsProfile = copy(
@@ -157,11 +245,13 @@ data class WhiteDnsProfile(
         resolverDohPort = normalizePort(resolverDohPort, "443"),
         resolverDohPath = resolverDohPath.trim().ifBlank { "/dns-query" },
         max = max.normalized(),
+        soar = soar.normalized(),
     )
 
     companion object {
         const val ENGINE_STORM = "stormdns"
         const val ENGINE_COTTEN = "cottendns"
+        const val ENGINE_SOAR = "soar"
 
         const val MODE_PRESET = "preset"
         const val RATE_OFF = "off"
@@ -185,6 +275,7 @@ data class WhiteDnsProfile(
 
         fun normalizeEngine(value: String): String = when (value.trim().lowercase()) {
             "cotten", "cotton", "cottendns", "cottondns" -> ENGINE_COTTEN
+            "soar" -> ENGINE_SOAR
             else -> ENGINE_STORM
         }
 
@@ -198,6 +289,17 @@ data class WhiteDnsProfile(
 
         fun normalizeTunnelMode(value: String): String =
             if (value.trim().lowercase() == "cottenmax") "cottenmax" else "legacy"
+
+        /** One lowercase ASCII zone of at most 45 characters and a base64 32-byte Ed25519 server public key. */
+        @OptIn(ExperimentalEncodingApi::class)
+        fun isValidSoarServer(domain: String, publicKey: String): Boolean {
+            val zone = domain.trim().trimEnd('.').lowercase()
+            if (zone.length !in 3..45 || '.' !in zone || !zone.all { it in 'a'..'z' || it in '0'..'9' || it == '.' || it == '-' }) {
+                return false
+            }
+            if (zone.split('.').any { it.isEmpty() || it.length > 63 || it.startsWith('-') || it.endsWith('-') }) return false
+            return runCatching { Base64.Default.decode(publicKey.trim()).size == 32 }.getOrDefault(false)
+        }
 
         fun splitDomains(raw: String): List<String> =
             raw.split(',', '\n', ';', ' ')

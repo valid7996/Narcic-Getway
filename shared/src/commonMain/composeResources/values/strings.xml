@@ -2969,7 +2969,7 @@
     <string name="tile_whitedns_title">WhiteDNS</string>
     <string name="tile_whitedns_sub">StormDNS &amp; CottenDNS engine settings and logs</string>
     <string name="white_dns_about_title">WhiteDNS engines</string>
-    <string name="white_dns_about_body">These values are shared by every WhiteDNS connection (StormDNS and CottenDNS). The local port, SOCKS login and local DNS are handled by Narcic itself. Wrong values can stop the tunnel from coming up; Reset puts the defaults back.</string>
+    <string name="white_dns_about_body">These values are shared by every StormDNS and CottenDNS connection (Soar keeps its own options in its connection). The local port, SOCKS login and local DNS are handled by Narcic itself. Wrong values can stop the tunnel from coming up; Reset puts the defaults back.</string>
     <string name="white_dns_add_sub">StormDNS / CottenDNS DNS tunnel</string>
     <string name="white_dns_add_title">Add WhiteDNS</string>
     <string name="white_dns_edit_title">Edit WhiteDNS</string>
@@ -3011,4 +3011,8 @@
     <string name="white_dns_settings_config_hint">Engine keys, one KEY = value per line. Keys that Narcic or a connection owns are ignored.</string>
     <string name="white_dns_settings_sub">StormDNS &amp; CottenDNS</string>
     <string name="white_dns_settings_title">WhiteDNS</string>
+    <string name="white_dns_public_key">Server public key (base64)</string>
+    <string name="white_dns_group_soar">Soar</string>
+    <string name="white_dns_soar_invalid">Soar needs one lowercase domain (max 45 characters) and a base64 32-byte public key</string>
+    <string name="white_dns_soar_resolvers_hint">Optional single IPs (no ranges). Empty = the phone's own DNS plus discovery</string>
 </resources>

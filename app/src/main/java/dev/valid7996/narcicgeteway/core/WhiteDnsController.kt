@@ -27,6 +27,8 @@ class WhiteDnsController(
     private val resolvers: List<String>,
     private val listenPort: Int,
     private val maxListenPort: Int = listenPort + 9,
+    /** The phone network's own DNS servers; only the Soar engine reads them. */
+    private val systemResolvers: List<String> = emptyList(),
     private val listenHost: String = "127.0.0.1",
 ) {
     @Volatile private var process: Process? = null
@@ -65,6 +67,7 @@ class WhiteDnsController(
     @Volatile private var sessionFailures = 0
     @Volatile private var sessionError: String? = null
     @Volatile private var lastErrorLine: String? = null
+    @Volatile private var soarError: String? = null
     @Volatile private var lastActivityAt = 0L
 
     val isReady: Boolean get() = ready
@@ -86,21 +89,42 @@ class WhiteDnsController(
     fun start(): Int {
         failure = null
         if (stopped) return -1
-        if (!profile.isValid) return fail("domain and encryption key are required")
-        if (resolvers.isEmpty()) return fail("no resolvers to scan")
+        val soar = profile.isSoar
+        if (!profile.isValid) {
+            return fail(if (soar) "domain and a base64 32-byte server public key are required" else "domain and encryption key are required")
+        }
+        if (resolvers.isEmpty() && !(soar && profile.soar.discovery)) {
+            return fail(if (soar) "add resolvers or turn on Soar discovery" else "no resolvers to scan")
+        }
 
         val binary = File(
             context.applicationInfo.nativeLibraryDir,
-            if (profile.isCottenDns) "libcottendns_client.so" else "libstormdns_client.so",
+            when {
+                soar -> "libsoar_client.so"
+                profile.isCottenDns -> "libcottendns_client.so"
+                else -> "libstormdns_client.so"
+            },
         )
-        if (!binary.exists()) return fail("${profile.engineLabel} engine is missing from this build (${binary.name})")
+        if (!binary.exists()) {
+            return fail(
+                if (soar) {
+                    "Soar engine is not in this build (${binary.name}). Build it with tools/build-soar-engine.sh or the android-natives workflow"
+                } else {
+                    "${profile.engineLabel} engine is missing from this build (${binary.name})"
+                },
+            )
+        }
         if (!binary.canExecute()) return fail("${profile.engineLabel} engine is not executable (${binary.name})")
 
         val port = firstFreePort(listenPort)
         if (port < 0) return fail("no free local port near $listenPort")
 
-        val toml = try {
-            WhiteDnsConfig.renderRuntimeToml(profile, settings, listenHost, port)
+        val config = try {
+            if (soar) {
+                WhiteDnsConfig.renderSoarJson(profile, listenHost, port, systemResolvers)
+            } else {
+                WhiteDnsConfig.renderRuntimeToml(profile, settings, listenHost, port)
+            }
         } catch (e: IllegalArgumentException) {
             return fail(e.message ?: "invalid configuration")
         }
@@ -108,15 +132,15 @@ class WhiteDnsController(
         val dir = File(context.filesDir, "whitedns/${profile.normalized().engine}").apply { mkdirs() }
         cleanStale(dir)
         val id = UUID.randomUUID().toString()
-        val cfg = File(dir, ".wd-$id.toml")
+        val cfg = File(dir, if (soar) ".wd-$id.json" else ".wd-$id.toml")
         val res = File(dir, ".wd-$id.resolvers")
         return try {
-            cfg.writeText(toml)
+            cfg.writeText(config)
             res.writeText(WhiteDnsConfig.renderResolvers(resolvers))
             configFile = cfg
             resolversFile = res
             resetProgress()
-            tunnelReady = !profile.usesCottenMax
+            tunnelReady = !profile.usesCottenMax && !soar
 
             val p = ProcessBuilder(binary.absolutePath, "-config", cfg.absolutePath, "-resolvers", res.absolutePath)
                 .directory(dir)
@@ -156,6 +180,7 @@ class WhiteDnsController(
             val p = process
             if (p == null || !p.isAlive) {
                 failure = failure ?: when {
+                    soarError != null -> Failure.Other(soarError.orEmpty())
                     noUsableResolver -> Failure.NoUsableResolver(maxOf(scanTotal, scanChecked))
                     else -> Failure.Exited(exitCodeOrNull(p))
                 }
@@ -256,6 +281,8 @@ class WhiteDnsController(
             scanTotal = p.groupValues[3].toInt()
             scanUsable = p.groupValues[4].toInt()
         }
+        if (message.startsWith("SOAR_READY")) tunnelReady = true
+        if (message.startsWith("SOAR_ERROR:")) soarError = message.removePrefix("SOAR_ERROR:").trim().take(200)
         val lower = message.lowercase()
         when {
             NO_RESOLVER.any { it in lower } -> noUsableResolver = true
@@ -279,6 +306,7 @@ class WhiteDnsController(
         sessionFailures = 0
         sessionError = null
         lastErrorLine = null
+        soarError = null
         lastActivityAt = System.currentTimeMillis()
         ready = false
     }
@@ -344,7 +372,7 @@ class WhiteDnsController(
             "mtu tests failed: no valid connections",
             "no valid connections after mtu testing",
         )
-        val STALE_FILE = Regex("""\.wd-[A-Za-z0-9-]+\.(toml|resolvers)""")
+        val STALE_FILE = Regex("""\.wd-[A-Za-z0-9-]+\.(toml|json|resolvers)""")
 
         const val SESSION_FAILURES_TO_GIVE_UP = 3
         const val PROBE_CACHE_MS = 5_000L

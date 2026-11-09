@@ -2963,7 +2963,7 @@
     <string name="tile_whitedns_title">WhiteDNS</string>
     <string name="tile_whitedns_sub">تنظیمات و لاگ موتورهای StormDNS و CottenDNS</string>
     <string name="white_dns_about_title">موتورهای WhiteDNS</string>
-    <string name="white_dns_about_body">این مقادیر بین همه اتصال‌های WhiteDNS (StormDNS و CottenDNS) مشترک است. پورت محلی، ورود SOCKS و DNS محلی را خود نرسیس مدیریت می‌کند. مقدار اشتباه می‌تواند مانع بالا آمدن تونل شود؛ «بازنشانی» پیش‌فرض‌ها را برمی‌گرداند.</string>
+    <string name="white_dns_about_body">این مقادیر بین همه اتصال‌های StormDNS و CottenDNS مشترک است (Soar گزینه‌های خودش را داخل اتصالش دارد). پورت محلی، ورود SOCKS و DNS محلی را خود نرسیس مدیریت می‌کند. مقدار اشتباه می‌تواند مانع بالا آمدن تونل شود؛ «بازنشانی» پیش‌فرض‌ها را برمی‌گرداند.</string>
     <string name="white_dns_add_sub">تونل DNS با StormDNS / CottenDNS</string>
     <string name="white_dns_add_title">افزودن WhiteDNS</string>
     <string name="white_dns_edit_title">ویرایش WhiteDNS</string>
@@ -3005,4 +3005,8 @@
     <string name="white_dns_settings_config_hint">کلیدهای موتور، در هر خط یک KEY = value. کلیدهایی که نرسیس یا اتصال تعیین می‌کند نادیده گرفته می‌شوند.</string>
     <string name="white_dns_settings_sub">StormDNS و CottenDNS</string>
     <string name="white_dns_settings_title">WhiteDNS</string>
+    <string name="white_dns_public_key">کلید عمومی سرور (base64)</string>
+    <string name="white_dns_group_soar">Soar</string>
+    <string name="white_dns_soar_invalid">Soar یک دامنه با حروف کوچک (حداکثر ۴۵ نویسه) و کلید عمومی base64 به طول ۳۲ بایت می‌خواهد</string>
+    <string name="white_dns_soar_resolvers_hint">آی‌پی‌های تکی، اختیاری (بدون بازه). خالی = DNS خود گوشی به‌علاوه کشف خودکار</string>
 </resources>

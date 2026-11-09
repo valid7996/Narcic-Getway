@@ -682,7 +682,11 @@ private var bentoCard: Boolean = false
             profile.resolverList().isNotEmpty() -> profile.resolverList()
             else -> dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.splitResolvers(appSettings.whiteDns.resolvers)
         }.filter { dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.isNumericResolver(it) }
-            .ifEmpty { bundledWhiteDnsResolvers() }
+            .let { list ->
+                // Soar takes single addresses only (no ranges) and finds the rest by discovery, so it never
+                // gets the bundled list; the other engines fall back to it.
+                if (profile.isSoar) list.filter { '/' !in it }.take(8192) else list.ifEmpty { bundledWhiteDnsResolvers() }
+            }
 
         val controller = WhiteDnsController(
             context = this,
@@ -691,6 +695,7 @@ private var bentoCard: Boolean = false
             resolvers = entries,
             listenPort = LocalPorts.WHITE_DNS,
             maxListenPort = LocalPorts.WHITE_DNS_MAX,
+            systemResolvers = if (profile.isSoar) underlyingDnsServers() else emptyList(),
         )
         whiteDns = controller
         val port = controller.start()
@@ -706,6 +711,22 @@ private var bentoCard: Boolean = false
         }
         bridgeEngine(descriptor, port, tunMtu)
     }
+
+    /** DNS servers of the phone's own networks (not the tunnel's), for engines that start from them. */
+    private fun underlyingDnsServers(): List<String> = runCatching {
+        val cm = getSystemService(android.net.ConnectivityManager::class.java)
+        cm.allNetworks.flatMap { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@flatMap emptyList<String>()
+            if (caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) ||
+                !caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            ) {
+                return@flatMap emptyList<String>()
+            }
+            cm.getLinkProperties(network)?.dnsServers.orEmpty()
+                .filter { !it.isLoopbackAddress && !it.isLinkLocalAddress && !it.isAnyLocalAddress }
+                .mapNotNull { it.hostAddress?.substringBefore('%') }
+        }.distinct().take(8)
+    }.getOrDefault(emptyList())
 
     private fun bundledWhiteDnsResolvers(): List<String> = runCatching {
         assets.open("whitedns_default_resolvers.txt").bufferedReader().use { r ->

@@ -197,4 +197,94 @@ class WhiteDnsConfigTest {
         assertFalse(WhiteDnsProfile(domains = "a.b").isValid)
         assertTrue(WhiteDnsProfile(domains = "a.b", encryptionKey = "k").isValid)
     }
+
+    private val soarKey = "A".repeat(43) + "="
+    private val soar = WhiteDnsProfile(engine = WhiteDnsProfile.ENGINE_SOAR, domains = "s.example.com", encryptionKey = soarKey)
+
+    @Test
+    fun `soar needs a zone and a 32 byte public key`() {
+        assertTrue(soar.isValid)
+        assertFalse(soar.copy(encryptionKey = "short").isValid)
+        assertFalse(soar.copy(domains = "a.example.com, b.example.com").isValid)
+        assertFalse(soar.copy(domains = "x".repeat(60) + ".com").isValid)
+        assertFalse(soar.copy(domains = "nodot").isValid)
+    }
+
+    @Test
+    fun `soar json has exactly the keys the engine accepts`() {
+        val json = WhiteDnsConfig.renderSoarJson(soar, "127.0.0.1", 10910, listOf("8.8.8.8", "8.8.8.8", "1.1.1.1"))
+        val root = kotlinx.serialization.json.Json.parseToJsonElement(json) as kotlinx.serialization.json.JsonObject
+        assertEquals(
+            setOf("zone", "server_public_key", "system_resolvers", "listen", "username", "password", "soar"),
+            root.keys,
+        )
+        assertEquals("127.0.0.1:10910", (root["listen"] as kotlinx.serialization.json.JsonPrimitive).content)
+        assertEquals(2, (root["system_resolvers"] as kotlinx.serialization.json.JsonArray).size)
+        val soarObj = root["soar"] as kotlinx.serialization.json.JsonObject
+        assertEquals(
+            setOf(
+                "transport", "discovery", "country", "discoveryWant", "discoveryConcurrency", "discoveryPaceMs",
+                "safeQName", "maxQName", "maxAnswer", "holdMs", "maxInflight", "maxPathWindow", "maxStreams",
+                "streamWindowKiB", "sendBufferKiB", "sessionIdleSeconds", "dialTimeoutSeconds",
+            ),
+            soarObj.keys,
+        )
+    }
+
+    @Test
+    fun `soar json refuses an invalid server`() {
+        try {
+            WhiteDnsConfig.renderSoarJson(soar.copy(encryptionKey = "nope"), "127.0.0.1", 10910, emptyList())
+            fail("expected a refusal")
+        } catch (_: WhiteDnsConfigException) {
+        }
+    }
+
+    @Test
+    fun `soar options are clamped and presets are recognised`() {
+        val o = WhiteDnsSoarOptions(maxQName = 500, safeQName = 50, sessionIdleSeconds = 500, transport = "weird").normalized()
+        assertEquals(253, o.maxQName)
+        assertEquals(101, o.safeQName)
+        assertEquals(110, o.sessionIdleSeconds)
+        assertEquals("auto", o.transport)
+        assertEquals("balanced", WhiteDnsSoarOptions().presetName())
+        val conservative = WhiteDnsSoarOptions().withPreset("conservative")
+        assertEquals(32, conservative.maxInflight)
+        assertEquals("conservative", conservative.presetName())
+        assertEquals("custom", conservative.copy(maxStreams = 99).presetName())
+    }
+
+    @Test
+    fun `soar profile text lists soar keys only and round trips`() {
+        val p = soar.copy(soar = WhiteDnsSoarOptions(discovery = false, country = "RU", maxInflight = 64)).normalized()
+        val text = WhiteDnsConfig.renderProfileToml(p)
+        assertTrue(text.contains("SOAR_MAX_INFLIGHT = 64"))
+        assertFalse(text.contains("COTTENMAX_"))
+        assertFalse(text.contains("DATA_ENCRYPTION_METHOD"))
+        assertEquals(p, WhiteDnsConfig.applyProfileToml(WhiteDnsProfile(), text).value)
+    }
+
+    @Test
+    fun `soar link imports its key resolvers and settings`() {
+        val l = link(
+            "soar",
+            """{"profile":{"name":"S","server":{"domain":"s.example.com","public_key":"$soarKey"},
+               "resolvers":["8.8.8.8","1.1.1.1:53","10.0.0.0/8"],
+               "soarSettings":{"transport":"only","discovery":false,"maxInflight":64}}}""",
+        )
+        val (name, p) = WhiteDnsConfig.parseLink(l)!!
+        assertEquals("S", name)
+        assertTrue(p.isSoar)
+        assertEquals(soarKey, p.encryptionKey)
+        assertEquals(listOf("8.8.8.8", "1.1.1.1:53"), p.resolverList())
+        assertEquals("only", p.soar.transport)
+        assertFalse(p.soar.discovery)
+        assertEquals(64, p.soar.maxInflight)
+    }
+
+    @Test
+    fun `soar link with a bad key is refused`() {
+        val l = link("soar", """{"profile":{"name":"S","server":{"domain":"s.example.com","public_key":"bad"}}}""")
+        assertNull(WhiteDnsConfig.parseLink(l))
+    }
 }

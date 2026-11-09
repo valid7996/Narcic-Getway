@@ -4,6 +4,7 @@ package dev.valid7996.narcicgeteway.domain.config
 
 import kotlin.io.encoding.Base64
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -50,6 +51,64 @@ object WhiteDnsConfig {
 
         for (extra in parseAssignments(p.extraToml)) lines[extra.key] = extra.raw
         return lines.entries.joinToString("\n") { "${it.key} = ${it.value}" }
+    }
+
+    /**
+     * The JSON config of the Soar engine. The engine refuses unknown keys, so exactly these are written.
+     * [systemResolvers] are the DNS servers of the phone's own network (at most eight, IP addresses only).
+     */
+    fun renderSoarJson(
+        profile: WhiteDnsProfile,
+        listenIp: String,
+        listenPort: Int,
+        systemResolvers: List<String>,
+    ): String {
+        val p = profile.normalized()
+        if (!p.isValid) throw WhiteDnsConfigException("Soar needs one ASCII tunnel domain (max 45 characters) and a base64 32-byte server public key")
+        val o = p.soar
+        val resolvers = systemResolvers.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(8)
+        return buildString {
+            appendLine("{")
+            appendLine("  \"zone\": ${jsonString(p.primaryDomain().lowercase())},")
+            appendLine("  \"server_public_key\": ${jsonString(p.encryptionKey.trim())},")
+            appendLine("  \"system_resolvers\": ${resolvers.joinToString(", ", "[", "]") { jsonString(it) }},")
+            appendLine("  \"listen\": ${jsonString("$listenIp:$listenPort")},")
+            appendLine("  \"username\": \"\",")
+            appendLine("  \"password\": \"\",")
+            appendLine("  \"soar\": {")
+            appendLine("    \"transport\": ${jsonString(o.transport)},")
+            appendLine("    \"discovery\": ${o.discovery},")
+            appendLine("    \"country\": ${jsonString(o.country)},")
+            appendLine("    \"discoveryWant\": ${o.discoveryWant},")
+            appendLine("    \"discoveryConcurrency\": ${o.discoveryConcurrency},")
+            appendLine("    \"discoveryPaceMs\": ${o.discoveryPaceMs},")
+            appendLine("    \"safeQName\": ${o.safeQName},")
+            appendLine("    \"maxQName\": ${o.maxQName},")
+            appendLine("    \"maxAnswer\": ${o.maxAnswer},")
+            appendLine("    \"holdMs\": ${o.holdMs},")
+            appendLine("    \"maxInflight\": ${o.maxInflight},")
+            appendLine("    \"maxPathWindow\": ${o.maxPathWindow},")
+            appendLine("    \"maxStreams\": ${o.maxStreams},")
+            appendLine("    \"streamWindowKiB\": ${o.streamWindowKiB},")
+            appendLine("    \"sendBufferKiB\": ${o.sendBufferKiB},")
+            appendLine("    \"sessionIdleSeconds\": ${o.sessionIdleSeconds},")
+            appendLine("    \"dialTimeoutSeconds\": ${o.dialTimeoutSeconds}")
+            appendLine("  }")
+            append("}")
+        }
+    }
+
+    private fun jsonString(raw: String): String = buildString {
+        append('"')
+        for (c in raw) when (c) {
+            '\\' -> append("\\\\")
+            '"' -> append("\\\"")
+            '\n' -> append("\\n")
+            '\r' -> append("\\r")
+            '\t' -> append("\\t")
+            else -> if (c.code < 0x20) append("\\u" + c.code.toString(16).padStart(4, '0')) else append(c)
+        }
+        append('"')
     }
 
     /** The resolver list file of a connection, one entry per line. */
@@ -311,7 +370,7 @@ object WhiteDnsConfig {
     fun renderProfileToml(profile: WhiteDnsProfile): String {
         val p = profile.normalized()
         val text = buildString {
-            for (key in PROFILE_KEYS) appendLine("${key.name} = ${key.read(p)}")
+            for (key in PROFILE_KEYS) if (keyApplies(key.name, p)) appendLine("${key.name} = ${key.read(p)}")
             if (p.resolverList().isNotEmpty()) appendLine("RESOLVERS = ${tomlArray(p.resolverList())}")
             val extras = parseAssignments(p.extraToml)
             if (extras.isNotEmpty()) {
@@ -351,6 +410,15 @@ object WhiteDnsConfig {
         return TomlApplied(p.normalized(), emptyList())
     }
 
+    private val COMMON_KEYS = setOf("ENGINE", "DOMAINS", "DATA_ENCRYPTION_METHOD", "ENCRYPTION_KEY")
+
+    /** The text only lists what the chosen engine reads; applying accepts every known key. */
+    private fun keyApplies(name: String, p: WhiteDnsProfile): Boolean = when {
+        name in COMMON_KEYS -> !(p.isSoar && name == "DATA_ENCRYPTION_METHOD")
+        name.startsWith("SOAR_") -> p.isSoar
+        else -> p.isCottenDns
+    }
+
     // ---------------------------------------------------------------- the editable text of the shared settings
 
     /** The shared settings as engine keys, one to one with the engine config. */
@@ -380,7 +448,9 @@ object WhiteDnsConfig {
 
     fun isLink(text: String): Boolean {
         val t = text.trim()
-        return t.startsWith("stormdns://", ignoreCase = true) || t.startsWith("cottendns://", ignoreCase = true)
+        return t.startsWith("stormdns://", ignoreCase = true) ||
+            t.startsWith("cottendns://", ignoreCase = true) ||
+            t.startsWith("soar://", ignoreCase = true)
     }
 
     /** One link of the WhiteDNS ecosystem as (name, connection), or null when it cannot be read. */
@@ -391,6 +461,7 @@ object WhiteDnsConfig {
         val engine = when (trimmed.substring(0, schemeEnd).lowercase()) {
             "cottendns" -> WhiteDnsProfile.ENGINE_COTTEN
             "stormdns" -> WhiteDnsProfile.ENGINE_STORM
+            "soar" -> WhiteDnsProfile.ENGINE_SOAR
             else -> return@runCatching null
         }
         val payload = trimmed.substring(schemeEnd + 3).substringBefore('#').substringBefore('?').trim()
@@ -399,7 +470,8 @@ object WhiteDnsConfig {
         val profileJson = root["profile"]?.jsonObject ?: return@runCatching null
         val server = profileJson["server"]?.jsonObject ?: return@runCatching null
         val domain = server.str("domain")?.trim()?.trimEnd('.').orEmpty()
-        val key = server.str("encryption_key")?.trim().orEmpty()
+        val key = (if (engine == WhiteDnsProfile.ENGINE_SOAR) server.str("public_key") else server.str("encryption_key"))
+            ?.trim().orEmpty()
         if (domain.isEmpty() || key.isEmpty()) return@runCatching null
         val method = (server.int("encryption_method") ?: WhiteDnsProfile.ENC_XOR).coerceIn(0, 5)
         val name = profileJson.str("name")?.trim().orEmpty()
@@ -432,8 +504,43 @@ object WhiteDnsConfig {
                 max = maxFromJson(c["cottenMaxOptions"] as? JsonObject),
             )
         }
+        if (engine == WhiteDnsProfile.ENGINE_SOAR) {
+            val resolvers = (profileJson["resolvers"] as? JsonArray)
+                ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull?.trim() }
+                ?.filter { it.isNotEmpty() && '/' !in it }
+                .orEmpty()
+            profile = profile.copy(
+                resolvers = resolvers.joinToString("\n"),
+                soar = soarFromJson(profileJson["soarSettings"] as? JsonObject),
+            )
+            if (!profile.isValid) return@runCatching null
+        }
         name.ifEmpty { domain } to profile.normalized()
     }.getOrNull()
+
+    private fun soarFromJson(m: JsonObject?): WhiteDnsSoarOptions {
+        val d = WhiteDnsSoarOptions()
+        if (m == null) return d
+        return WhiteDnsSoarOptions(
+            transport = m.str("transport") ?: d.transport,
+            discovery = m.bool("discovery") ?: d.discovery,
+            country = m.str("country") ?: d.country,
+            discoveryWant = m.int("discoveryWant") ?: d.discoveryWant,
+            discoveryConcurrency = m.int("discoveryConcurrency") ?: d.discoveryConcurrency,
+            discoveryPaceMs = m.int("discoveryPaceMs") ?: d.discoveryPaceMs,
+            safeQName = m.int("safeQName") ?: d.safeQName,
+            maxQName = m.int("maxQName") ?: d.maxQName,
+            maxAnswer = m.int("maxAnswer") ?: d.maxAnswer,
+            holdMs = m.int("holdMs") ?: d.holdMs,
+            maxInflight = m.int("maxInflight") ?: d.maxInflight,
+            maxPathWindow = m.int("maxPathWindow") ?: d.maxPathWindow,
+            maxStreams = m.int("maxStreams") ?: d.maxStreams,
+            streamWindowKiB = m.int("streamWindowKiB") ?: d.streamWindowKiB,
+            sendBufferKiB = m.int("sendBufferKiB") ?: d.sendBufferKiB,
+            sessionIdleSeconds = m.int("sessionIdleSeconds") ?: d.sessionIdleSeconds,
+            dialTimeoutSeconds = m.int("dialTimeoutSeconds") ?: d.dialTimeoutSeconds,
+        ).normalized()
+    }
 
     private fun maxFromJson(m: JsonObject?): WhiteDnsMaxOptions {
         val d = WhiteDnsMaxOptions()
@@ -605,6 +712,36 @@ object WhiteDnsConfig {
         },
         intKey("RESOLVER_DISCOVERY_PACE_MILLISECONDS", 1, 60000, { it.max.discoveryPaceMs }) { p, v ->
             p.copy(max = p.max.copy(discoveryPaceMs = v))
+        },
+
+        strKey("SOAR_TRANSPORT", { it.soar.transport }) { p, v -> p.copy(soar = p.soar.copy(transport = v)) },
+        boolKey("SOAR_DISCOVERY", { it.soar.discovery }) { p, v -> p.copy(soar = p.soar.copy(discovery = v)) },
+        strKey("SOAR_COUNTRY", { it.soar.country }) { p, v -> p.copy(soar = p.soar.copy(country = v)) },
+        intKey("SOAR_DISCOVERY_WANT", 1, 32, { it.soar.discoveryWant }) { p, v -> p.copy(soar = p.soar.copy(discoveryWant = v)) },
+        intKey("SOAR_DISCOVERY_CONCURRENCY", 1, 16, { it.soar.discoveryConcurrency }) { p, v ->
+            p.copy(soar = p.soar.copy(discoveryConcurrency = v))
+        },
+        intKey("SOAR_DISCOVERY_PACE_MS", 100, 5000, { it.soar.discoveryPaceMs }) { p, v ->
+            p.copy(soar = p.soar.copy(discoveryPaceMs = v))
+        },
+        intKey("SOAR_SAFE_QNAME", 101, 253, { it.soar.safeQName }) { p, v -> p.copy(soar = p.soar.copy(safeQName = v)) },
+        intKey("SOAR_MAX_QNAME", 101, 253, { it.soar.maxQName }) { p, v -> p.copy(soar = p.soar.copy(maxQName = v)) },
+        intKey("SOAR_MAX_ANSWER", 512, 1232, { it.soar.maxAnswer }) { p, v -> p.copy(soar = p.soar.copy(maxAnswer = v)) },
+        intKey("SOAR_HOLD_MS", 100, 1500, { it.soar.holdMs }) { p, v -> p.copy(soar = p.soar.copy(holdMs = v)) },
+        intKey("SOAR_MAX_INFLIGHT", 8, 1024, { it.soar.maxInflight }) { p, v -> p.copy(soar = p.soar.copy(maxInflight = v)) },
+        intKey("SOAR_MAX_PATH_WINDOW", 2, 128, { it.soar.maxPathWindow }) { p, v -> p.copy(soar = p.soar.copy(maxPathWindow = v)) },
+        intKey("SOAR_MAX_STREAMS", 8, 256, { it.soar.maxStreams }) { p, v -> p.copy(soar = p.soar.copy(maxStreams = v)) },
+        intKey("SOAR_STREAM_WINDOW_KIB", 64, 1024, { it.soar.streamWindowKiB }) { p, v ->
+            p.copy(soar = p.soar.copy(streamWindowKiB = v))
+        },
+        intKey("SOAR_SEND_BUFFER_KIB", 32, 1024, { it.soar.sendBufferKiB }) { p, v ->
+            p.copy(soar = p.soar.copy(sendBufferKiB = v))
+        },
+        intKey("SOAR_SESSION_IDLE_SECONDS", 15, 110, { it.soar.sessionIdleSeconds }) { p, v ->
+            p.copy(soar = p.soar.copy(sessionIdleSeconds = v))
+        },
+        intKey("SOAR_DIAL_TIMEOUT_SECONDS", 5, 120, { it.soar.dialTimeoutSeconds }) { p, v ->
+            p.copy(soar = p.soar.copy(dialTimeoutSeconds = v))
         },
     )
 
