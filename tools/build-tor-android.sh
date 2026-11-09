@@ -22,15 +22,16 @@ fetch() {
   shift
   [ -f "$target" ] && return 0
   for url in "$@"; do
-    if curl -fsSL --retry 3 --connect-timeout 20 -o "$target" "$url"; then
+    echo "Fetching $target from $url ..."
+    if curl -fsSL --retry 5 --retry-connrefused --connect-timeout 20 -o "$target" "$url"; then
       return 0
     fi
   done
   echo "Failed to fetch $target from all mirrors" >&2
   return 1
 }
-fetch "openssl.tar.gz" "https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VERSION/openssl-$OPENSSL_VERSION.tar.gz"
-fetch "libevent.tar.gz" "https://github.com/libevent/libevent/releases/download/release-$LIBEVENT_VERSION/libevent-$LIBEVENT_VERSION.tar.gz"
+fetch "openssl.tar.gz" "https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VERSION/openssl-$OPENSSL_VERSION.tar.gz" "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz"
+fetch "libevent.tar.gz" "https://deb.debian.org/debian/pool/main/libe/libevent/libevent_2.1.12-stable.orig.tar.gz" "https://github.com/libevent/libevent/releases/download/release-$LIBEVENT_VERSION/libevent-$LIBEVENT_VERSION.tar.gz"
 fetch "tor.tar.gz" "https://dist.torproject.org/tor-$TOR_VERSION.tar.gz" "https://archive.torproject.org/tor-package-archive/tor-$TOR_VERSION.tar.gz"
 
 for abi in $ABIS; do
