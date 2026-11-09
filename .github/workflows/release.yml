@@ -34,6 +34,7 @@ jobs:
 
   publish:
     needs: [version, android, desktop]
+    if: always() && !cancelled() && needs.android.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

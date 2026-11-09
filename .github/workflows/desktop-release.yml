@@ -104,7 +104,7 @@ jobs:
           exec "\$HERE/usr/bin/$(basename "$BIN")" "\$@"
           EOF
           chmod +x AppDir/AppRun
-          ARCH=x86_64 appimagetool --runtime-file /usr/local/bin/runtime-x86_64 --no-appstream AppDir "dist/NarcicGetway-$V-x86_64.AppImage"
+          ARCH=x86_64 appimagetool --no-appstream AppDir "dist/NarcicGetway-$V-x86_64.AppImage"
 
           ( cd dist && sha256sum NarcicGetway-* > SHA256SUMS-linux.txt )
           ls -lh dist
