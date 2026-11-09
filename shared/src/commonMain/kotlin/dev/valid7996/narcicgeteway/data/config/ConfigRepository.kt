@@ -135,6 +135,16 @@ class ConfigRepository(private val store: KeyValueStore) {
             throw IllegalArgumentException("no usable sstp:// config found")
         }
 
+        val ikev2Lines = trimmed.lines().map { it.trim() }.filter { it.startsWith("ikev2://", ignoreCase = true) }
+        if (ikev2Lines.isNotEmpty() && ikev2Lines.size == trimmed.lines().count { it.isNotBlank() }) {
+            var added = 0
+            ikev2Lines.forEach { line ->
+                dev.valid7996.narcicgeteway.domain.config.Ikev2Profile.fromLink(line)?.let { (nm, prof) -> addIkev2(prof, nm, subscriptionId = subscriptionId); added++ }
+            }
+            if (added > 0) return@runCatching added
+            throw IllegalArgumentException("no usable ikev2:// config found")
+        }
+
         val whiteDnsLines = trimmed.lines().map { it.trim() }.filter { dev.valid7996.narcicgeteway.domain.config.WhiteDnsConfig.isLink(it) }
         if (whiteDnsLines.isNotEmpty() && whiteDnsLines.size == trimmed.lines().count { it.isNotBlank() }) {
             var added = 0
@@ -305,6 +315,16 @@ class ConfigRepository(private val store: KeyValueStore) {
                     val (nm, prof) = dev.valid7996.narcicgeteway.domain.config.SstpProfile.fromLink(link)
                         ?: throw IllegalArgumentException("invalid sstp link")
                     VpnProfile.fromSstp(
+                        settings = prof,
+                        id = newId(),
+                        addedAt = currentTimeMillis(),
+                        name = nm,
+                        subscriptionId = subscriptionId,
+                    )
+                } else if (link.startsWith("ikev2://", ignoreCase = true)) {
+                    val (nm, prof) = dev.valid7996.narcicgeteway.domain.config.Ikev2Profile.fromLink(link)
+                        ?: throw IllegalArgumentException("invalid ikev2 link")
+                    VpnProfile.fromIkev2(
                         settings = prof,
                         id = newId(),
                         addedAt = currentTimeMillis(),
@@ -697,6 +717,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         settings: dev.valid7996.narcicgeteway.domain.config.Ikev2Profile,
         name: String,
         id: String? = null,
+        subscriptionId: String = "",
     ): VpnProfile {
         val existing = id?.let { profile(it) }
         val profile = VpnProfile.fromIkev2(
@@ -704,14 +725,17 @@ class ConfigRepository(private val store: KeyValueStore) {
             id = existing?.id ?: newId(),
             addedAt = existing?.addedAt ?: currentTimeMillis(),
             name = name,
+            subscriptionId = subscriptionId.ifBlank { existing?.subscriptionId ?: "" },
         ).let { carryOver(existing, it) }
         _profiles.value = if (existing != null) {
             _profiles.value.map { if (it.id == profile.id) profile else it }
-        } else {
+        } else if (subscriptionId.isBlank()) {
             listOf(profile) + _profiles.value
+        } else {
+            _profiles.value + profile
         }
         persistProfiles()
-        if (_activeId.value == null) setActive(profile.id)
+        if (_activeId.value == null && subscriptionId.isBlank()) setActive(profile.id)
         return profile
     }
 
@@ -959,7 +983,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             is ProfileSource.WhiteDns -> { addWhiteDns(src.settings, name); 1 }
             is ProfileSource.MhrvRelay -> { addMhrvRelay(src.settings, name); 1 }
             is ProfileSource.OpenConnect -> { addOpenConnect(src.settings, name); 1 }
-            is ProfileSource.Ikev2 -> { addIkev2(src.settings, name); 1 }
+            is ProfileSource.Ikev2 -> { addIkev2(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.Aether -> { addAether(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.Sstp -> { addSstp(src.settings, name, subscriptionId = subscriptionId); 1 }
             is ProfileSource.ProxyChain, is ProfileSource.CrossChain -> {
@@ -1922,6 +1946,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         Subscription(id = DEFAULT_SUB_WIREGUARD, name = "وایرگارد", url = DEFAULT_SUB_WIREGUARD_URL),
         Subscription(id = DEFAULT_SUB_WINDSCRIBE_WG, name = "Windscribe WG", url = DEFAULT_SUB_WINDSCRIBE_WG_URL),
         Subscription(id = DEFAULT_SUB_WINDSCRIBE_OPENVPN, name = "Windscribe OpenVPN", url = DEFAULT_SUB_WINDSCRIBE_OPENVPN_URL),
+        Subscription(id = DEFAULT_SUB_WINDSCRIBE_IKEV2, name = "Windscribe IKEv2", url = DEFAULT_SUB_WINDSCRIBE_IKEV2_URL),
         Subscription(id = DEFAULT_SUB_SPOOF, name = "اسپوف", url = DEFAULT_SUB_SPOOF_URL),
         Subscription(id = DEFAULT_SUB_HAMEDVPNS, name = "hamedvpns", url = DEFAULT_SUB_HAMEDVPNS_URL),
     )
@@ -2002,6 +2027,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_WIREGUARD = "default-wireguard"
         const val DEFAULT_SUB_WINDSCRIBE_WG = "default-windscribe-wg"
         const val DEFAULT_SUB_WINDSCRIBE_OPENVPN = "default-windscribe-openvpn"
+        const val DEFAULT_SUB_WINDSCRIBE_IKEV2 = "default-windscribe-ikev2"
         const val DEFAULT_SUB_SPOOF = "default-spoof"
         const val DEFAULT_SUB_HAMEDVPNS = "default-hamedvpns"
         const val DEFAULT_SUB_IRANCELL_URL =
@@ -2014,6 +2040,8 @@ class ConfigRepository(private val store: KeyValueStore) {
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribewg.txt"
         const val DEFAULT_SUB_WINDSCRIBE_OPENVPN_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribe_openvpn.json"
+        const val DEFAULT_SUB_WINDSCRIBE_IKEV2_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribe_ikev2.txt"
         const val DEFAULT_SUB_SPOOF_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
         const val DEFAULT_SUB_HAMEDVPNS_URL =
@@ -2025,6 +2053,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             DEFAULT_SUB_WIREGUARD,
             DEFAULT_SUB_WINDSCRIBE_WG,
             DEFAULT_SUB_WINDSCRIBE_OPENVPN,
+            DEFAULT_SUB_WINDSCRIBE_IKEV2,
             DEFAULT_SUB_SPOOF,
             DEFAULT_SUB_HAMEDVPNS,
         )

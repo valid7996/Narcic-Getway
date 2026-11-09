@@ -865,6 +865,7 @@ data class VpnProfile(
             id: String,
             addedAt: Long,
             name: String,
+            subscriptionId: String = "",
         ): VpnProfile = VpnProfile(
             id = id,
             name = name.ifBlank { "IKEv2 ${settings.server}" },
@@ -874,6 +875,7 @@ data class VpnProfile(
             transportLabel = "IKEv2",
             source = ProfileSource.Ikev2(settings),
             addedAt = addedAt,
+            subscriptionId = subscriptionId,
         )
 
         fun fromAether(

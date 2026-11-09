@@ -78,6 +78,50 @@ data class Ikev2Profile(
             val b64 = stored.removePrefix(SEALED_PREFIX)
             return runCatching { ZsxCrypto.open(Base64.decode(b64), password = null) }.getOrDefault("")
         }
+
+        fun fromLink(link: String): Pair<String, Ikev2Profile>? {
+            val trimmed = link.trim().trim('\uFEFF').trim()
+            if (!trimmed.startsWith("ikev2://", ignoreCase = true)) return null
+            return runCatching {
+                val withoutScheme = trimmed.substring(8)
+                val fragment = if (withoutScheme.contains('#')) withoutScheme.substringAfter('#') else ""
+                val name = if (fragment.isNotEmpty()) runCatching { ConfigParser.percentDecode(fragment) }.getOrDefault(fragment) else ""
+                val mainPart = withoutScheme.substringBefore('#')
+                val userInfo = if (mainPart.contains('@')) mainPart.substringBefore('@') else ""
+                val hostAndQuery = if (mainPart.contains('@')) mainPart.substringAfter('@') else mainPart
+                val hostPort = hostAndQuery.substringBefore('?')
+                val query = if (hostAndQuery.contains('?')) hostAndQuery.substringAfter('?') else ""
+
+                val username = if (userInfo.contains(':')) {
+                    runCatching { ConfigParser.percentDecode(userInfo.substringBefore(':')) }.getOrDefault(userInfo.substringBefore(':'))
+                } else {
+                    userInfo
+                }
+                val password = if (userInfo.contains(':')) {
+                    runCatching { ConfigParser.percentDecode(userInfo.substringAfter(':')) }.getOrDefault(userInfo.substringAfter(':'))
+                } else {
+                    ""
+                }
+
+                val server = if (hostPort.startsWith("[")) hostPort.substringBefore(']') + "]" else hostPort.substringBefore(':')
+                val queryParams = query.split('&').filter { it.contains('=') }.associate {
+                    it.substringBefore('=').lowercase() to runCatching { ConfigParser.percentDecode(it.substringAfter('=')) }.getOrDefault(it.substringAfter('='))
+                }
+                val remoteId = queryParams["remoteid"] ?: server
+                val localId = queryParams["localid"] ?: ""
+                val mtu = queryParams["mtu"]?.toIntOrNull() ?: 1280
+
+                name to Ikev2Profile(
+                    server = server,
+                    remoteId = remoteId,
+                    localId = localId,
+                    authType = Ikev2Auth.EAP_MSCHAPV2,
+                    username = username,
+                    password = password,
+                    mtu = mtu,
+                )
+            }.getOrNull()
+        }
     }
 }
 
