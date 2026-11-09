@@ -18,11 +18,20 @@ export ANDROID_NDK_ROOT="$NDK"
 
 mkdir -p "$WORK/src" "$OUT"
 fetch() {
-  [ -f "$WORK/src/$2" ] || curl -fsSL --retry 3 -o "$WORK/src/$2" "$1"
+  local target="$WORK/src/$1"
+  shift
+  [ -f "$target" ] && return 0
+  for url in "$@"; do
+    if curl -fsSL --retry 3 --connect-timeout 20 -o "$target" "$url"; then
+      return 0
+    fi
+  done
+  echo "Failed to fetch $target from all mirrors" >&2
+  return 1
 }
-fetch "https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VERSION/openssl-$OPENSSL_VERSION.tar.gz" "openssl.tar.gz"
-fetch "https://github.com/libevent/libevent/releases/download/release-$LIBEVENT_VERSION/libevent-$LIBEVENT_VERSION.tar.gz" "libevent.tar.gz"
-fetch "https://archive.torproject.org/tor-package-archive/tor-$TOR_VERSION.tar.gz" "tor.tar.gz"
+fetch "openssl.tar.gz" "https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VERSION/openssl-$OPENSSL_VERSION.tar.gz"
+fetch "libevent.tar.gz" "https://github.com/libevent/libevent/releases/download/release-$LIBEVENT_VERSION/libevent-$LIBEVENT_VERSION.tar.gz"
+fetch "tor.tar.gz" "https://dist.torproject.org/tor-$TOR_VERSION.tar.gz" "https://archive.torproject.org/tor-package-archive/tor-$TOR_VERSION.tar.gz"
 
 for abi in $ABIS; do
   case "$abi" in

@@ -35,7 +35,7 @@ jobs:
           for pair in "aarch64 arm64-v8a" "armv7 armeabi-v7a" "x86_64 x86_64"; do
             set -- $pair
             url="https://archive.torproject.org/tor-package-archive/torbrowser/${TOR_BUNDLE}/tor-expert-bundle-android-$1-${TOR_BUNDLE}.tar.gz"
-            rm -rf teb && mkdir teb && curl -fsSL "$url" | tar -xz -C teb
+            rm -rf teb && mkdir teb && curl -fsSL --retry 5 "$url" | tar -xz -C teb
             mkdir -p "out/$2"
             cp teb/tor/pluggable_transports/lyrebird        "out/$2/libobfs4proxy.so"
             if [ -f teb/tor/pluggable_transports/conjure-client ]; then
