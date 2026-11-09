@@ -191,7 +191,7 @@ data class WhiteDnsProfile(
     val max: WhiteDnsMaxOptions = WhiteDnsMaxOptions(),
 
     /** Used only when [engine] is Soar. */
-    val soar: WhiteDnsSoarOptions = WhiteDnsSoarOptions(),
+    val soar: WhiteDnsSoarOptions = WhiteDnsSoarOptions().withPreset("conservative"),
 
     /** Raw engine keys (`KEY = value` lines) that the form does not cover. They override the generated config. */
     val extraToml: String = "",

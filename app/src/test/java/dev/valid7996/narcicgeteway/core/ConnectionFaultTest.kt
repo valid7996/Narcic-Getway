@@ -10,6 +10,7 @@ class ConnectionFaultTest {
     @Test
     fun `plain EOF is the server closing the connection`() {
         assertEquals(Cause.ServerClosed, cause("EOF"))
+        assertEquals(Cause.ServerClosed, cause("connection closed"))
         assertEquals(Cause.ServerClosed, cause("proxy/vless/outbound: failed to read response > EOF"))
         assertEquals(Cause.ServerClosed, cause("unexpected EOF"))
     }

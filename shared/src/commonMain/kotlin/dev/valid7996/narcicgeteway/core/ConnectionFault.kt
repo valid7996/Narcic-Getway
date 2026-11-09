@@ -51,7 +51,7 @@ data class ConnectionFault(
                 "forcibly closed"),
             Cause.Unreachable to listOf("no route to host", "network is unreachable",
                 "host is unreachable", "network unreachable"),
-            Cause.ServerClosed to listOf("unexpected eof", "eof"),
+            Cause.ServerClosed to listOf("unexpected eof", "eof", "connection closed", "closed by peer"),
         )
 
         fun classify(raw: String?): ConnectionFault {

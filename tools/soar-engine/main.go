@@ -185,25 +185,38 @@ func startupHTTPS(ctx context.Context, dial dialFunc, roots *x509.CertPool) erro
 		TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots}, TLSHandshakeTimeout: 45 * time.Second}
 	defer transport.CloseIdleConnections()
 	client := &http.Client{Transport: transport, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "https://example.com/", nil)
-	resp, err := client.Do(req)
-	if err != nil {
+
+	probeURLs := []string{
+		"https://cp.cloudflare.com/generate_204",
+		"https://example.com/",
+		"https://www.google.com/generate_204",
+	}
+	var lastErr error
+	for _, targetURL := range probeURLs {
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+				io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
+				return nil
+			}
+		} else {
+			lastErr = err
+		}
+	}
+	if lastErr != nil {
 		var certificateError *tls.CertificateVerificationError
-		if errors.As(err, &certificateError) {
+		if errors.As(lastErr, &certificateError) {
 			return errors.New("startup HTTPS certificate verification failed; check system certificates and device clock")
 		}
 		var networkError net.Error
-		if ctx.Err() != nil || errors.As(err, &networkError) && networkError.Timeout() {
+		if ctx.Err() != nil || errors.As(lastErr, &networkError) && networkError.Timeout() {
 			return errors.New("startup HTTPS timed out; try another resolver, discovery or the Conservative preset")
 		}
 		return errors.New("startup HTTPS stream failed; try another resolver or the Conservative preset, and check server outbound HTTPS")
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return errors.New("startup HTTPS destination returned an unsuccessful status")
-	}
-	_, err = io.Copy(io.Discard, io.LimitReader(resp.Body, 1024))
-	return err
+	return errors.New("startup HTTPS destination returned an unsuccessful status")
 }
 
 type proxy struct {
