@@ -102,7 +102,7 @@ class ConfigRepository(private val store: KeyValueStore) {
     private fun activeExists(): Boolean = _activeId.value?.let { profile(it) } != null
 
     fun importText(text: String, subscriptionId: String = ""): Result<Int> = runCatching {
-        val trimmed = text.trim()
+        val trimmed = text.trim().trim('\uFEFF').trim()
         require(trimmed.isNotEmpty()) { "empty" }
 
         val sshLines = trimmed.lines().map { it.trim() }.filter { SshLink.isSshLink(it) }
@@ -1920,6 +1920,8 @@ class ConfigRepository(private val store: KeyValueStore) {
         Subscription(id = DEFAULT_SUB_IRANCELL, name = "ایرانسل", url = DEFAULT_SUB_IRANCELL_URL),
         Subscription(id = DEFAULT_SUB_MCI, name = "همراه اول", url = DEFAULT_SUB_MCI_URL),
         Subscription(id = DEFAULT_SUB_WIREGUARD, name = "وایرگارد", url = DEFAULT_SUB_WIREGUARD_URL),
+        Subscription(id = DEFAULT_SUB_WINDSCRIBE_WG, name = "Windscribe WG", url = DEFAULT_SUB_WINDSCRIBE_WG_URL),
+        Subscription(id = DEFAULT_SUB_WINDSCRIBE_OPENVPN, name = "Windscribe OpenVPN", url = DEFAULT_SUB_WINDSCRIBE_OPENVPN_URL),
         Subscription(id = DEFAULT_SUB_SPOOF, name = "اسپوف", url = DEFAULT_SUB_SPOOF_URL),
         Subscription(id = DEFAULT_SUB_HAMEDVPNS, name = "hamedvpns", url = DEFAULT_SUB_HAMEDVPNS_URL),
     )
@@ -1998,6 +2000,8 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_IRANCELL = "default-narcic-irancell"
         const val DEFAULT_SUB_MCI = "default-mci"
         const val DEFAULT_SUB_WIREGUARD = "default-wireguard"
+        const val DEFAULT_SUB_WINDSCRIBE_WG = "default-windscribe-wg"
+        const val DEFAULT_SUB_WINDSCRIBE_OPENVPN = "default-windscribe-openvpn"
         const val DEFAULT_SUB_SPOOF = "default-spoof"
         const val DEFAULT_SUB_HAMEDVPNS = "default-hamedvpns"
         const val DEFAULT_SUB_IRANCELL_URL =
@@ -2006,6 +2010,10 @@ class ConfigRepository(private val store: KeyValueStore) {
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessmci.txt"
         const val DEFAULT_SUB_WIREGUARD_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/ngwirguard.txt"
+        const val DEFAULT_SUB_WINDSCRIBE_WG_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribewg.txt"
+        const val DEFAULT_SUB_WINDSCRIBE_OPENVPN_URL =
+            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribe_openvpn.json"
         const val DEFAULT_SUB_SPOOF_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
         const val DEFAULT_SUB_HAMEDVPNS_URL =
@@ -2015,6 +2023,8 @@ class ConfigRepository(private val store: KeyValueStore) {
             DEFAULT_SUB_IRANCELL,
             DEFAULT_SUB_MCI,
             DEFAULT_SUB_WIREGUARD,
+            DEFAULT_SUB_WINDSCRIBE_WG,
+            DEFAULT_SUB_WINDSCRIBE_OPENVPN,
             DEFAULT_SUB_SPOOF,
             DEFAULT_SUB_HAMEDVPNS,
         )

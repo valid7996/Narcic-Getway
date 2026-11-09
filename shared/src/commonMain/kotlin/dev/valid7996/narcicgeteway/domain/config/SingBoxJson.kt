@@ -48,7 +48,7 @@ object SingBoxJson {
     private val FULL_CONFIG_KEYS = setOf("inbounds", "route", "dns", "experimental", "services", "ntp", "certificate")
 
     fun shapeOf(text: String): Shape {
-        val trimmed = text.trim()
+        val trimmed = text.trim().trim('\uFEFF').trim()
         if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return Shape.None
         val root = parse(trimmed) ?: return Shape.None
         return when (root) {
@@ -234,7 +234,7 @@ object SingBoxJson {
     }
 
     internal fun parse(text: String): JsonElement? =
-        runCatching { json.parseToJsonElement(Jsonc.strip(text)) }.getOrNull()
+        runCatching { json.parseToJsonElement(Jsonc.strip(text.trim().trim('\uFEFF').trim())) }.getOrNull()
 
     internal fun encode(obj: JsonObject): String = prettyJson.encodeToString(JsonObject.serializer(), obj)
 
