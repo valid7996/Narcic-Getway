@@ -65,7 +65,7 @@ data class MasterDnsProfile(
     }
 
     val isValid: Boolean
-        get() = domains.isNotBlank() && encryptionKey.isNotBlank() && resolversText().isNotBlank()
+        get() = domains.isNotBlank() && encryptionKey.isNotBlank()
 
     companion object {
         fun splitResolvers(raw: String): List<String> =

@@ -683,9 +683,18 @@ private var bentoCard: Boolean = false
             else -> dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.splitResolvers(appSettings.whiteDns.resolvers)
         }.filter { dev.valid7996.narcicgeteway.domain.config.MasterDnsProfile.isNumericResolver(it) }
             .let { list ->
-                // Soar takes single addresses only (no ranges). If empty, seed with top bundled non-CIDR resolvers.
-                if (profile.isSoar) list.filter { '/' !in it }.ifEmpty { bundledWhiteDnsResolvers().filter { '/' !in it }.take(32) }
-                else list.ifEmpty { bundledWhiteDnsResolvers() }
+                if (profile.isSoar) {
+                    // Soar takes single addresses only. With none configured it gets a few public resolvers
+                    // up front (it tries the first eight at start-up, and the built-in list's first entries
+                    // alone were not enough on some networks), then the whole built-in list.
+                    val ips = list.filter { '/' !in it }
+                    val use = ips.ifEmpty {
+                        (listOf("8.8.8.8", "1.1.1.1", "9.9.9.9") + bundledWhiteDnsResolvers().filter { '/' !in it }).distinct()
+                    }
+                    use.take(if (profile.soar.discovery) 8192 else 128)
+                } else {
+                    list.ifEmpty { bundledWhiteDnsResolvers() }
+                }
             }
 
         val controller = WhiteDnsController(

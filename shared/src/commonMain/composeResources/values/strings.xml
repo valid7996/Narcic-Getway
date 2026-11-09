@@ -3014,5 +3014,6 @@
     <string name="white_dns_public_key">Server public key (base64)</string>
     <string name="white_dns_group_soar">Soar</string>
     <string name="white_dns_soar_invalid">Soar needs one lowercase domain (max 45 characters) and a base64 32-byte public key</string>
-    <string name="white_dns_soar_resolvers_hint">Optional single IPs (no ranges). Empty = the phone's own DNS plus discovery</string>
+    <string name="white_dns_soar_resolvers_hint">Optional single IPs (no ranges). Empty = public resolvers plus the built-in list</string>
+    <string name="master_dns_resolvers_default_hint">Optional. Empty = the built-in resolver list</string>
 </resources>

@@ -64,8 +64,8 @@ fun MasterDnsSheet(
     var autoDisable by remember { mutableStateOf(initial?.autoDisableDeadResolvers ?: true) }
     var advancedOpen by remember { mutableStateOf(false) }
 
-    val valid = domains.isNotBlank() && key.isNotBlank() &&
-        resolvers.split(',', '\n').any { it.trim().isNotEmpty() && !it.trim().startsWith("#") }
+    // Resolvers are optional: left empty, the built-in resolver list is used.
+    val valid = domains.isNotBlank() && key.isNotBlank()
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     ModalBottomSheet(
@@ -125,6 +125,8 @@ fun MasterDnsSheet(
                 error = if (allBad) stringResource(Res.string.master_dns_resolvers_invalid) else null,
                 supporting = if (badResolvers.isNotEmpty() && !allBad) {
                     stringResource(Res.string.master_dns_resolvers_skipped, badResolvers.joinToString(", "))
+                } else if (resolvers.isBlank()) {
+                    stringResource(Res.string.master_dns_resolvers_default_hint)
                 } else null,
             ) { resolvers = it }
             TextButton(onClick = { advancedOpen = !advancedOpen }) {

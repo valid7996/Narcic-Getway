@@ -325,7 +325,13 @@ object PingService {
         return -1L
     }
 
+    // Used when a connection has no resolvers of its own (the engine then uses its built-in list). Public
+    // resolvers come first so the probe does not depend on the first few local ones being reachable.
     private val DEFAULT_FALLBACK_RESOLVERS = listOf(
+        "8.8.8.8:53",
+        "1.1.1.1:53",
+        "9.9.9.9:53",
+        "208.67.222.222:53",
         "185.53.142.174:53",
         "217.219.162.200:53",
         "2.188.21.138:53",
@@ -334,8 +340,6 @@ object PingService {
         "2.189.44.86:53",
         "2.144.2.72:53",
         "2.144.2.154:53",
-        "8.8.8.8:53",
-        "1.1.1.1:53"
     )
 
     private suspend fun dnsTunnelDelay(profile: VpnProfile): Long {
@@ -352,14 +356,13 @@ object PingService {
 
         if (domain.isBlank() || domain == "-") return -1L
 
-        val resolverCandidates = when {
+        val configuredResolvers = when {
             master != null -> master.resolvers.split(',', '\n', ' ').map { it.trim() }.filter { it.isNotBlank() && !it.startsWith("#") }
             white != null -> white.resolverList().filter { !it.contains('/') }
             dnsTunnel != null -> dnsTunnel.resolvers.split(',', '\n', ' ').map { it.trim() }.filter { it.isNotBlank() && !it.startsWith("#") }
             else -> emptyList()
-        }.ifEmpty {
-            DEFAULT_FALLBACK_RESOLVERS
         }
+        val resolverCandidates = configuredResolvers.ifEmpty { DEFAULT_FALLBACK_RESOLVERS }
 
         val txId = ByteArray(2)
         kotlin.random.Random.nextBytes(txId)
@@ -376,7 +379,7 @@ object PingService {
         val qTypeAndClass = byteArrayOf(0, 1, 0, 1)
         val dnsQuery = txId + flagsAndCounts + qName + qTypeAndClass
 
-        for (candidate in resolverCandidates.take(6)) {
+        for (candidate in resolverCandidates.take(if (configuredResolvers.isEmpty()) 8 else 6)) {
             val raw = candidate.trim()
             val host = when {
                 raw.startsWith("[") -> raw.substringAfter('[').substringBefore(']')

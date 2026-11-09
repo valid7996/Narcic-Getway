@@ -3008,5 +3008,6 @@
     <string name="white_dns_public_key">کلید عمومی سرور (base64)</string>
     <string name="white_dns_group_soar">Soar</string>
     <string name="white_dns_soar_invalid">Soar یک دامنه با حروف کوچک (حداکثر ۴۵ نویسه) و کلید عمومی base64 به طول ۳۲ بایت می‌خواهد</string>
-    <string name="white_dns_soar_resolvers_hint">آی‌پی‌های تکی، اختیاری (بدون بازه). خالی = DNS خود گوشی به‌علاوه کشف خودکار</string>
+    <string name="white_dns_soar_resolvers_hint">آی‌پی‌های تکی، اختیاری (بدون بازه). خالی = ریزالورهای عمومی به‌علاوه فهرست داخلی</string>
+    <string name="master_dns_resolvers_default_hint">اختیاری. خالی = فهرست داخلی ریزالورها</string>
 </resources>
