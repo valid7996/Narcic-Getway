@@ -229,6 +229,11 @@ fun MainScaffold(
                                 profiles.firstOrNull { it.id == id }?.name
                             }
                         }
+                    } ?: activeProfile?.let { p ->
+                        val proto = p.protocol.uppercase().takeIf { it.isNotBlank() } ?: "VLESS"
+                        val trans = p.transportLabel.uppercase().takeIf { it.isNotBlank() && it != "NONE" && it != "TCP" }
+                        val portStr = if (p.port > 0) ":${p.port}" else ""
+                        if (trans != null) "$proto · $trans$portStr" else "$proto$portStr"
                     },
                     lockedNote = lockedNote,
                     activeLocked = activeProfile?.isLocked == true,

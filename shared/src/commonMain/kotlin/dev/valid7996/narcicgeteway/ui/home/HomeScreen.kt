@@ -229,50 +229,38 @@ fun HomeScreen(
     val themeDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val showDashboard = (live || personalization.alwaysShowDashboard) && showConnectionInfo
 
-    val baseBg = personalization.bgGradientBottom ?: MaterialTheme.colorScheme.surface
+    val topBg = personalization.bgGradientTop ?: if (themeDark) Color(0xFF0C0717) else Color(0xFFF8FAFC)
+    val botBg = personalization.bgGradientBottom ?: if (themeDark) Color(0xFF050308) else Color(0xFFF1F5F9)
+    val staticBg = Brush.verticalGradient(listOf(topBg, botBg))
+
+    var showDonateDialog by remember { mutableStateOf(true) }
+    if (showDonateDialog) {
+        BentoDonateDialog(
+            onDismiss = { showDonateDialog = false },
+            personalization = personalization,
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(baseBg),
+            .background(staticBg),
     ) {
-        NeonAmbientBackground(personalization = personalization)
-        DecorativeBackdrop(
-            reduceMotion = reduceMotion,
-            isNoir = isNoir,
-            isBlossom = isBlossom,
-            amoledBlack = personalization.amoledBlack,
-            dynamicColor = personalization.dynamicColor,
-        )
-
-        ConnectingBackdrop(
-            state = ui.state,
-            sessionId = ui.sessionId,
-            reduceMotion = reduceMotion,
-            isNoir = isNoir,
-            isBlossom = isBlossom,
-            amoledBlack = personalization.amoledBlack,
-            dynamicColor = personalization.dynamicColor,
-        )
-
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .padding(horizontal = 22.dp),
+                .padding(horizontal = 16.dp),
         ) {
-            val heroSize = minOf(302.dp, maxHeight * 0.41f)
-
-            val compact = maxHeight < 620.dp
-
             val upperScroll = rememberScrollState()
-            // One scrollable page: header, tiles, the blob, the controls and the server list all
-            // travel together, so nothing is pinned mid-screen or clipped by the status bar.
-            StageColumn(
-                viewport = if (isModernTheme) maxHeight * 0.65f else maxHeight * 0.58f,
-                stageMin = if (isModernTheme) 280.dp else if (compact) 110.dp else STAGE_MIN,
-                modifier = Modifier.fillMaxWidth().scrollFade(upperScroll).verticalScroll(upperScroll),
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(upperScroll),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(Modifier.height(4.dp))
+
                 BrandHeader(
                     state = ui.state,
                     onSecretUnlocked = onSecretUnlocked,
@@ -295,28 +283,14 @@ fun HomeScreen(
                     }
                 }
 
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                // 1. Theme Palette Quick Selector (4 Ready Themes: Cyberpunk Pink, Matrix Emerald, Cyan Active, Sunset Amber)
-                BentoThemePaletteBar(
-                    settings = settings,
-                    onUpdateSettings = onUpdateSettings,
-                    modifier = Modifier.padding(bottom = 6.dp),
-                )
-
-                // 2. Master Connect Tile (Zero Animation, Tactile State & Action Switch)
+                // 1. Master Connect Tile (Zero Animation, Smart State, Perfectly Proportioned)
                 BentoMasterConnectTile(
                     state = ui.state,
                     personalization = personalization,
                     onClick = onToggleConnection,
-                    modifier = Modifier.layoutId(STAGE_ID),
                 )
 
-                Spacer(Modifier.height(10.dp))
-
-                // 3. Active Server Config Tile
+                // 2. Active Server Config Tile
                 BentoActiveConfigTile(
                     name = activeConfigName,
                     detail = activeConfigDetail,
@@ -326,9 +300,7 @@ fun HomeScreen(
                     onClick = onBrowseConfigs,
                 )
 
-                Spacer(Modifier.height(10.dp))
-
-                // 4. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
+                // 3. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
                 BentoMetricsGrid(
                     connected = live,
                     elapsedSeconds = ui.elapsedSeconds,
@@ -339,18 +311,15 @@ fun HomeScreen(
                     personalization = personalization,
                 )
 
-                Spacer(Modifier.height(10.dp))
-
-                // 5. Gateway & Exit IP Tile
+                // 4. Gateway & Exit IP Tile (IPv4 & IPv6 simultaneous check)
                 BentoServerTile(
                     connected = live,
-                    ip = info.ipv4,
+                    ipv4 = info.ipv4,
+                    ipv6 = info.ipv6,
                     org = info.isp ?: info.country,
                     personalization = personalization,
                     onRefresh = homeVm::refresh,
                 )
-
-                Spacer(Modifier.height(6.dp))
 
                 val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
                 if (deviceId.isNotBlank()) {
@@ -433,13 +402,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(96.dp))
             }
         }
-        ParticleBurst(trigger = if (reduceMotion) 0 else burst)
-
-        dev.valid7996.narcicgeteway.ui.easteregg.LaserBounce(
-            trigger = laser,
-            color = personalization.connectColor ?: MaterialTheme.colorScheme.primary,
-            reduceMotion = reduceMotion,
-        )
+        
     }
 }
 
