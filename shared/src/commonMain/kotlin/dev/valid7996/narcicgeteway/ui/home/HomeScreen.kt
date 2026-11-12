@@ -210,7 +210,15 @@ fun HomeScreen(
     LaunchedEffect(live, ui.sessionId, exitGeneration, showConnectionInfo, ipApiUrl, delayTestUrl) {
         homeVm.preferredIpApiUrl = ipApiUrl.ifBlank { null }
         homeVm.preferredDelayUrl = delayTestUrl.ifBlank { null }
-        if (live && showConnectionInfo) homeVm.refresh(settleDelayMs = 300) else homeVm.clear()
+        if (live && showConnectionInfo) {
+            homeVm.refresh(settleDelayMs = 300)
+            while (kotlinx.coroutines.isActive) {
+                kotlinx.coroutines.delay(6_000L)
+                homeVm.refreshPingOnly()
+            }
+        } else {
+            homeVm.clear()
+        }
     }
 
     var burst by remember { mutableIntStateOf(0) }

@@ -314,17 +314,21 @@ fun MasterThemesRow(
     selectedId: String?,
     onSelect: (MasterThemeSpec) -> Unit,
 ) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val titleColor = if (isDark) Color.White else Color(0xFF0F172A)
+    val subColor = if (isDark) Color(0xFF9CA3AF) else Color(0xFF64748B)
+
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
             text = stringResource(Res.string.appearance_master_themes_title),
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color.White,
+            color = titleColor,
         )
         Spacer(Modifier.height(2.dp))
         Text(
             text = stringResource(Res.string.appearance_master_themes_sub),
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF9CA3AF),
+            color = subColor,
         )
         Spacer(Modifier.height(10.dp))
 
@@ -336,6 +340,8 @@ fun MasterThemesRow(
         ) {
             MasterNeonThemes.forEach { spec ->
                 val isSelected = selectedId == spec.id
+                val cardBg = if (isDark) spec.cardBgColor else Color(0xFFF8FAFC)
+                val cardBorder = if (isSelected) spec.primaryColor else (if (isDark) spec.primaryColor.copy(alpha = 0.35f) else Color(0xFFCBD5E1))
                 Box(
                     modifier = Modifier
                         .width(150.dp)
@@ -343,14 +349,14 @@ fun MasterThemesRow(
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    spec.cardBgColor,
-                                    spec.cardBgColor.copy(alpha = 0.85f),
+                                    cardBg,
+                                    cardBg.copy(alpha = 0.9f),
                                 )
                             )
                         )
                         .border(
                             width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) spec.primaryColor else spec.primaryColor.copy(alpha = 0.35f),
+                            color = cardBorder,
                             shape = RoundedCornerShape(20.dp),
                         )
                         .clickable { onSelect(spec) }
@@ -397,14 +403,14 @@ fun MasterThemesRow(
                         Text(
                             text = spec.title,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color.White,
+                            color = titleColor,
                             maxLines = 1,
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = spec.subtitle,
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = Color(0xFF9CA3AF),
+                            color = subColor,
                             maxLines = 2,
                             lineHeight = 13.sp,
                         )

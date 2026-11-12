@@ -236,35 +236,37 @@ fun AppSettings.toPersonalization(dark: Boolean = true): Personalization {
  * lights every surface up, switches the ink to dark, and keeps each profile's accent character.
  */
 private fun Personalization.daylight(): Personalization {
-    val isBlossom = themeProfileId == "blossom"
-    val ink = if (isBlossom) Color(0xFF4C0519) else Color(0xFF0F172A)
-    val accent = if (isBlossom) Color(0xFFDB2777) else Color(0xFF334155)
-    val accentSoft = if (isBlossom) Color(0xFFF472B6) else Color(0xFF94A3B8)
+    val isBlossom = themeProfileId == "blossom" || themeProfileId == "cyberpunk_pink"
+    val themeAccent = connectColor ?: (if (isBlossom) Color(0xFFF72585) else Color(0xFF0284C7))
+    val themeBorder = serverBorderColor ?: themeAccent
+    val ink = Color(0xFF0F172A)
+    val subInk = Color(0xFF475569)
+
     return copy(
-        downloadColor = if (isBlossom) Color(0xFFDB2777) else Color(0xFF0F172A),
-        uploadColor = if (isBlossom) Color(0xFFF472B6) else Color(0xFF64748B),
-        downloadTileColor = if (isBlossom) Color(0xFFFCE7F3) else Color(0xFFF1F5F9),
-        uploadTileColor = if (isBlossom) Color(0xFFFAD1E1) else Color(0xFFE2E8F0),
-        connectColor = if (isBlossom) Color(0xFFF72585) else Color(0xFF64748B),
-        connectedColor = accent,
-        tapHintColor = if (isBlossom) Color(0xFF9D174D) else Color(0xFF475569),
+        downloadColor = themeAccent,
+        uploadColor = themeBorder,
+        downloadTileColor = Color(0xFFF1F5F9),
+        uploadTileColor = Color(0xFFE2E8F0),
+        connectColor = themeAccent,
+        connectedColor = themeAccent,
+        tapHintColor = subInk,
         configCardColor = Color(0xFFFFFFFF),
         configCardTextColor = ink,
         serverCardColor = Color(0xFFFFFFFF),
-        serverActiveColor = accent,
+        serverActiveColor = themeAccent,
         textColor = ink,
-        serverBorderColor = if (isBlossom) Color(0xFFF72585) else Color(0xFF64748B),
-        cardWaterColor = accentSoft,
+        serverBorderColor = themeBorder,
+        cardWaterColor = themeAccent.copy(alpha = 0.35f),
         cardBgColor = Color(0xFFFFFFFF),
-        dashboardBorderColor = if (isBlossom) Color(0xFFF9C9DC) else Color(0xFFE2E8F0),
+        dashboardBorderColor = Color(0xFFE2E8F0),
         dashboardBgColor = Color(0xF7FFFFFF),
         dashboardTextColor = ink,
-        navActiveColor = if (isBlossom) Color(0xFFDB2777) else Color(0xFF0F172A),
+        navActiveColor = themeAccent,
         navBgColor = Color(0xF7FFFFFF),
-        navBorderColor = if (isBlossom) Color(0xFFF9C9DC) else Color(0xFFCBD5E1),
-        ambientGlowColor = accentSoft,
-        bgGradientTop = if (isBlossom) Color(0xFFFEF5F9) else Color(0xFFF8FAFD),
-        bgGradientBottom = if (isBlossom) Color(0xFFF4E3EC) else Color(0xFFE8EEF7),
+        navBorderColor = Color(0xFFCBD5E1),
+        ambientGlowColor = themeAccent.copy(alpha = 0.15f),
+        bgGradientTop = Color(0xFFF8FAFD),
+        bgGradientBottom = Color(0xFFE8EEF7),
         amoledBlack = false,
     )
 }

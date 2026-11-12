@@ -508,27 +508,39 @@ fun BentoMetricsGrid(
                     }
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = if (connected) "${pingMs?.takeIf { it > 0 } ?: 24}" else "--",
+                            text = if (connected) {
+                                if (pingMs != null && pingMs > 0) "$pingMs" else if (pingMs == -1) "خطا" else "…"
+                            } else "--",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 16.sp,
                             ),
-                            color = if (connected) Color(0xFF10B981) else Color(0xFF64748B),
+                            color = if (connected && pingMs != null && pingMs > 0) Color(0xFF10B981) else Color(0xFF64748B),
                         )
-                        Spacer(Modifier.width(2.dp))
-                        Text(
-                            text = "ms",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                            color = Color(0xFF64748B),
-                        )
+                        if (connected && pingMs != null && pingMs > 0) {
+                            Spacer(Modifier.width(2.dp))
+                            Text(
+                                text = "ms",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                                color = Color(0xFF64748B),
+                            )
+                        }
                     }
                     Text(
-                        text = if (connected) "پایدار بدون نوسان" else "قطع",
+                        text = if (connected) {
+                            when {
+                                pingMs == null -> "در حال پایش زنده…"
+                                pingMs <= 0 -> "پاسخ ناموفق"
+                                pingMs < 120 -> "پایدار بدون نوسان"
+                                pingMs < 300 -> "متوسط"
+                                else -> "تأخیر بالا"
+                            }
+                        } else "قطع",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.5.sp),
-                        color = if (connected) Color(0xFF10B981) else Color(0xFF64748B),
+                        color = if (connected && pingMs != null && pingMs > 0) Color(0xFF10B981) else Color(0xFF64748B),
                     )
                 }
             }
@@ -685,7 +697,7 @@ fun BentoServerTile(
                         color = Color(0xFF64748B),
                     )
                     Text(
-                        text = if (connected) (ipv4?.takeIf { it.isNotBlank() } ?: "در حال اتصال…") else "---.---.---.---",
+                        text = if (connected) (ipv4?.takeIf { it.isNotBlank() } ?: (if (!ipv6.isNullOrBlank()) "فاقد IPv4" else "در حال بررسی…")) else "---.---.---.---",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.5.sp,
@@ -701,7 +713,7 @@ fun BentoServerTile(
                         color = Color(0xFF64748B),
                     )
                     Text(
-                        text = if (connected) (ipv6?.takeIf { it.isNotBlank() } ?: "غیرفعال / فاقد v6") else "---",
+                        text = if (connected) (ipv6?.takeIf { it.isNotBlank() } ?: "فاقد IPv6") else "---",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,

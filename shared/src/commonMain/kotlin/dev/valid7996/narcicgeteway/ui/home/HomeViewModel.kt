@@ -79,6 +79,16 @@ class HomeViewModel(
         }
     }
 
+    fun refreshPingOnly() {
+        if (_info.value.loading) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val h = repository.health(preferredDelayUrl)
+            if (h.ok && h.ms > 0) {
+                _info.value = _info.value.copy(pingMs = h.ms.toInt(), fault = null)
+            }
+        }
+    }
+
     fun clear() {
         job?.cancel()
         _info.value = NetworkInfo()

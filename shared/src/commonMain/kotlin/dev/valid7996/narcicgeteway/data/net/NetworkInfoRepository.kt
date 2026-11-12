@@ -53,11 +53,15 @@ class NetworkInfoRepository(
                 underVpn = vpnAtStart || anyVpnNow(),
             )
 
-        val v4 = base.ipv4 ?: lookupV4()
+        val rawV4 = base.ipv4
+        val rawV6 = base.ipv6
+        val baseIsV6 = rawV4 != null && isIpv6(rawV4)
+        val candidateV6 = if (baseIsV6) rawV4 else (rawV6 ?: v6.await())
+        val candidateV4 = if (baseIsV6) lookupV4() else (rawV4 ?: lookupV4())
         val vpnAtEnd = anyVpnNow()
         base.copy(
-            ipv4 = v4,
-            ipv6 = base.ipv6 ?: v6.await(),
+            ipv4 = candidateV4?.takeUnless { isIpv6(it) },
+            ipv6 = candidateV6?.takeIf { isIpv6(it) },
             viaTunnel = tunnelActive,
             underVpn = vpnAtStart || vpnAtEnd,
         ).also {
@@ -119,11 +123,30 @@ class NetworkInfoRepository(
         PingService.activeConnectionHealth(url?.takeIf { it.isNotBlank() } ?: DELAY_TEST_URL)
 
     private suspend fun lookupV6(): String? = runCatching {
-        get("https://api64.ipify.org").trim().takeIf { isIpv6(it) }
+        val endpoints = listOf(
+            "https://api6.ipify.org",
+            "https://v6.ident.me",
+            "https://ipv6.icanhazip.com",
+            "https://api64.ipify.org",
+        )
+        for (ep in endpoints) {
+            val res = runCatching { get(ep).trim() }.getOrNull()
+            if (!res.isNullOrBlank() && isIpv6(res)) return res
+        }
+        null
     }.getOrNull()
 
     private suspend fun lookupV4(): String? = runCatching {
-        get("https://api.ipify.org").trim().takeIf { it.isNotBlank() && !isIpv6(it) }
+        val endpoints = listOf(
+            "https://api.ipify.org",
+            "https://v4.ident.me",
+            "https://ipv4.icanhazip.com",
+        )
+        for (ep in endpoints) {
+            val res = runCatching { get(ep).trim() }.getOrNull()
+            if (!res.isNullOrBlank() && !isIpv6(res)) return res
+        }
+        null
     }.getOrNull()
 
     private fun anyVpnNow(): Boolean =
@@ -186,6 +209,7 @@ class NetworkInfoRepository(
         const val DELAY_TEST_URL = "https://www.gstatic.com/generate_204"
 
         const val DELAY_TEST_URL2 = "https://www.google.com/generate_204"
+        const val DELAY_TEST_URL3 = "https://cp.cloudflare.com/generate_204"
 
         val GEO_ENDPOINTS: List<String> = listOf(IPWHOIS_URL, IP_API_URL, IPAPI_CO_URL, IPINFO_URL)
     }

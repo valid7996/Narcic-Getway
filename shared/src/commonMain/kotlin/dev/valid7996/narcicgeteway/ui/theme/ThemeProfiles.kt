@@ -103,5 +103,5 @@ fun AppSettings.applyMasterTheme(spec: MasterThemeSpec): AppSettings = copy(
     customAmbientGlowColor = spec.ambientGlowColor.toArgbLong(),
     customBgGradientTop = spec.bgGradientTop.toArgbLong(),
     customBgGradientBottom = spec.bgGradientBottom.toArgbLong(),
-    themeProfileId = spec.heroCharacter,
+    themeProfileId = spec.id,
 )

@@ -446,8 +446,8 @@ data class AppSettings(
 
     val geoFilesSource: GeoFilesSource = GeoFilesSource.Loyalsoldier,
 
-    val autoUpdateSubscriptions: Boolean = false,
-    val subscriptionUpdateIntervalHours: Int = 12,
+    val autoUpdateSubscriptions: Boolean = true,
+    val subscriptionUpdateIntervalHours: Int = 1,
     val autoTestAfterUpdate: Boolean = false,
     val autoRemoveInvalidAfterTest: Boolean = false,
     val autoSortAfterTest: Boolean = true,
