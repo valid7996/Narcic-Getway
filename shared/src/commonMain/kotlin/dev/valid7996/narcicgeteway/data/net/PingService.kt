@@ -101,24 +101,30 @@ object PingService {
         url: String = NetworkInfoRepository.DELAY_TEST_URL,
     ): CoreProbe.DelayOutcome = withContext(Dispatchers.IO) {
         val first = probeActiveConnection(url)
-        if (first.ok && first.ms > 0) return@withContext first
-        val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL3)
-        if (second.ok && second.ms > 0) return@withContext second
-        val third = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
-        if (third.ok && third.ms > 0) return@withContext third
-        CoreProbe.DelayOutcome(-1L, third.error ?: second.error ?: first.error)
+        if (first.ok) return@withContext first
+        if (url == NetworkInfoRepository.DELAY_TEST_URL) {
+            val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL3)
+            if (second.ok) return@withContext second
+            val third = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
+            if (third.ok) return@withContext third
+            return@withContext CoreProbe.DelayOutcome(-1L, third.error ?: second.error ?: first.error)
+        } else if (url != NetworkInfoRepository.DELAY_TEST_URL2) {
+            val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
+            if (second.ok) return@withContext second
+            return@withContext CoreProbe.DelayOutcome(-1L, second.error ?: first.error)
+        }
+        first
     }
 
     private suspend fun probeActiveConnection(url: String): CoreProbe.DelayOutcome {
         if (runsXrayCore(VpnManager.activeKind.value)) {
-            val probe = runCatching { CoreProbe.measureDelayDetailed(url) }.getOrNull()
-            if (probe != null && probe.ok && probe.ms > 0) return probe
+            return runCatching { CoreProbe.measureDelayDetailed(url) }
+                .getOrElse { CoreProbe.DelayOutcome(-1L, it.message) }
         }
-        val port = VpnManager.activeSocksPort ?: return CoreProbe.DelayOutcome(-1L, "no active socks port")
         return runCatching {
             val timing = httpTimedTransfer(
                 url,
-                socksPort = port,
+                socksPort = VpnManager.activeSocksPort,
                 upload = false,
                 uploadBytes = 0,
                 connectTimeoutMs = 4_000,
@@ -138,11 +144,15 @@ object PingService {
         val first = probeActiveConnection(url)
         if (first.ok && first.ms > 0) return@withContext first.ms
 
-        val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL3)
-        if (second.ok && second.ms > 0) return@withContext second.ms
-
-        val third = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
-        if (third.ok && third.ms > 0) return@withContext third.ms
+        if (url == NetworkInfoRepository.DELAY_TEST_URL) {
+            val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL3)
+            if (second.ok && second.ms > 0) return@withContext second.ms
+            val third = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
+            if (third.ok && third.ms > 0) return@withContext third.ms
+        } else if (url != NetworkInfoRepository.DELAY_TEST_URL2) {
+            val second = probeActiveConnection(NetworkInfoRepository.DELAY_TEST_URL2)
+            if (second.ok && second.ms > 0) return@withContext second.ms
+        }
 
         -1L
     }
