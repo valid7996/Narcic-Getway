@@ -2,8 +2,7 @@
 set -e -u -x
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-export GOTOOLCHAIN=auto
-export GOMAXPROCS=2
+export GOTOOLCHAIN=local
 export PATH="$HOME/go/bin:$PATH"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 ANDROID_API=24
@@ -84,25 +83,12 @@ for f in $(find "$GOPATH_DIR/pkg/mod/github.com/"*psiphon*tls* -name "unsafe.go"
   sed -i 's/if err != nil {/if false \&\& err != nil {/g' "$f" 2>/dev/null || true
 done
 
-MERGE_DIR="$(mktemp -d)"
-mkdir -p "$MERGE_DIR/unpacked"
-
-IFS=',' read -ra TARGET_LIST <<< "$TARGETS"
-for t in "${TARGET_LIST[@]}"; do
-  echo ">>> gomobile bind target: $t"
-  T_RAW="$MERGE_DIR/raw_${t//\//_}.aar"
-  gomobile bind -v -x -trimpath -androidapi "$ANDROID_API" -target="$t" -tags="$SINGBOX_TAGS" -ldflags="$LDFLAGS" -o "$T_RAW" \
-    github.com/2dust/AndroidLibXrayLite \
-    github.com/sagernet/sing-box/experimental/libbox \
-    github.com/Psiphon-Labs/psiphon-tunnel-core/MobileLibrary/psi \
-    zeddns \
-    masterdnsvpn-go/mobile
-  unzip -o "$T_RAW" -d "$MERGE_DIR/unpacked" >/dev/null
-  rm -f "$T_RAW"
-done
-
-( cd "$MERGE_DIR/unpacked" && zip -r "$RAW" ./ >/dev/null )
-rm -rf "$MERGE_DIR"
+gomobile bind -v -x -trimpath -androidapi "$ANDROID_API" -target="$TARGETS" -tags="$SINGBOX_TAGS" -ldflags="$LDFLAGS" -o "$RAW" \
+  github.com/2dust/AndroidLibXrayLite \
+  github.com/sagernet/sing-box/experimental/libbox \
+  github.com/Psiphon-Labs/psiphon-tunnel-core/MobileLibrary/psi \
+  zeddns \
+  masterdnsvpn-go/mobile
 
 echo ">>> inject ca.psiphon.PsiphonTunnel"
 WORK="$(mktemp -d)"
