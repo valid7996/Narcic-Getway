@@ -3,6 +3,7 @@ set -e -u -x
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export GOTOOLCHAIN=auto
+export GOMAXPROCS=2
 export PATH="$HOME/go/bin:$PATH"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 ANDROID_API=24

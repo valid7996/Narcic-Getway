@@ -33,6 +33,11 @@ jobs:
         run: |
           df -h / | tail -1
           sudo rm -rf /usr/share/dotnet "$AGENT_TOOLSDIRECTORY/CodeQL" 2>/dev/null || true
+          sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -m
           df -h / | tail -1
 
       - uses: actions/checkout@v4
