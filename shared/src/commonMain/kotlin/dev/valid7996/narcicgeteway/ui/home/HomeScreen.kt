@@ -297,287 +297,60 @@ fun HomeScreen(
 
                 }
 
-                // Optional: Traffic tiles above hero
-                AnimatedVisibility(visible = showDashboard && personalization.trafficTilesAboveHero) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
-                        TrafficStylesDisplay(
-                            downloadBps = ui.downloadBps,
-                            uploadBps = ui.uploadBps,
-                            totalDownload = ui.totalDownload,
-                            totalUpload = ui.totalUpload,
-                            style = personalization.trafficCardStyle,
-                            personalization = personalization,
-                        )
-                    }
-                }
+                Spacer(Modifier.height(8.dp))
 
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth().layoutId(STAGE_ID)) {
-                    val stage = maxHeight
-                    val tight = stage < 260.dp
-                    val stageHero = minOf(heroSize, stage * 0.58f)
-                    val modernHeroSize = minOf(260.dp, maxOf(220.dp, stage * 0.70f))
-                    Column(
-                      modifier = Modifier.fillMaxSize(),
-                      horizontalAlignment = Alignment.CenterHorizontally,
-                      verticalArrangement = Arrangement.Center,
-                    ) {
-                      if (isBlossom) {
-                        GirlHero(
-                            state = ui.state,
-                            size = modernHeroSize,
-                            onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
-                                {
-                                    if (ui.state != ConnectionState.Disconnecting) {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onToggleConnection()
-                                    }
-                                }
-                            } else null,
-                        )
-                      } else if (isNoir) {
-                        MontaaHero(
-                            state = ui.state,
-                            size = modernHeroSize,
-                            onTapHero = if (connectStyle == ConnectButtonStyle.Hero) {
-                                {
-                                    if (ui.state != ConnectionState.Disconnecting) {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onToggleConnection()
-                                    }
-                                }
-                            } else null,
-                        )
+                // 1. Theme Palette Quick Selector (4 Ready Themes: Cyberpunk Pink, Matrix Emerald, Cyan Active, Sunset Amber)
+                BentoThemePaletteBar(
+                    settings = settings,
+                    onUpdateSettings = onUpdateSettings,
+                    modifier = Modifier.padding(bottom = 6.dp),
+                )
 
-                      } else {
-                        Hero(
-                            state = ui.state,
-                            sessionId = ui.sessionId,
-                            size = stageHero,
-                            onLongPress = {
-                                burst++
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            },
+                // 2. Master Connect Tile (Zero Animation, Tactile State & Action Switch)
+                BentoMasterConnectTile(
+                    state = ui.state,
+                    personalization = personalization,
+                    onClick = onToggleConnection,
+                    modifier = Modifier.layoutId(STAGE_ID),
+                )
 
-                            onTap = if (connectStyle == ConnectButtonStyle.Hero) {
-                                {
-                                    if (ui.state != ConnectionState.Disconnecting) {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onToggleConnection()
-                                    }
-                                }
-                            } else null,
-                        )
-                      }
+                Spacer(Modifier.height(10.dp))
 
-                      Spacer(Modifier.height(if (tight) 8.dp else 20.dp))
+                // 3. Active Server Config Tile
+                BentoActiveConfigTile(
+                    name = activeConfigName,
+                    detail = activeConfigDetail,
+                    countryCode = activeCountryCode,
+                    locked = activeLocked,
+                    personalization = personalization,
+                    onClick = onBrowseConfigs,
+                )
 
-                      AnimatedContent(
-                          targetState = ui.state,
-                          transitionSpec = {
-                              (fadeIn(animationSpec = tween(220)) +
-                                  scaleIn(initialScale = 0.92f, animationSpec = tween(220))) togetherWith
-                                  fadeOut(animationSpec = tween(140))
-                          },
-                          label = "status-text",
-                          modifier = Modifier.clickable(
-                              interactionSource = remember { MutableInteractionSource() },
-                              indication = null,
-                          ) {
-                              val now = System.currentTimeMillis()
-                              statusTaps = if (now - statusLastTap < TAP_WINDOW_MS) statusTaps + 1 else 1
-                              statusLastTap = now
-                              if (statusTaps >= 3) {
-                                  statusTaps = 0
-                                  haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                  laser++
-                              }
-                          },
-                      ) { s ->
-                          Column(
-                              horizontalAlignment = Alignment.CenterHorizontally,
-                              verticalArrangement = Arrangement.spacedBy(8.dp),
-                          ) {
-                              if (s == ConnectionState.Connected) {
-                                  Box(
-                                      modifier = Modifier
-                                          .size(32.dp)
-                                          .clip(RoundedCornerShape(9.dp))
-                                          .background(Color(0x3022C55E))
-                                          .border(1.5.dp, Color(0xFF22C55E), RoundedCornerShape(9.dp)),
-                                      contentAlignment = Alignment.Center,
-                                  ) {
-                                      Icon(
-                                          painter = painterResource(Res.drawable.ic_check),
-                                          contentDescription = null,
-                                          tint = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) Color.White else Color(0xFF15803D),
-                                          modifier = Modifier.size(18.dp),
-                                      )
-                                  }
-                              }
-                              Text(
-                                  text = if (s == ConnectionState.Connected) stringResource(Res.string.status_connected_toast) else stringResource(s.labelRes()),
-                                  style = MaterialTheme.typography.headlineMedium.copy(
-                                      fontWeight = FontWeight.Bold,
-                                      fontSize = if (tight) 24.sp else 30.sp,
-                                  ),
-                                  maxLines = 1,
-                                  textAlign = TextAlign.Center,
-                                  color = when {
-                                      s == ConnectionState.Error -> MaterialTheme.colorScheme.error
-                                      (s.isActive || s == ConnectionState.Disconnecting) && themeDark -> Color.White
-                                      else -> MaterialTheme.colorScheme.onSurface
-                                  },
-                              )
-                          }
-                      }
+                Spacer(Modifier.height(10.dp))
 
-                      if (lockedNote != null) {
-                          val noteScroll = rememberScrollState()
-                          Spacer(Modifier.height(16.dp))
-                          Surface(
-                              shape = MaterialTheme.shapes.large,
-                              color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                              modifier = Modifier.fillMaxWidth(),
-                          ) {
-                              NoteText(
-                                  text = lockedNote,
-                                  style = MaterialTheme.typography.bodyMedium,
-                                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                  modifier = Modifier
-                                      .fillMaxWidth()
-                                      .heightIn(max = 140.dp)
-                                      .verticalScroll(noteScroll)
-                                      .padding(horizontal = 16.dp, vertical = 12.dp),
-                              )
-                          }
-                      }
-                    }
-                }
+                // 4. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
+                BentoMetricsGrid(
+                    connected = live,
+                    elapsedSeconds = ui.elapsedSeconds,
+                    totalBytes = ui.totalDownload + ui.totalUpload,
+                    pingMs = info.pingMs,
+                    downloadBps = ui.downloadBps,
+                    uploadBps = ui.uploadBps,
+                    personalization = personalization,
+                )
 
-                if (dev.valid7996.narcicgeteway.ui.navigation.NavConfig.SHOW_ACTIVE_CONFIG) {
-                    ActiveConfigCard(
-                        name = activeConfigName,
-                        detail = activeConfigDetail,
-                        locked = activeLocked,
-                        expiresAt = activeExpiresAt,
-                        countryCode = activeCountryCode,
-                        onClick = onBrowseConfigs,
-                        personalization = personalization,
-                    )
-                }
+                Spacer(Modifier.height(10.dp))
 
-                Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
-                when (connectStyle) {
-                    ConnectButtonStyle.Hero -> Unit
-                    ConnectButtonStyle.Pill, ConnectButtonStyle.Switch -> {
-                        if (isModernTheme) {
-                            ModernConnectButton(
-                                state = ui.state,
-                                onClick = onToggleConnection,
-                                isNoir = isNoir,
-                                isBlossom = isBlossom,
-                                amoledBlack = personalization.amoledBlack,
-                                dynamicColor = personalization.dynamicColor,
-                                customColor = personalization.connectColor,
-                                customConnectedColor = personalization.connectedColor,
-                            )
-                        } else {
-                            ConnectButton(
-                                state = ui.state,
-                                onToggle = onToggleConnection,
-                                customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
-                                customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
-                                compact = compact,
-                            )
-                        }
-                    }
-                    ConnectButtonStyle.Slide -> SlideToConnect(
-                        state = ui.state,
-                        onToggle = onToggleConnection,
-                        customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
-                        customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
-                        compact = compact,
-                    )
-                    else -> AltConnectControl(
-                        style = connectStyle,
-                        state = ui.state,
-                        onToggle = onToggleConnection,
-                        customColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectColor,
-                        customActiveColor = if (personalization.dynamicColor) MaterialTheme.colorScheme.primary else personalization.connectedColor,
-                        compact = compact,
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
+                // 5. Gateway & Exit IP Tile
+                BentoServerTile(
+                    connected = live,
+                    ip = info.ip,
+                    org = info.org,
+                    personalization = personalization,
+                    onRefresh = homeVm::refresh,
+                )
 
-                // Modular Tiled Dashboard: Separate Live Route, Server Tile, Session Duration/Volume Tiles, and Traffic Styles
-                AnimatedVisibility(visible = showDashboard) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        // 0. Active Server Name & Protocol Tile
-                        ActiveConfigDetailTile(
-                            activeConfigName = activeConfigName,
-                            activeConfigDetail = activeConfigDetail,
-                            activeLocked = activeLocked,
-                            activeExpiresAt = activeExpiresAt,
-                            personalization = personalization,
-                            onClick = onBrowseConfigs,
-                        )
-
-                        // 1. Separate Live Route Card
-                        ConnectionMapTriggerButton(
-                            expanded = infoExpanded,
-                            destCountryCode = info.countryCode?.takeIf { it.isNotBlank() } ?: activeCountryCode,
-                            onClick = homeVm::toggleExpanded,
-                            personalization = personalization,
-                            isNoir = isNoir,
-                            isBlossom = isBlossom,
-                            language = settings?.language,
-                        )
-                        AnimatedVisibility(visible = infoExpanded) {
-                            ConnectionRouteMapCard(
-                                info = info,
-                                activeConfigName = activeConfigName,
-                                fallbackCountryCode = activeCountryCode,
-                                onClose = homeVm::toggleExpanded,
-                                personalization = personalization,
-                                isNoir = isNoir,
-                                isBlossom = isBlossom,
-                                language = settings?.language,
-                            )
-                        }
-
-                        // 2. Active Server Connection Tile
-                        ServerConnectionTile(
-                            info = info,
-                            onRefresh = homeVm::refresh,
-                            onToggleMap = homeVm::toggleExpanded,
-                            personalization = personalization,
-                            activeLocked = activeLocked,
-                        )
-
-                        // 3. Modular Session Duration & Volume Tiles
-                        SessionStatsTilesRow(
-                            elapsedSeconds = ui.elapsedSeconds,
-                            totalBytes = ui.totalDownload + ui.totalUpload,
-                            personalization = personalization,
-                        )
-
-                        // 4. 8-Style Traffic Card (if not placed above hero)
-                        if (!personalization.trafficTilesAboveHero) {
-                            TrafficStylesDisplay(
-                                downloadBps = ui.downloadBps,
-                                uploadBps = ui.uploadBps,
-                                totalDownload = ui.totalDownload,
-                                totalUpload = ui.totalUpload,
-                                style = personalization.trafficCardStyle,
-                                personalization = personalization,
-                            )
-                        }
-                    }
-                }
-
+                Spacer(Modifier.height(6.dp))
 
                 val deviceId = remember(repository) { repository?.nrgDeviceId().orEmpty() }
                 if (deviceId.isNotBlank()) {

@@ -331,7 +331,7 @@ data class MasterThemeSpec(
 val MasterNeonThemes: List<MasterThemeSpec> = listOf(
     MasterThemeSpec(
         id = "cyberpunk_pink",
-        title = "سایبرپانک نئون",
+        title = "نئون نرسیس",
         subtitle = "صورتی پرحرارت و سرخابی درخشان",
         primaryColor = Color(0xFFF72585),
         buttonColor = Color(0xFFF72585),
@@ -371,7 +371,7 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
     ),
     MasterThemeSpec(
         id = "matrix_emerald",
-        title = "ماتریکس زمرد",
+        title = "زمرد مات",
         subtitle = "سبز فسفری و زمرد نئونی مات",
         primaryColor = Color(0xFF10B981),
         buttonColor = Color(0xFF10B981),
@@ -391,7 +391,7 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
     ),
     MasterThemeSpec(
         id = "ice_ocean",
-        title = "اقیانوس یخی",
+        title = "سایان اکتیو",
         subtitle = "فیروزه‌ای درخشان و آبی آسمان",
         primaryColor = Color(0xFF06B6D4),
         buttonColor = Color(0xFF06B6D4),
@@ -411,7 +411,7 @@ val MasterNeonThemes: List<MasterThemeSpec> = listOf(
     ),
     MasterThemeSpec(
         id = "sunset_amber",
-        title = "غروب کهربایی",
+        title = "طلایی کهربا",
         subtitle = "طلایی آتشی و نارنجی خورشیدی",
         primaryColor = Color(0xFFF59E0B),
         buttonColor = Color(0xFFF59E0B),
