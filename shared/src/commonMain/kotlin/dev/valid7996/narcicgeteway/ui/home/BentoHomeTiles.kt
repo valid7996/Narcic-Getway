@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import dev.valid7996.narcicgeteway.domain.model.ConnectionState
-import dev.valid7996.narcicgeteway.platform.LocalPlatform
+import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.ic_bolt
 import dev.valid7996.narcicgeteway.shared.resources.ic_check
