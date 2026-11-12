@@ -38,6 +38,9 @@ class NrgSecureApp : Application(), SingletonImageLoader.Factory {
         XrayController.warmUp(this)
         PingService.rstaSpoofLease = { RstaSpoofClient.lease(this, SettingsRepository(this).settings.value) }
         PingService.aetherTunnel = { profile, measure -> AetherDelayProbe.run(this, profile, measure) }
+        PingService.dnsEngineTunnel = { profile, measure ->
+            dev.valid7996.narcicgeteway.core.DnsEngineDelayProbe.run(this, profile, SettingsRepository(this).settings.value, measure)
+        }
         PingService.sniProbe = { ip, sni ->
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val res = runCatching { com.therealaleph.mhrv.Native.testSni(ip, sni) }.getOrNull()

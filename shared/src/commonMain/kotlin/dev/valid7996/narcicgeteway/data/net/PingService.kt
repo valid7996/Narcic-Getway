@@ -17,7 +17,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -49,6 +51,22 @@ object PingService {
 
     @Volatile
     var sniProbe: (suspend (String, String) -> Long)? = null
+
+    /**
+     * Starts the real engine of a DNS-tunnel profile (WhiteDNS, MasterDNS, DNSTT) for the test, hands the port of its
+     * SOCKS listener to the block and returns the block's result: the delay of a request that really went through the
+     * tunnel. It returns null when this platform cannot run that profile's engine; the platform sets it.
+     */
+    @Volatile
+    var dnsEngineTunnel: (suspend (VpnProfile, suspend (Int) -> Long) -> Long?)? = null
+
+    // A DNS tunnel needs minutes to scan resolvers and set up a session, and the engines share ports and (MasterDNS)
+    // one global instance, so they are tested one at a time.
+    private val dnsEngineLock = Mutex()
+
+    private const val DNS_ENGINE_PROBE_TIMEOUT_MS = 200_000L
+
+    private val DNS_TUNNEL_KINDS = setOf(VpnManager.KIND_DNS_TUNNEL, VpnManager.KIND_MASTERDNS, VpnManager.KIND_WHITEDNS)
 
     private const val REAL_PING_CONCURRENCY = 16
 
@@ -241,10 +259,6 @@ object PingService {
             val wgInit = byteArrayOf(1, 0, 0, 0)
             val udp = udpProbeMillis(host, port, wgInit, 2_200)
             if (udp > 0) return udp
-            val tcp = tcpPing(host, port, 2_000)
-            if (tcp > 0) return tcp
-            val tcp443 = tcpPing(host, 443, 1_500)
-            if (tcp443 > 0) return tcp443
         }
         return -1L
     }
@@ -279,22 +293,6 @@ object PingService {
             if (udp4500 > 0) return udp4500
         }
 
-        // Fast TCP fallback: port 443 (Windscribe and public gateways listen on 443; never blocked by ISP)
-        val tcp443 = tcpPing(host, if (targetPort in 1..65535 && targetPort != 500) targetPort else 443, 1_800)
-        if (tcp443 > 0) return tcp443
-
-        // RFC 8229 TCP encapsulation port 4500
-        val tcp4500 = tcpPing(host, 4500, 1_500)
-        if (tcp4500 > 0) return tcp4500
-
-        // TCP port 500
-        val tcp500 = tcpPing(host, 500, 1_500)
-        if (tcp500 > 0) return tcp500
-
-        // ICMP / system ping reachability fallback
-        val icmp = dev.valid7996.narcicgeteway.platform.icmpPingMillis(host, 1_800)
-        if (icmp > 0) return icmp
-
         return -1L
     }
 
@@ -317,19 +315,6 @@ object PingService {
         val tls = tlsConnectMillis(host, port, 2_000)
         if (tls > 0) return tls
 
-        val tcp = tcpPing(host, port, 2_000)
-        if (tcp > 0) return tcp
-
-        if (port != 1194) {
-            val tcp1194 = tcpPing(host, 1194, 1_500)
-            if (tcp1194 > 0) return tcp1194
-        }
-        val tcp443 = tcpPing(host, 443, 1_500)
-        if (tcp443 > 0) return tcp443
-
-        val icmp = dev.valid7996.narcicgeteway.platform.icmpPingMillis(host, 2_200)
-        if (icmp > 0) return icmp
-
         return -1L
     }
 
@@ -342,9 +327,6 @@ object PingService {
 
         val tls = tlsConnectMillis(host, port, 2_500)
         if (tls > 0) return tls
-
-        val tcp = tcpPing(host, port, 2_500)
-        if (tcp > 0) return tcp
 
         return -1L
     }
@@ -365,6 +347,42 @@ object PingService {
         "2.144.2.72:53",
         "2.144.2.154:53",
     )
+
+    /**
+     * The delay of a DNS-tunnel profile through its real engine. A resolver that answers a DNS query says nothing
+     * about the tunnel behind it, so this starts the engine and times a request through it; only a platform that
+     * cannot run the engine falls back to the resolver query.
+     */
+    private suspend fun dnsEngineDelay(profile: VpnProfile, url: String): Long {
+        val live = VpnManager.activeKind.value in DNS_TUNNEL_KINDS && VpnManager.deviceVpnActive() &&
+            VpnManager.status.value.serverName == profile.name
+        if (live) return realDelayOfActiveConnection(url)
+
+        val runner = dnsEngineTunnel ?: return dnsTunnelDelay(profile)
+        return dnsEngineLock.withLock {
+            var supported = true
+            val ms = withTimeoutOrNull(DNS_ENGINE_PROBE_TIMEOUT_MS) {
+                runner(profile) { port ->
+                    var best = -1L
+                    repeat(2) {
+                        val t = runCatching {
+                            httpTimedTransfer(url, port, false, 0, REQUEST_PROBE_TIMEOUT_MS, REQUEST_PROBE_TIMEOUT_MS).ttfbNanos / 1_000_000
+                        }.getOrDefault(-1L)
+                        if (t > 0 && (best < 0 || t < best)) best = t.coerceAtLeast(1)
+                    }
+                    best
+                }.also { if (it == null) supported = false }
+            }
+            when {
+                ms != null -> ms
+                !supported -> dnsTunnelDelay(profile)
+                else -> {
+                    LogBus.append("W/PingService the engine of ${profile.name} did not come up in time")
+                    -1L
+                }
+            }
+        }
+    }
 
     private suspend fun dnsTunnelDelay(profile: VpnProfile): Long {
         val master = profile.masterDnsSettings()
@@ -429,23 +447,19 @@ object PingService {
     ): Long {
         val effective = profile.resolveUnsealed() ?: profile
         if (effective.isAether) return aetherDelay(effective, url)
-        if (effective.isDnsTunnel || effective.isMasterDns || effective.isWhiteDns) return dnsTunnelDelay(effective)
+        if (effective.isDnsTunnel || effective.isMasterDns || effective.isWhiteDns) return dnsEngineDelay(effective, url)
         if (effective.isIkev2) return ikev2Delay(effective)
         if (effective.isOpenConnect) return openConnectDelay(effective)
         if (effective.isOpenVpn) {
             val config = runCatching { effective.toXrayConfigJson(forSpeedtest = true) }.getOrNull()
-            if (config != null) {
-                val delay = probeWithTimeout(effective, config, url)
-                if (delay > 0) return delay
-            }
+            // A request through the real core is the answer; a port that happens to be open is not.
+            if (config != null) return probeWithTimeout(effective, config, url)
             return openVpnDelay(effective)
         }
         if (effective.isSstp) {
             val sni = effective.address
             val probe = sniProbe?.invoke(effective.address, sni)
-            if (probe != null && probe > 0) return probe
-            val tcp = tcpPing(effective.address, effective.port)
-            return if (tcp > 0) tcp else -1L
+            return if (probe != null && probe > 0) probe else -1L
         }
         if (effective.isMhrvRelay) {
             val mhrv = effective.mhrvRelaySettings()
@@ -454,9 +468,7 @@ object PingService {
                 val sni = mhrv.sniList().firstOrNull()?.trim()?.ifEmpty { null }
                     ?: mhrv.frontDomain.trim().ifEmpty { dev.valid7996.narcicgeteway.domain.config.MhrvRelayProfile.DEFAULT_FRONT_DOMAIN }
                 val probe = sniProbe?.invoke(ip, sni)
-                if (probe != null && probe > 0) return probe
-                val tcp = tcpPing(ip, 443)
-                return if (tcp > 0) tcp else -1L
+                return if (probe != null && probe > 0) probe else -1L
             }
         }
         if (effective.isProxyChain) {
