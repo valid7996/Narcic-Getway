@@ -212,7 +212,7 @@ fun HomeScreen(
         homeVm.preferredDelayUrl = delayTestUrl.ifBlank { null }
         if (live && showConnectionInfo) {
             homeVm.refresh(settleDelayMs = 300)
-            while (kotlinx.coroutines.isActive) {
+            while (true) {
                 kotlinx.coroutines.delay(6_000L)
                 homeVm.refreshPingOnly()
             }
