@@ -344,8 +344,8 @@ fun HomeScreen(
                 // 5. Gateway & Exit IP Tile
                 BentoServerTile(
                     connected = live,
-                    ip = info.ip,
-                    org = info.org,
+                    ip = info.ipv4,
+                    org = info.isp ?: info.country,
                     personalization = personalization,
                     onRefresh = homeVm::refresh,
                 )

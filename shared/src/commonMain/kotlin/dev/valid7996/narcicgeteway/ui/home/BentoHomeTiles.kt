@@ -37,9 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.valid7996.narcicgeteway.core.ConnectionState
-import dev.valid7996.narcicgeteway.core.isActive
-import dev.valid7996.narcicgeteway.core.isTransitioning
+import dev.valid7996.narcicgeteway.domain.model.ConnectionState
 import dev.valid7996.narcicgeteway.domain.model.AppSettings
 import dev.valid7996.narcicgeteway.shared.resources.Res
 import dev.valid7996.narcicgeteway.shared.resources.ic_bolt
@@ -402,7 +400,7 @@ fun BentoMetricsGrid(
     connected: Boolean,
     elapsedSeconds: Int,
     totalBytes: Long,
-    pingMs: Long?,
+    pingMs: Int?,
     downloadBps: Long,
     uploadBps: Long,
     personalization: Personalization,
