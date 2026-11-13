@@ -291,21 +291,14 @@ fun HomeScreen(
                     }
                 }
 
-                // 1. Theme Palette Quick Selector (4 Ready Themes)
-                BentoThemePaletteBar(
-                    settings = settings,
-                    onUpdateSettings = onUpdateSettings,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
-
-                // 2. Master Connect Tile (Zero Animation, Smart State, Perfectly Proportioned)
+                // 1. Master Connect Tile (Zero Animation, Smart State, Perfectly Proportioned)
                 BentoMasterConnectTile(
                     state = ui.state,
                     personalization = personalization,
                     onClick = onToggleConnection,
                 )
 
-                // 3. Active Server Config Tile
+                // 2. Active Server Config Tile
                 val effectiveCountryCode = if (live && !info.countryCode.isNullOrBlank()) info.countryCode else activeCountryCode
                 BentoActiveConfigTile(
                     name = activeConfigName,
@@ -316,7 +309,7 @@ fun HomeScreen(
                     onClick = onBrowseConfigs,
                 )
 
-                // 4. Dedicated Upload & Download Traffic Card (کادر ترافیک آپلود و دانلود)
+                // 3. Dedicated Upload & Download Traffic Card (کادر ترافیک آپلود و دانلود)
                 TrafficStylesDisplay(
                     downloadBps = ui.downloadBps,
                     uploadBps = ui.uploadBps,
@@ -327,7 +320,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // 5. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
+                // 4. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
                 BentoMetricsGrid(
                     connected = live,
                     elapsedSeconds = ui.elapsedSeconds,
