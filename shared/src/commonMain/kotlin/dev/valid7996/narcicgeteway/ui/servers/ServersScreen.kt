@@ -431,6 +431,9 @@ fun ServersScreen(
     var moveTarget by remember { mutableStateOf<VpnProfile?>(null) }
 
     var qrTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var subActionTarget by remember { mutableStateOf<dev.valid7996.narcicgeteway.domain.config.Subscription?>(null) }
+    var subToEdit by remember { mutableStateOf<dev.valid7996.narcicgeteway.domain.config.Subscription?>(null) }
+    var subToDelete by remember { mutableStateOf<dev.valid7996.narcicgeteway.domain.config.Subscription?>(null) }
     var showCustomJson by remember { mutableStateOf(false) }
     var showPsiphon by remember { mutableStateOf(false) }
     var showDnsTunnel by remember { mutableStateOf(false) }
@@ -1047,6 +1050,7 @@ fun ServersScreen(
                             badge = sub.formatQuotaBadge(),
                             personalization = personalization,
                             onClick = { groupIndex = index + 2 },
+                            onLongClick = { subActionTarget = sub },
                         )
                     }
                 }
@@ -1056,6 +1060,7 @@ fun ServersScreen(
             val activeSub = subscriptions.getOrNull(groupIndex - 2)
             if (activeSub != null && (activeSub.total != null || activeSub.expireAt != null || activeSub.used != null)) {
                 Surface(
+                    onClick = { subActionTarget = activeSub },
                     color = personalization.cardBgColor ?: Color(0x1AFFFFFF),
                     shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.dp, (personalization.serverBorderColor ?: Color.White).copy(alpha = 0.25f)),
@@ -1075,17 +1080,30 @@ fun ServersScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),
                             )
-                            activeSub.formatQuotaBadge()?.let { badge ->
-                                Surface(
-                                    color = Color(0x2610B981),
-                                    shape = CircleShape,
-                                    border = BorderStroke(0.5.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                activeSub.formatQuotaBadge()?.let { badge ->
+                                    Surface(
+                                        color = Color(0x2610B981),
+                                        shape = CircleShape,
+                                        border = BorderStroke(0.5.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                                    ) {
+                                        Text(
+                                            text = badge,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
+                                            color = Color(0xFF10B981),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { subActionTarget = activeSub },
+                                    modifier = Modifier.size(28.dp),
                                 ) {
-                                    Text(
-                                        text = badge,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
-                                        color = Color(0xFF10B981),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    Icon(
+                                        painterResource(Res.drawable.ic_more_vert),
+                                        contentDescription = "Subscription options",
+                                        tint = (personalization.textColor ?: Color.White).copy(alpha = 0.8f),
+                                        modifier = Modifier.size(18.dp),
                                     )
                                 }
                             }
@@ -2080,6 +2098,70 @@ fun ServersScreen(
         )
     }
 
+    subActionTarget?.let { sub ->
+        val subIndex = subscriptions.indexOfFirst { it.id == sub.id }
+        SubscriptionActionSheet(
+            sub = sub,
+            isFirst = subIndex <= 0,
+            isLast = subIndex < 0 || subIndex >= subscriptions.lastIndex,
+            serverCount = counts[sub.id] ?: 0,
+            onEdit = {
+                subActionTarget = null
+                subToEdit = sub
+            },
+            onDelete = {
+                subActionTarget = null
+                subToDelete = sub
+            },
+            onMoveEarlier = {
+                val idx = subscriptions.indexOfFirst { it.id == sub.id }
+                if (idx > 0) {
+                    repository.moveSubscription(sub.id, moveUp = true)
+                    if (groupIndex == idx + 2) groupIndex = idx + 1
+                }
+            },
+            onMoveLater = {
+                val idx = subscriptions.indexOfFirst { it.id == sub.id }
+                if (idx in 0 until subscriptions.lastIndex) {
+                    repository.moveSubscription(sub.id, moveUp = false)
+                    if (groupIndex == idx + 2) groupIndex = idx + 3
+                }
+            },
+            onUpdate = {
+                scope.launch {
+                    repository.updateSubscription(sub.id)
+                        .onSuccess { toastRes(Res.string.subs_updated, it) }
+                        .onFailure { toastRes(Res.string.subs_failed) }
+                }
+            },
+            onShareQr = {
+                qrTarget = sub.name to sub.url
+            },
+            onDismiss = { subActionTarget = null },
+        )
+    }
+
+    subToEdit?.let { target ->
+        SubscriptionEditDialog(
+            target = target,
+            repository = repository,
+            onDismiss = { subToEdit = null },
+        )
+    }
+
+    subToDelete?.let { target ->
+        SubscriptionDeleteConfirmDialog(
+            target = target,
+            repository = repository,
+            onDismiss = { subToDelete = null },
+            onDeleted = {
+                if (groupIndex >= 2 && subscriptions.getOrNull(groupIndex - 2)?.id == target.id) {
+                    groupIndex = 0
+                }
+            },
+        )
+    }
+
     confirmDeleteInvalid?.let { count ->
         AlertDialog(
             onDismissRequest = { confirmDeleteInvalid = null },
@@ -2303,6 +2385,7 @@ fun ServersScreen(
 }
 
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 private fun GroupTab(
     label: String,
     count: Int,
@@ -2310,6 +2393,7 @@ private fun GroupTab(
     badge: String? = null,
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val isNoirTab = personalization.themeProfileId == "noir"
     val chipPrimary = personalization.serverBorderColor ?: personalization.connectColor ?: (if (isNoirTab) Color(0xFFE2E8F0) else Color(0xFFF72585))
@@ -2328,13 +2412,18 @@ private fun GroupTab(
     }
 
     Surface(
-        onClick = onClick,
         shape = CircleShape,
         color = Color.Transparent,
         modifier = Modifier
             .clip(CircleShape)
             .then(bgModifier)
-            .then(borderModifier),
+            .then(borderModifier)
+            .combinedClickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = androidx.compose.material3.ripple(),
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

@@ -1573,6 +1573,36 @@ class ConfigRepository(private val store: KeyValueStore) {
         if (alsoRemoveServers) removeAll { it.subscriptionId == id }
     }
 
+    /**
+     * جابه‌جایی سابسکرپشن به بالا/چپ یا پایین/راست
+     */
+    fun moveSubscription(id: String, moveUp: Boolean): Boolean {
+        val current = _subscriptions.value.toMutableList()
+        val index = current.indexOfFirst { it.id == id }
+        if (index == -1) return false
+        val targetIndex = if (moveUp) index - 1 else index + 1
+        if (targetIndex !in current.indices) return false
+        val item = current.removeAt(index)
+        current.add(targetIndex, item)
+        _subscriptions.value = current
+        persistSubscriptions()
+        return true
+    }
+
+    /**
+     * جابه‌جایی مستقیم سابسکرپشن به ایندکس مشخص
+     */
+    fun moveSubscriptionToIndex(id: String, targetIndex: Int): Boolean {
+        val current = _subscriptions.value.toMutableList()
+        val index = current.indexOfFirst { it.id == id }
+        if (index == -1 || targetIndex !in current.indices || index == targetIndex) return false
+        val item = current.removeAt(index)
+        current.add(targetIndex, item)
+        _subscriptions.value = current
+        persistSubscriptions()
+        return true
+    }
+
     fun setSubscriptionEnabled(id: String, enabled: Boolean) {
         _subscriptions.value = _subscriptions.value.map {
             if (it.id == id) it.copy(enabled = enabled) else it

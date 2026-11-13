@@ -30,6 +30,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.material3.HorizontalDivider
+import dev.valid7996.narcicgeteway.shared.resources.ic_keyboard_arrow_down
+import dev.valid7996.narcicgeteway.shared.resources.bento_move_earlier
+import dev.valid7996.narcicgeteway.shared.resources.bento_move_later
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.MaterialTheme
@@ -195,7 +200,7 @@ fun SubscriptionsSheet(
                 val subCardBorder = if (isDark) Color(0xFF38383A) else Color(0xFFE5E5EA)
                 val subCardBg = if (isDark) Color(0xFF2C2C2E) else Color(0xFFF2F2F7)
                 val subCardShape = RoundedCornerShape(14.dp)
-                subs.forEach { sub ->
+                subs.forEachIndexed { index, sub ->
                     Surface(
                         shape = subCardShape,
                         color = subCardBg,
@@ -278,6 +283,34 @@ fun SubscriptionsSheet(
                                 }
                             }
 
+                            // جابه‌جایی سابسکرپشن به بالا
+                            IconButton(
+                                onClick = { repository.moveSubscription(sub.id, moveUp = true) },
+                                enabled = index > 0,
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    painterResource(Res.drawable.ic_keyboard_arrow_down),
+                                    contentDescription = stringResource(Res.string.bento_move_earlier),
+                                    modifier = Modifier.size(20.dp).rotate(180f),
+                                    tint = if (index > 0) (if (isDark) Color.White else Color(0xFF333333)) else Color.Gray.copy(alpha = 0.25f),
+                                )
+                            }
+
+                            // جابه‌جایی سابسکرپشن به پایین
+                            IconButton(
+                                onClick = { repository.moveSubscription(sub.id, moveUp = false) },
+                                enabled = index < subs.lastIndex,
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    painterResource(Res.drawable.ic_keyboard_arrow_down),
+                                    contentDescription = stringResource(Res.string.bento_move_later),
+                                    modifier = Modifier.size(20.dp),
+                                    tint = if (index < subs.lastIndex) (if (isDark) Color.White else Color(0xFF333333)) else Color.Gray.copy(alpha = 0.25f),
+                                )
+                            }
+
                             if (!ConfigRepository.isDefaultSubscription(sub.id)) {
                                 IconButton(onClick = { qrTarget = sub.name to sub.url }) {
                                     Icon(
@@ -323,139 +356,18 @@ fun SubscriptionsSheet(
     }
 
     renameTarget?.let { target ->
-        var newName by remember(target.id) { mutableStateOf(target.name) }
-        var newUrl by remember(target.id) { mutableStateOf(target.url) }
-        var newUa by remember(target.id) { mutableStateOf(target.userAgent.orEmpty()) }
-        var preset by remember(target.id) { mutableStateOf(target.preset) }
-        var presetOpen by remember(target.id) { mutableStateOf(!target.preset.isEmpty) }
-        AlertDialog(
-            onDismissRequest = { renameTarget = null },
-            shape = RoundedCornerShape(14.dp),
-            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
-            title = {
-                Text(
-                    stringResource(Res.string.subs_edit),
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) Color.White else Color.Black,
-                )
-            },
-            text = {
-                Column(
-                    modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    OutlinedTextField(
-                        value = newName,
-                        onValueChange = { newName = it },
-                        label = { Text(stringResource(Res.string.subs_name)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    OutlinedTextField(
-                        value = newUrl,
-                        onValueChange = { newUrl = it },
-                        label = { Text(stringResource(Res.string.subs_url)) },
-                        minLines = 2,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    UserAgentPicker(newUa) { newUa = it }
-                    TextButton(onClick = { presetOpen = !presetOpen }) {
-                        Text(stringResource(Res.string.subs_preset_title))
-                    }
-                    if (presetOpen) {
-                        Text(
-                            stringResource(Res.string.subs_preset_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        PresetField(Res.string.subs_preset_address, preset.address) { preset = preset.copy(address = it) }
-                        PresetField(Res.string.subs_preset_fingerprint, preset.fingerprint) { preset = preset.copy(fingerprint = it) }
-                        PresetField(Res.string.subs_preset_alpn, preset.alpn) { preset = preset.copy(alpn = it) }
-                        PresetField(Res.string.subs_preset_finalmask, preset.finalMask, singleLine = false) {
-                            preset = preset.copy(finalMask = it)
-                        }
-                        PresetField(Res.string.subs_preset_ciphers, preset.cipherSuites) { preset = preset.copy(cipherSuites = it) }
-                        PresetField(Res.string.subs_preset_ech, preset.echConfigList) { preset = preset.copy(echConfigList = it) }
-                        dev.valid7996.narcicgeteway.ui.components.PickerField(
-                            label = stringResource(Res.string.subs_preset_core),
-                            options = listOf(
-                                "" to stringResource(Res.string.subs_preset_core_link),
-                                dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset.CORE_XRAY to "Xray",
-                                dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset.CORE_SINGBOX to stringResource(Res.string.subs_preset_core_singbox),
-                            ),
-                            selected = preset.core,
-                            onSelect = { preset = preset.copy(core = it) },
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val changed = preset != target.preset
-                        repository.editSubscription(target.id, newName, newUa, newUrl, preset)
-                        renameTarget = null
-                        if (changed) {
-                            busyId = target.id
-                            scope.launch {
-                                repository.updateSubscription(target.id)
-                                busyId = null
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
-                ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { renameTarget = null },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
-                ) {
-                    Text(stringResource(Res.string.action_cancel))
-                }
-            },
+        SubscriptionEditDialog(
+            target = target,
+            repository = repository,
+            onDismiss = { renameTarget = null },
         )
     }
 
     deleteTarget?.let { target ->
-        AlertDialog(
-            onDismissRequest = { deleteTarget = null },
-            shape = RoundedCornerShape(14.dp),
-            containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
-            icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
-            title = {
-                Text(
-                    stringResource(Res.string.subs_delete_confirm_title),
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (isDark) Color.White else Color.Black,
-                )
-            },
-            text = {
-                Text(
-                    stringResource(Res.string.subs_delete_confirm_body, target.name),
-                    color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6C6C70),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        repository.removeSubscription(target.id, alsoRemoveServers = true)
-                        deleteTarget = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
-                ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { deleteTarget = null },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
-                ) {
-                    Text(stringResource(Res.string.action_cancel))
-                }
-            },
+        SubscriptionDeleteConfirmDialog(
+            target = target,
+            repository = repository,
+            onDismiss = { deleteTarget = null },
         )
     }
 }
@@ -616,6 +528,348 @@ private fun SubscriptionUsage(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun SubscriptionEditDialog(
+    target: dev.valid7996.narcicgeteway.domain.config.Subscription,
+    repository: ConfigRepository,
+    onDismiss: () -> Unit,
+    onSaved: ((dev.valid7996.narcicgeteway.domain.config.Subscription) -> Unit)? = null,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val scope = rememberCoroutineScope()
+    var newName by remember(target.id) { mutableStateOf(target.name) }
+    var newUrl by remember(target.id) { mutableStateOf(target.url) }
+    var newUa by remember(target.id) { mutableStateOf(target.userAgent.orEmpty()) }
+    var preset by remember(target.id) { mutableStateOf(target.preset) }
+    var presetOpen by remember(target.id) { mutableStateOf(!target.preset.isEmpty) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        title = {
+            Text(
+                stringResource(Res.string.subs_edit),
+                fontWeight = FontWeight.SemiBold,
+                color = if (isDark) Color.White else Color.Black,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(stringResource(Res.string.subs_name)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                OutlinedTextField(
+                    value = newUrl,
+                    onValueChange = { newUrl = it },
+                    label = { Text(stringResource(Res.string.subs_url)) },
+                    minLines = 2,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                UserAgentPicker(newUa) { newUa = it }
+                TextButton(onClick = { presetOpen = !presetOpen }) {
+                    Text(stringResource(Res.string.subs_preset_title))
+                }
+                if (presetOpen) {
+                    Text(
+                        stringResource(Res.string.subs_preset_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    PresetField(Res.string.subs_preset_address, preset.address) { preset = preset.copy(address = it) }
+                    PresetField(Res.string.subs_preset_fingerprint, preset.fingerprint) { preset = preset.copy(fingerprint = it) }
+                    PresetField(Res.string.subs_preset_alpn, preset.alpn) { preset = preset.copy(alpn = it) }
+                    PresetField(Res.string.subs_preset_finalmask, preset.finalMask, singleLine = false) {
+                        preset = preset.copy(finalMask = it)
+                    }
+                    PresetField(Res.string.subs_preset_ciphers, preset.cipherSuites) { preset = preset.copy(cipherSuites = it) }
+                    PresetField(Res.string.subs_preset_ech, preset.echConfigList) { preset = preset.copy(echConfigList = it) }
+                    dev.valid7996.narcicgeteway.ui.components.PickerField(
+                        label = stringResource(Res.string.subs_preset_core),
+                        options = listOf(
+                            "" to stringResource(Res.string.subs_preset_core_link),
+                            dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset.CORE_XRAY to "Xray",
+                            dev.valid7996.narcicgeteway.domain.config.SubscriptionPreset.CORE_SINGBOX to stringResource(Res.string.subs_preset_core_singbox),
+                        ),
+                        selected = preset.core,
+                        onSelect = { preset = preset.copy(core = it) },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val changed = preset != target.preset
+                    repository.editSubscription(target.id, newName, newUa, newUrl, preset)
+                    onDismiss()
+                    if (changed) {
+                        scope.launch {
+                            repository.updateSubscription(target.id)
+                        }
+                    }
+                    val updated = target.copy(
+                        name = newName.trim().ifEmpty { target.name },
+                        url = newUrl.trim().ifEmpty { target.url },
+                        userAgent = newUa.trim().takeIf { it.isNotBlank() },
+                        preset = preset,
+                    )
+                    onSaved?.invoke(updated)
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+            ) { Text(stringResource(Res.string.action_save), fontWeight = FontWeight.SemiBold) }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+            ) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+fun SubscriptionDeleteConfirmDialog(
+    target: dev.valid7996.narcicgeteway.domain.config.Subscription,
+    repository: ConfigRepository,
+    onDismiss: () -> Unit,
+    onDeleted: (() -> Unit)? = null,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(14.dp),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        icon = { Icon(painterResource(Res.drawable.ic_delete), null, tint = Color(0xFFFF3B30)) },
+        title = {
+            Text(
+                stringResource(Res.string.subs_delete_confirm_title),
+                fontWeight = FontWeight.SemiBold,
+                color = if (isDark) Color.White else Color.Black,
+            )
+        },
+        text = {
+            Text(
+                stringResource(Res.string.subs_delete_confirm_body, target.name),
+                color = if (isDark) Color(0xFF8E8E93) else Color(0xFF6C6C70),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    repository.removeSubscription(target.id, alsoRemoveServers = true)
+                    onDismiss()
+                    onDeleted?.invoke()
+                },
+                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFF3B30)),
+            ) { Text(stringResource(Res.string.action_delete), fontWeight = FontWeight.SemiBold) }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF007AFF)),
+            ) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+        },
+    )
+}
+
+/**
+ * منوی اختصاصی عملیات سابسکرپشن با فشار دادن روی تب یا کارت ساب در لیست کانفیگ
+ */
+@Composable
+fun SubscriptionActionSheet(
+    sub: dev.valid7996.narcicgeteway.domain.config.Subscription,
+    isFirst: Boolean,
+    isLast: Boolean,
+    serverCount: Int,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onMoveEarlier: () -> Unit,
+    onMoveLater: () -> Unit,
+    onUpdate: () -> Unit,
+    onShareQr: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        dragHandle = {
+            Box(
+                Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .size(width = 36.dp, height = 5.dp)
+                    .clip(CircleShape)
+                    .background(if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.2f)),
+            )
+        },
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // سربرگ مشخصات سابسکرپشن
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = sub.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color.White else Color(0xFF0F172A),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = if (serverCount > 0) stringResource(Res.string.servers_count, serverCount) else sub.url,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                sub.formatQuotaBadge()?.let { badge ->
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        color = Color(0x2610B981),
+                        shape = CircleShape,
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                    ) {
+                        Text(
+                            text = badge,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(
+                color = if (isDark) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.08f),
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+
+            // عملیات ویرایش
+            ActionSheetRow(
+                icon = Res.drawable.ic_edit,
+                title = stringResource(Res.string.subs_edit),
+                onClick = { onDismiss(); onEdit() },
+            )
+
+            // عملیات جابه‌جایی به قبل (چپ)
+            ActionSheetRow(
+                icon = Res.drawable.ic_keyboard_arrow_down,
+                iconRotate = 90f,
+                title = stringResource(Res.string.bento_move_earlier),
+                enabled = !isFirst,
+                onClick = { onMoveEarlier() },
+            )
+
+            // عملیات جابه‌جایی به بعد (راست)
+            ActionSheetRow(
+                icon = Res.drawable.ic_keyboard_arrow_down,
+                iconRotate = -90f,
+                title = stringResource(Res.string.bento_move_later),
+                enabled = !isLast,
+                onClick = { onMoveLater() },
+            )
+
+            // عملیات به‌روزرسانی
+            ActionSheetRow(
+                icon = Res.drawable.ic_sync,
+                title = stringResource(Res.string.subs_update),
+                onClick = { onDismiss(); onUpdate() },
+            )
+
+            // عملیات اشتراک‌گذاری QR
+            if (sub.url.isNotBlank()) {
+                ActionSheetRow(
+                    icon = Res.drawable.ic_qr_code_2,
+                    title = stringResource(Res.string.action_share_qr),
+                    onClick = { onDismiss(); onShareQr() },
+                )
+            }
+
+            // عملیات حذف سابسکرپشن
+            ActionSheetRow(
+                icon = Res.drawable.ic_delete,
+                title = stringResource(Res.string.action_delete),
+                isDestructive = true,
+                onClick = { onDismiss(); onDelete() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionSheetRow(
+    icon: org.jetbrains.compose.resources.DrawableResource,
+    title: String,
+    iconRotate: Float = 0f,
+    enabled: Boolean = true,
+    isDestructive: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val contentColor = when {
+        !enabled -> Color.Gray.copy(alpha = 0.4f)
+        isDestructive -> Color(0xFFFF3B30)
+        isDark -> Color.White
+        else -> Color(0xFF0F172A)
+    }
+
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = title,
+                tint = contentColor,
+                modifier = Modifier.size(22.dp).rotate(iconRotate),
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (isDestructive) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 15.sp,
+                ),
+                color = contentColor,
+            )
         }
     }
 }
