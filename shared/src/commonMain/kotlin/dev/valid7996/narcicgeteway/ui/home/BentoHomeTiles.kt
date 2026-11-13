@@ -46,6 +46,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import dev.valid7996.narcicgeteway.domain.model.AppSettings
+import dev.valid7996.narcicgeteway.ui.theme.MasterNeonThemes
+import dev.valid7996.narcicgeteway.ui.theme.applyMasterTheme
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import dev.valid7996.narcicgeteway.domain.model.ConnectionState
 import dev.valid7996.narcicgeteway.ui.platform.LocalPlatform
 import dev.valid7996.narcicgeteway.shared.resources.Res
@@ -62,6 +67,78 @@ import dev.valid7996.narcicgeteway.ui.theme.Personalization
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+
+/**
+ * نوار انتخابگر سریع ۴ تم اصلی نرسیس
+ */
+@Composable
+fun BentoThemePaletteBar(
+    settings: AppSettings?,
+    onUpdateSettings: (((AppSettings) -> AppSettings) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = LocalHapticFeedback.current
+    val currentThemeId = settings?.themeProfileId ?: "cyberpunk_pink"
+
+    // ۴ تم برجسته نرسیس
+    val featuredThemes = MasterNeonThemes.take(4)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        featuredThemes.forEach { spec ->
+            val isSelected = currentThemeId == spec.id || (currentThemeId.isBlank() && spec.id == "cyberpunk_pink")
+            val chipBg = if (isSelected) {
+                Brush.horizontalGradient(listOf(spec.primaryColor, spec.cardWaterColor))
+            } else {
+                Brush.horizontalGradient(listOf(Color(0xFF161224), Color(0xFF0F0B18)))
+            }
+            val borderStroke = if (isSelected) {
+                BorderStroke(1.2.dp, Color.White.copy(alpha = 0.6f))
+            } else {
+                BorderStroke(1.dp, spec.primaryColor.copy(alpha = 0.25f))
+            }
+
+            Surface(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onUpdateSettings?.invoke { it.applyMasterTheme(spec) }
+                },
+                shape = RoundedCornerShape(12.dp),
+                color = Color.Transparent,
+                border = borderStroke,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(chipBg),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(spec.primaryColor),
+                    )
+                    Text(
+                        text = spec.title,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                            fontSize = 11.sp,
+                        ),
+                        color = if (isSelected) Color.White else Color(0xFFD1D5DB),
+                    )
+                }
+            }
+        }
+    }
+}
 
 /**
  * دکمه و کاشی اصلی اتصال: اندازه متناسب و کاملاً مشخص، با متن‌های هوشمند

@@ -291,14 +291,21 @@ fun HomeScreen(
                     }
                 }
 
-                // 1. Master Connect Tile (Zero Animation, Smart State, Perfectly Proportioned)
+                // 1. Theme Palette Quick Selector (4 Ready Themes)
+                BentoThemePaletteBar(
+                    settings = settings,
+                    onUpdateSettings = onUpdateSettings,
+                    modifier = Modifier.padding(bottom = 2.dp),
+                )
+
+                // 2. Master Connect Tile (Zero Animation, Smart State, Perfectly Proportioned)
                 BentoMasterConnectTile(
                     state = ui.state,
                     personalization = personalization,
                     onClick = onToggleConnection,
                 )
 
-                // 2. Active Server Config Tile
+                // 3. Active Server Config Tile
                 val effectiveCountryCode = if (live && !info.countryCode.isNullOrBlank()) info.countryCode else activeCountryCode
                 BentoActiveConfigTile(
                     name = activeConfigName,
@@ -309,7 +316,18 @@ fun HomeScreen(
                     onClick = onBrowseConfigs,
                 )
 
-                // 3. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
+                // 4. Dedicated Upload & Download Traffic Card (کادر ترافیک آپلود و دانلود)
+                TrafficStylesDisplay(
+                    downloadBps = ui.downloadBps,
+                    uploadBps = ui.uploadBps,
+                    totalDownload = ui.totalDownload,
+                    totalUpload = ui.totalUpload,
+                    style = personalization.trafficCardStyle,
+                    personalization = personalization,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                // 5. 2x2 Bento Metrics Grid (Duration, Volume, Live Ping, Real-Time Traffic)
                 BentoMetricsGrid(
                     connected = live,
                     elapsedSeconds = ui.elapsedSeconds,
@@ -320,7 +338,7 @@ fun HomeScreen(
                     personalization = personalization,
                 )
 
-                // 4. Gateway & Exit IP Tile (IPv4 & IPv6 simultaneous check)
+                // 6. Gateway & Exit IP Tile (IPv4 & IPv6 simultaneous check)
                 BentoServerTile(
                     connected = live,
                     ipv4 = info.ipv4,

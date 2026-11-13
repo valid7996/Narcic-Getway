@@ -1354,6 +1354,11 @@ private fun UiPage(
             onSelect = { lay -> onUpdate { it.copy(settingsTileLayout = lay) } },
         )
 
+        TrafficStyleRow(
+            selected = s.trafficCardStyle,
+            onSelect = { style -> onUpdate { it.copy(trafficCardStyle = style) } },
+        )
+
         ConnectStyleRow(
             label = stringResource(Res.string.connect_style_title),
             subtitle = stringResource(Res.string.connect_style_sub),
@@ -1623,6 +1628,18 @@ private fun UiPage(
                 selected = s.uiFontScale,
                 onSelected = { v -> onUpdate { it.copy(uiFontScale = v) } },
             )
+            SettingsDivider(hasIcon = false)
+            SettingsListRow(
+                title = stringResource(Res.string.settings_animation_mode),
+                options = listOf(
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Normal to stringResource(Res.string.settings_anim_normal),
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Slow to stringResource(Res.string.settings_anim_slow),
+                    dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off to stringResource(Res.string.settings_anim_off),
+                ),
+                selected = s.animationMode,
+                onSelected = { v -> onUpdate { it.copy(animationMode = v, reduceMotion = (v == dev.valid7996.narcicgeteway.domain.model.AnimationMode.Off)) } },
+            )
+            SettingsDivider(hasIcon = false)
             SettingsListRow(
                 title = stringResource(Res.string.settings_import_target_mode),
                 options = listOf(
