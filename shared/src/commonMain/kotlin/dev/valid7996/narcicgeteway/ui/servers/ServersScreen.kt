@@ -2104,7 +2104,7 @@ fun ServersScreen(
             sub = sub,
             isFirst = subIndex <= 0,
             isLast = subIndex < 0 || subIndex >= subscriptions.lastIndex,
-            serverCount = counts[sub.id] ?: 0,
+            serverCount = servers.count { it.subscriptionId == sub.id },
             onEdit = {
                 subActionTarget = null
                 subToEdit = sub
