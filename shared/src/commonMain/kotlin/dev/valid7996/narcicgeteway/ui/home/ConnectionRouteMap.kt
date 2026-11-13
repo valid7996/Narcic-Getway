@@ -240,7 +240,7 @@ fun ConnectionMapTriggerButton(
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = Color.White,
                 )
-                FlagBadge(countryCode = destCountryCode ?: "US", size = 24.dp)
+                FlagBadge(countryCode = destCountryCode, size = 24.dp)
             }
         }
     }

@@ -299,10 +299,11 @@ fun HomeScreen(
                 )
 
                 // 2. Active Server Config Tile
+                val effectiveCountryCode = if (live && !info.countryCode.isNullOrBlank()) info.countryCode else activeCountryCode
                 BentoActiveConfigTile(
                     name = activeConfigName,
                     detail = activeConfigDetail,
-                    countryCode = activeCountryCode,
+                    countryCode = effectiveCountryCode,
                     locked = activeLocked,
                     personalization = personalization,
                     onClick = onBrowseConfigs,

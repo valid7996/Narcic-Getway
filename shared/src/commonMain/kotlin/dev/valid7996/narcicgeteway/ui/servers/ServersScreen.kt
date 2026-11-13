@@ -14,6 +14,7 @@ import org.jetbrains.compose.resources.DrawableResource
 
 import org.jetbrains.compose.resources.StringResource
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -1043,9 +1044,63 @@ fun ServersScreen(
                             label = sub.name,
                             count = counts[sub.id] ?: 0,
                             selected = groupIndex == index + 2,
+                            badge = sub.formatQuotaBadge(),
                             personalization = personalization,
                             onClick = { groupIndex = index + 2 },
                         )
+                    }
+                }
+            }
+
+            // v2rayNG-style Active Subscription Quota Banner
+            val activeSub = subscriptions.getOrNull(groupIndex - 2)
+            if (activeSub != null && (activeSub.total != null || activeSub.expireAt != null || activeSub.used != null)) {
+                Surface(
+                    color = personalization.cardBgColor ?: Color(0x1AFFFFFF),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, (personalization.serverBorderColor ?: Color.White).copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text = activeSub.name,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = personalization.textColor ?: Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            activeSub.formatQuotaBadge()?.let { badge ->
+                                Surface(
+                                    color = Color(0x2610B981),
+                                    shape = CircleShape,
+                                    border = BorderStroke(0.5.dp, Color(0xFF10B981).copy(alpha = 0.5f)),
+                                ) {
+                                    Text(
+                                        text = badge,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp),
+                                        color = Color(0xFF10B981),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    )
+                                }
+                            }
+                        }
+                        val subUsed = activeSub.used
+                        if (activeSub.total != null && activeSub.total > 0 && subUsed != null) {
+                            val fraction = (subUsed.toDouble() / activeSub.total).toFloat().coerceIn(0f, 1f)
+                            Spacer(Modifier.height(6.dp))
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = { fraction },
+                                modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                                color = if (fraction > 0.9f) Color(0xFFEF4444) else if (fraction > 0.75f) Color(0xFFF59E0B) else Color(0xFF10B981),
+                                trackColor = Color(0x20FFFFFF),
+                            )
+                        }
                     }
                 }
             }
@@ -2252,6 +2307,7 @@ private fun GroupTab(
     label: String,
     count: Int,
     selected: Boolean,
+    badge: String? = null,
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
 ) {
@@ -2284,25 +2340,40 @@ private fun GroupTab(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 12.5.sp,
-                ),
-                color = if (selected) chipTextColor else Color(0xFF9CA3AF),
-                maxLines = 1,
-            )
-            if (count > 0) {
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "$count",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 11.5.sp,
-                    ),
-                    color = if (selected) chipTextColor.copy(alpha = 0.9f) else Color(0xFF9CA3AF).copy(alpha = 0.75f),
-                )
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 12.5.sp,
+                        ),
+                        color = if (selected) chipTextColor else Color(0xFF9CA3AF),
+                        maxLines = 1,
+                    )
+                    if (count > 0) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "$count",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.5.sp,
+                            ),
+                            color = if (selected) chipTextColor.copy(alpha = 0.9f) else Color(0xFF9CA3AF).copy(alpha = 0.75f),
+                        )
+                    }
+                }
+                if (!badge.isNullOrBlank()) {
+                    Text(
+                        text = badge,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = if (selected) chipTextColor.copy(alpha = 0.95f) else Color(0xFF10B981),
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }

@@ -645,8 +645,9 @@ object ConfigParser {
 
     @OptIn(ExperimentalEncodingApi::class)
     fun decodeBase64Utf8(raw: String): String {
-        val cleaned = raw.trim().replace('-', '+').replace('_', '/').filterNot { it == '\n' || it == '\r' }
+        val cleaned = raw.filterNot { it.isWhitespace() }.replace('-', '+').replace('_', '/')
         val padded = when (cleaned.length % 4) {
+            1 -> cleaned.dropLast(1)
             2 -> "$cleaned=="
             3 -> "$cleaned="
             else -> cleaned
