@@ -77,7 +77,13 @@ fun MainScaffold(
     var activeCountryCode by remember { mutableStateOf<String?>(null) }
     androidx.compose.runtime.LaunchedEffect(activeProfile) {
         activeCountryCode = null
-        val profile = activeProfile?.takeIf { !it.isLocked && !it.isAutoSelect } ?: return@LaunchedEffect
+        val profile = activeProfile ?: return@LaunchedEffect
+        val fromProfile = dev.valid7996.narcicgeteway.domain.config.ProfileCountry.of(profile)
+        if (fromProfile != null) {
+            activeCountryCode = fromProfile
+            return@LaunchedEffect
+        }
+        if (profile.isLocked || profile.isAutoSelect) return@LaunchedEffect
         val link = (profile.source as? dev.valid7996.narcicgeteway.domain.config.ProfileSource.Link)?.link
         val parsed = link?.let {
             runCatching { dev.valid7996.narcicgeteway.domain.config.ConfigParser.parse(it) }.getOrNull()
@@ -230,8 +236,14 @@ fun MainScaffold(
                             }
                         }
                     } ?: activeProfile?.let { p ->
-                        val proto = p.protocol.uppercase().takeIf { it.isNotBlank() } ?: "VLESS"
-                        val trans = p.transportLabel.uppercase().takeIf { it.isNotBlank() && it != "NONE" && it != "TCP" }
+                        val proto = when (p.protocol.uppercase()) {
+                            "HYSTERIA" -> "Hysteria 2"
+                            "SHADOWSOCKS" -> "Shadowsocks"
+                            "WIREGUARD" -> "WireGuard"
+                            "AMNEZIAWG" -> "AmneziaWG"
+                            else -> p.protocol.uppercase().takeIf { it.isNotBlank() } ?: "VLESS"
+                        }
+                        val trans = p.transportLabel.uppercase().takeIf { it.isNotBlank() && it != "NONE" && it != "TCP" && it != "DEFAULT" }
                         val portStr = if (p.port > 0) ":${p.port}" else ""
                         if (trans != null) "$proto · $trans$portStr" else "$proto$portStr"
                     },

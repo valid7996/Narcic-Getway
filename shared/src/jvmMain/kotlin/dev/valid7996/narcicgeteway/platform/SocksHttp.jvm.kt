@@ -157,11 +157,15 @@ internal fun rawHttpViaSocks(
 }
 
 private fun tlsOver(raw: Socket, host: String, port: Int, readTimeoutMs: Int): SSLSocket {
-    val tls = (SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(raw, host, port, true) as SSLSocket
+    val tls = (permissiveSslSocketFactory.createSocket(raw, host, port, true) as SSLSocket)
     tls.useClientMode = true
     tls.sslParameters = tls.sslParameters.apply {
-        endpointIdentificationAlgorithm = "HTTPS"
-        if (!isIpLiteral(host)) serverNames = listOf(SNIHostName(host))
+        if (!isIpLiteral(host)) {
+            endpointIdentificationAlgorithm = "HTTPS"
+            serverNames = listOf(SNIHostName(host))
+        } else {
+            endpointIdentificationAlgorithm = null
+        }
     }
     tls.soTimeout = readTimeoutMs
     tls.startHandshake()

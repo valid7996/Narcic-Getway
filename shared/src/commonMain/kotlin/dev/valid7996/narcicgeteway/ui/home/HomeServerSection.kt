@@ -360,6 +360,7 @@ internal fun HomeServerSection(
                     label = sub.name,
                     count = allServers.count { it.subscriptionId == sub.id },
                     selected = group == sub.id,
+                    badge = sub.formatQuotaBadge(),
                     personalization = personalization,
                 ) { group = sub.id }
             }
@@ -1250,6 +1251,7 @@ private fun GroupTab(
     label: String,
     count: Int,
     selected: Boolean,
+    badge: String? = null,
     personalization: Personalization = Personalization.Default,
     onClick: () -> Unit,
 ) {
@@ -1298,20 +1300,32 @@ private fun GroupTab(
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = content,
-            maxLines = 1,
-        )
-        if (count > 0) {
-            Spacer(Modifier.width(6.dp))
-            Text(
-                count.toString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = content.copy(alpha = 0.75f),
-            )
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                    color = content,
+                    maxLines = 1,
+                )
+                if (count > 0) {
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        count.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = content.copy(alpha = 0.75f),
+                    )
+                }
+            }
+            if (!badge.isNullOrBlank()) {
+                Text(
+                    badge,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold),
+                    color = if (selected) content.copy(alpha = 0.95f) else Color(0xFF10B981),
+                    maxLines = 1,
+                )
+            }
         }
     }
 }

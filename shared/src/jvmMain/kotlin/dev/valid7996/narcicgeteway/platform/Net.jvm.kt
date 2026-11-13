@@ -19,7 +19,7 @@ import javax.net.ssl.X509TrustManager
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 
-private val permissiveTrustManager = arrayOf<TrustManager>(
+internal val permissiveTrustManager = arrayOf<TrustManager>(
     object : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
@@ -27,13 +27,13 @@ private val permissiveTrustManager = arrayOf<TrustManager>(
     }
 )
 
-private val permissiveSslSocketFactory: SSLSocketFactory by lazy {
+internal val permissiveSslSocketFactory: SSLSocketFactory by lazy {
     val sslContext = SSLContext.getInstance("TLS")
     sslContext.init(null, permissiveTrustManager, SecureRandom())
     sslContext.socketFactory
 }
 
-private val permissiveHostnameVerifier = HostnameVerifier { _, _ -> true }
+internal val permissiveHostnameVerifier = HostnameVerifier { _, _ -> true }
 
 internal fun applySocksSslIfNeeded(connection: HttpURLConnection, socksPort: Int?) {
     if (connection is HttpsURLConnection && socksPort != null) {
