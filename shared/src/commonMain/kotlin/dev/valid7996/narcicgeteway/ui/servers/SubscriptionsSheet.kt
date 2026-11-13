@@ -775,12 +775,16 @@ fun SubscriptionActionSheet(
                 modifier = Modifier.padding(bottom = 6.dp),
             )
 
-            // عملیات ویرایش
-            ActionSheetRow(
-                icon = Res.drawable.ic_edit,
-                title = stringResource(Res.string.subs_edit),
-                onClick = { onDismiss(); onEdit() },
-            )
+            val isDefault = ConfigRepository.isDefaultSubscription(sub.id)
+
+            // عملیات ویرایش (فقط برای ساب‌های غیر دیفالت)
+            if (!isDefault) {
+                ActionSheetRow(
+                    icon = Res.drawable.ic_edit,
+                    title = stringResource(Res.string.subs_edit),
+                    onClick = { onDismiss(); onEdit() },
+                )
+            }
 
             // عملیات جابه‌جایی به قبل (چپ)
             ActionSheetRow(
@@ -807,8 +811,8 @@ fun SubscriptionActionSheet(
                 onClick = { onDismiss(); onUpdate() },
             )
 
-            // عملیات اشتراک‌گذاری QR
-            if (sub.url.isNotBlank()) {
+            // عملیات اشتراک‌گذاری QR (فقط برای ساب‌های غیر دیفالت)
+            if (!isDefault && sub.url.isNotBlank()) {
                 ActionSheetRow(
                     icon = Res.drawable.ic_qr_code_2,
                     title = stringResource(Res.string.action_share_qr),

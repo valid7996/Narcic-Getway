@@ -2141,7 +2141,7 @@ fun ServersScreen(
         )
     }
 
-    subToEdit?.let { target ->
+    subToEdit?.takeIf { !ConfigRepository.isDefaultSubscription(it.id) }?.let { target ->
         SubscriptionEditDialog(
             target = target,
             repository = repository,
