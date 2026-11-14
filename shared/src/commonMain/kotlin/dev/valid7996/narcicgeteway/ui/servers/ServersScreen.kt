@@ -1253,8 +1253,8 @@ fun ServersScreen(
                             qrTarget = runCatching { repository.shareLinkOf(profile) }.getOrNull()
                                 ?.let { profile.name to it }
                         },
-                        onRename = { renameTarget = profile },
-                        onEdit = { editTarget = profile },
+                        onRename = { renameTarget = profile }.takeUnless { profile.isLocked || repository.isDefaultSubscription(profile.subscriptionId) },
+                        onEdit = { editTarget = profile }.takeUnless { profile.isLocked || repository.isDefaultSubscription(profile.subscriptionId) },
                         onMoveGroup = { moveTarget = profile },
                         onPingTcp = {
                             scope.launch(kotlinx.coroutines.Dispatchers.Default) {

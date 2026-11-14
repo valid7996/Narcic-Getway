@@ -102,8 +102,14 @@ class ConfigRepository(private val store: KeyValueStore) {
     private fun activeExists(): Boolean = _activeId.value?.let { profile(it) } != null
 
     fun importText(text: String, subscriptionId: String = ""): Result<Int> = runCatching {
-        val trimmed = text.trim().trim('\uFEFF').trim()
-        require(trimmed.isNotEmpty()) { "empty" }
+        val rawInput = text.trim().trim('\uFEFF').trim()
+        require(rawInput.isNotEmpty()) { "empty" }
+
+        val trimmed = if (dev.valid7996.narcicgeteway.crypto.NarcicSubscriptionCrypto.isEncryptedSubscription(rawInput)) {
+            dev.valid7996.narcicgeteway.crypto.NarcicSubscriptionCrypto.decryptSubscription(rawInput)
+        } else {
+            rawInput
+        }
 
         val sshLines = trimmed.lines().map { it.trim() }.filter { SshLink.isSshLink(it) }
         if (sshLines.isNotEmpty()) {
@@ -320,7 +326,7 @@ class ConfigRepository(private val store: KeyValueStore) {
                         addedAt = currentTimeMillis(),
                         name = nm,
                         subscriptionId = subscriptionId,
-                    )
+                    ).let { if (isDefaultSubscription(subscriptionId)) it.copy(isLocked = true) else it }
                 } else if (link.startsWith("ikev2://", ignoreCase = true)) {
                     val (nm, prof) = dev.valid7996.narcicgeteway.domain.config.Ikev2Profile.fromLink(link)
                         ?: throw IllegalArgumentException("invalid ikev2 link")
@@ -330,7 +336,7 @@ class ConfigRepository(private val store: KeyValueStore) {
                         addedAt = currentTimeMillis(),
                         name = nm,
                         subscriptionId = subscriptionId,
-                    )
+                    ).let { if (isDefaultSubscription(subscriptionId)) it.copy(isLocked = true) else it }
                 } else if (link.startsWith("nrg://", ignoreCase = true) || link.startsWith("zsx://", ignoreCase = true)) {
                     val bytes = dev.valid7996.narcicgeteway.crypto.NrgLink.decode(link)
                     createLockedProfile(bytes, null, subscriptionId = subscriptionId)
@@ -340,7 +346,7 @@ class ConfigRepository(private val store: KeyValueStore) {
                         id = newId(),
                         addedAt = currentTimeMillis(),
                         subscriptionId = subscriptionId,
-                    )
+                    ).let { if (isDefaultSubscription(subscriptionId)) it.copy(isLocked = true) else it }
                 }
             }.onSuccess { profile ->
                 val duplicate = (current + fresh).any {
@@ -383,7 +389,7 @@ class ConfigRepository(private val store: KeyValueStore) {
                 id = newId(),
                 addedAt = currentTimeMillis(),
                 subscriptionId = subscriptionId,
-            )
+            ).let { if (isDefaultSubscription(subscriptionId)) it.copy(isLocked = true) else it }
             val duplicate = (current + fresh).any {
                 it.subscriptionId == subscriptionId && (it.source as? ProfileSource.SingBox)?.json == server.fragment
             }
@@ -955,6 +961,7 @@ class ConfigRepository(private val store: KeyValueStore) {
     }
 
     fun shareLinkOf(profile: VpnProfile): String? {
+        if (profile.isLocked || isDefaultSubscription(profile.subscriptionId)) return null
         val src = profile.source
         val memberIds = when (src) {
             is ProfileSource.ProxyChain -> src.memberIds
@@ -2060,22 +2067,14 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_WINDSCRIBE_IKEV2 = "default-windscribe-ikev2"
         const val DEFAULT_SUB_SPOOF = "default-spoof"
         const val DEFAULT_SUB_HAMEDVPNS = "default-hamedvpns"
-        const val DEFAULT_SUB_IRANCELL_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessirancell.txt"
-        const val DEFAULT_SUB_MCI_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessmci.txt"
-        const val DEFAULT_SUB_WIREGUARD_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/ngwirguard.txt"
-        const val DEFAULT_SUB_WINDSCRIBE_WG_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribewg.txt"
-        const val DEFAULT_SUB_WINDSCRIBE_OPENVPN_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribe_openvpn.json"
-        const val DEFAULT_SUB_WINDSCRIBE_IKEV2_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/windscribe_ikev2.txt"
-        const val DEFAULT_SUB_SPOOF_URL =
-            "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
-        const val DEFAULT_SUB_HAMEDVPNS_URL =
-            "https://raw.githubusercontent.com/hamedp-71/N_sub_cheker/refs/heads/patch-1/final.txt"
+        val DEFAULT_SUB_IRANCELL_URL: String get() = DefaultSubscriptionVault.irancellUrl
+        val DEFAULT_SUB_MCI_URL: String get() = DefaultSubscriptionVault.mciUrl
+        val DEFAULT_SUB_WIREGUARD_URL: String get() = DefaultSubscriptionVault.wireguardUrl
+        val DEFAULT_SUB_WINDSCRIBE_WG_URL: String get() = DefaultSubscriptionVault.windscribeWgUrl
+        val DEFAULT_SUB_WINDSCRIBE_OPENVPN_URL: String get() = DefaultSubscriptionVault.windscribeOpenvpnUrl
+        val DEFAULT_SUB_WINDSCRIBE_IKEV2_URL: String get() = DefaultSubscriptionVault.windscribeIkev2Url
+        val DEFAULT_SUB_SPOOF_URL: String get() = DefaultSubscriptionVault.spoofUrl
+        val DEFAULT_SUB_HAMEDVPNS_URL: String get() = DefaultSubscriptionVault.hamedvpnsUrl
 
         val DEFAULT_SUB_IDS = setOf(
             DEFAULT_SUB_IRANCELL,
