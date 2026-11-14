@@ -19,6 +19,7 @@ object ShareLink {
         Protocol.HYSTERIA -> buildUri("hysteria2", s.secretKey.ifBlank { s.userId }, s)
         Protocol.WIREGUARD, Protocol.AMNEZIAWG -> buildWireguard(s)
         Protocol.MASQUE -> buildMasque(s)
+        Protocol.SAMIZDAT -> buildUri("samizdat", s.userId, s)
     }
 
     private fun buildMasque(s: ServerConfig): String {

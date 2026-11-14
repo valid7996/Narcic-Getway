@@ -5,7 +5,6 @@ import dev.valid7996.narcicgeteway.domain.config.Protocol
 import dev.valid7996.narcicgeteway.domain.config.ServerConfig
 import dev.valid7996.narcicgeteway.domain.config.SingBoxLinks
 import dev.valid7996.narcicgeteway.domain.config.TransportConfig
-import dev.valid7996.narcicgeteway.domain.config.TlsConfig
 import dev.valid7996.narcicgeteway.platform.httpGetResponse
 import dev.valid7996.narcicgeteway.platform.httpJson
 import kotlinx.serialization.json.Json

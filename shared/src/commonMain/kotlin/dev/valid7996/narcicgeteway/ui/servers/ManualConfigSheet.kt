@@ -494,6 +494,10 @@ fun ManualConfigSheet(
                         }
                     }
                 }
+                Protocol.SAMIZDAT -> {
+                    Field(userId, { userId = it }, Res.string.manual_password)
+                    Field(sni, { sni = it }, Res.string.manual_sni)
+                }
             }
 
             if (protocol.supportsTransport) {
