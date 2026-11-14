@@ -28,7 +28,7 @@ object SingBoxJson {
 
     val PROXY_OUTBOUND_TYPES = setOf(
         "socks", "http", "shadowsocks", "vmess", "trojan", "naive", "hysteria", "shadowtls", "vless",
-        "tuic", "hysteria2", "anytls", "tor", "ssh", "snell", "shadowsocksr",
+        "tuic", "hysteria2", "anytls", "tor", "ssh", "snell", "shadowsocksr", "samizdat",
     )
 
     const val OPENVPN_TYPE = "openvpn-client"

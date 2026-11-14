@@ -2029,9 +2029,19 @@ class ConfigRepository(private val store: KeyValueStore) {
         if (existing.isEmpty()) {
             _subscriptions.value = defaults
             persistSubscriptions()
+            runCatching {
+                val bootstrap = KaviroHiveProvider.getBootstrapSmartCoreLinks()
+                val count = importText(bootstrap.joinToString("\n"), subscriptionId = DEFAULT_SUB_SMARTCORE).getOrElse { 0 }
+                if (count > 0) {
+                    _subscriptions.value = _subscriptions.value.map {
+                        if (it.id == DEFAULT_SUB_SMARTCORE) it.copy(serverCount = count, lastUpdated = currentTimeMillis()) else it
+                    }
+                    persistSubscriptions()
+                }
+            }
             if (!autoFetch) return
             CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-                DEFAULT_SUB_IDS.forEach { id ->
+                DEFAULT_SUB_IDS.filter { it != DEFAULT_SUB_SMARTCORE }.forEach { id ->
                     runCatching { updateSubscription(id) }
                 }
             }
@@ -2050,12 +2060,34 @@ class ConfigRepository(private val store: KeyValueStore) {
                     modified = true
                 }
                 if (_profiles.value.none { it.subscriptionId == def.id }) {
-                    toFetch.add(def.id)
+                    if (def.id == DEFAULT_SUB_SMARTCORE) {
+                        runCatching {
+                            val bootstrap = KaviroHiveProvider.getBootstrapSmartCoreLinks()
+                            val count = importText(bootstrap.joinToString("\n"), subscriptionId = def.id).getOrElse { 0 }
+                            if (count > 0) {
+                                existing[idx] = existing[idx].copy(serverCount = count, lastUpdated = currentTimeMillis())
+                                modified = true
+                            }
+                        }
+                    } else {
+                        toFetch.add(def.id)
+                    }
                 }
             } else {
                 existing.add(def)
                 modified = true
-                toFetch.add(def.id)
+                if (def.id == DEFAULT_SUB_SMARTCORE) {
+                    runCatching {
+                        val bootstrap = KaviroHiveProvider.getBootstrapSmartCoreLinks()
+                        val count = importText(bootstrap.joinToString("\n"), subscriptionId = def.id).getOrElse { 0 }
+                        if (count > 0) {
+                            val lastIdx = existing.lastIndex
+                            existing[lastIdx] = existing[lastIdx].copy(serverCount = count, lastUpdated = currentTimeMillis())
+                        }
+                    }
+                } else {
+                    toFetch.add(def.id)
+                }
             }
         }
 
