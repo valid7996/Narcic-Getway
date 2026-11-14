@@ -87,6 +87,12 @@
                 <data android:scheme="cottendns" />
                 <data android:scheme="stormdns" />
                 <data android:scheme="soar" />
+                <data android:scheme="hysteria2x" />
+                <data android:scheme="hy2x" />
+                <data android:scheme="samizdat" />
+                <data android:scheme="vless-raw-reality" />
+                <data android:scheme="vless-grpc-reality" />
+                <data android:scheme="vless-xhttp" />
             </intent-filter>
 
             <intent-filter>
