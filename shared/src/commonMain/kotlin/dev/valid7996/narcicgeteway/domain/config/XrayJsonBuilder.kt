@@ -1645,6 +1645,12 @@ private fun statsPolicy(slowUpstream: Boolean = false) = buildJsonObject {
                     val dns = s.dnsServers.mapNotNull(::dnsServerAddress).filter { !it.contains("://") }
                     if (dns.isNotEmpty()) putJsonArray("remoteDNS") { dns.forEach { add(it) } }
                 }
+
+                Protocol.SAMIZDAT -> {
+                    put("address", address)
+                    put("port", s.port)
+                    put("password", s.userId)
+                }
             }
         }
 

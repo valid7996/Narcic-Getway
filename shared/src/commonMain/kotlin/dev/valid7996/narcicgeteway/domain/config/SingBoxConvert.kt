@@ -242,6 +242,11 @@ object SingBoxConvert {
                     }
                 }
             }
+            Protocol.SAMIZDAT -> buildJsonObject {
+                head("samizdat", tag, s)
+                if (s.userId.isNotBlank()) put("password", s.userId)
+                tls(s)
+            }
             Protocol.AMNEZIAWG, Protocol.MASQUE -> error("unreachable")
         }
     }

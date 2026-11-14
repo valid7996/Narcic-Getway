@@ -35,10 +35,10 @@ data class SubscriptionPreset(
 }
 
 internal object SubscriptionPresets {
-    private val URL_SCHEMES = setOf("vless", "trojan", "ss", "hysteria2", "hy2", "tuic")
+    private val URL_SCHEMES = setOf("vless", "trojan", "ss", "hysteria2", "hy2", "tuic", "hysteria2x", "hy2x", "samizdat", "vless-raw-reality", "vless-grpc-reality", "vless-xhttp")
     private val MASK_ONLY_SCHEMES = setOf("wireguard", "wg", "socks", "socks5", "http", "https")
-    private val CORE_SCHEMES = setOf("vless", "vmess", "trojan", "ss", "hysteria2", "hy2", "wireguard", "wg", "socks", "socks5", "http", "https")
-    private val TLS_SCHEMES = setOf("hysteria2", "hy2", "tuic", "trojan")
+    private val CORE_SCHEMES = setOf("vless", "vmess", "trojan", "ss", "hysteria2", "hy2", "wireguard", "wg", "socks", "socks5", "http", "https", "hysteria2x", "hy2x", "samizdat", "vless-raw-reality", "vless-grpc-reality", "vless-xhttp")
+    private val TLS_SCHEMES = setOf("hysteria2", "hy2", "tuic", "trojan", "hysteria2x", "hy2x", "samizdat")
     private val HOST_HEADER_NETWORKS = setOf("ws", "httpupgrade", "xhttp", "splithttp", "h2", "http")
     private val CDN_NETWORKS = HOST_HEADER_NETWORKS + "grpc"
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }

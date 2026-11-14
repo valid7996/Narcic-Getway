@@ -14,7 +14,7 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 object SingBoxLinks {
-    private val SCHEMES = setOf("tuic", "anytls", "hysteria", "naive+https", "naive+quic", "socks4", "socks4a", "snell")
+    private val SCHEMES = setOf("tuic", "anytls", "hysteria", "naive+https", "naive+quic", "socks4", "socks4a", "snell", "hysteria2x", "hy2x", "samizdat")
 
     private val FORM_TYPES = setOf("tuic", "anytls", "hysteria", "naive", "socks", "snell")
 
@@ -80,6 +80,35 @@ object SingBoxLinks {
                 q["idle_session_check_interval"]?.takeIf { it.isNotBlank() }?.let { put("idle_session_check_interval", duration(it)) }
                 q["idle_session_timeout"]?.takeIf { it.isNotBlank() }?.let { put("idle_session_timeout", duration(it)) }
                 q["min_idle_session"]?.toIntOrNull()?.takeIf { it > 0 }?.let { put("min_idle_session", it) }
+                tls(q, TlsKind.Tcp)
+            }
+            "hysteria2x", "hy2x" -> buildJsonObject {
+                put("type", "hysteria2")
+                put("tag", name)
+                server(parts, 443)
+                val auth = parts.userInfo.ifBlank { q["auth"] ?: q["password"].orEmpty() }
+                if (auth.isNotBlank()) put("password", auth)
+                q["mport"]?.takeIf { it.isNotBlank() }?.let { ports ->
+                    putJsonArray("server_ports") {
+                        (SingBoxConvert.portRangesOf(ports) ?: ports.split(',').map { it.trim().replace('-', ':') }).forEach { add(it) }
+                    }
+                }
+                (q["hop_interval"] ?: q["hopInterval"])?.takeIf { it.isNotBlank() }?.let { put("hop_interval", duration(it)) }
+                q["obfs"]?.takeIf { it.isNotBlank() }?.let { obfsType ->
+                    putJsonObject("obfs") {
+                        put("type", obfsType)
+                        (q["obfs-password"] ?: q["obfs_password"])?.takeIf { it.isNotBlank() }?.let { put("password", it) }
+                    }
+                }
+                tls(q, TlsKind.Quic, alpnDefault = "h3")
+            }
+            "samizdat" -> buildJsonObject {
+                put("type", "samizdat")
+                put("tag", name)
+                server(parts, 443)
+                val token = parts.userInfo.ifBlank { q["password"] ?: q["auth"] ?: q["token"].orEmpty() }
+                if (token.isNotBlank()) put("password", token)
+                q["sni"]?.takeIf { it.isNotBlank() }?.let { put("server_name", it) }
                 tls(q, TlsKind.Tcp)
             }
             "hysteria" -> buildJsonObject {

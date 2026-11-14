@@ -241,6 +241,7 @@ fun MainScaffold(
                             "SHADOWSOCKS" -> "Shadowsocks"
                             "WIREGUARD" -> "WireGuard"
                             "AMNEZIAWG" -> "AmneziaWG"
+                            "SAMIZDAT" -> "Samizdat"
                             else -> p.protocol.uppercase().takeIf { it.isNotBlank() } ?: "VLESS"
                         }
                         val trans = p.transportLabel.uppercase().takeIf { it.isNotBlank() && it != "NONE" && it != "TCP" && it != "DEFAULT" }

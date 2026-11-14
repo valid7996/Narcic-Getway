@@ -14,6 +14,7 @@ enum class Protocol(val id: String, val label: String) {
     AMNEZIAWG("wireguard", "AmneziaWG"),
     HYSTERIA("hysteria", "Hysteria"),
     MASQUE("masque", "MASQUE"),
+    SAMIZDAT("samizdat", "Samizdat"),
     ;
 
     val usesUserPass: Boolean get() = this == SOCKS || this == HTTP
@@ -33,7 +34,7 @@ enum class Protocol(val id: String, val label: String) {
 
     companion object {
         fun fromScheme(scheme: String): Protocol? = when (scheme.lowercase()) {
-            "vless" -> VLESS
+            "vless", "vless-raw-reality", "vless-grpc-reality", "vless-xhttp" -> VLESS
             "vmess" -> VMESS
             "trojan" -> TROJAN
             "ss", "shadowsocks" -> SHADOWSOCKS
@@ -41,8 +42,9 @@ enum class Protocol(val id: String, val label: String) {
             "http", "https" -> HTTP
             "wireguard", "wg" -> WIREGUARD
             "awg", "amneziawg" -> AMNEZIAWG
-            "hysteria", "hysteria2", "hy2" -> HYSTERIA
+            "hysteria", "hysteria2", "hy2", "hysteria2x", "hy2x" -> HYSTERIA
             "masque" -> MASQUE
+            "samizdat" -> SAMIZDAT
             else -> null
         }
     }

@@ -272,6 +272,15 @@ class ConfigRepository(private val store: KeyValueStore) {
         }.distinct()
 
         bodies.forEach { body ->
+            if (body.startsWith("{") || body.startsWith("[")) {
+                val kaviroLinks = KaviroHiveProvider.parseCatalogResponse(body)
+                if (kaviroLinks.isNotEmpty()) {
+                    return@runCatching importText(kaviroLinks.joinToString("\n"), subscriptionId).getOrThrow()
+                }
+            }
+        }
+
+        bodies.forEach { body ->
 
             importSingBoxJson(body, subscriptionId)?.let { return@runCatching it }
         }
@@ -1617,6 +1626,32 @@ class ConfigRepository(private val store: KeyValueStore) {
 
             if (sub.url.isBlank()) return@runCatching 0
             val primaryUa = resolveUa(sub.userAgent)
+
+            if (KaviroHiveProvider.isKaviroEndpoint(sub.url)) {
+                val tunnelPort = dev.valid7996.narcicgeteway.core.VpnManager.activeSocksPort?.takeIf {
+                    it > 0 && dev.valid7996.narcicgeteway.core.VpnManager.status.value.state ==
+                        dev.valid7996.narcicgeteway.domain.model.ConnectionState.Connected
+                }
+                val configs = KaviroHiveProvider.fetchSubscriptionConfigs(sub.url, primaryUa, tunnelPort)
+                val previous = _profiles.value.filter { it.subscriptionId == id }
+                val previousActive = _activeId.value
+                removeAll { it.subscriptionId == id }
+                val added = importText(configs.joinToString("\n"), subscriptionId = id).getOrElse { 0 }
+                reuseIdentities(id, previous)
+                if (previousActive != null && _activeId.value != previousActive && profile(previousActive) != null) {
+                    setActive(previousActive)
+                }
+                _subscriptions.value = _subscriptions.value.map {
+                    if (it.id == id) {
+                        it.copy(lastUpdated = currentTimeMillis(), serverCount = added)
+                    } else {
+                        it
+                    }
+                }
+                persistSubscriptions()
+                return@runCatching added
+            }
+
             val response = runCatching { fetch(sub.url, primaryUa) }
                 .getOrElse { throw SubscriptionUnreachableException(it) }
             val body = response.body
@@ -1979,6 +2014,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         Subscription(id = DEFAULT_SUB_WINDSCRIBE_IKEV2, name = "Windscribe IKEv2", url = DEFAULT_SUB_WINDSCRIBE_IKEV2_URL),
         Subscription(id = DEFAULT_SUB_SPOOF, name = "اسپوف", url = DEFAULT_SUB_SPOOF_URL),
         Subscription(id = DEFAULT_SUB_HAMEDVPNS, name = "hamedvpns", url = DEFAULT_SUB_HAMEDVPNS_URL),
+        Subscription(id = DEFAULT_SUB_SMARTCORE, name = "اسمارت‌کور", url = DEFAULT_SUB_SMARTCORE_URL),
     )
 
     /**
@@ -2060,6 +2096,7 @@ class ConfigRepository(private val store: KeyValueStore) {
         const val DEFAULT_SUB_WINDSCRIBE_IKEV2 = "default-windscribe-ikev2"
         const val DEFAULT_SUB_SPOOF = "default-spoof"
         const val DEFAULT_SUB_HAMEDVPNS = "default-hamedvpns"
+        const val DEFAULT_SUB_SMARTCORE = "default-smartcore"
         const val DEFAULT_SUB_IRANCELL_URL =
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/vlessirancell.txt"
         const val DEFAULT_SUB_MCI_URL =
@@ -2076,6 +2113,8 @@ class ConfigRepository(private val store: KeyValueStore) {
             "https://raw.githubusercontent.com/validbv7996/Narcic_APK/refs/heads/main/Narcic-Spooof.txt"
         const val DEFAULT_SUB_HAMEDVPNS_URL =
             "https://raw.githubusercontent.com/hamedp-71/N_sub_cheker/refs/heads/patch-1/final.txt"
+        const val DEFAULT_SUB_SMARTCORE_URL =
+            "https://kaviro.ir/api/v1/catalog"
 
         val DEFAULT_SUB_IDS = setOf(
             DEFAULT_SUB_IRANCELL,
@@ -2086,6 +2125,7 @@ class ConfigRepository(private val store: KeyValueStore) {
             DEFAULT_SUB_WINDSCRIBE_IKEV2,
             DEFAULT_SUB_SPOOF,
             DEFAULT_SUB_HAMEDVPNS,
+            DEFAULT_SUB_SMARTCORE,
         )
 
         fun isDefaultSubscription(id: String?): Boolean {

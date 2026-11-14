@@ -45,20 +45,37 @@ object ConfigParser {
             Protocol.HYSTERIA -> parseHysteria(trimmed)
             Protocol.WIREGUARD, Protocol.AMNEZIAWG -> parseWireguard(trimmed, protocol)
             Protocol.MASQUE -> parseMasque(trimmed)
+            Protocol.SAMIZDAT -> parseSamizdat(trimmed)
             null -> throw ConfigParseException("Unsupported or invalid link scheme")
         }
     }
 
     fun isSupportedLink(link: String): Boolean {
         val scheme = link.trim().substringBefore("://", "").lowercase()
-        return scheme == "nrg" || scheme == "zsx" || scheme == "aether" || scheme == "sstp" || scheme == "ikev2" || Protocol.fromScheme(scheme) != null || SingBoxLinks.handles(link)
+        return scheme == "nrg" || scheme == "zsx" || scheme == "aether" || scheme == "sstp" || scheme == "ikev2" || scheme == "samizdat" || scheme == "hysteria2x" || scheme == "hy2x" || Protocol.fromScheme(scheme) != null || SingBoxLinks.handles(link)
     }
 
     private fun parseVless(link: String): ServerConfig {
-        val p = parseLink(link.removePrefix("vless://"))
+        val scheme = link.substringBefore("://", "").lowercase()
+        val p = parseLink(link.substringAfter("://"))
         if (p.userInfo.isBlank() || p.host.isBlank()) throw ConfigParseException("Invalid vless link")
         val q = p.query
         val flow = q["flow"].orEmpty()
+        val defaultSec = when (scheme) {
+            "vless-raw-reality", "vless-grpc-reality" -> "reality"
+            else -> q["security"] ?: ""
+        }
+        val defaultNet = when (scheme) {
+            "vless-grpc-reality" -> "grpc"
+            "vless-xhttp" -> "xhttp"
+            else -> "tcp"
+        }
+        val effectiveTransport = transportFrom(q).let { tr ->
+            if (scheme == "vless-grpc-reality" && (tr.network == "tcp" || tr.network.isBlank())) tr.copy(network = "grpc")
+            else if (scheme == "vless-xhttp" && (tr.network == "tcp" || tr.network.isBlank())) tr.copy(network = "xhttp")
+            else tr
+        }
+        val effectiveFlow = if (flow.isEmpty() && defaultSec == "reality" && scheme == "vless-raw-reality") "xtls-rprx-vision" else flow.ifEmpty { null }
         return ServerConfig(
             protocol = Protocol.VLESS,
             remark = p.fragment,
@@ -66,12 +83,28 @@ object ConfigParser {
             port = p.port ?: 443,
             userId = p.userInfo,
             encryption = q["encryption"] ?: "none",
-            flow = flow.ifEmpty { null },
-            transport = transportFrom(q),
+            flow = effectiveFlow,
+            transport = effectiveTransport,
 
             pinnedCertSha256 = q["pcs"]?.takeIf { it.isNotBlank() },
-            tls = securityFrom(q, defaultSecurity = q["security"] ?: ""),
+            tls = securityFrom(q, defaultSecurity = defaultSec),
             runOnSingBox = wantsSingBox(q["core"]),
+        )
+    }
+
+    private fun parseSamizdat(link: String): ServerConfig {
+        val p = parseLink(link.substringAfter("://"))
+        if (p.host.isBlank()) throw ConfigParseException("Invalid samizdat link")
+        val q = p.query
+        val token = p.userInfo.ifBlank { q["password"] ?: q["auth"] ?: q["token"].orEmpty() }
+        return ServerConfig(
+            protocol = Protocol.SAMIZDAT,
+            remark = p.fragment.ifBlank { "Samizdat ${p.host}" },
+            address = p.host,
+            port = p.port ?: 443,
+            userId = token,
+            tls = securityFrom(q, defaultSecurity = "tls"),
+            runOnSingBox = true,
         )
     }
 
